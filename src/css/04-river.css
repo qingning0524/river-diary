@@ -1,0 +1,199 @@
+/* ============ 减少动态：全站唯一合并块（尊重系统减弱动效） ============ */
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important}
+  html{scroll-behavior:auto}
+  .reveal,.reveal.is-visible{opacity:1 !important;transform:none !important}
+  .metric-detail:hover,.dnav-btn:hover,.rail-btn:hover,.dc:hover,.mo:hover,
+  .spark7 .bar:hover,.memo-item:hover{transform:none!important}
+  .spark7 .bar,.streak-ic,.mood-emoji,.river-svg *{animation:none!important;transition:none!important}
+  ::view-transition-old(*),::view-transition-new(*){animation:none !important}
+}
+
+/* ============ 图标：统一线性 stroke 图标集（替换 emoji chrome） ============ */
+.rail-btn,.theme-btn{font-size:0}
+.rail-btn svg{width:20px;height:20px}
+.theme-btn svg{width:17px;height:17px}
+.searchbox .ico svg,.cmdk-search .ico svg{width:15px;height:15px;opacity:.6}
+.river-hd .title .icon{display:inline-flex;align-items:center}
+.river-hd .title .icon svg{width:17px;height:17px;color:var(--accent)}
+.ctab{display:inline-flex;align-items:center;gap:5px}
+.ctab svg{width:14px;height:14px}
+#exportBtn svg{width:15px;height:15px}
+
+/* ============ 情绪河流 · 水感（颜色随主题自适应 --water） ============ */
+:root{--water:#6C5CE0}
+[data-theme="dark"]{--water:#8E80FF}
+.river-svg stop{stop-color:var(--water)}
+.river-depth{stroke:var(--water);stroke-width:11;fill:none;opacity:.10;stroke-linecap:round;stroke-linejoin:round}
+.river-current{stroke:var(--water);stroke-width:2;fill:none;opacity:.78;stroke-linecap:round;stroke-linejoin:round}
+.river-svg .ripple{stroke:var(--water);fill:none;stroke-width:1.1;opacity:.4}
+.river-svg .ripple.on{opacity:.95;stroke-width:1.5}
+.rf-date{font-size:9.5px;fill:var(--ink-3);font-weight:600;letter-spacing:.02em}
+.rf-date.on{fill:var(--accent);font-weight:700}
+.rf-flag{font-size:9px;font-weight:800;fill:var(--accent);letter-spacing:.02em}
+.river-svg-wrap{background:linear-gradient(180deg,color-mix(in srgb,var(--water) 5%,var(--card-2)),var(--card-2))}
+
+/* ============ 情绪河流：回放入口 + 流动水纹 ============ */
+.river-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.river-hd-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.river-hd .legend{margin:0}
+.river-play{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid transparent;border-radius:999px;padding:6px 13px;cursor:pointer;white-space:nowrap;transition:all .18s var(--ease)}
+.river-play svg{width:13px;height:13px}
+.river-play:hover{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 6px 16px -8px color-mix(in srgb,var(--accent) 60%,transparent)}
+/* 流动水纹层 */
+.river-waves{fill:url(#rgWaves);opacity:.5;pointer-events:none}
+.river-svg pattern path{stroke:var(--water);fill:none;stroke-linecap:round}
+
+/* ============ 河流回放 · 全屏回忆 ============ */
+.replay{position:fixed;inset:0;z-index:140;display:none;background:#0b0e15;color:#EDF1F6;font-family:var(--font-sans)}
+.replay.show{display:flex;animation:fadein .35s ease both}
+.replay-bg{position:absolute;inset:0;background:radial-gradient(130% 95% at 50% 0%,color-mix(in srgb,var(--rp,var(--accent)) 34%,transparent),transparent 62%);transition:background .8s ease;pointer-events:none}
+.replay-scene{position:relative;width:min(880px,100%);height:100%;margin:0 auto}
+.rp-stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 44px 100px;opacity:0;transform:translateY(16px) scale(.985);transition:opacity .55s var(--ease),transform .55s var(--ease);pointer-events:none}
+.rp-stage.on{opacity:1;transform:none;pointer-events:auto}
+.rp-badge{display:inline-block;font-size:11px;font-weight:800;color:var(--rp,#fff);background:color-mix(in srgb,var(--rp,#fff) 20%,transparent);border:1px solid color-mix(in srgb,var(--rp,#fff) 55%,transparent);padding:4px 14px;border-radius:999px;letter-spacing:.05em;margin-bottom:22px}
+.rp-date{font-size:27px;font-weight:600;color:#fff;letter-spacing:.01em;margin-bottom:8px}
+.rp-weekday{font-size:12px;color:rgba(237,241,246,.55);margin-bottom:28px}
+.rp-line{width:min(360px,70vw);height:1.5px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--rp,#fff) 60%,transparent),transparent);margin-bottom:30px;position:relative;align-self:center}
+.rp-line::before{content:"";position:absolute;left:50%;top:50%;width:12px;height:12px;border-radius:50%;background:var(--rp,#fff);transform:translate(-50%,-50%);box-shadow:0 0 0 5px color-mix(in srgb,var(--rp,#fff) 25%,transparent)}
+.rp-overview{font-family:"Songti SC","STSong",Georgia,serif;font-size:22px;line-height:1.9;color:#F4F7FA;max-width:34em;margin:0 auto 32px;font-weight:400}
+.rp-mini{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.rp-cell{min-width:86px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.rp-cell b{display:block;font-size:20px;font-weight:650;font-variant-numeric:tabular-nums;color:#fff}
+.rp-cell span{font-size:10.5px;color:rgba(237,241,246,.55);font-weight:600;letter-spacing:.05em}
+.rp-cell.mood{background:color-mix(in srgb,var(--rp,#fff) 20%,rgba(255,255,255,.05));border-color:color-mix(in srgb,var(--rp,#fff) 42%,transparent)}
+.rp-cell.mood b{color:var(--rp,#fff)}
+.replay-close{position:absolute;top:22px;right:24px;z-index:3;width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;font-size:16px;display:grid;place-items:center;cursor:pointer;transition:all .18s}
+.replay-close:hover{background:rgba(255,255,255,.14)}
+.replay-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;font-size:22px;display:grid;place-items:center;cursor:pointer;transition:all .18s;line-height:1}
+.replay-nav.prev{left:20px} .replay-nav.next{right:20px}
+.replay-nav:hover{background:rgba(255,255,255,.16)}
+.replay-toggle{position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:3;width:54px;height:54px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:color-mix(in srgb,var(--accent) 34%,rgba(255,255,255,.05));color:#fff;display:grid;place-items:center;cursor:pointer;transition:all .18s}
+.replay-toggle svg{width:18px;height:18px}
+.replay-toggle:hover{background:color-mix(in srgb,var(--accent) 60%,rgba(255,255,255,.05));transform:translateX(-50%) scale(1.05)}
+.replay-rail{position:absolute;left:50%;bottom:42px;transform:translateX(-50%);width:min(300px,58vw);height:3px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;z-index:2}
+.replay-rail i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px}
+.replay-count{position:absolute;top:28px;left:30px;font-family:var(--font-mono);font-size:12px;letter-spacing:.12em;color:rgba(237,241,246,.5);z-index:3}
+@media(max-width:640px){
+  .rp-overview{font-size:18px}
+  .rp-date{font-size:22px}
+  .replay-nav{width:40px;height:40px;font-size:18px}
+  .replay-nav.prev{left:8px} .replay-nav.next{right:8px}
+  .rp-stage{padding:68px 22px 104px}
+  .replay-count{font-size:11px}
+}
+
+/* —— 河流 v2：有体积的水带 + 液态水滴 —— */
+.river-surface{stroke:var(--water);stroke-width:2;fill:none;opacity:.88;stroke-linecap:round;stroke-linejoin:round}
+.river-guide{pointer-events:none}
+.river-svg circle.drop{filter:drop-shadow(0 1.5px 2.5px rgba(16,20,30,.30))}
+.river-svg .ripple{stroke:var(--water);fill:none;stroke-width:1.2;opacity:.5}
+.river-svg .ripple.on{opacity:.95;stroke-width:1.5}
+
+/* 回放卡片：点一下打开当天日记 */
+.rp-stage{cursor:pointer}
+.rp-stage:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.rp-enter{margin-top:32px;font-size:11.5px;letter-spacing:.05em;color:rgba(237,241,246,.5);display:inline-flex;align-items:center;gap:6px}
+
+/* ============ 河流 v3：水 + 光 + 流动 + 去数据感 ============ */
+.river-card{background:linear-gradient(180deg,color-mix(in srgb,var(--water) 7%,var(--card)),var(--card) 50%);box-shadow:var(--shadow-sm)}
+.river-glow{stroke:var(--water);stroke-width:6;fill:none;opacity:.22;stroke-linecap:round;stroke-linejoin:round}
+.river-surface{stroke:var(--water);stroke-width:2;fill:none;opacity:.9;stroke-linecap:round;stroke-linejoin:round}
+.river-flow{stroke:var(--water);stroke-width:6;fill:none;opacity:.16;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 22;animation:riverDrift 7s linear infinite}
+@keyframes riverDrift{ to{stroke-dashoffset:-240} }
+.river-svg circle.drop{filter:drop-shadow(0 1.5px 2.5px rgba(16,20,30,.32))}
+.river-svg .ripple{stroke:var(--water);fill:none;stroke-width:1.1;opacity:.3}
+.river-svg .ripple.on{opacity:1;stroke-width:1.6}
+
+/* 让"数据感"退到后面 */
+.river-play{font-size:11px;padding:5px 11px;background:transparent;border:1px solid var(--line);color:var(--ink-2);box-shadow:none}
+.river-play svg{width:12px;height:12px}
+.river-play:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);box-shadow:none;transform:none}
+.river-hd .legend .lg{font-size:10px;opacity:.9}
+.river-legend{font-size:11px;color:var(--ink-3);letter-spacing:.01em}
+.rf-date{font-size:9px;fill:var(--ink-3);font-weight:600;opacity:.7}
+.rf-date.on{opacity:1;fill:var(--accent)}
+
+/* —— 河流 v4：蜿蜒河谷 —— */
+.river-shore{stroke:var(--water);stroke-width:1.6;fill:none;opacity:.38;stroke-linecap:round;stroke-linejoin:round}
+.river-glow{stroke:var(--water);stroke-width:7;fill:none;opacity:.18;stroke-linecap:round;stroke-linejoin:round}
+
+/* —— 详情卡 hero：成长安静下来，不再是主角 —— */
+.detail-hero .hero-box.single .num-big{font-size:46px;font-weight:300}
+.hero-box .hero-label .dot{background:var(--ink-3);width:7px;height:7px}
+.hero-tag.quiet{background:transparent;color:var(--ink-2);border:1px solid var(--line);font-weight:600;padding:2px 11px}
+.hero-meta{font-size:11px;color:var(--ink-3);letter-spacing:.02em}
+
+/* —— 详情卡 hero：今日心情为主图 —— */
+.detail-hero .hero-box.single .num-big{font-size:54px;font-weight:280}
+
+/* —— 详情卡 hero：心情 + 成长 两颗等重 —— */
+.detail-hero{display:flex;align-items:stretch;gap:26px}
+.detail-hero .hero-box{flex:1;padding:10px 0 6px}
+.detail-hero .hero-box .num-big{font-size:46px;font-weight:280}
+.hero-tag.strong{display:inline-block;align-self:flex-start;font-size:11px;font-weight:700;padding:3px 12px;border-radius:999px;letter-spacing:.03em}
+
+/* ============ 今日塔罗：右侧不再空 ============ */
+.detail-right{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-width:150px}
+.mi-cells{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.tcard{width:132px;aspect-ratio:2/3;flex:none;border-radius:11px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:9px;box-sizing:border-box;text-align:center;overflow:hidden;background:linear-gradient(160deg,#fbf4e6,#f2e4c4);border:1px solid #d6c192;box-shadow:0 5px 14px rgba(20,20,30,.12);z-index:0}
+.tcard::before{content:'';position:absolute;inset:4px;border:1px solid rgba(130,95,45,.32);border-radius:8px;pointer-events:none}
+.tcard::after{content:'✧';position:absolute;top:5px;right:8px;font-size:9px;color:#b89b63}
+.tc-top{position:relative;z-index:1;width:100%;display:flex;justify-content:space-between;align-items:baseline;font-size:9px;color:#8a6d3b}
+.tc-num{font-weight:900}
+.tc-en{font-size:7.5px;font-weight:700;letter-spacing:.06em;opacity:.85}
+.tc-emblem{position:relative;z-index:1;width:66px;height:66px;display:flex;align-items:center;justify-content:center;font-size:34px;line-height:1;color:var(--tc);background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--tc) 26%,transparent),transparent 72%);border-radius:50%}
+.tc-name{position:relative;z-index:1;font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--tc)}
+.tc-means{position:relative;z-index:1;font-size:9.5px;color:#6f6149;line-height:1.4;padding:0 3px}
+.tc-dir{position:relative;z-index:1;font-size:9px;font-weight:700;color:#8a6d3b;border:1px solid rgba(138,109,59,.35);border-radius:999px;padding:1px 9px;letter-spacing:.12em;margin-top:2px}
+.tcard.rev .tc-emblem{transform:rotate(180deg)}
+.tcard.rev .tc-dir{color:#9c4a4a;border-color:rgba(156,74,74,.42)}
+[data-theme="dark"] .tcard{background:linear-gradient(160deg,#2a2440,#1c1830);border-color:#4b4068}
+[data-theme="dark"] .tcard::before{border-color:rgba(150,130,200,.28)}
+[data-theme="dark"] .tcard::after{color:#7a6da0}
+[data-theme="dark"] .tc-top{color:#a99dc2}
+[data-theme="dark"] .tc-means{color:#968dac}
+[data-theme="dark"] .tc-dir{color:#b7aaca;border-color:rgba(183,170,202,.35)}
+@media(max-width:820px){ .tcard{width:96px} .tc-emblem{width:52px;height:52px;font-size:27px} .tc-name{font-size:11px} .tc-means{font-size:8px} }
+@media(max-width:480px){ .tcard{width:82px} .tc-emblem{font-size:23px} }
+
+/* —— 塔罗防塌：显式高度，不再只靠 aspect-ratio（flex 列里可变高为 0） —— */
+.tcard{height:198px;flex:0 0 auto}
+@media(max-width:820px){ .tcard{height:144px} }
+@media(max-width:480px){ .tcard{height:123px} }
+
+/* —— 右侧列别再被回流挤下去：左右同排，右列固定不缩 —— */
+.detail-hd{flex-wrap:nowrap;gap:20px}
+.detail-left{flex:1 1 auto;min-width:0}
+.detail-right{flex:0 0 auto}
+
+/* ============ 今日一签：右侧完整的纵向面板 ============ */
+.detail-right{align-self:stretch;justify-content:center;gap:13px;padding:6px 0;min-width:170px}
+.tome-lab{font-size:9.5px;font-weight:800;letter-spacing:.36em;color:var(--ink-3);display:inline-flex;align-items:center;gap:9px}
+.tome-lab::before,.tome-lab::after{content:'';height:1px;flex:0 0 22px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 60%,transparent))}
+.tome-lab::after{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 60%,transparent),transparent)}
+.tcard{width:150px;height:226px;box-shadow:0 16px 32px -14px color-mix(in srgb,var(--tc) 70%,transparent),0 3px 10px rgba(0,0,0,.14);outline:1px solid color-mix(in srgb,var(--tc) 26%,transparent);outline-offset:1px}
+.tome-cap{font-size:10.5px;color:var(--ink-2);max-width:170px;text-align:center;line-height:1.5;letter-spacing:.02em}
+.tome-cap i{display:block;font-style:normal;font-size:9px;margin-top:3px;color:var(--ink-3);letter-spacing:.14em}
+[data-theme="dark"] .tome-cap{color:var(--ink-2)}
+.tome-cap.rev i{color:#cf6a60}
+.tome-stats{display:flex;gap:6px;background:var(--chip);border:1px solid var(--line);border-radius:12px;padding:7px 10px}
+.tome-stats .ts{display:flex;flex-direction:column;align-items:center;min-width:48px}
+.tome-stats .ts b{font-size:12.5px;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:750;line-height:1.1}
+.tome-stats .ts em{font-style:normal;font-size:8.5px;color:var(--ink-3);letter-spacing:.08em;margin-top:2px}
+@media(max-width:820px){ .tcard{width:104px;height:156px} .tome-lab{letter-spacing:.16em} .tome-stats{gap:3px;padding:6px 7px} .tome-stats .ts{min-width:40px} }
+@media(max-width:480px){ .tcard{width:88px;height:132px} .tome-cap{max-width:150px} }
+
+/* ============ 整卡平衡：左栏填满 + 状态带 + 塔罗收窄 ============ */
+.detail-hd{align-items:stretch}
+.detail-left{justify-content:space-between}
+.dc-band{margin-top:16px;background:var(--chip);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.dc-band .dc-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dc-band .dc-row.dc-foot{justify-content:space-between;padding-top:9px;border-top:1px dashed var(--line)}
+.dc-band .dc-spark{min-height:30px;display:flex;align-items:flex-end}
+.dc-spark .spark7{display:flex;align-items:flex-end;gap:6px;width:100%;height:30px}
+.dc-spark .spark7 .bar{border-radius:3px}
+.detail-right{align-self:stretch;justify-content:center}
+[data-theme="dark"] .detail-left .detail-hero .hero-box{background:linear-gradient(180deg,var(--card),color-mix(in srgb,var(--accent) 4%,transparent))}
+@media(max-width:780px){ .dc-band .dc-row.dc-foot{justify-content:flex-start;gap:10px} }
+

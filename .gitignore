@@ -1,0 +1,28 @@
+.DS_Store
+__pycache__/
+*.pyc
+.simbuild/
+.build/
+dist/
+data/raw.json
+data/data.json
+data/raw.json.bak_notion_migrate
+data/ios-user-data.json
+js/app.js
+css/style.css
+*.bak*
+*副本*
+.build.log
+
+# 个人敏感文件（不进 git 仓库）
+图片-88x60-A4.pdf
+扫描全能王202609031932.docx
+视频脚本.doc
+# iOS 构建产物（不进 git）
+ios/.devicebuild/
+ios/.simrelease/
+ios/.simbuild/
+*.xcodebuild
+xcuserdata/
+# iOS 内置数据快照（含个人日记，不进 git）
+ios/RiverDiary/RiverDiary/Resources/data.json

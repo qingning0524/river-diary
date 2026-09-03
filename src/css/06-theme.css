@@ -1,0 +1,113 @@
+/* ================================================================
+   美化 PASS — 整体质感打磨
+   (只刷 色彩 / 字体 / 光影 / 表面层次 / 控件质感，不改布局尺寸)
+   ================================================================ */
+
+/* 1) 画布氛围：更通透的分层光 + 底部一抹柔水意 */
+body{
+  background-image:
+    radial-gradient(1200px 560px at 15% -8%, color-mix(in srgb,var(--accent) 10%, transparent), transparent 60%),
+    radial-gradient(1000px 520px at 88% -6%, color-mix(in srgb,var(--pink) 8%, transparent), transparent 55%),
+    radial-gradient(960px 860px at 50% 118%, color-mix(in srgb,var(--water) 6%, transparent), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb,var(--room) 90%, #fff) 0%, var(--room) 100%);
+}
+[data-theme="dark"] body{
+  background-image:
+    radial-gradient(1200px 560px at 15% -8%, color-mix(in srgb,var(--accent) 16%, transparent), transparent 60%),
+    radial-gradient(1000px 520px at 88% -6%, color-mix(in srgb,var(--pink) 10%, transparent), transparent 55%),
+    radial-gradient(960px 860px at 50% 118%, color-mix(in srgb,var(--water) 10%, transparent), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb,var(--room) 97%, #000) 0%, var(--room) 100%);
+}
+
+/* 2) 光标 / 选择 / 滚动条 */
+::selection{background:color-mix(in srgb,var(--accent) 24%, transparent);color:var(--ink)}
+::-webkit-scrollbar-track{background:color-mix(in srgb,var(--ink-3) 5%, transparent)}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--ink-3),var(--ink-4));border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+:focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 85%, transparent);outline-offset:2px;border-radius:8px}
+input,select,button{accent-color:var(--accent)}
+
+/* 3) 左图标轨：毛玻璃 + 聚焦光晕 */
+.rail{background:color-mix(in srgb,var(--card) 80%, transparent);backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);border-right:1px solid color-mix(in srgb,var(--line) 88%, var(--accent) 12%)}
+.rail-brand{box-shadow:0 6px 18px -6px color-mix(in srgb,var(--accent) 60%, transparent),0 2px 6px rgba(0,0,0,.08)}
+.rail-btn{border-radius:12px}
+.rail-btn.on{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%, transparent),color-mix(in srgb,var(--pink) 12%, transparent));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 26%, transparent)}
+
+/* 4) 顶栏品牌 + logo 光晕 */
+.top-brand{font-size:16px;letter-spacing:.02em}
+.logo-river{background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 6px 16px -6px color-mix(in srgb,var(--accent) 68%, transparent),0 2px 6px rgba(0,0,0,.10)}
+
+/* 5) 分区标题：轻量锚点 */
+.sec{font-size:15px;gap:12px;margin:26px 0 12px}
+.sec::before{content:"";width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--pink));flex:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 10%,transparent)}
+.sec::after{height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--line-2) 55%, transparent),transparent)}
+
+/* 6) 卡片表面：分层的柔和投影 + 细边框 */
+.detail-card,.diary,.river-card,.chart-card,.history-section{
+  box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px -20px color-mix(in srgb,var(--ink-4) 45%, transparent);
+  border-color:color-mix(in srgb,var(--line) 85%, transparent)
+}
+
+/* 7) 主角数字：一抹克制的渐变 + 深度 */
+.num-big{background:linear-gradient(168deg,var(--ink) 55%,color-mix(in srgb,var(--ink) 78%, var(--accent)));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* 8) 交互控件质感 */
+.ctab{border-color:color-mix(in srgb,var(--line-2) 70%, transparent)}
+.ctab.on,.ctab.on:hover{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%, transparent),transparent);border-color:color-mix(in srgb,var(--accent) 40%, transparent);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 14%, transparent)}
+.tag.on{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%, transparent),transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 30%, transparent)}
+.theme-btn,.ctab,.tag,.modal-close,.river-play{border-radius:10px}
+.theme-btn:active,.ctab:active,.tag:active,.river-play:active,.rail-btn:active{transform:scale(.94)}
+
+/* 9) 分析小卡 / 指标块 悬停微抬 */
+.an-card{transition:transform .18s var(--ease),box-shadow .18s ease,border-color .18s ease}
+.an-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:color-mix(in srgb,var(--accent) 30%, var(--line))}
+.hero-box{transition:transform .18s var(--ease),box-shadow .18s ease,border-color .18s ease}
+.hero-box:hover{box-shadow:0 8px 22px -14px color-mix(in srgb,var(--ink-4) 55%, transparent)}
+
+/* 10) 页脚：水墨一点的诗行 */
+.footer{font-size:12px;letter-spacing:.05em}
+.footer-poem{font-family:"Songti SC","STSong","Source Han Serif SC",Georgia,serif;font-size:13px;color:var(--ink-2);line-height:2;opacity:.92}
+
+/* 11) 弹层质感 */
+.modal{box-shadow:0 24px 70px -30px rgba(0,0,0,.45),var(--shadow-lg);border-color:color-mix(in srgb,var(--line-2) 60%, transparent)}
+.modal-hd{border-bottom:1px solid color-mix(in srgb,var(--line) 70%, transparent)}
+
+/* 12) 表单控件：select 更圆润 */
+.filters select{border-radius:9px}
+.searchbox{border-radius:12px !important}
+
+/* ================================================================
+   V2 显性美化：清晰可见的结构升级（徽章标题 / 主柱头 / 药丸页签）
+   ================================================================ */
+
+/* A) 分区标题 → 轻量标题 + 细分隔线 */
+.sec{font-size:17px;font-weight:800;letter-spacing:.02em;margin:30px 0 14px;gap:11px;padding:0 2px}
+.sec::before{
+  content:"";width:7px;height:7px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--pink));flex:none;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 8%,transparent);
+}
+.sec::after{height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--line-2) 60%,transparent),transparent)}
+
+/* B) 详情卡：顶部主柱（MASTHEAD） */
+.detail-card .detail-head{
+  margin:0 0 16px;padding:14px 18px;gap:12px;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 9%,var(--card)),color-mix(in srgb,var(--pink) 6%,transparent));
+  border:1px solid color-mix(in srgb,var(--line-2) 70%,transparent);border-radius:var(--r-lg);
+}
+.detail-card .dh-date b{font-size:28px;letter-spacing:.01em}
+.detail-card .dh-date em{font-size:12px;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);font-weight:700}
+.detail-card .day-nav button{width:32px;height:32px;border-radius:10px;border-color:color-mix(in srgb,var(--line-2) 55%,transparent);background:color-mix(in srgb,var(--card) 55%,transparent)}
+.detail-card .pick{font-size:11.5px;padding:4px 11px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2)}
+
+/* C) 河流卡：标题更醒目 + 头顶一抹水色 */
+.river-hd .title{font-size:17px;font-weight:800;letter-spacing:.02em}
+.river-card{border-top:3px solid color-mix(in srgb,var(--water,var(--accent)) 45%,transparent)}
+
+/* D) 图表标签 → 药丸分段控件 */
+.chart-tabs{padding:4px;border-radius:999px;background:var(--card-2);gap:2px}
+.ctab{border:none;border-radius:999px;padding:7px 15px;font-weight:700}
+.ctab.on,.ctab:hover.on{background:linear-gradient(135deg,var(--accent),var(--pink));color:#fff;border:none;box-shadow:0 4px 12px -6px color-mix(in srgb,var(--accent) 70%,transparent)}
+
+/* E) 选中/悬停更一致的反馈 */
+.tag:hover{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent)}

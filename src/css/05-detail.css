@@ -1,0 +1,30 @@
+/* ============ 整卡精修：hero 变主角 + 收窄塔罗 + 紧凑状态带 ============ */
+.detail-hero{flex:1;align-items:stretch}
+.detail-hero .hero-box{justify-content:center;align-items:center;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 4%,var(--card)),var(--card));border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;gap:9px;text-align:center}
+.detail-hero .hero-box .hero-label{font-size:12px;letter-spacing:.24em;color:var(--ink-3);text-transform:uppercase}
+.detail-hero .hero-score-line{justify-content:center;margin:2px 0 4px}
+.detail-hero .num-big{font-size:56px;line-height:1;font-weight:800;letter-spacing:-.01em}
+.detail-hero .num-sub{font-size:15px;color:var(--ink-3);margin:0 0 9px -2px}
+.detail-hero .hero-tag{margin-top:2px}
+.detail-hero .spark7{display:none}
+.dc-band{padding:10px 12px;gap:7px}
+.dc-band .dc-spark{min-height:24px}
+.dc-spark .spark7{height:24px;gap:6px}
+.dc-band .dc-row.dc-foot{padding-top:7px}
+.tcard{width:113px;height:170px}
+@media(max-width:820px){ .detail-hero .hero-box{padding:14px 12px;gap:6px} .detail-hero .num-big{font-size:42px} }
+
+/* ============ 卡片头部：日期 + 趋势 + 导航（首页锚点导航上移） ============ */
+.detail-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:2px 0 14px}
+.detail-head .dh-date{font-size:16px;font-weight:700;color:var(--ink);display:inline-flex;align-items:baseline;gap:8px;letter-spacing:.01em}
+.detail-head .dh-date b{font-size:24px;font-weight:800;color:var(--ink);line-height:1}
+.detail-head .dh-date em{font-style:normal;font-size:12px;color:var(--accent);font-weight:700}
+.detail-head .day-nav{margin-left:auto;gap:6px}
+.detail-head .day-nav .pick{font-size:11.5px;color:var(--ink-3);letter-spacing:.06em;padding:0 2px}
+.detail-head .trend{font-size:12px;margin-left:2px}
+[data-theme="dark"] .detail-head .dh-date b{color:var(--ink)}
+@media(max-width:780px){ .detail-head{gap:10px;margin-bottom:12px} .detail-head .dh-date b{font-size:20px} }
+
+/* 头部下方：day-note 不再上拉顶到标题，作为分隔带下移 */
+.detail-card .day-note{margin-top:0;padding-top:14px}
+

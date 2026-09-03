@@ -1,0 +1,333 @@
+/* ============ Hero 强化：count-up + 渐变阶段条 + 7天 sparkline ============ */
+.num-big{display:inline-block;font-variant-numeric:tabular-nums}
+.num-big.counting{color:var(--ink-3) !important;transition:color .25s ease}
+
+/* 详情卡顶部色条：从 stage 颜色出发，渐变到透明 */
+.detail-card::before{
+  background:linear-gradient(90deg,
+    var(--mc,var(--accent)) 0%,
+    color-mix(in srgb,var(--mc,var(--accent)) 55%,var(--pink)) 50%,
+    color-mix(in srgb,var(--mc,var(--accent)) 18%,transparent) 100%) !important;
+  height:4px !important;width:auto !important;right:0;border-radius:0 var(--r-xl) 0 0;
+}
+
+/* 7 天 sparkline：放在 hero 分数下面，柱顶有连接点 + 当前日期高亮 */
+.spark7{
+  display:flex;align-items:flex-end;gap:4px;height:32px;margin-top:14px;
+  padding:6px 0 0;border-top:1px dashed var(--line);position:relative
+}
+.spark7::before{content:"最近7天";position:absolute;left:0;top:-1px;font-size:9px;color:var(--ink-3);font-weight:700;letter-spacing:.04em;background:linear-gradient(180deg,var(--card-2),var(--card));padding:0 6px 0 0;transform:translateY(-50%)}
+.spark7 .bar{
+  flex:1;min-height:3px;border-radius:2px 2px 0 0;
+  background:color-mix(in srgb,var(--accent) 35%,var(--chip-2));
+  opacity:.65;transition:opacity .25s ease,height .6s cubic-bezier(.34,1.4,.64,1),transform .2s var(--ease),background .2s ease;
+  position:relative;cursor:default
+}
+.spark7 .bar:hover{opacity:1;transform:scaleY(1.08)}
+.spark7 .bar[data-na="1"]{background:repeating-linear-gradient(45deg,var(--chip-2) 0 3px,transparent 3px 6px);opacity:.5}
+.spark7 .bar[data-stage]{background:var(--s,var(--accent))}
+.spark7 .bar[data-stage="低谷"]{--s:#E85D4E}
+.spark7 .bar[data-stage="回升"]{--s:#F5A04C}
+.spark7 .bar[data-stage="平稳"]{--s:#D4A017}
+.spark7 .bar[data-stage="积极"]{--s:#7CB342}
+.spark7 .bar[data-stage="饱满"]{--s:#5B9BD5}
+.spark7 .bar.is-today{box-shadow:0 0 0 1.5px var(--ink) inset,0 2px 6px -2px var(--ink);opacity:1;position:relative}
+.spark7 .bar.is-today::after{content:"";position:absolute;left:50%;top:-4px;width:5px;height:5px;border-radius:50%;background:var(--ink);transform:translateX(-50%);box-shadow:0 0 0 2px var(--card)}
+
+/* 分数底下小注释：来源/置信度 */
+.score-source{font-size:10.5px;color:var(--ink-3);font-weight:600;margin-top:3px;letter-spacing:.02em;display:flex;align-items:center;gap:5px}
+.score-source .src-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none}
+.score-source[data-src="user"] .src-dot{background:var(--good)}
+.score-source[data-src="ai"] .src-dot{background:var(--amber)}
+html{scroll-behavior:smooth}
+/* reduce：scroll-behavior / reveal 已统一到文末合并块 */
+
+/* 视口触发的淡入：默认隐藏，进入视口后由 JS 加 .is-visible */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .55s var(--ease),transform .55s var(--ease);will-change:opacity,transform}
+.reveal.is-visible{opacity:1;transform:none}
+.reveal[data-d="1"]{transition-delay:.06s}
+.reveal[data-d="2"]{transition-delay:.12s}
+.reveal[data-d="3"]{transition-delay:.18s}
+.reveal[data-d="4"]{transition-delay:.24s}
+
+/* rail-btn 平滑滚动已由 html{scroll-behavior:smooth} 全局接管，无需 JS */
+/* 如果用户禁了动画，则保留即时滚动 */
+
+/* ============ V3 美化层 ============ */
+
+/* 1. 连击天数：阈值切换 🔥/🌱/⚪ */
+.streak-chip{cursor:pointer;user-select:none;transition:all .18s var(--ease)}
+.streak-chip:hover{transform:translateY(-1px);border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.streak-ic{display:inline-block;font-size:13px;line-height:1;margin-right:1px;transition:transform .3s var(--ease)}
+.streak-chip.tier-flame .streak-ic{animation:flame 1.4s ease-in-out infinite}
+.streak-chip.tier-sprout .streak-ic{animation:sprout 2.4s ease-in-out infinite}
+@keyframes flame{0%,100%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.18) rotate(2deg);filter:drop-shadow(0 0 6px rgba(245,165,30,.6))}}
+@keyframes sprout{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.1) rotate(3deg)}}
+.streak-pop{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-6px);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:all .22s var(--ease);z-index:60;width:240px}
+.streak-pop.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.streak-pop .ph{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:6px}
+.streak-pop .pc{aspect-ratio:1;border-radius:4px;background:var(--chip-2);position:relative}
+.streak-pop .pc.has{background:var(--s,var(--accent))}
+.streak-pop .pc.future{opacity:.3}
+.streak-pop .phd{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-3);font-weight:600;margin-bottom:4px}
+.streak-pop .pttl{font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;gap:5px}
+
+/* 2. 心情分数 emoji */
+.mood-emoji{font-size:32px;line-height:1;margin-left:8px;display:inline-block;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(0,0,0,.08));animation:moodEmojiPop .5s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes moodEmojiPop{from{opacity:0;transform:scale(.3) rotate(-15deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+
+/* 3. 详情卡顶部色条：宽度跟 7 天相对位置成比例 + 7 天 timeline */
+.detail-card{position:relative}
+.detail-bar-wrap{position:absolute;top:0;left:0;right:0;height:4px;background:transparent;z-index:1;pointer-events:none}
+.detail-bar-track{position:absolute;top:0;left:0;right:0;height:100%;background:var(--chip-2);opacity:.3}
+.detail-bar-fill{position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,var(--mc,var(--accent)),color-mix(in srgb,var(--mc,var(--accent)) 60%,var(--pink)));width:0;transition:width .6s cubic-bezier(.22,1,.36,1);border-radius:0 var(--r-xl) 0 0}
+.detail-bar-tl{position:absolute;left:0;right:0;top:0;height:100%;font-size:0}
+.detail-bar-tl .tick{display:inline-block;width:1px;height:100%;background:rgba(255,255,255,.4);vertical-align:top}
+
+/* AI 推断小标识（心情分下） */
+.mi-cell .ai-tag{
+  display:inline-block;
+  font-size:9px;
+  font-weight:700;
+  color:#5B4BD8;
+  background:rgba(91,75,216,0.10);
+  border:1px solid rgba(91,75,216,0.20);
+  border-radius:3px;
+  padding:1px 5px;
+  margin-top:3px;
+  letter-spacing:0.3px;
+  line-height:1.3;
+}
+
+/* 4. 历史卡角标：在 V3 主块 paintDcWeek 实现，用 .dc-period class */
+
+/* 6. View Transitions */
+@supports (view-transition-name: a){
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:.22s}
+  .detail-card{view-transition-name:detail}
+  .hero-num{view-transition-name:hero-num}
+}
+
+/* 7. 顶栏 logo 河流波浪 */
+.logo-river{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--pink));position:relative;overflow:hidden;box-shadow:0 4px 10px -4px rgba(91,75,216,.55);cursor:pointer;flex:none}
+.logo-river svg{width:20px;height:20px;color:#fff;animation:riverFlow 3.2s ease-in-out infinite}
+@keyframes riverFlow{0%,100%{transform:translateX(-1px)}50%{transform:translateX(1px)}}
+.logo-river::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);opacity:0;transition:opacity .3s;pointer-events:none}
+.logo-river:active::after{opacity:1}
+.logo-river.firing svg{animation:riverFire .6s ease-out}
+@keyframes riverFire{0%{transform:scale(1)}50%{transform:scale(1.25) rotate(8deg)}100%{transform:scale(1)}}
+
+/* 8. 页签滚动保持：用一个外层容器做 transform 偏移 */
+.diary{transition:transform .0s}
+
+/* 9. ⌘K 命令面板 */
+.cmdk-overlay{position:fixed;inset:0;background:color-mix(in srgb,#000 35%,transparent);backdrop-filter:blur(8px) saturate(1.2);-webkit-backdrop-filter:blur(8px) saturate(1.2);z-index:120;display:none;align-items:flex-start;justify-content:center;padding:10vh 18px 30px}
+.cmdk-overlay.show{display:flex;animation:fadein .16s ease both}
+.cmdk{background:var(--card);border:1px solid var(--line);border-radius:14px;width:100%;max-width:600px;box-shadow:0 24px 60px -16px rgba(0,0,0,.4);overflow:hidden;animation:cmdkRise .22s cubic-bezier(.22,1,.36,1) both}
+@keyframes cmdkRise{from{opacity:0;transform:translateY(-12px) scale(.97)}to{opacity:1;transform:none}}
+.cmdk-search{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.cmdk-search .ico{font-size:16px;color:var(--ink-3)}
+.cmdk-search input{flex:1;background:none;border:none;outline:none;font-size:15px;color:var(--ink);font-family:inherit}
+.cmdk-search input::placeholder{color:var(--ink-3)}
+.cmdk-kbd{font-size:10px;color:var(--ink-3);background:var(--chip);border:1px solid var(--line);border-radius:4px;padding:2px 5px;font-weight:600}
+.cmdk-list{max-height:50vh;overflow:auto;padding:6px}
+.cmdk-section{font-size:10.5px;font-weight:700;color:var(--ink-3);letter-spacing:.06em;padding:8px 12px 4px;text-transform:uppercase}
+.cmdk-item{padding:10px 12px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .12s}
+.cmdk-item:hover,.cmdk-item.on{background:var(--accent-soft)}
+.cmdk-item .em{font-size:18px;flex:none}
+.cmdk-item .main{flex:1;min-width:0}
+.cmdk-item .main b{display:block;font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmdk-item .main i{display:block;font-size:11.5px;color:var(--ink-3);font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmdk-item .hint{font-size:10.5px;color:var(--ink-3);background:var(--chip);border-radius:5px;padding:2px 6px;font-weight:600;font-variant-numeric:tabular-nums}
+.cmdk-empty{padding:32px 16px;text-align:center;color:var(--ink-3);font-size:12.5px}
+.cmdk-foot{padding:8px 14px;border-top:1px solid var(--line);font-size:10.5px;color:var(--ink-3);display:flex;gap:14px;flex-wrap:wrap;align-items:center;background:var(--card-2)}
+.cmdk-foot span{display:inline-flex;align-items:center;gap:4px}
+
+/* 10. 指标独立卡（页签化） */
+.metrics-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--shadow);padding:18px 20px;margin-top:14px}
+.metrics-card .ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.metrics-card .ph h3{font-size:13.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px}
+
+/* 12. 成长独立卡 */
+.growth-card{background:linear-gradient(160deg,color-mix(in srgb,var(--mc,#5B9BD5) 8%,var(--card)),var(--card));border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
+.growth-card::before{content:"";position:absolute;left:-30px;bottom:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--mc,#5B9BD5) 12%,transparent),transparent 70%);pointer-events:none}
+.growth-card .lab{font-size:10.5px;font-weight:800;color:var(--ink-3);letter-spacing:.1em;display:flex;align-items:center;gap:6px}
+.growth-card .lab .dot{width:8px;height:8px;border-radius:50%}
+.growth-card .num{font-size:48px;font-weight:250;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums;color:var(--mc,#5B9BD5);display:flex;align-items:baseline;gap:6px}
+.growth-card .num em{font-size:12px;color:var(--ink-3);font-weight:600;font-style:normal}
+
+/* 17. 每日诗词 印章卡片 */
+.poem-stamp{position:relative;background:linear-gradient(180deg,var(--card-2),var(--card));border:1px solid var(--line);border-radius:16px;padding:18px 24px 16px;display:flex;align-items:center;gap:18px;margin:14px 0 0;overflow:hidden}
+.poem-stamp::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--pink),transparent);opacity:.5}
+.poem-stamp .body{flex:1;min-width:0}
+.poem-stamp .text{font-family:"Songti SC","STSong",Georgia,serif;font-size:15px;font-weight:600;color:var(--ink);line-height:1.6;letter-spacing:.04em}
+.poem-stamp .sign{font-size:10.5px;color:var(--ink-3);margin-top:6px;letter-spacing:.05em;font-weight:500}
+.poem-stamp .stamp{flex:none;width:54px;height:54px;border-radius:8px;background:linear-gradient(135deg,#C8362F,#8B1A1A);color:#FCE8E5;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-direction:column;line-height:1.15;text-align:center;box-shadow:0 4px 12px -4px rgba(200,54,47,.5),inset 0 0 0 2px rgba(252,232,229,.15);transform:rotate(-6deg);font-family:"STSong",serif;letter-spacing:.05em}
+.poem-stamp .stamp em{font-size:8px;font-weight:500;opacity:.7;margin-top:1px;font-style:normal}
+
+/* 18. 分享图生成 */
+.share-canvas{display:none}
+
+/* 5. 心情分数点击编辑 */
+.score-edit{position:relative;cursor:pointer;border-radius:8px;padding:2px 6px;margin:-2px -6px;transition:background .15s}
+.score-edit:hover{background:var(--chip)}
+.score-edit:active{transform:scale(.98)}
+.score-edit::after{content:"✎";font-size:11px;color:var(--ink-3);margin-left:4px;opacity:0;transition:opacity .15s}
+.score-edit:hover::after{opacity:1}
+.score-edit-pop{position:absolute;top:100%;left:0;margin-top:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow-lg);z-index:50;min-width:240px;opacity:0;pointer-events:none;transform:translateY(-4px);transition:all .2s var(--ease)}
+.score-edit-pop.show{opacity:1;pointer-events:auto;transform:translateY(0)}
+.score-edit-pop .label{font-size:11px;color:var(--ink-3);font-weight:700;letter-spacing:.05em;margin-bottom:8px}
+.score-edit-pop .row{display:flex;gap:6px;margin-bottom:10px}
+.score-edit-pop .row input{flex:1;width:60px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card-2);font-size:14px;color:var(--ink);font-weight:700;text-align:center;font-family:inherit}
+.score-edit-pop .row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,75,216,.14)}
+.score-edit-pop .actions{display:flex;gap:6px;justify-content:flex-end}
+.score-edit-pop button{font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:7px;border:1px solid var(--line);background:var(--card-2);color:var(--ink-2);cursor:pointer;transition:all .14s}
+.score-edit-pop button:hover{border-color:var(--accent);color:var(--accent)}
+.score-edit-pop button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.score-edit-pop button.primary:hover{background:color-mix(in srgb,var(--accent) 85%,#000)}
+
+/* 18. 分享按钮组 */
+.share-actions{display:flex;gap:6px;align-items:center}
+.share-result{position:fixed;inset:0;background:rgba(10,14,20,.85);backdrop-filter:blur(8px);z-index:130;display:none;align-items:center;justify-content:center;padding:20px}
+.share-result.show{display:flex;animation:fadein .2s ease both}
+.share-result-inner{background:var(--card);border-radius:18px;padding:20px;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;gap:14px;align-items:center}
+.share-result img{max-width:min(540px, 80vw);max-height:70vh;border-radius:12px;box-shadow:0 16px 40px -12px rgba(0,0,0,.5);background:#fff}
+.share-result .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.share-result .btns button{padding:9px 18px;border-radius:10px;border:1px solid var(--line);background:var(--card-2);font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer;transition:all .14s}
+.share-result .btns button:hover{border-color:var(--accent);color:var(--accent)}
+.share-result .btns button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+
+/* 4. 历史卡周/月分桶角标 */
+.dc-period{position:absolute;top:8px;left:8px;width:6px;height:6px;border-radius:50%;background:var(--mc);box-shadow:0 0 0 2px var(--card);z-index:3}
+.dc-period-month{width:9px;height:9px;border-radius:2px;opacity:.85}
+.dc-period[title]{cursor:help}
+
+/* 7. logo 河流流动效 */
+.logo-river svg path{stroke-dasharray:0;stroke-dashoffset:0;transition:stroke-dashoffset .6s ease}
+.logo-river.flow svg path{animation:riverDraw 1.2s ease forwards}
+.logo-river.flow svg path:nth-child(2){animation-delay:.15s}
+@keyframes riverDraw{0%{stroke-dashoffset:40;opacity:0;transform:translateX(-2px)}30%{opacity:1;transform:translateX(0)}100%{stroke-dashoffset:0;opacity:1;transform:translateX(0)}}
+.logo-river{cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+
+/* 10. 今日指标区块的脚注行 */
+.metrics-card .daily-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 0 2px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink-3)}
+.metrics-card .dr-item{display:inline-flex;align-items:center;gap:4px}
+.metrics-card .dr-item b{font-weight:500;opacity:.9}
+.metrics-card .dr-item em{font-style:normal;color:var(--ink-2);font-weight:600;font-variant-numeric:tabular-nums}
+.metrics-card .dr-sep{color:var(--line);opacity:.6}
+
+/* ================================================================
+   V4 降噪精修层（审查落地 · 建议三/二/一/五/六）
+   ----------------------------------------------------------------
+   目标：把 AI slop 手势（高频渐变/色条、纪念碑数字、颜色超载）
+   收敛掉，突出日记体的阅读与温度。全部为覆盖规则，删掉本层即回退。
+   ================================================================ */
+
+/* —— 建议二/建议六：深浅主题统一品牌主色（亮暗不“各奔东西”） —— */
+[data-theme="dark"]{ --accent:#9B8CFF; --accent-soft:#221D3F; }
+
+/* —— 建议三：渐变收敛为平色，只留 logo 一处呼吸点 —— */
+.rail-brand{background:var(--accent);box-shadow:0 2px 8px -4px color-mix(in srgb,var(--accent) 55%,transparent)}
+.logo-river{background:var(--accent);box-shadow:none}
+.top::after{background:var(--accent)}
+.dnav-btn.on{background:var(--mc,#5B4BD8);box-shadow:none}
+.bal-life{background:var(--accent)}
+.bal-work{background:var(--pink)}
+.appbar-row .fill{background:color-mix(in srgb,var(--mod-c,#5B4BD8) 82%,transparent 999)}
+.rank-fill{background:var(--mod-c,#5B4BD8)}
+.memo-quote{background:var(--chip);border-left:3px solid var(--pink)}
+.memo-analysis{background:var(--accent-soft);border:1px solid transparent}
+.empty{background:var(--card-2)}
+.river-svg-wrap{background:var(--card-2)}
+.ov-narr::before{content:none}
+
+/* 详情卡顶部：去掉“渐变到透明”的尾巴，收成一根简练上缘线 */
+.detail-card::before{
+  background:var(--mc,var(--accent)) !important;
+  height:3px !important;width:auto !important;right:0;left:0;border-radius:0;
+}
+.detail-bar-fill{background:var(--mc,var(--accent))}
+.growth-card{background:var(--card)}
+.growth-card::before{content:none}
+.poem-stamp::before{background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.4}
+
+/* —— 建议五：收掉两根无限装饰动画，元素交互只留着静态光晕 —— */
+.fab-search{background:var(--accent)}
+.fab-search::before{animation:none;opacity:.5}
+.empty::before{animation:none}
+
+/* —— 建议二：纪念碑数字降尺寸，保留一个情绪锚点即可 —— */
+.num-big{font-size:50px;font-weight:260}
+.hero-box.single .num-big{font-size:56px}
+.growth-card .num{font-size:34px}
+.mo-val{font-size:19px}
+.dc-date b{font-size:23px}
+.dc-score{font-size:17px}
+
+/* —— 建议一：日记体正文提升为真正的阅读字号（serif 轨道） —— */
+.memo-item .memo-body,.memo-quote .mq-body,.ma-txt,.ov,.mood-quote,.ov,.ovn-text{
+  font-size:15px;line-height:1.95;
+}
+.th-item{font-size:14px;line-height:1.85}
+@media(min-width:1100px){
+  .ov,.ovn-text,.mood-quote,.mq-body,.memo-body{max-width:44em}
+}
+
+/* —— 建议五：动效收敛（入场只留一层、加快 + 更硬的 reduce 兜底） —— */
+.anim>*{animation-duration:.35s}
+.anim>*:nth-child(2){animation-delay:40ms}
+.anim>*:nth-child(3){animation-delay:80ms}
+.anim>*:nth-child(4){animation-delay:120ms}
+.anim>*:nth-child(n+5){animation-delay:160ms}
+
+/* 移动端：数字再降一档，保持与缩窄卡片同比例 */
+@media(max-width:780px){ .num-big{font-size:44px} }
+@media(max-width:480px){ .num-big{font-size:40px} }
+
+/* iPhone 健康数据来源标记 */
+.health-source {
+  display: inline-flex;
+  margin-right: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(60, 150, 120, .12);
+  color: #2d7a60;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+/* ================================================================
+   V4.2 补漏层（建议三/二/五 剩余缺口）
+   ================================================================ */
+
+/* —— 建议三：砍掉每张历史卡的全宽顶彩条（保留周/月圆点角标区分） —— */
+.dc::before{display:none}
+
+/* —— 建议二：网格密度收敛 —— */
+.history-grid{grid-template-columns:repeat(3,1fr)}
+.mo-val{font-size:17px}
+
+/* —— 建议五/三：毛玻璃精确瘦身（顶栏/全屏搜索降雾，弹层 scrim 保留） —— */
+.top{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+@media(max-width:780px){
+  .search-sheet{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+}
+
+/* —— 建议五①：今日卡"人话叙事"引（由 JS 注入 .day-note） —— */
+.day-note{
+  font-family:"Songti SC","STSong","Source Han Serif SC",Georgia,serif;
+  font-size:16.5px;line-height:1.9;color:var(--ink);
+  padding:18px 20px;margin:-22px -26px 18px;position:relative;
+  background:linear-gradient(180deg,var(--card),transparent);
+  border-bottom:1px solid var(--line);
+}
+.day-note::before{
+  content:"今日";display:block;font-family:var(--font-sans);
+  font-size:9.5px;font-weight:800;letter-spacing:.14em;color:var(--accent);
+  margin-bottom:6px;text-transform:uppercase;
+}
+
+/* —— 建议三：绩效感元素视觉降权（连击 chip 弱化绿强调） —— */
+.top-chip.green{background:var(--chip);border-color:var(--line);color:var(--ink-2)}
+@media(max-width:780px){ .num-big{font-size:44px} }
