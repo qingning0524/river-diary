@@ -19,6 +19,15 @@ struct SettingsView: View {
                 Section("数据") {
                     LabeledContent("记录天数", value: "\(store.entries.count)")
                     LabeledContent("数据生成时间", value: store.data?.generated ?? "—")
+                    LabeledContent("远端数据时间", value: store.remoteGenerated ?? "—")
+                    LabeledContent("iCloud 文件夹", value: drive.folderDisplayName ?? "未选择")
+                    LabeledContent("同步状态", value: store.syncStatus)
+                    Button("立即同步日记") {
+                        Task {
+                            await store.refreshFromICloud()
+                        }
+                    }
+                    .disabled(!drive.hasAccess)
                     LabeledContent("本地存储", value: "心情评分仅本机")
                     Button {
                         showsScoreResetConfirmation = true
@@ -61,6 +70,9 @@ struct SettingsView: View {
                     }
                 case .failure(let error):
                     drive.lastError = error.localizedDescription
+                }
+                Task {
+                    await store.refreshFromICloud()
                 }
             }
         }
@@ -105,11 +117,16 @@ struct SettingsView: View {
             if let error = drive.lastError {
                 Text(error).font(.caption).foregroundStyle(.red)
             } else if drive.hasAccess {
-                Text("已连接。修改心情后会自动保存到 iCloud Drive。")
+                Text("已连接 \(drive.folderDisplayName ?? "")。日记和健康摘要通过该文件夹同步。")
                     .font(.caption).foregroundStyle(.secondary)
             } else {
                 Text("首次使用需选择一个 iCloud Drive 文件夹，之后自动同步。")
                     .font(.caption).foregroundStyle(.secondary)
+            }
+            if let syncError = store.syncError {
+                Text(syncError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
         }
         .padding(.vertical, 3)

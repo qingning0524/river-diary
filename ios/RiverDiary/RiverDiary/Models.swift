@@ -85,7 +85,6 @@ struct DiaryEntry: Codable, Identifiable, Hashable {
 
 struct HealthData: Codable, Hashable {
     var sleepHours: Double?
-    var exerciseMinutes: Double?
     var steps: Double?
     var distanceKilometers: Double?
     var activeEnergyKilocalories: Double?
@@ -93,7 +92,6 @@ struct HealthData: Codable, Hashable {
 
     enum CodingKeys: String, CodingKey {
         case sleepHours = "sleep_hours"
-        case exerciseMinutes = "exercise_minutes"
         case steps
         case distanceKilometers = "distance_km"
         case activeEnergyKilocalories = "active_energy_kcal"

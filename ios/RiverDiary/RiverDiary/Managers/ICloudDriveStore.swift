@@ -19,6 +19,7 @@ final class ICloudDriveStore: ObservableObject {
     var isAvailable: Bool { hasAccess }
 
     var accessedFolder: URL? { securityScopedURL }
+    var folderDisplayName: String? { securityScopedURL?.lastPathComponent }
 
     func handlePickedFolder(_ url: URL) {
         let accessed = url.startAccessingSecurityScopedResource()
@@ -172,7 +173,6 @@ struct QuickNoteSnapshot: Codable {
 
 struct ExerciseDaySnapshot: Codable {
     var date: String
-    var exerciseMinutes: Double
     var steps: Double
     var distanceKilometers: Double
     var activeEnergyKilocalories: Double

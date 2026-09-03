@@ -16,7 +16,6 @@ struct SleepNight: Identifiable, Hashable {
 
 struct ExerciseDay: Identifiable, Hashable {
     let date: Date
-    var exerciseMinutes: Double
     var steps: Double
     var distanceKilometers: Double
     var activeEnergyKilocalories: Double
@@ -36,6 +35,7 @@ final class HealthKitStore: ObservableObject {
 
     private let healthStore = HKHealthStore()
     private let connectionKey = "has-connected-healthkit"
+    private var pendingLoadCount = 0
 
     init() {
         if UserDefaults.standard.bool(forKey: connectionKey) {
@@ -51,9 +51,9 @@ final class HealthKitStore: ObservableObject {
     }
 
     var latestExerciseDay: ExerciseDay? { exerciseDays.first }
-    var averageExerciseMinutes: Double? {
+    var averageSteps: Double? {
         guard !exerciseDays.isEmpty else { return nil }
-        return exerciseDays.map(\.exerciseMinutes).reduce(0, +) / Double(exerciseDays.count)
+        return exerciseDays.map(\.steps).reduce(0, +) / Double(exerciseDays.count)
     }
 
     func requestAuthorization() {
@@ -64,7 +64,6 @@ final class HealthKitStore: ObservableObject {
 
         let readTypes: Set<HKObjectType> = [
             HKCategoryType(.sleepAnalysis),
-            HKQuantityType(.appleExerciseTime),
             HKQuantityType(.stepCount),
             HKQuantityType(.distanceWalkingRunning),
             HKQuantityType(.activeEnergyBurned)
@@ -87,6 +86,7 @@ final class HealthKitStore: ObservableObject {
     }
 
     func loadHealth() {
+        pendingLoadCount = 2
         loadSleep()
         loadExercise()
     }
@@ -119,7 +119,6 @@ final class HealthKitStore: ObservableObject {
         isLoading = true
 
         let quantityTypes: [(HKQuantityType, (HKQuantity) -> Double)] = [
-            (HKQuantityType(.appleExerciseTime), { $0.doubleValue(for: .minute()) }),
             (HKQuantityType(.stepCount), { $0.doubleValue(for: .count()) }),
             (HKQuantityType(.distanceWalkingRunning), { $0.doubleValue(for: .meterUnit(with: .kilo)) }),
             (HKQuantityType(.activeEnergyBurned), { $0.doubleValue(for: .kilocalorie()) })
@@ -155,6 +154,10 @@ final class HealthKitStore: ObservableObject {
     }
 
     private func notifySnapshotChanged() async {
+        if pendingLoadCount > 0 {
+            pendingLoadCount -= 1
+            if pendingLoadCount > 0 { return }
+        }
         await onHealthSnapshotChanged?(nights, exerciseDays)
     }
 
@@ -200,6 +203,7 @@ final class HealthKitStore: ObservableObject {
                 }
                 continuation.resume(returning: totals)
             }
+            healthStore.execute(query)
         }
     }
 
@@ -212,7 +216,6 @@ final class HealthKitStore: ObservableObject {
         return dates.map { date in
             ExerciseDay(
                 date: date,
-                exerciseMinutes: collected[HKQuantityType(.appleExerciseTime)]?[date] ?? 0,
                 steps: collected[HKQuantityType(.stepCount)]?[date] ?? 0,
                 distanceKilometers: collected[HKQuantityType(.distanceWalkingRunning)]?[date] ?? 0,
                 activeEnergyKilocalories: collected[HKQuantityType(.activeEnergyBurned)]?[date] ?? 0

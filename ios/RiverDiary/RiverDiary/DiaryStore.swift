@@ -5,6 +5,10 @@ final class DiaryStore: ObservableObject {
     @Published private(set) var data: DiaryData?
     @Published var selectedEntryID: String?
     @Published var loadError: String?
+    @Published private(set) var syncStatus: String = "未检查"
+    @Published private(set) var syncError: String?
+    @Published private(set) var remoteGenerated: String?
+    @Published private(set) var lastSyncDate: Date?
     @Published private(set) var drive = ICloudDriveStore()
 
     private let overrideKey = "local-diary-scores"
@@ -98,7 +102,6 @@ final class DiaryStore: ObservableObject {
                 exerciseDays: exerciseDays.map { day in
                     ExerciseDaySnapshot(
                         date: dateFormatter.string(from: day.date),
-                        exerciseMinutes: day.exerciseMinutes,
                         steps: day.steps,
                         distanceKilometers: day.distanceKilometers,
                         activeEnergyKilocalories: day.activeEnergyKilocalories
@@ -110,15 +113,36 @@ final class DiaryStore: ObservableObject {
     }
 
     private func loadFromICloudDrive() async {
-        guard drive.hasAccess, let folder = drive.accessedFolder else { return }
+        guard drive.hasAccess, let folder = drive.accessedFolder else {
+            syncStatus = "iCloud Drive 未连接"
+            return
+        }
         let fileURL = folder.appendingPathComponent("data.json")
-        guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
 
+        let accessed = folder.startAccessingSecurityScopedResource()
+        defer { if accessed { folder.stopAccessingSecurityScopedResource() } }
         do {
-            let accessed = folder.startAccessingSecurityScopedResource()
-            defer { if accessed { folder.stopAccessingSecurityScopedResource() } }
+            if !FileManager.default.fileExists(atPath: fileURL.path) {
+                try? FileManager.default.startDownloadingUbiquitousItem(at: fileURL)
+                syncStatus = "正在等待 iCloud 下载"
+                syncError = nil
+                return
+            }
+
+            let resourceValues = try fileURL.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
+            if resourceValues.ubiquitousItemDownloadingStatus != .current {
+                try? FileManager.default.startDownloadingUbiquitousItem(at: fileURL)
+                syncStatus = "正在下载最新数据"
+                syncError = nil
+                return
+            }
+
             let remoteData = try Data(contentsOf: fileURL)
             let decoded = try JSONDecoder().decode(DiaryData.self, from: remoteData)
+            remoteGenerated = decoded.generated
+            lastSyncDate = Date()
+            syncStatus = "已同步"
+            syncError = nil
 
             if let current = data, decoded.generated > current.generated {
                 var updated = decoded
@@ -137,6 +161,9 @@ final class DiaryStore: ObservableObject {
                 data = decoded
             }
         } catch {
+            syncStatus = "同步失败"
+            syncError = error.localizedDescription
+            lastSyncDate = Date()
         }
     }
 

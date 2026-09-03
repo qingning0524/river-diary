@@ -189,6 +189,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "情绪河流";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "读取睡眠和运动数据，帮助你理解身体状态与情绪变化的关系。";
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "local.riverdiary.app.health-sync";
+				INFOPLIST_KEY_UIBackgroundModes = processing;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -223,6 +225,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "情绪河流";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "读取睡眠和运动数据，帮助你理解身体状态与情绪变化的关系。";
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "local.riverdiary.app.health-sync";
+				INFOPLIST_KEY_UIBackgroundModes = processing;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

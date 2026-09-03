@@ -7,6 +7,17 @@ struct TodayView: View {
 
     private var entry: DiaryEntry? { store.selectedEntry }
 
+    private var dateSelection: Binding<String?> {
+        Binding(
+            get: { store.selectedEntryID },
+            set: { newValue in
+                guard let newValue,
+                      let entry = store.entries.first(where: { $0.id == newValue }) else { return }
+                store.select(entry)
+            }
+        )
+    }
+
     private var header: some View {
         Text("情绪河流")
             .font(.largeTitle.weight(.bold))
@@ -15,33 +26,38 @@ struct TodayView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 14) {
-                    if let entry {
-                        header
-                        dateSelector(for: entry)
-                        heroCard(for: entry)
-                        metricsCard(for: entry)
-                        sleepCard
-                        exerciseCard(for: entry)
-                        summaryCard(for: entry)
-                    } else if let error = store.loadError {
-                        ContentUnavailableView(
-                            "日记无法读取",
-                            systemImage: "exclamationmark.bubble",
-                            description: Text(error)
-                        )
-                        .padding(.top, 80)
-                    } else {
-                        ProgressView("正在载入日记")
-                            .padding(.top, 120)
+            Group {
+            if let entry {
+                TabView(selection: dateSelection) {
+                    ForEach(Array(store.entries.reversed())) { pageEntry in
+                        datePage(for: pageEntry)
+                            .tag(Optional(pageEntry.id))
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 84)
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .animation(.snappy, value: store.selectedEntryID)
+            } else {
+                ScrollView {
+                    VStack(spacing: 14) {
+                        header
+                        if let error = store.loadError {
+                            ContentUnavailableView(
+                                "日记无法读取",
+                                systemImage: "exclamationmark.bubble",
+                                description: Text(error)
+                            )
+                            .padding(.top, 80)
+                        } else {
+                            ProgressView("正在载入日记")
+                                .padding(.top, 120)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 84)
+                }
             }
-            .scrollBounceBehavior(.basedOnSize)
+            }
             .background {
                 ZStack {
                     Color(.systemGroupedBackground).ignoresSafeArea()
@@ -59,6 +75,24 @@ struct TodayView: View {
                 MoodEditorSheet(entry: entry)
             }
         }
+    }
+
+    private func datePage(for entry: DiaryEntry) -> some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                header
+                dateSelector(for: entry)
+                heroCard(for: entry)
+                metricsCard(for: entry)
+                sleepCard
+                exerciseCard(for: entry)
+                summaryCard(for: entry)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 84)
+        }
+        .scrollBounceBehavior(.basedOnSize)
     }
 
     private func dateSelector(for current: DiaryEntry) -> some View {
@@ -80,7 +114,7 @@ struct TodayView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
 
-                Text(current.date == store.data?.today ? "今天" : current.shortDate)
+                Text(Calendar.current.isDateInToday(current.entryDate) ? "今天" : current.shortDate)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
             }
@@ -106,7 +140,7 @@ struct TodayView: View {
             GlassCard {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
-                        Text(entry.date == store.data?.today ? "今日心情" : "当日心情")
+                        Text(Calendar.current.isDateInToday(entry.entryDate) ? "今日心情" : "当日心情")
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(.secondary)
 
@@ -288,37 +322,36 @@ struct TodayView: View {
 
     private func exerciseCard(for entry: DiaryEntry) -> some View {
         let syncedHealth = entry.health
-        let liveHealth = health.latestExerciseDay
-        let isToday = liveHealth.map { Calendar.current.isDateInToday($0.date) } ?? false
-        let exerciseMinutes = isToday ? liveHealth?.exerciseMinutes : syncedHealth?.exerciseMinutes
-        let steps = isToday ? liveHealth?.steps : syncedHealth?.steps
-        let distance = isToday ? liveHealth?.distanceKilometers : syncedHealth?.distanceKilometers
-        let energy = isToday ? liveHealth?.activeEnergyKilocalories : syncedHealth?.activeEnergyKilocalories
+        let liveHealth = health.exerciseDays.first {
+            Calendar.current.isDate($0.date, inSameDayAs: entry.entryDate)
+        }
+        let steps = liveHealth?.steps ?? syncedHealth?.steps
+        let distance = liveHealth?.distanceKilometers ?? syncedHealth?.distanceKilometers
+        let energy = liveHealth?.activeEnergyKilocalories ?? syncedHealth?.activeEnergyKilocalories
 
         return GlassCard {
             VStack(alignment: .leading, spacing: 16) {
                 SectionHeader(
                     title: "运动",
-                    subtitle: health.isAuthorized ? "Apple 健康" : "未连接"
+                    subtitle: health.isAuthorized ? "以步数为准" : "未连接"
                 )
 
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text(exerciseMinutes.map { String(format: "%.0f", $0) } ?? "—")
+                    Text(steps.map { Int($0).formatted() } ?? "—")
                         .font(.system(size: 36, weight: .heavy, design: .rounded))
                         .contentTransition(.numericText())
-                    Text("分钟")
+                    Text("步")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    if let average = health.averageExerciseMinutes, average > 0 {
-                        Text("近 7 天 \(String(format: "%.0f", average)) 分/天")
+                    if let average = health.averageSteps, average > 0 {
+                        Text("近 7 天 \(Int(average).formatted()) 步/天")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
 
                 HStack(spacing: 8) {
-                    exerciseStat("步数", value: steps.map { Int($0).formatted() } ?? "—", color: .green)
                     exerciseStat("距离", value: distance.map { String(format: "%.1f km", $0) } ?? "—", color: .mint)
                     exerciseStat("热量", value: energy.map { String(format: "%.0f kcal", $0) } ?? "—", color: .orange)
                 }
