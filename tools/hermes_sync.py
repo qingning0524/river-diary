@@ -93,7 +93,6 @@ def sync() -> dict | None:
         "exerciseDays": [
             {
                 "date": day.get("date", ""),
-                "exerciseMinutes": round(float(day.get("exerciseMinutes", 0)), 1),
                 "steps": int(float(day.get("steps", 0))),
                 "distanceKilometers": round(float(day.get("distanceKilometers", 0)), 2),
                 "activeEnergyKilocalories": round(float(day.get("activeEnergyKilocalories", 0)), 1),

@@ -22,6 +22,7 @@ class BuildTests(unittest.TestCase):
         "entries": [
             {
                 "date": "2000-01-02",
+                "page_id": "page-2",
                 "score": 60,
                 "metrics": {"energy": 50, "focus": 50, "output": 50, "overall": 50},
                 "browse_sites": [
@@ -32,6 +33,7 @@ class BuildTests(unittest.TestCase):
             },
             {
                 "date": "2000-01-01",
+                "page_id": "page-1",
                 "score": 40,
                 "metrics": {"energy": 50, "focus": 50, "output": 50, "overall": 50},
             },
@@ -49,6 +51,17 @@ class BuildTests(unittest.TestCase):
         data = build.clean_data(json.loads(source.read_text(encoding="utf-8")))
         self.assertEqual(data["today"], data["entries"][-1]["date"])
 
+    def test_clean_data_fills_missing_stable_page_id(self):
+        raw = {
+            "today": "2000-01-01",
+            "entries": [{
+                "date": "2000-01-01",
+                "metrics": {"energy": 50, "focus": 50, "output": 50, "overall": 50},
+            }],
+        }
+        cleaned = build.clean_data(raw)
+        self.assertEqual(cleaned["entries"][0]["page_id"], str(build.uuid.uuid5(build.uuid.NAMESPACE_URL, "river-diary:2000-01-01")))
+
     def test_merge_ios_user_data_overrides_score(self):
         data = {
             "entries": [
@@ -65,7 +78,7 @@ class BuildTests(unittest.TestCase):
             "updatedAt": "2026-09-03T00:00:00Z",
             "sleepNights": [{"date": "2026-09-02", "totalHours": 7.2}],
             "exerciseDays": [{
-                "date": "2026-09-02", "exerciseMinutes": 32.4, "steps": 8123,
+                "date": "2026-09-02", "steps": 8123,
                 "distanceKilometers": 5.2, "activeEnergyKilocalories": 260,
             }],
         }
@@ -81,6 +94,33 @@ class BuildTests(unittest.TestCase):
 
         health = data["entries"][0]["ios_health"]
         self.assertEqual(health["sleep_hours"], 7.2)
-        self.assertEqual(health["exercise_minutes"], 32.4)
         self.assertEqual(health["steps"], 8123)
         self.assertEqual(health["active_energy_kcal"], 260.0)
+
+    def test_write_daily_outputs_creates_manifest_and_removes_stale_files(self):
+        import tempfile
+
+        data = {
+            "generated": "2000-01-02 00:00",
+            "today": "2000-01-02",
+            "entries": [
+                {"date": "2000-01-01", "page_id": "page-1", "score": 40.0},
+                {"date": "2000-01-02", "page_id": "page-2", "score": 60.0},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stale = root / "entries" / "1999-12-31.json"
+            stale.parent.mkdir()
+            stale.write_text("{}", encoding="utf-8")
+
+            updated, removed = build.write_daily_outputs(data, root)
+
+            manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+            daily = json.loads((root / "entries/2000-01-02.json").read_text(encoding="utf-8"))
+            self.assertEqual(updated, 3)
+            self.assertEqual(removed, 1)
+            self.assertFalse(stale.exists())
+            self.assertEqual(manifest["entry_count"], 2)
+            self.assertEqual(manifest["entries"][1]["path"], "entries/2000-01-02.json")
+            self.assertEqual(daily["page_id"], "page-2")

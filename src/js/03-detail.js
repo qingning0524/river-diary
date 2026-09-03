@@ -326,7 +326,6 @@ function buildDiaryCats(e){
   if(e.mood && !mt.basis) healthHtml += '<div class="note">今日心情：'+mdText(e.mood)+'</div>';
   if(e.ios_health){
     var h=e.ios_health, bits=[];
-    if(h.exercise_minutes!=null) bits.push('<b>'+h.exercise_minutes+'</b> 分钟运动');
     if(h.steps!=null) bits.push('<b>'+h.steps.toLocaleString()+'</b> 步');
     if(h.distance_km!=null) bits.push('<b>'+h.distance_km+'</b> km');
     if(h.active_energy_kcal!=null) bits.push('<b>'+h.active_energy_kcal+'</b> kcal');

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """构建网页、清洗数据，并把同一份快照同步到 iOS。"""
 
+import hashlib
 import json
 import re
 import sys
+import uuid
 from pathlib import Path
 
 
@@ -14,6 +16,7 @@ WEB_DATA = ROOT / "data/data.json"
 IOS_USER_DATA = ROOT / "data/ios-user-data.json"
 ICLOUD_FOLDER = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/河流日记"
 ICLOUD_DATA_FILE = ICLOUD_FOLDER / "data.json"
+DIST_DIR = ROOT / "dist"
 
 
 def read(rel: str) -> str:
@@ -71,6 +74,8 @@ def clean_data(raw: dict) -> dict:
         date = entry.get("date")
         if not isinstance(date, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date):
             raise ValueError(f"日期格式错误：{date!r}")
+        if not isinstance(entry.get("page_id"), str) or not entry["page_id"].strip():
+            entry["page_id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, f"river-diary:{date}"))
         if date in dates:
             raise ValueError(f"日期重复：{date}")
         dates.add(date)
@@ -113,10 +118,71 @@ def prepare_data() -> dict:
     web_text = json.dumps(cleaned, ensure_ascii=False, indent=2) + "\n"
     write_if_changed(WEB_DATA, web_text)
     write_if_changed(IOS_DATA, web_text)
+    dist_written, dist_removed = write_daily_outputs(cleaned, DIST_DIR)
+    print(f"已生成每日数据: {len(cleaned['entries'])} 条（更新 {dist_written}，清理 {dist_removed}）")
     if ICLOUD_FOLDER.exists():
         write_if_changed(ICLOUD_DATA_FILE, web_text)
-        print(f"已同步到 iCloud Drive: {ICLOUD_DATA_FILE.name}")
+        icloud_written, icloud_removed = write_daily_outputs(cleaned, ICLOUD_FOLDER)
+        print(
+            "已同步到 iCloud Drive: "
+            f"data.json + manifest.json + {icloud_written} 条每日数据（清理 {icloud_removed}）"
+        )
     return cleaned
+
+
+def entry_hash(entry: dict) -> str:
+    canonical = json.dumps(entry, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def daily_manifest_entry(entry: dict, digest: str) -> dict:
+    stage = entry.get("stage")
+    return {
+        "date": entry["date"],
+        "path": f"entries/{entry['date']}.json",
+        "page_id": entry.get("page_id", ""),
+        "title": entry.get("title", ""),
+        "score": entry.get("score"),
+        "score_source": entry.get("score_source", "ai"),
+        "stage": stage.get("label") if isinstance(stage, dict) else None,
+        "screen_h": entry.get("screen_h"),
+        "hash": digest,
+    }
+
+
+def write_daily_outputs(data: dict, root: Path) -> tuple[int, int]:
+    entries_dir = root / "entries"
+    entries_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest_entries: list[dict] = []
+    expected_files: set[str] = set()
+    updated = 0
+
+    for entry in data["entries"]:
+        date = entry["date"]
+        filename = f"{date}.json"
+        expected_files.add(filename)
+        digest = entry_hash(entry)
+        if write_if_changed(entries_dir / filename, json.dumps(entry, ensure_ascii=False, indent=2) + "\n"):
+            updated += 1
+        manifest_entries.append(daily_manifest_entry(entry, digest))
+
+    manifest = {
+        "version": 1,
+        "generated": data.get("generated", ""),
+        "today": data.get("today", ""),
+        "entry_count": len(manifest_entries),
+        "entries": manifest_entries,
+    }
+    manifest_updated = write_if_changed(root / "manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+
+    removed = 0
+    for path in entries_dir.glob("*.json"):
+        if path.name not in expected_files:
+            path.unlink()
+            removed += 1
+
+    return updated + (1 if manifest_updated else 0), removed
 
 
 def merge_ios_user_data(data: dict) -> None:
@@ -185,7 +251,6 @@ def build_health_by_date(user: dict) -> dict[str, dict]:
             continue
         try:
             health = health_by_date.setdefault(day["date"], {})
-            health["exercise_minutes"] = round(max(0.0, float(day.get("exerciseMinutes", 0))), 1)
             health["steps"] = max(0, int(float(day.get("steps", 0))))
             health["distance_km"] = round(max(0.0, float(day.get("distanceKilometers", 0))), 2)
             health["active_energy_kcal"] = round(max(0.0, float(day.get("activeEnergyKilocalories", 0))), 1)
@@ -234,7 +299,7 @@ def main() -> int:
 
     print(f"已生成 {out.relative_to(ROOT)}  ({out.stat().st_size / 1024:.0f} KB)")
     print(f'数据: {len(data["entries"])} 条记录 · 生成于 {data.get("generated", "?")}')
-    print("已同步: data/data.json + iOS Resources/data.json")
+    print("已同步: data/data.json + manifest/entries + iOS Resources/data.json")
     return 0
 
 
