@@ -84,7 +84,7 @@ struct TodayView: View {
                 dateSelector(for: entry)
                 heroCard(for: entry)
                 metricsCard(for: entry)
-                sleepCard
+                sleepCard(for: entry)
                 exerciseCard(for: entry)
                 summaryCard(for: entry)
             }
@@ -248,12 +248,16 @@ struct TodayView: View {
         }
     }
 
-    private var sleepCard: some View {
-        GlassCard {
+    private func sleepCard(for entry: DiaryEntry) -> some View {
+        let night = health.nights.first {
+            Calendar.current.isDate($0.date, inSameDayAs: entry.entryDate)
+        }
+        let syncedSleepHours = entry.health?.sleepHours
+        return GlassCard {
             VStack(alignment: .leading, spacing: 16) {
-                SectionHeader(title: "睡眠", subtitle: health.latestNight == nil ? "最近一晚" : "Apple 健康")
+                SectionHeader(title: "睡眠", subtitle: night != nil ? "Apple 健康" : "同步数据")
 
-                if let night = health.latestNight {
+                if let night = night {
                     HStack(alignment: .firstTextBaseline, spacing: 5) {
                         Text(String(format: "%.1f", night.totalHours))
                             .font(.system(size: 36, weight: .heavy, design: .rounded))
@@ -279,6 +283,17 @@ struct TodayView: View {
                         Label("近 7 天均值 \(String(format: "%.1f", average)) 小时", systemImage: "chart.line.uptrend.xyaxis")
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
+                    }
+                } else if let hours = syncedSleepHours {
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text(String(format: "%.1f", hours))
+                            .font(.system(size: 36, weight: .heavy, design: .rounded))
+                            .contentTransition(.numericText())
+                        Text("小时")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
                     }
                 } else if health.isLoading {
                     HStack {
