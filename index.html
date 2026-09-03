@@ -89,6 +89,7 @@
       <button class="ctab" data-dtab="browse" role="tab" aria-selected="false">🌐 浏览足迹</button>
       <button class="ctab" data-dtab="social" role="tab" aria-selected="false">💬 社交情绪</button>
       <button class="ctab" data-dtab="law" role="tab" aria-selected="false">📊 规律分析</button>
+      <button class="ctab" data-dtab="review" role="tab" aria-selected="false">📅 月度回顾</button>
     </div>
 
     <div id="dMood" role="tabpanel" aria-label="心情趋势">
@@ -122,6 +123,15 @@
         <div class="an-card"><div class="an-title">📆 周几心情分析</div><div id="weekdayAna"></div></div>
         <div class="an-card"><div class="an-title">🎯 阶段分布</div><div id="stageAna"></div></div>
       </div>
+    </div>
+
+    <div id="dReviewPanel" style="display:none" role="tabpanel" aria-label="月度回顾">
+      <div class="review-head">
+        <select id="reviewMonth" aria-label="选择月份"></select>
+      </div>
+      <div class="review-stats" id="reviewStats"></div>
+      <div class="review-calendar" id="reviewCalendar"></div>
+      <div class="review-highlights" id="reviewHighlights"></div>
     </div>
   </section>
 

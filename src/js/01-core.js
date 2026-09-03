@@ -249,7 +249,7 @@ function bandLabel(v){
 }
 
 /* ================= 状态 ================= */
-var state = { date: null, dcat: 'overview', month: '', dtab: 'mood', tab: 'score', stab: 'trend', privacy: true, showMore: false, legend: {mood:true,energy:false,focus:false,output:false,overall:false}, q: '', stage: '', tag: '', cal: null };
+var state = { date: null, dcat: 'overview', month: '', dtab: 'mood', tab: 'score', stab: 'trend', privacy: true, showMore: false, legend: {mood:true,energy:false,focus:false,output:false,overall:false}, q: '', stage: '', tag: '', cal: null, reviewMonth: null };
 
 function latestDate(){ return ENTRIES.length ? ENTRIES[ENTRIES.length-1].date : null; }
 function initState(){

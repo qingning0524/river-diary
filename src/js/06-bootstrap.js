@@ -1,16 +1,17 @@
 /* ================= 主流程 ================= */
 function renderDataPanel(){
   var d = state.dtab;
-  var m = $('dMood'), sp = $('dSocialPanel'), lp = $('dLawPanel'), mh = $('dMoodHead');
+  var m = $('dMood'), sp = $('dSocialPanel'), lp = $('dLawPanel'), rv = $('dReviewPanel'), mh = $('dMoodHead');
   if(m) m.style.display = (d==='mood'||d==='screen'||d==='browse') ? '' : 'none';
   if(sp) sp.style.display = (d==='social') ? '' : 'none';
   if(lp) lp.style.display = (d==='law') ? '' : 'none';
+  if(rv) rv.style.display = (d==='review') ? '' : 'none';
   if(mh) mh.style.display = (d==='mood') ? '' : 'none';
   var hasSocial = DATA.social && Object.keys(DATA.social).length;
   var sb = document.querySelector('.ctab[data-dtab="social"]');
   if(sb) sb.style.display = hasSocial ? '' : 'none';
   var eb = $('exportBtn');
-  if(eb) eb.style.display = (d==='social'||d==='law') ? 'none' : '';
+  if(eb) eb.style.display = (d==='social'||d==='law'||d==='review') ? 'none' : '';
   [].slice.call(document.querySelectorAll('.ctab[data-dtab]')).forEach(function(b){
     b.classList.toggle('on', b.dataset.dtab===d);
     b.setAttribute('aria-selected', b.dataset.dtab===d ? 'true' : 'false');
@@ -20,6 +21,7 @@ function renderDataPanel(){
   else if(d==='browse'){ state.tab='browse'; renderChart(); }
   else if(d==='social'){ renderSocial(); }
   else if(d==='law'){ renderAnalytics(); }
+  else if(d==='review'){ renderReview(); }
 }
 
 window.renderMain = function(){
