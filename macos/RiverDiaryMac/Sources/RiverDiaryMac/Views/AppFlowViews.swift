@@ -348,6 +348,7 @@ struct RhythmFlowView: View {
         case pulse, metrics, footprint
 
         var id: String { rawValue }
+
         var title: String {
             switch self {
             case .pulse: "脉搏"
@@ -355,29 +356,53 @@ struct RhythmFlowView: View {
             case .footprint: "足迹"
             }
         }
+
+        var caption: String {
+            switch self {
+            case .pulse: "一天的投入与状态，压成一个可读的节奏。"
+            case .metrics: "看长一点的周期，发现重复出现的模式。"
+            case .footprint: "屏幕、应用和时间段怎样构成了这一天。"
+            }
+        }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Picker("视图", selection: $mode.animation(.easeOut(duration: 0.2))) {
-                    ForEach(Mode.allCases) { Text($0.title).tag($0) }
+                HStack(alignment: .center, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(mode.title)
+                            .font(.system(size: 32, weight: .semibold, design: .serif))
+                        Text(mode.caption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Picker("视图", selection: $mode.animation(.easeOut(duration: 0.2))) {
+                        ForEach(Mode.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 300)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 320)
 
                 if mode == .pulse {
                     pulseView
                 } else if mode == .metrics {
-                    RhythmView(store: store, activity: activity, anchorDate: $selectedDate)
-                        .background(.clear)
+                    RhythmView(
+                        store: store,
+                        activity: activity,
+                        anchorDate: $selectedDate,
+                        showsHeader: false
+                    )
+                    .background(.clear)
                 } else {
                     ActivityView(
                         activity: activity,
                         selectedDate: $selectedDate,
                         ai: ai,
                         entries: store.entries,
-                        quickCaptures: store.quickCaptures[DiaryEntry.dateFormatter.string(from: selectedDate)] ?? []
+                        quickCaptures: store.quickCaptures[DiaryEntry.dateFormatter.string(from: selectedDate)] ?? [],
+                        showsHeader: false
                     )
                     .background(.clear)
                 }

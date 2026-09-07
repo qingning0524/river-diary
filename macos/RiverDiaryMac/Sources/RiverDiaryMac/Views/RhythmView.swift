@@ -4,6 +4,7 @@ struct RhythmView: View {
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @Binding var anchorDate: Date
+    var showsHeader: Bool = true
 
     @State private var selectedDays = 30
     @State private var selectedMetric: RhythmMetric = .overall
@@ -41,7 +42,9 @@ struct RhythmView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                header
+                if showsHeader {
+                    header
+                }
                 controlPanel
                 metricCard
                 connectionCard

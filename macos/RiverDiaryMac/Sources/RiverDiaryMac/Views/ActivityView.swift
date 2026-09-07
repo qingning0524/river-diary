@@ -6,6 +6,7 @@ struct ActivityView: View {
     @ObservedObject var ai: AIAssistantStore
     let entries: [DiaryEntry]
     let quickCaptures: [QuickCapture]
+    var showsHeader: Bool = true
 
     @State private var period = 1
     @State private var selectedApp: String?
@@ -21,7 +22,9 @@ struct ActivityView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                header
+                if showsHeader {
+                    header
+                }
                 periodPicker
                 summaryCard
                 TimelineSegmentCardView(
