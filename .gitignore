@@ -10,6 +10,8 @@ data/raw.json
 data/data.json
 data/raw.json.bak_notion_migrate
 data/ios-user-data.json
+data/.build-state.json
+data/.ios-sync-hash
 js/app.js
 css/style.css
 *.bak*
