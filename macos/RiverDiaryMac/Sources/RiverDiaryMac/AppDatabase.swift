@@ -1,145 +1,12 @@
 import Foundation
 import SQLite3
-
-// MARK: - Database Models
-
-struct DBMoodScore: Codable, Identifiable, Hashable {
-    var id: String { date }
-    var date: String
-    var score: Int
-    var source: String
-}
-
-struct DBSleepNight: Codable, Identifiable, Hashable {
-    var id: String { date }
-    var date: String
-    var totalHours: Double
-    var deepMinutes: Double
-    var remMinutes: Double
-    var awakeMinutes: Double
-}
-
-struct DBExerciseDay: Codable, Identifiable, Hashable {
-    var id: String { date }
-    var date: String
-    var steps: Int
-    var distanceKM: Double
-    var activeEnergyKcal: Double
-}
-
-struct DBChromeVisit: Codable, Identifiable, Hashable {
-    var id: Int
-    var date: String
-    var url: String
-    var title: String
-    var domain: String
-    var visitedAt: String
-    var visitCount: Int
-}
-
-struct DBDailyNote: Codable, Identifiable, Hashable {
-    var id: Int
-    var date: String
-    var title: String
-    var modifiedAt: String
-}
-
-struct DBActivitySession: Codable, Identifiable, Hashable {
-    var id: String
-    var date: String
-    var appName: String
-    var category: String
-    var startTime: String
-    var endTime: String
-    var durationMinutes: Int
-    var windowTitle: String?
-}
-
-struct DBQuickCapture: Codable, Identifiable, Hashable {
-    var id: String
-    var date: String
-    var text: String
-    var createdAt: String
-    var source: String
-}
-
-struct DBAIResult: Codable, Identifiable, Hashable {
-    var id: String { resultKey }
-    var resultKey: String
-    var startDate: String
-    var endDate: String
-    var task: String
-    var model: String
-    var answer: String
-    var createdAt: String
-}
-
-struct DatabaseCrossDaySnapshot {
-    var startDate: String
-    var endDate: String
-    var query: String
-    var dailyRecords: [DBDailyRecord] = []
-    var chromeVisits: [DBChromeVisit] = []
-    var notes: [DBDailyNote] = []
-    var sessions: [DBActivitySession] = []
-    var quickCaptures: [DBQuickCapture] = []
-
-    var recordCount: Int {
-        dailyRecords.count + chromeVisits.count + notes.count + sessions.count + quickCaptures.count
-    }
-}
-
-struct DBDailyRecord: Codable, Identifiable, Hashable {
-    var id: String { date }
-    var date: String
-    var capturedAt: String
-    var moodScore: Int?
-    var sleepHours: Double?
-    var exerciseSteps: Int?
-    var screenTimeMinutes: Int?
-    var chromeVisitCount: Int
-    var notesCount: Int
-    var sessionCount: Int
-    var quickCaptureCount: Int
-    var mixedOverview: String
-    var iosDataAvailable: Bool
-}
-
-// MARK: - Date Helpers
-
-enum DatabaseTime {
-    static let isoFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
-
-    static func date(_ value: String) -> Date? {
-        isoFormatter.date(from: value)
-    }
-
-    static func shortTime(_ value: String) -> String {
-        guard let date = date(value) else { return value.isEmpty ? "—" : value }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
-        return formatter.string(from: date)
-    }
-
-    static func fullTime(_ value: String) -> String {
-        guard let date = date(value) else { return value.isEmpty ? "—" : value }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        return formatter.string(from: date)
-    }
-}
-
 // MARK: - Database
 
 final class AppDatabase {
     static let shared = AppDatabase()
 
-    private var db: OpaquePointer?
-    private let queue = DispatchQueue(label: "studio.riverdiary.database", qos: .utility)
+    var db: OpaquePointer?
+    let queue = DispatchQueue(label: "studio.riverdiary.database", qos: .utility)
     private(set) var lastError: String?
 
     private var databasePath: URL? {
@@ -322,7 +189,7 @@ final class AppDatabase {
         sqlite3_finalize(statement)
     }
 
-    private func transaction(_ work: (OpaquePointer) -> Bool) -> Bool {
+    func transaction(_ work: (OpaquePointer) -> Bool) -> Bool {
         queue.sync { [weak self] in
             guard let self, let db = self.db else { return false }
             sqlite3_exec(db, "BEGIN IMMEDIATE", nil, nil, nil)
@@ -756,7 +623,7 @@ final class AppDatabase {
 
     // MARK: Binding Helpers
 
-    private func bindDailyRecord(_ record: DailyCaptureRecord, sessionCount: Int, database: OpaquePointer) -> Bool {
+    func bindDailyRecord(_ record: DailyCaptureRecord, sessionCount: Int, database: OpaquePointer) -> Bool {
         let sql = """
             INSERT OR REPLACE INTO daily_records
             (date, captured_at, mood_score, sleep_hours, exercise_steps, screen_time_minutes,
@@ -818,7 +685,7 @@ final class AppDatabase {
         }, database: database)
     }
 
-    private func execute(_ sql: String, bindings: ((OpaquePointer) -> Void)? = nil, database: OpaquePointer) -> Bool {
+    func execute(_ sql: String, bindings: ((OpaquePointer) -> Void)? = nil, database: OpaquePointer) -> Bool {
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return false }
         defer { sqlite3_finalize(statement) }
@@ -888,89 +755,5 @@ final class AppDatabase {
     private func text(_ statement: OpaquePointer?, _ index: Int32) -> String {
         guard let cString = sqlite3_column_text(statement, index) else { return "" }
         return String(cString: cString)
-    }
-}
-
-// MARK: - Historical iOS Import
-
-extension AppDatabase {
-    func saveIOSHistory(_ data: IngestedUserData, excluding excludedDate: String? = nil) {
-        _ = transaction { database in
-            for (date, score) in data.moodScores where date != excludedDate {
-                let sql = "INSERT OR REPLACE INTO mood_scores (date, score, source) VALUES (?,?,'iOS 健康')"
-                guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, date, -1, nil)
-                    sqlite3_bind_int(statement, 2, Int32(score))
-                }, database: database) else { return false }
-            }
-
-            for night in data.sleepNights where night.date != excludedDate {
-                let sql = "INSERT OR REPLACE INTO sleep_nights (date, total_hours, deep_minutes, rem_minutes, awake_minutes) VALUES (?,?,?,?,?)"
-                guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, night.date, -1, nil)
-                    sqlite3_bind_double(statement, 2, night.totalHours)
-                    sqlite3_bind_double(statement, 3, night.deepMinutes)
-                    sqlite3_bind_double(statement, 4, night.remMinutes)
-                    sqlite3_bind_double(statement, 5, night.awakeMinutes)
-                }, database: database) else { return false }
-            }
-
-            for day in data.exerciseDays where day.date != excludedDate {
-                let sql = "INSERT OR REPLACE INTO exercise_days (date, steps, distance_km, active_energy_kcal) VALUES (?,?,?,?)"
-                guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, day.date, -1, nil)
-                    sqlite3_bind_int(statement, 2, Int32(day.steps))
-                    sqlite3_bind_double(statement, 3, day.distanceKilometers)
-                    sqlite3_bind_double(statement, 4, day.activeEnergyKilocalories)
-                }, database: database) else { return false }
-            }
-
-            for note in data.quickNotes where note.date != excludedDate {
-                let sql = "INSERT OR REPLACE INTO quick_captures (id, date, text, created_at, source) VALUES (?,?,?,?,?)"
-                guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, note.id, -1, nil)
-                    sqlite3_bind_text(statement, 2, note.date, -1, nil)
-                    sqlite3_bind_text(statement, 3, note.text, -1, nil)
-                    sqlite3_bind_text(statement, 4, note.createdAt.map(DatabaseTime.isoFormatter.string), -1, nil)
-                    sqlite3_bind_text(statement, 5, note.source, -1, nil)
-                }, database: database) else { return false }
-            }
-
-            let dates = Set(data.moodScores.keys)
-                .union(data.sleepNights.map(\.date))
-                .union(data.exerciseDays.map(\.date))
-                .union(data.quickNotes.map(\.date))
-                .filter { $0 != excludedDate }
-
-            for date in dates {
-                let mood = data.moodScores[date]
-                let sleep = data.sleepNights.first { $0.date == date }
-                let exercise = data.exerciseDays.first { $0.date == date }
-                let captures = data.quickNotes.filter { $0.date == date }
-                let record = DailyCaptureRecord(
-                    date: date,
-                    capturedAt: data.syncedAt,
-                    iosDataAvailable: true,
-                    moodScore: mood,
-                    sleepHours: sleep?.totalHours,
-                    sleepDeepMinutes: sleep?.deepMinutes,
-                    sleepREMMinutes: sleep?.remMinutes,
-                    exerciseSteps: exercise?.steps,
-                    exerciseDistanceKM: exercise?.distanceKilometers,
-                    exerciseEnergyKcal: exercise?.activeEnergyKilocalories,
-                    quickNotes: captures,
-                    chromeVisits: [],
-                    chromeTotalVisits: 0,
-                    chromeTopDomains: [],
-                    notesModified: [],
-                    screenTimeMinutes: nil,
-                    screenTopApps: [],
-                    mixedOverview: "历史 iOS 数据已导入。"
-                )
-                guard bindDailyRecord(record, sessionCount: 0, database: database) else { return false }
-            }
-
-            return true
-        }
     }
 }
