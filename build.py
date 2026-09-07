@@ -2,6 +2,7 @@
 """构建网页、清洗数据，并把同一份快照同步到 iOS。"""
 
 import hashlib
+import datetime as dt
 import json
 import re
 import sys
@@ -13,7 +14,7 @@ ROOT = Path(__file__).resolve().parent
 IOS_DATA = ROOT / "ios/RiverDiary/RiverDiary/Resources/data.json"
 RAW_DATA = ROOT / "data/raw.json"
 WEB_DATA = ROOT / "data/data.json"
-IOS_USER_DATA = ROOT / "data/ios-user-data.json"
+INGESTED_USER_DATA = ROOT / "data/ios-user-data.json"
 ICLOUD_FOLDER = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/河流日记"
 ICLOUD_DATA_FILE = ICLOUD_FOLDER / "data.json"
 DIST_DIR = ROOT / "dist"
@@ -28,7 +29,13 @@ def write_if_changed(path: Path, content: str) -> bool:
     if path.exists() and path.read_bytes() == encoded:
         return False
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(encoded)
+    temp = path.with_name(path.name + ".tmp")
+    try:
+        temp.write_bytes(encoded)
+        temp.replace(path)
+    finally:
+        if temp.exists():
+            temp.unlink()
     return True
 
 
@@ -63,6 +70,15 @@ def parse_count(site: dict) -> int:
     return 0
 
 
+def _number(value: object, *, low: float = 0, high: float = 100) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"数值类型错误：{value!r}")
+    number = float(value)
+    if not low <= number <= high:
+        raise ValueError(f"数值超出范围：{number}（允许 {low}–{high}）")
+    return number
+
+
 def clean_data(raw: dict) -> dict:
     cleaned = json.loads(json.dumps(raw, ensure_ascii=False))
     entries = cleaned.get("entries")
@@ -81,17 +97,18 @@ def clean_data(raw: dict) -> dict:
         dates.add(date)
 
         score = entry.get("score")
-        if score is not None and not 0 <= float(score) <= 100:
-            raise ValueError(f"{date} 的 score 超出 0–100：{score}")
+        if score is not None:
+            entry["score"] = _number(score)
         entry.setdefault("score_source", "ai")
+        if entry["score_source"] not in {"ai", "user"}:
+            raise ValueError(f"{date} 的 score_source 只能是 ai 或 user")
 
         metrics = entry.get("metrics")
         if not isinstance(metrics, dict):
             raise ValueError(f"{date} 缺少 metrics")
-        for key in ("energy", "focus", "output", "overall"):
-            value = metrics.get(key)
-            if value is not None and not 0 <= float(value) <= 100:
-                raise ValueError(f"{date} 的 metrics.{key} 超出范围：{value}")
+        for key in ("energy", "focus", "output", "overall", "mood", "growth"):
+            if key in metrics and metrics[key] is not None:
+                metrics[key] = _number(metrics[key])
 
         normalized: dict[str, int] = {}
         for site in entry.get("browse_sites") or []:
@@ -108,25 +125,110 @@ def clean_data(raw: dict) -> dict:
     entries.sort(key=lambda item: item["date"])
     if cleaned.get("today") not in dates:
         cleaned["today"] = entries[-1]["date"]
+
+    if not isinstance(cleaned.get("generated"), str) or not cleaned["generated"].strip():
+        cleaned["generated"] = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+    cleaned["summary"] = build_summary(cleaned)
+    cleaned["data_quality"] = build_data_quality(cleaned)
     return cleaned
+
+
+def build_summary(data: dict) -> dict:
+    entries = data.get("entries", [])
+    def values(key: str) -> list[float]:
+        return [entry[key] for entry in entries if entry.get(key) is not None]
+
+    def metric_values(key: str) -> list[float]:
+        return [
+            entry["metrics"][key]
+            for entry in entries
+            if isinstance(entry.get("metrics"), dict) and entry["metrics"].get(key) is not None
+        ]
+
+    def average(values_: list[float]) -> float | None:
+        return round(sum(values_) / len(values_), 1) if values_ else None
+
+    scored = values("score")
+    health = [entry.get("ios_health", {}) for entry in entries if isinstance(entry.get("ios_health"), dict)]
+    return {
+        "entry_count": len(entries),
+        "date_start": entries[0]["date"] if entries else None,
+        "date_end": entries[-1]["date"] if entries else None,
+        "score_average": average(scored),
+        "metrics_average": {
+            key: average(metric_values(key))
+            for key in ("mood", "energy", "focus", "output", "overall", "growth")
+        },
+        "screen_hours_total": round(sum(sum(float(app.get("min") or 0) for app in entry.get("screen_apps") or []) / 60 for entry in entries), 1),
+        "browse_count_total": sum(int(entry.get("views") or 0) for entry in entries),
+        "health": {
+            "sleep_days": sum("sleep_hours" in day for day in health),
+            "step_days": sum("steps" in day for day in health),
+            "steps_total": sum(int(day.get("steps") or 0) for day in health),
+        },
+    }
+
+
+def build_data_quality(data: dict) -> dict:
+    entries = data.get("entries", [])
+    missing_scores: list[str] = []
+    missing_overview: list[str] = []
+    missing_plan: list[str] = []
+    invalid_stage: list[str] = []
+    valid_stages = {"低谷", "回升", "平稳", "积极", "饱满"}
+    for entry in entries:
+        if entry.get("score") is None:
+            missing_scores.append(entry["date"])
+        if not str(entry.get("overview") or "").strip():
+            missing_overview.append(entry["date"])
+        if not str(entry.get("plan") or "").strip():
+            missing_plan.append(entry["date"])
+        stage = entry.get("stage")
+        if not isinstance(stage, dict) or stage.get("label") not in valid_stages:
+            invalid_stage.append(entry["date"])
+
+    issues = {
+        "missing_scores": missing_scores,
+        "missing_overview": missing_overview,
+        "missing_plan": missing_plan,
+        "invalid_stage": invalid_stage,
+    }
+    critical_count = len(missing_scores) + len(missing_overview) + len(invalid_stage)
+    warning_count = critical_count * 2 + len(missing_plan)
+    if critical_count == 0 and not missing_plan:
+        status = "good"
+    elif critical_count <= 3:
+        status = "warning"
+    else:
+        status = "needs_attention"
+    return {
+        "status": status,
+        "critical_count": critical_count,
+        "score": max(0, round(100 - warning_count * max(0, 100 // max(1, len(entries))) * 2)),
+        "warning_count": warning_count,
+        "issues": issues,
+    }
 
 
 def prepare_data() -> dict:
     source = RAW_DATA if RAW_DATA.exists() else WEB_DATA
     cleaned = clean_data(json.loads(source.read_text(encoding="utf-8")))
-    merge_ios_user_data(cleaned)
+    merge_ingested_user_data(cleaned)
     web_text = json.dumps(cleaned, ensure_ascii=False, indent=2) + "\n"
     write_if_changed(WEB_DATA, web_text)
     write_if_changed(IOS_DATA, web_text)
     dist_written, dist_removed = write_daily_outputs(cleaned, DIST_DIR)
     print(f"已生成每日数据: {len(cleaned['entries'])} 条（更新 {dist_written}，清理 {dist_removed}）")
     if ICLOUD_FOLDER.exists():
-        write_if_changed(ICLOUD_DATA_FILE, web_text)
-        icloud_written, icloud_removed = write_daily_outputs(cleaned, ICLOUD_FOLDER)
-        print(
-            "已同步到 iCloud Drive: "
-            f"data.json + manifest.json + {icloud_written} 条每日数据（清理 {icloud_removed}）"
-        )
+        try:
+            write_if_changed(ICLOUD_DATA_FILE, web_text)
+            icloud_written, icloud_removed = write_daily_outputs(cleaned, ICLOUD_FOLDER)
+            print(
+                "已同步到 iCloud Drive: "
+                f"data.json + manifest.json + {icloud_written} 条每日数据（清理 {icloud_removed}）"
+            )
+        except OSError as error:
+            print(f"跳过 iCloud 同步（无法写入 iCloud Drive）：{error}")
     return cleaned
 
 
@@ -185,12 +287,12 @@ def write_daily_outputs(data: dict, root: Path) -> tuple[int, int]:
     return updated + (1 if manifest_updated else 0), removed
 
 
-def merge_ios_user_data(data: dict) -> None:
-    if not IOS_USER_DATA.exists():
+def merge_ingested_user_data(data: dict) -> None:
+    if not INGESTED_USER_DATA.exists():
         return
 
     try:
-        user = json.loads(IOS_USER_DATA.read_text(encoding="utf-8"))
+        user = json.loads(INGESTED_USER_DATA.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return
 
@@ -199,22 +301,28 @@ def merge_ios_user_data(data: dict) -> None:
         return
 
     mood_scores = user.get("moodScores")
-    if isinstance(mood_scores, dict):
-        apply_mood_scores(data["entries"], mood_scores)
+    applied_scores = apply_mood_scores(data["entries"], mood_scores) if isinstance(mood_scores, dict) else 0
 
     health_by_date = build_health_by_date(user)
+    applied_health = 0
     if health_by_date:
-        applied_health = 0
         for entry in data["entries"]:
             health = health_by_date.get(entry.get("date"))
             if health:
                 entry["ios_health"] = health
                 applied_health += 1
-        if applied_health:
-            print(f"已合并 iOS 健康摘要: {applied_health} 天")
+
+    if data.get("summary"):
+        data["summary"] = build_summary(data)
+    if data.get("data_quality"):
+        data["data_quality"] = build_data_quality(data)
+    if applied_scores:
+        print(f"已合并采集评分: {applied_scores} 天")
+    if applied_health:
+        print(f"已合并采集健康摘要: {applied_health} 天")
 
 
-def apply_mood_scores(entries: list, mood_scores: dict) -> None:
+def apply_mood_scores(entries: list, mood_scores: dict) -> int:
     applied = 0
     for entry in entries:
         date = entry.get("date")
@@ -228,8 +336,7 @@ def apply_mood_scores(entries: list, mood_scores: dict) -> None:
                     metrics["mood"] = float(score)
                 applied += 1
 
-    if applied:
-        print(f"已合并 iOS 用户评分: {applied} 天")
+    return applied
 
 
 def build_health_by_date(user: dict) -> dict[str, dict]:

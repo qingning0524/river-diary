@@ -27,7 +27,7 @@ function renderDetail(){
       +'<span class="dh-date"><b>'+fmtD(e.date)+'</b>'+fmtW(e.date)+(isToday?'<em>· 今天</em>':'')+'</span>'
       +'<div class="day-nav">'
         +'<button id="prevBtn" '+(prev?'':'disabled')+' aria-label="前一天">‹</button>'
-        +'<span class="pick">'+(isToday?'今天':'最近一篇')+'</span>'
+        + (isToday ? '<span class="pick">今天</span>' : '<button id="latestBtn" class="pick" title="回到最新日记">最新</button>')
         +'<button id="nextBtn" '+(nx?'':'disabled')+' aria-label="后一天">›</button>'
       +'</div>'
       +'<div class="trend">'+trendHtml+'</div>'
@@ -80,6 +80,8 @@ function renderDetail(){
   var pb=$('prevBtn'), nb=$('nextBtn');
   if(pb) pb.onclick=function(){ if(prev) setDate(prev.date, false); };
   if(nb) nb.onclick=function(){ if(nx) setDate(nx.date, false); };
+  var latestBtn=$('latestBtn');
+  if(latestBtn) latestBtn.onclick=function(){ setDate(latestDate(), false); };
   var sh = $('scoreHelp');
   if(sh) sh.onclick=function(){ openScoreHelp(); };
   // 数字滚动动画：心情 + 成长 两颗数字

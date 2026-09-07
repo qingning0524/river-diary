@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .simbuild/
 .build/
+backups/
 dist/
 data/raw.json
 data/data.json
@@ -26,3 +27,6 @@ ios/.simbuild/
 xcuserdata/
 # iOS 内置数据快照（含个人日记，不进 git）
 ios/RiverDiary/RiverDiary/Resources/data.json
+
+# macOS 本地数据快照（含个人日记，不进 git 仓库）
+macos/RiverDiaryMac/Sources/RiverDiaryMac/Resources/data.json

@@ -46,6 +46,7 @@
     <button class="theme-btn" id="imgShareBtn" title="生成分享图（1080×1920）" aria-label="生成分享图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4.5 18l4.5-4.5L12 16l3-3 4 4"/></svg></button>
     <button class="theme-btn" id="privacyBtn" title="演示模式：隐藏好友姓名（录视频前开启）" aria-label="演示模式" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
     <button class="theme-btn" id="themeBtn" title="深色/浅色" aria-label="切换主题" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></svg></button>
+    <button class="theme-btn" id="helpBtn" title="快捷键与功能帮助" aria-label="帮助"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M9.7 9.3A2.35 2.35 0 0 1 14.2 10c0 1.6-2.2 1.9-2.2 3.5"/><circle cx="12" cy="16.7" r=".7" fill="currentColor"/></svg></button>
   </div>
 </div></header>
 
@@ -88,6 +89,7 @@
       <button class="ctab" data-dtab="screen" role="tab" aria-selected="false">🖥 屏幕时间</button>
       <button class="ctab" data-dtab="browse" role="tab" aria-selected="false">🌐 浏览足迹</button>
       <button class="ctab" data-dtab="social" role="tab" aria-selected="false">💬 社交情绪</button>
+      <button class="ctab" data-dtab="health" role="tab" aria-selected="false">🏃 健康恢复</button>
       <button class="ctab" data-dtab="law" role="tab" aria-selected="false">📊 规律分析</button>
       <button class="ctab" data-dtab="review" role="tab" aria-selected="false">📅 月度回顾</button>
     </div>
@@ -97,10 +99,15 @@
         <div class="metrics-overview" id="metricChips"></div>
         <div class="legend" id="chartLegend"></div>
       </div>
+      <div class="period-compare" id="periodCompare"></div>
       <div class="chart-scroll" id="chartScroll"><div class="tt" id="tooltip"></div></div>
       <div class="chart-foot">
         <div class="curve-stats" id="chartStats"></div>
-        <button class="ctab" id="exportBtn" title="导出为 Markdown"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10"/><path d="M7 9.5 12 14.5l5-5"/><path d="M5 20h14"/></svg>导出 Markdown</button>
+        <div class="export-row">
+          <button class="ctab" id="exportBtn" title="导出为 Markdown"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10"/><path d="M7 9.5 12 14.5l5-5"/><path d="M5 20h14"/></svg>Markdown</button>
+          <button class="ctab" id="exportCsvBtn" title="导出全量 CSV"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>CSV</button>
+          <button class="ctab" id="exportJsonBtn" title="导出完整 JSON 备份"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 8c-2 0-3 4-5 4 2 0 3 4 5 4M15 8c2 0 3 4 5 4-2 0-3 4-5 4"/></svg>JSON</button>
+        </div>
       </div>
     </div>
 
@@ -118,10 +125,21 @@
       </div>
     </div>
 
+    <div id="dHealthPanel" style="display:none" role="tabpanel" aria-label="健康恢复">
+      <div class="metrics-overview" id="healthChips"></div>
+      <div class="chart-scroll" id="healthScroll"><div class="tt" id="healthTooltip"></div></div>
+      <div class="chart-foot">
+        <div class="curve-stats" id="healthStats"></div>
+        <span class="fcount" id="healthNote"></span>
+      </div>
+    </div>
+
     <div id="dLawPanel" style="display:none" role="tabpanel" aria-label="规律分析">
       <div class="analytics">
         <div class="an-card"><div class="an-title">📆 周几心情分析</div><div id="weekdayAna"></div></div>
         <div class="an-card"><div class="an-title">🎯 阶段分布</div><div id="stageAna"></div></div>
+        <div class="an-card"><div class="an-title">🩺 数据体检</div><div id="dataQualityAna"></div></div>
+        <div class="an-card"><div class="an-title">🧭 关联线索</div><div id="correlationAna"></div></div>
       </div>
     </div>
 
@@ -197,6 +215,28 @@
       <button id="shareDownloadBtn" class="primary">下载 PNG</button>
       <button id="shareCopyBtn">复制到剪贴板</button>
       <button id="shareCloseBtn">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 快捷键与功能帮助弹窗 -->
+<div class="modal-overlay" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+  <div class="modal help-modal">
+    <div class="modal-hd"><h3 id="helpModalTitle">⌨️ 快捷键与功能指南</h3><button class="modal-close" id="helpModalClose" aria-label="关闭">✕</button></div>
+    <div class="help-grid">
+      <div class="help-item"><span class="kbd">←</span><span>前一篇日记</span></div>
+      <div class="help-item"><span class="kbd">→</span><span>后一篇日记</span></div>
+      <div class="help-item"><span class="kbd">/</span><span>打开搜索</span></div>
+      <div class="help-item"><span class="kbd">⌘ K</span><span>命令面板</span></div>
+      <div class="help-item"><span class="kbd">D</span><span>切换深色 / 浅色</span></div>
+      <div class="help-item"><span class="kbd">?</span><span>评分说明</span></div>
+      <div class="help-item"><span class="kbd">Esc</span><span>关闭弹窗</span></div>
+    </div>
+    <div class="help-section">
+      <b>本地修改怎么保留？</b>网页上修改的心情分先保存在本机浏览器。用「JSON」导出完整快照，或继续用 iOS 端评分，下次构建会自动合并。
+    </div>
+    <div class="help-section">
+      <b>隐私提示：</b>分享图和链接由你手动触发；演示模式只隐藏界面里的好友姓名，不影响数据文件。
     </div>
   </div>
 </div>

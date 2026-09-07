@@ -1,6 +1,6 @@
 
 function refreshOverlayLock(extraOverlay){
-  var overlayIds = ['scoreModal', 'cmdkOverlay', 'replay', 'shareResult'];
+  var overlayIds = ['scoreModal', 'cmdkOverlay', 'replay', 'shareResult', 'helpModal'];
   var locked = overlayIds.some(function(id){
     var el = document.getElementById(id);
     return el && el.classList.contains('show');
@@ -166,4 +166,3 @@ function renderSocial(){
     note.textContent='仅私聊 · 按消息量 TOP'+(todayS.top_convs||[]).length+(state.privacy?' · 演示模式已隐藏姓名':'');
   }
 }
-

@@ -395,6 +395,8 @@
       var restoreY = window.scrollY || window.pageYOffset || 0;
       renderMain();
       renderChips();
+      renderPeriodCompare();
+      renderDataQuality();
       paintMetricsCard();
       pop.classList.remove('show');
       requestAnimationFrame(function(){
@@ -509,7 +511,12 @@
       {em:'📅', title:'跳到最新日记', sub:'今天的最新一篇', hint:'最新', act: function(){ setDate(latestDate(), false); }},
       {em:'◐', title:'切换深色/浅色', sub:'按 D 也行', hint:'D', act: function(){ var tb=document.getElementById('themeBtn'); if(tb) tb.click(); }},
       {em:'🔒', title:'切换演示模式', sub:'隐藏/显示好友姓名', hint:'隐私', act: function(){ var pb=document.getElementById('privacyBtn'); if(pb) pb.click(); }},
-      {em:'🌊', title:'打开情绪河流图', sub:'跳转到可视化图', hint:'河流', act: function(){ scrollToId('riverCard'); }}
+      {em:'🌊', title:'打开情绪河流图', sub:'跳转到可视化图', hint:'河流', act: function(){ scrollToId('riverCard'); }},
+      {em:'🏃', title:'查看健康恢复', sub:'睡眠与步数趋势', hint:'健康', act: function(){ state.dtab='health'; renderDataPanel(); scrollToId('dataSecTitle'); }},
+      {em:'🩺', title:'查看数据体检', sub:'缺失记录一览', hint:'体检', act: function(){ state.dtab='law'; renderDataPanel(); scrollToId('dataSecTitle'); }},
+      {em:'📅', title:'打开月度回顾', sub:'按月统计与热力图', hint:'回顾', act: function(){ state.dtab='review'; renderDataPanel(); scrollToId('dataSecTitle'); }},
+      {em:'📤', title:'导出 JSON 备份', sub:'包含全部日记数据', hint:'导出', act: function(){ exportJson(); }},
+      {em:'❓', title:'打开功能指南', sub:'快捷键和本地修改说明', hint:'帮助', act: function(){ if(window.openHelpModal) window.openHelpModal(); }}
     ];
     out = out.concat(cmds.filter(function(cmd){ return hit(cmd.title + ' ' + cmd.sub + ' ' + cmd.hint); }));
     // 标签快速跳转
@@ -1078,5 +1085,3 @@
     if(gridObs) gridObs.disconnect();
   });
 })();
-
-

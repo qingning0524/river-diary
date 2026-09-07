@@ -5,6 +5,40 @@ struct DiaryData: Codable {
     var today: String
     var poem: String
     var entries: [DiaryEntry]
+    var dataQuality: DataQuality?
+
+    enum CodingKeys: String, CodingKey {
+        case generated, today, poem, entries
+        case dataQuality = "data_quality"
+    }
+}
+
+struct DataQuality: Codable, Hashable {
+    var status: String
+    var criticalCount: Int?
+    var warningCount: Int?
+    var issues: DataQualityIssues?
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case criticalCount = "critical_count"
+        case warningCount = "warning_count"
+        case issues
+    }
+}
+
+struct DataQualityIssues: Codable, Hashable {
+    var missingScores: [String]?
+    var missingOverview: [String]?
+    var missingPlan: [String]?
+    var invalidStage: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case missingScores = "missing_scores"
+        case missingOverview = "missing_overview"
+        case missingPlan = "missing_plan"
+        case invalidStage = "invalid_stage"
+    }
 }
 
 struct DiaryEntry: Codable, Identifiable, Hashable {

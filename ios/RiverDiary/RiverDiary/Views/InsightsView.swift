@@ -57,6 +57,7 @@ struct InsightsView: View {
                 VStack(spacing: 14) {
                     summaryRow
                     trendCard
+                    qualityCard
                     sleepCard
                     distributionCard
                 }
@@ -66,6 +67,62 @@ struct InsightsView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("洞察")
         }
+    }
+
+    private var qualityStatusColor: Color {
+        switch store.data?.dataQuality?.status {
+        case "good": return .green
+        case "warning": return .orange
+        case "needs_attention": return .red
+        default: return .secondary
+        }
+    }
+
+    private var qualityCard: some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: 12) {
+                let quality = store.data?.dataQuality
+                SectionHeader(title: "数据体检", subtitle: "补齐关键信息，回忆更可靠")
+                HStack {
+                    Text(quality?.status == "good" ? "健康" : quality?.status == "warning" ? "可优化" : quality == nil ? "旧版快照" : "需补录")
+                        .font(.headline)
+                        .foregroundStyle(qualityStatusColor)
+                    Spacer()
+                    if let count = quality?.criticalCount {
+                        Text("关键缺失 \(count)")
+                            .font(.footnote.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                qualityRow("待评分", quality?.issues?.missingScores?.count)
+                qualityRow("缺概览", quality?.issues?.missingOverview?.count)
+                qualityRow("缺计划", quality?.issues?.missingPlan?.count)
+
+                if quality?.criticalCount ?? 0 > 0 {
+                    Text("先补心情和日记概览；计划可以之后再补。")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("关键记录完整，继续保持这个节奏。")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func qualityRow(_ title: String, _ count: Int?) -> some View {
+        HStack {
+            Text(title)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text("\(count ?? 0)")
+                .font(.footnote.weight(.semibold).monospacedDigit())
+                .foregroundStyle((count ?? 0) > 0 ? Color.orange : Color.secondary)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var summaryRow: some View {
