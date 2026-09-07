@@ -104,8 +104,14 @@ struct TodayFlowView: View {
                     calmDraftCard
                     quickCaptureRow
                 } else {
-                    TodayView(store: store, activity: activity, ai: ai, selectedDate: $selectedDate)
-                        .background(.clear)
+                    TodayView(
+                        store: store,
+                        activity: activity,
+                        ai: ai,
+                        selectedDate: $selectedDate,
+                        showsHeader: false
+                    )
+                    .background(.clear)
                 }
             }
             .frame(maxWidth: 1280, alignment: .leading)
@@ -119,12 +125,16 @@ struct TodayFlowView: View {
         .onChange(of: activity.sessions.count) { loadCalmDraft() }
     }
 
+    private var isToday: Bool {
+        Calendar.current.isDateInToday(selectedDate)
+    }
+
     private var header: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(selectedDate == Calendar.current.startOfDay(for: Date()) ? "今天" : selectedDate.formatted(.dateTime.month().day().weekday()))
-                    .font(.largeTitle.weight(.bold))
-                Text("一条河，四个入口")
+                Text(isToday ? "今天" : selectedDate.formatted(.dateTime.month().day().weekday()))
+                    .font(.system(size: 38, weight: .bold, design: .serif))
+                Text("把这一天拢成一页，先看见脉搏，再决定要不要展开。")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -175,7 +185,7 @@ struct TodayFlowView: View {
                         .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
                 }
 
-                HStack(spacing: 10) {
+                EqualWidthRow(spacing: 12) {
                     slider("情绪", $mood)
                     slider("精力", $energy)
                     slider("专注", $focus)

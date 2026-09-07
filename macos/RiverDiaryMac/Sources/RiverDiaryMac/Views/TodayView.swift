@@ -5,6 +5,7 @@ struct TodayView: View {
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore
     @Binding var selectedDate: Date
+    var showsHeader: Bool = true
 
     @State private var draft: AIDraft = AIDraft(
         headline: "正在整理今天", narrative: "", category: "随想", tags: [],
@@ -45,7 +46,9 @@ struct TodayView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                header
+                if showsHeader {
+                    header
+                }
                 moodStrip
                 careCard
                 draftCard
