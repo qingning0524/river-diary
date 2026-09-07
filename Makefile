@@ -2,6 +2,7 @@
 
 check: build
 	node --check js/app.js
+	python3 -m compileall -q build.py pipeline
 	python3 -m json.tool data/data.json > /dev/null
 
 build:
@@ -43,4 +44,4 @@ swift-test:
 		swift test --disable-sandbox
 
 clean:
-	rm -rf __pycache__ tests/__pycache__ .simbuild ios/.simbuild
+	rm -rf __pycache__ tests/__pycache__ pipeline/__pycache__ .simbuild ios/.simbuild

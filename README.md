@@ -48,7 +48,8 @@
 河流日记/
 ├── index.html          # Web 页面骨架
 ├── src/css|js/         # 模块化源码（构建合并）
-├── build.py            # 构建·清洗·同步管道
+├── build.py            # 兼容构建入口
+├── pipeline/           # 清洗 / 快照 / 合并 / 打包模块
 ├── data/               # 数据（raw.json 唯一真相源，不进 git）
 ├── ios/RiverDiary      # SwiftUI 原生 iOS 工程
 ├── macos/RiverDiaryMac # SwiftUI 原生 macOS 应用 / 采集 / 打包脚本
