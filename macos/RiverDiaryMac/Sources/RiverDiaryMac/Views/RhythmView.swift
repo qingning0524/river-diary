@@ -118,7 +118,10 @@ struct RhythmView: View {
                 }
 
                 if periodEntries.isEmpty {
-                    Text("这段时间还没有评分。有记录的日子，自然会流进来。")
+                    QuietHint(
+                        title: "评分还没汇成流",
+                        message: "这段时间还没有评分。有记录的日子，自然会流进来。"
+                    )
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {

@@ -146,12 +146,41 @@ struct SoftCard<Content: View>: View {
         content()
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.surface, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .background(Color.surface, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
                     .stroke(Color.border, lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.06), radius: 34, x: 0, y: 20)
+            .shadow(color: .black.opacity(0.055), radius: 30, x: 0, y: 18)
+    }
+}
+
+struct QuietHint: View {
+    var title: String
+    var message: String
+    var icon: String = "leaf.fill"
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.secondaryInk)
+                .frame(width: 30, height: 30)
+                .background(Color.chip, in: Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.ink)
+                Text(message)
+                    .font(.caption)
+                    .lineSpacing(4)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(13)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.chip.opacity(0.55), in: RoundedRectangle(cornerRadius: 17, style: .continuous))
     }
 }
 

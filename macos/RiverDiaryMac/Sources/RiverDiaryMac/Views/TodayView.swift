@@ -215,10 +215,10 @@ struct TodayView: View {
                         }
                     }
                 } else {
-                    Text("这一天还没有同步到步数、距离或活动热量。")
-                        .font(.caption)
-                        .lineSpacing(5)
-                        .foregroundStyle(.secondary)
+                    QuietHint(
+                        title: "身体数据还没进来",
+                        message: "这一天没有同步到步数、距离或活动热量。"
+                    )
                 }
             }
         }
@@ -533,7 +533,10 @@ struct TodayView: View {
                 }
 
                 if !entry.hasProjectSignals {
-                    Text("今天还没有屏幕或运动数据。已有的日记文字仍会进入草稿。")
+                    QuietHint(
+                        title: "数据还在路上",
+                        message: "今天还没有屏幕或运动数据。已有的日记文字仍会进入草稿。"
+                    )
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
