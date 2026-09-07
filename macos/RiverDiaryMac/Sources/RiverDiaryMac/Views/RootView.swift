@@ -21,6 +21,7 @@ struct RootView: View {
         } detail: {
             detail
         }
+        .background(VisualBackground())
         .preferredColorScheme(isDimmed ? .dark : .light)
         .animation(.easeOut(duration: 0.22), value: flow)
         .animation(.easeOut(duration: 0.22), value: isDimmed)
@@ -95,11 +96,10 @@ struct RootView: View {
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
-                    Image(systemName: "circle.hexagongrid.fill")
-                        .foregroundStyle(Color.ctaText)
                     Picker("外观", selection: $isDimmed) {
                         Text("日").tag(false)
                         Text("夜").tag(true)
@@ -116,9 +116,9 @@ struct RootView: View {
 
     private var statusRow: some View {
         HStack(spacing: 7) {
-            statusDot(ready: ingestion.enabled)
-            statusDot(ready: activity.isTracking)
-            statusDot(ready: ai.analysisReady)
+            statusDot(ready: ingestion.enabled, help: "数据采集\(ingestion.enabled ? "已开启" : "已关闭")")
+            statusDot(ready: activity.isTracking, help: "实时足迹\(activity.isTracking ? "已开启" : "已关闭")")
+            statusDot(ready: ai.analysisReady, help: "AI 分析\(ai.analysisReady ? "已就绪" : "尚未就绪")")
             Spacer()
             Text("\(store.entries.count) 天")
                 .font(.caption2)
@@ -126,10 +126,11 @@ struct RootView: View {
         }
     }
 
-    private func statusDot(ready: Bool) -> some View {
+    private func statusDot(ready: Bool, help: String) -> some View {
         Circle()
             .fill(ready ? Color(hex: "#2C8158") : Color(hex: "#B26B00"))
             .frame(width: 6, height: 6)
+            .help(help)
     }
 
     private var detail: some View {
@@ -162,6 +163,7 @@ struct RootView: View {
 
             Button {
                 appLockEnabled.toggle()
+                if appLockEnabled { isLocked = true }
             } label: {
                 Image(systemName: appLockEnabled ? "lock.fill" : "lock.open")
                     .font(.system(size: 12, weight: .semibold))
