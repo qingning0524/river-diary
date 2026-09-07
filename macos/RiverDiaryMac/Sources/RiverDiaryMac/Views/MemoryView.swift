@@ -39,6 +39,24 @@ struct MemoryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .center, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("记忆")
+                            .font(.system(size: 32, weight: .semibold, design: .serif))
+                        Text(section.caption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Picker("分区", selection: $section.animation(.easeOut(duration: 0.2))) {
+                        ForEach(MemorySection.allCases) { section in
+                            Text(section.title).tag(section)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 340)
+                }
+
                 if section == .search {
                     searchSection
                 } else if section == .insight {
@@ -59,8 +77,6 @@ struct MemoryView: View {
 
     private var searchSection: some View {
         VStack(alignment: .leading, spacing: 18) {
-            searchHeader
-
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
@@ -197,21 +213,6 @@ struct MemoryView: View {
                 }
                 .frame(maxWidth: 1280)
             }
-        }
-        .frame(maxWidth: 1280, alignment: .leading)
-    }
-
-    private var searchHeader: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Memory")
-                .font(.caption.smallCaps())
-                .foregroundStyle(.secondary)
-            Text(MemorySection.search.title)
-                .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(Color.ink)
-            Text(MemorySection.search.caption)
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: 1280, alignment: .leading)
     }
