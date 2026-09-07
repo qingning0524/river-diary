@@ -195,6 +195,8 @@ struct RootView: View {
         .background(Color.surface, in: Capsule())
         .overlay(Capsule().stroke(Color.border, lineWidth: 1))
         .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title)\(ready ? "已就绪" : value)")
     }
 
     @ViewBuilder

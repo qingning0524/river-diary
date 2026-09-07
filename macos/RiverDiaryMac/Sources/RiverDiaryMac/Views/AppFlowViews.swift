@@ -68,6 +68,9 @@ struct RhythmPulseCard: View {
                 revealed = true
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("今日脉搏 \(pulse.score) 分，\(pulse.tone.label)")
+        .accessibilityHint(pulse.narrative)
     }
 
     private func pulseMetric(_ title: String, _ value: String, _ icon: String) -> some View {
@@ -176,6 +179,8 @@ struct TodayFlowView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Color(hex: "#4E8CFF"))
+            .keyboardShortcut("c", modifiers: [.command, .shift])
+            .help(calmMode ? "切换到完整视图（⌘⇧C）" : "切换到安静模式（⌘⇧C）")
         }
         .padding(.vertical, 2)
     }
