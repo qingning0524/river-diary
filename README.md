@@ -38,7 +38,7 @@
 |---|---|
 | **Web** | 原生 HTML/CSS/JS（零依赖，模块化 `src/` → `build.py` 打包单文件） |
 | **iOS** | SwiftUI 原生应用，iOS 27 SDK 构建通过，健康数据接入 HealthKit |
-| **数据管道** | Python `build.py`：校验 / 清洗 / 合并 / 同步（Web · iOS · iCloud） |
+| **数据管道** | Python `pipeline/`：校验 / 清洗 / 合并 / 同步（Web · iOS · iCloud） |
 | **macOS 采集** | SwiftUI + HealthKit 导出快照 + `NSBackgroundActivityScheduler` 定时清洗 |
 | **测试** | Python `unittest` 数据管道自动化测试 |
 
@@ -66,10 +66,12 @@
 python3 build.py
 
 # 2. 跑完整校验（测试 + JS/JSON 检查）
-python3 -m unittest discover -s tests
 make check
 
-# 3. 本地预览
+# 3. 三端发布前统一验证
+make verify-all
+
+# 4. 本地预览
 python3 -m http.server 8000
 # 打开 http://localhost:8000
 ```

@@ -18,6 +18,8 @@ python3 -m unittest discover -s tests
 5. 生成网页单文件 `dist/index.html`。
 6. 把清洗后的数据同步到 iOS `Resources/data.json`，并尽力同步 iCloud；权限不足时构建不会失败。
 
+实现拆分在 `pipeline/` 中；`build.py` 保留为兼容入口。详细边界见 [`ARCHITECTURE.md`](ARCHITECTURE.md)。
+
 ## macOS 定时采集
 
 macOS 应用是采集调度器，不再依赖外部定时脚本：

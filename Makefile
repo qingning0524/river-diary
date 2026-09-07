@@ -1,4 +1,4 @@
-.PHONY: build test check verify backup web ios mac swift-test clean
+.PHONY: build test check verify backup web ios mac swift-test verify-all clean
 
 check: build
 	node --check js/app.js
@@ -33,6 +33,8 @@ ios: test
 
 mac: build
 	./macos/RiverDiaryMac/make_app.sh
+
+verify-all: check swift-test ios
 
 swift-test:
 	cd macos/RiverDiaryMac && \
