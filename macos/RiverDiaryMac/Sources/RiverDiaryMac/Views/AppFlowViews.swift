@@ -3,20 +3,27 @@ import SwiftUI
 struct RhythmPulseCard: View {
     let pulse: RhythmPulse
     var trend: Int?
+    @State private var revealed = false
 
     var body: some View {
-        SoftCard(padding: 24) {
+        SoftCard(padding: 26) {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .top, spacing: 16) {
                     ZStack {
                         Circle()
                             .stroke(Color.border, lineWidth: 8)
                         Circle()
-                            .trim(from: 0, to: max(0.02, Double(pulse.score) / 100))
-                            .stroke(Color(hex: pulse.tone.color), style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                            .trim(from: 0, to: revealed ? max(0.02, Double(pulse.score) / 100) : 0)
+                            .stroke(Color(hex: pulse.tone.color), style: StrokeStyle(lineWidth: 9, lineCap: .round))
                             .rotationEffect(.degrees(-90))
+                            .animation(.easeOut(duration: 0.65), value: revealed)
                     }
-                    .frame(width: 94, height: 94)
+                    .frame(width: 104, height: 104)
+                    .overlay {
+                        Circle()
+                            .stroke(Color(hex: pulse.tone.color).opacity(0.12), lineWidth: 12)
+                            .frame(width: 118, height: 118)
+                    }
 
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 8) {
@@ -41,28 +48,45 @@ struct RhythmPulseCard: View {
                     }
                 }
 
-                HStack(spacing: 10) {
-                    pulseMetric("专注", "\(pulse.focusMinutes)分")
-                    pulseMetric("活跃", "\(pulse.activeMinutes)分")
-                    pulseMetric("情绪", "\(pulse.mood)")
-                    pulseMetric("碎片", "\(pulse.fragmentation)")
+                EqualWidthRow(spacing: 12) {
+                    pulseMetric("专注", "\(pulse.focusMinutes)分", "scope")
+                    pulseMetric("活跃", "\(pulse.activeMinutes)分", "figure.walk")
+                    pulseMetric("情绪", "\(pulse.mood)", "heart")
+                    pulseMetric("碎片", "\(pulse.fragmentation)", "arrow.triangle.branch")
                 }
+            }
+        }
+        .onAppear {
+            revealed = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                revealed = true
+            }
+        }
+        .onChange(of: pulse.id) {
+            revealed = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                revealed = true
             }
         }
     }
 
-    private func pulseMetric(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+    private func pulseMetric(_ title: String, _ value: String, _ icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color(hex: pulse.tone.color))
+                .frame(width: 24, height: 24)
+                .background(Color(hex: pulse.tone.color).opacity(0.10), in: Circle())
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             Text(value)
-                .font(.headline)
+                .font(.system(.headline, design: .rounded))
                 .foregroundStyle(Color.ink)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Color.chip, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(13)
+        .background(Color.chip, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
     }
 }
 
