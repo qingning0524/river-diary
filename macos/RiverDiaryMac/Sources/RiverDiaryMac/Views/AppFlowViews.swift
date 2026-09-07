@@ -101,6 +101,11 @@ struct TodayFlowView: View {
                 RhythmPulseCard(pulse: pulse)
 
                 if calmMode {
+                    Text("安静模式：今天只需要看见脉搏、草稿和一句新记录。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 4)
+
                     calmDraftCard
                     quickCaptureRow
                 } else {
@@ -168,22 +173,39 @@ struct TodayFlowView: View {
                 }
 
                 Text(draft.headline)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 21, weight: .semibold, design: .serif))
 
                 if isEditing {
                     TextEditor(text: $editedDraft)
                         .font(.body)
                         .scrollContentBackground(.hidden)
-                        .frame(minHeight: 148)
-                        .padding(10)
-                        .background(Color.editor, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .frame(minHeight: 158)
+                        .padding(12)
+                        .background(Color.editor, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 } else {
-                    Text(editedDraft.isEmpty ? "这一天还没有草稿。" : editedDraft)
-                        .font(.body)
-                        .lineSpacing(5)
-                        .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
+                    Text(editedDraft.isEmpty ? "这一天还没有草稿。可以先从一句话开始。" : editedDraft)
+                        .font(.system(size: 18, design: .serif))
+                        .lineSpacing(8)
+                        .frame(maxWidth: .infinity, minHeight: 104, alignment: .topLeading)
+                        .padding(16)
+                        .background(Color.editor, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
+
+                HStack(spacing: 10) {
+                    Label("证据 \(draft.confidence)%", systemImage: "checkmark.seal")
+                    if !draft.evidence.isEmpty {
+                        Label("\(draft.evidence.count) 类", systemImage: "square.stack.3d.up")
+                    }
+                    if draft.care != .none {
+                        Label("需要留意", systemImage: "heart")
+                    }
+                    Spacer()
+                    Text("自动整理")
+                        .foregroundStyle(.secondary)
+                    StatusBadge(store.autoDraftPaused || store.isAutoDraftTemporarilyPaused ? "暂停" : "开启", tone: store.autoDraftPaused || store.isAutoDraftTemporarilyPaused ? .attention : .positive)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
                 EqualWidthRow(spacing: 12) {
                     slider("情绪", $mood)
@@ -209,15 +231,27 @@ struct TodayFlowView: View {
 
     private var quickCaptureRow: some View {
         SoftCard(padding: 18) {
-            HStack(spacing: 12) {
-                Image(systemName: "bolt.fill")
+            HStack(spacing: 14) {
+                Image(systemName: "bolt.badge.clock")
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.ctaText)
+                    .frame(width: 34, height: 34)
+                    .background(Color.ctaBackground, in: Circle())
+
                 TextField("一句话，先放进河里", text: $quickCaptureText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .onSubmit(addQuickCapture)
-                Button("加入") { addQuickCapture() }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Color.ctaText)
+
+                Button {
+                    addQuickCapture()
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 20))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.ctaText)
+                .disabled(quickCaptureText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .help("加入快记")
             }
         }
     }
@@ -232,7 +266,10 @@ struct TodayFlowView: View {
                 Text("\(Int(value.wrappedValue))").font(.caption.weight(.semibold))
             }
             Slider(value: value, in: 0...100)
+                .tint(Color(hex: "#4E8CFF"))
         }
+        .padding(12)
+        .background(Color.chip, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
     }
 
     private func loadCalmDraft() {
