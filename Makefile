@@ -28,7 +28,7 @@ web: test
 ios: test
 	DEVELOPER_DIR=/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer \
 	xcodebuild -project ios/RiverDiary/RiverDiary.xcodeproj -scheme RiverDiary \
-		-configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+		-configuration Debug -destination 'generic/platform=iOS Simulator' \
 	-derivedDataPath ios/.simbuild build CODE_SIGNING_ALLOWED=NO
 
 mac: build
