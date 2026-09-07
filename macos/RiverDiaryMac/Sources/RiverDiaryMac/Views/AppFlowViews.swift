@@ -391,34 +391,95 @@ struct RhythmFlowView: View {
     }
 
     private var pulseView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            let pulses = recentPulses
-            RhythmPulseCard(pulse: pulses.last ?? RhythmPulseEngine.pulse(date: selectedDate, store: store, activity: activity))
+        let pulses = recentPulses
+        let selectedKey = DiaryEntry.dateFormatter.string(from: selectedDate)
+        let average = pulses.isEmpty ? 0 : pulses.map(\.score).reduce(0, +) / pulses.count
+        let peak = pulses.max { $0.score < $1.score }
+        let trend = RhythmPulseEngine.trend(pulses)
+
+        return VStack(alignment: .leading, spacing: 18) {
+            RhythmPulseCard(
+                pulse: pulses.last ?? RhythmPulseEngine.pulse(date: selectedDate, store: store, activity: activity),
+                trend: trend
+            )
+
             SoftCard {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("近七日脉搏")
-                        .font(.headline)
-                    ForEach(pulses) { pulse in
-                        Button {
-                            selectedDate = DiaryEntry.dateFormatter.date(from: pulse.dateKey) ?? selectedDate
-                        } label: {
-                            HStack(spacing: 10) {
-                                Text(pulse.dateKey.suffix(5))
-                                    .font(.caption.monospacedDigit())
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 48, alignment: .leading)
-                                ProgressBar(value: Double(pulse.score))
-                                Text("\(pulse.score)")
-                                    .font(.caption.weight(.semibold))
-                                    .frame(width: 28, alignment: .trailing)
-                            }
-                            .contentShape(Rectangle())
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("近七日脉搏")
+                                .font(.headline)
+                            Text("点一下任意一天，可以把整条河的日期切过去。")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
+                        Spacer()
+                        HStack(spacing: 8) {
+                            summaryChip("均值", "\(average)")
+                            summaryChip("峰值", "\(peak?.score ?? 0)")
+                        }
+                    }
+
+                    VStack(spacing: 8) {
+                        ForEach(pulses) { pulse in
+                            pulseRow(pulse, isSelected: pulse.dateKey == selectedKey)
+                        }
                     }
                 }
             }
         }
+    }
+
+    private func pulseRow(_ pulse: RhythmPulse, isSelected: Bool) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.2)) {
+                selectedDate = DiaryEntry.dateFormatter.date(from: pulse.dateKey) ?? selectedDate
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Text(pulse.dateKey.suffix(5))
+                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                    .foregroundStyle(isSelected ? Color.ink : .secondary)
+                    .frame(width: 46, alignment: .leading)
+
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.primary.opacity(0.07))
+                        Capsule()
+                            .fill(Color(hex: pulse.tone.color).opacity(isSelected ? 1 : 0.72))
+                            .frame(width: max(14, proxy.size.width * Double(pulse.score) / 100))
+                    }
+                }
+                .frame(height: 9)
+
+                Text("\(pulse.score)")
+                    .font(.system(.caption, design: .rounded).weight(.semibold))
+                    .frame(width: 28, alignment: .trailing)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .background(
+                isSelected ? Color.chip : Color.clear,
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func summaryChip(_ title: String, _ value: String) -> some View {
+        HStack(spacing: 5) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.ink)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
+        .background(Color.chip, in: Capsule())
     }
 
     private var recentPulses: [RhythmPulse] {
