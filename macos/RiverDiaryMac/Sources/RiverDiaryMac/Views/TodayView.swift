@@ -5,7 +5,6 @@ struct TodayView: View {
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore
     @Binding var selectedDate: Date
-    var showsHeader: Bool = true
 
     @State private var draft: AIDraft = AIDraft(
         headline: "正在整理今天", narrative: "", category: "随想", tags: [],
@@ -46,9 +45,7 @@ struct TodayView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                if showsHeader {
-                    header
-                }
+                header
                 moodStrip
                 careCard
                 draftCard
@@ -215,10 +212,10 @@ struct TodayView: View {
                         }
                     }
                 } else {
-                    QuietHint(
-                        title: "身体数据还没进来",
-                        message: "这一天没有同步到步数、距离或活动热量。"
-                    )
+                    Text("这一天还没有同步到步数、距离或活动热量。")
+                        .font(.caption)
+                        .lineSpacing(5)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -533,10 +530,7 @@ struct TodayView: View {
                 }
 
                 if !entry.hasProjectSignals {
-                    QuietHint(
-                        title: "数据还在路上",
-                        message: "今天还没有屏幕或运动数据。已有的日记文字仍会进入草稿。"
-                    )
+                    Text("今天还没有屏幕或运动数据。已有的日记文字仍会进入草稿。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {

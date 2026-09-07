@@ -4,7 +4,6 @@ struct RhythmView: View {
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @Binding var anchorDate: Date
-    var showsHeader: Bool = true
 
     @State private var selectedDays = 30
     @State private var selectedMetric: RhythmMetric = .overall
@@ -42,9 +41,7 @@ struct RhythmView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                if showsHeader {
-                    header
-                }
+                header
                 controlPanel
                 metricCard
                 connectionCard
@@ -118,10 +115,7 @@ struct RhythmView: View {
                 }
 
                 if periodEntries.isEmpty {
-                    QuietHint(
-                        title: "评分还没汇成流",
-                        message: "这段时间还没有评分。有记录的日子，自然会流进来。"
-                    )
+                    Text("这段时间还没有评分。有记录的日子，自然会流进来。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
