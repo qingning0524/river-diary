@@ -1,0 +1,342 @@
+import SwiftUI
+
+struct HomeView: View {
+    @ObservedObject var store: DiaryStore
+    let openTab: (AppTab) -> Void
+
+    private let featureColumns = [
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14)
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                hero
+                status
+                features
+                workspace
+                    .padding(.top, 26)
+            }
+            .padding(.top, 28)
+        }
+        .scrollIndicators(.hidden)
+    }
+
+    private var hero: some View {
+        VStack(spacing: 16) {
+            HStack(alignment: .top, spacing: 8) {
+                Text("River Diary")
+                    .font(.system(size: 86, weight: .semibold))
+                    .kerning(-3)
+                    .foregroundStyle(Color.ink)
+                    .shadow(color: .black.opacity(0.07), radius: 22, y: 18)
+
+                Text("🌊")
+                    .font(.system(size: 48))
+                    .padding(.top, 16)
+                    .shadow(color: .black.opacity(0.12), radius: 14, y: 10)
+            }
+
+            HStack(spacing: 10) {
+                Text("情绪日记")
+                Text("·").foregroundStyle(.tertiary)
+                Text("看见").fontWeight(.bold)
+                Text("沉淀").foregroundStyle(.secondary)
+                Text("生长").foregroundStyle(.tertiary)
+            }
+            .font(.system(size: 22, weight: .medium))
+
+            HStack(spacing: 14) {
+                Button {
+                    openTab(.today)
+                } label: {
+                    Label("写今天", systemImage: "leaf")
+                }
+                .buttonStyle(.plain)
+                .primaryCTA()
+
+                Button {
+                    openTab(.river)
+                } label: {
+                    Label("情绪回放", systemImage: "waterwaves")
+                }
+                .buttonStyle(.plain)
+                .secondaryCTA()
+            }
+            .padding(.top, 6)
+        }
+    }
+
+    private var displayEntry: DiaryEntry? {
+        let candidate = store.entry()
+        if candidate.id.hasPrefix("local-") {
+            return store.hasOverride(candidate) ? candidate : store.latestEntry
+        }
+        return candidate
+    }
+
+    private var status: some View {
+        let entry = displayEntry
+        let isToday = entry?.date == DiaryEntry.dateFormatter.string(from: Date())
+
+        return HStack(spacing: 8) {
+            Circle().fill(Color(hex: "#2FA56C")).frame(width: 7, height: 7)
+            Image(systemName: "chart.line.uptrend.xyaxis")
+            Text(isToday ? "今日情绪" : "最近情绪")
+            Text("\(entry?.overall ?? 0)").fontWeight(.bold)
+            Text("· \(entry?.stateLabel ?? "平稳")")
+        }
+        .font(.system(size: 13, weight: .semibold))
+        .foregroundStyle(Color(hex: "#206744"))
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .background(Color(hex: "#D5F4E0").opacity(0.65), in: Capsule())
+        .overlay(Capsule().stroke(Color(hex: "#A0DAB6").opacity(0.45), lineWidth: 1))
+        .padding(.top, 28)
+    }
+
+    private var features: some View {
+        LazyVGrid(columns: featureColumns, spacing: 14) {
+            feature("leaf", "快速记录", .today)
+            feature("heart.text.square", "心情识别", .insight)
+            feature("waterwaves", "情绪河流", .river)
+            feature("archivebox", "灵感归档", .notes)
+            feature("sparkles", "状态洞察", .review)
+            feature("lock", "隐私优先", .privacy)
+        }
+        .frame(maxWidth: 890)
+        .padding(.top, 30)
+    }
+
+    private func feature(_ icon: String, _ title: String, _ tab: AppTab) -> some View {
+        Button {
+            openTab(tab)
+        } label: {
+            VStack(spacing: 13) {
+                Image(systemName: icon)
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(Color.ink)
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.secondaryInk)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 22)
+            .background(Color.surface, in: RoundedRectangle(cornerRadius: 19, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 19, style: .continuous)
+                    .stroke(Color.border, lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.06), radius: 14, y: 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var workspace: some View {
+        if let entry = displayEntry {
+            HStack(alignment: .top, spacing: 18) {
+                SoftCard {
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 7) {
+                                Text(entry.shortDate)
+                                    .font(.caption.smallCaps())
+                                    .foregroundStyle(.secondary)
+                                Text(entry.date == DiaryEntry.dateFormatter.string(from: Date()) ? "今天，我正在大大方方见自己" : "最近，我正在大大方方见自己")
+                                    .font(.system(size: 20, weight: .semibold))
+                            }
+                            Spacer()
+                            Button("继续写") { openTab(.today) }
+                                .buttonStyle(.plain)
+                                .smallAction()
+                            Button("回放") { openTab(.river) }
+                                .buttonStyle(.plain)
+                                .smallAction(dark: true)
+                        }
+
+                        Text(store.overview(for: entry).isEmpty ? "今天还没有写下内容。" : store.overview(for: entry))
+                            .font(.system(size: 13))
+                            .lineSpacing(7)
+                            .foregroundStyle(Color.secondaryInk)
+                            .padding(18)
+                            .frame(maxWidth: .infinity, minHeight: 112, alignment: .topLeading)
+                            .background(Color.editor, in: RoundedRectangle(cornerRadius: 16))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(.black.opacity(0.06), lineWidth: 1)
+                            )
+                            .padding(.top, 18)
+
+                        HStack {
+                            HStack(spacing: 6) {
+                                ForEach(store.tags(for: entry), id: \.self) { tag in
+                                    Text("#\(tag)")
+                                        .font(.caption2.weight(.medium))
+                                        .padding(.horizontal, 9)
+                                        .padding(.vertical, 6)
+                                        .background(Color.chip, in: Capsule())
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: "face.smiling")
+                            Image(systemName: "photo")
+                            Image(systemName: "mic")
+                            Image(systemName: "music.note")
+                        }
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 14)
+                    }
+                }
+
+                VStack(spacing: 13) {
+                    currentStatus(entry)
+                    miniChart
+                }
+                .frame(width: 310)
+            }
+            .frame(maxWidth: 1030)
+        }
+    }
+
+    private var miniChartEntries: [DiaryEntry] {
+        Array(store.entries.suffix(7))
+    }
+
+    private func currentStatus(_ entry: DiaryEntry) -> some View {
+        SoftCard(padding: 16) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("当前状态").font(.headline)
+                    Spacer()
+                    Button("详情") { openTab(.insight) }
+                        .font(.caption)
+                        .buttonStyle(.plain)
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(entry.overall)").font(.system(size: 31, weight: .bold))
+                    Text(entry.stateLabel).font(.caption.weight(.semibold))
+                }
+                .foregroundStyle(Color.ink)
+                .padding(.top, 12)
+
+                ProgressBar(value: Double(entry.overall))
+                    .padding(.top, 12)
+
+                HStack(spacing: 6) {
+                    metric("心情", entry.mood)
+                    metric("专注", entry.focus)
+                    metric("产出", entry.output)
+                    metric("精力", entry.energy)
+                }
+                .padding(.top, 14)
+            }
+        }
+    }
+
+    private func metric(_ title: String, _ value: Int) -> some View {
+        VStack(spacing: 3) {
+            Text(title).font(.caption2).foregroundStyle(.secondary)
+            Text("\(value)").font(.system(size: 13, weight: .semibold))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 9)
+        .background(Color.chip, in: RoundedRectangle(cornerRadius: 11))
+    }
+
+    private var miniChart: some View {
+        SoftCard(padding: 16) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("近七日河流").font(.headline)
+                    Spacer()
+                    Text("8.28 — 9.3").font(.caption2)
+                }
+                .foregroundStyle(Color.ink)
+
+                MoodAreaChart(entries: Array(store.entries.suffix(7)), selectedID: .constant(nil))
+                    .frame(height: 92)
+                    .padding(.top, 10)
+
+                HStack {
+                    if let first = miniChartEntries.first, let last = miniChartEntries.last {
+                        Text(first.shortDate)
+                        Spacer()
+                        if miniChartEntries.count > 2 {
+                            Text(miniChartEntries[miniChartEntries.count / 2].shortDate)
+                        }
+                        Spacer()
+                        Text(last.shortDate)
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+struct PrimaryButtonStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(Color.ctaText)
+            .padding(.horizontal, 21)
+            .padding(.vertical, 12)
+            .background(Color.ctaBackground, in: Capsule())
+            .shadow(color: .black.opacity(0.16), radius: 18, y: 10)
+    }
+}
+
+struct SecondaryButtonStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(Color.ink)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.surface, in: Capsule())
+            .overlay(Capsule().stroke(.black.opacity(0.1), lineWidth: 1))
+            .shadow(color: .black.opacity(0.07), radius: 14, y: 9)
+    }
+}
+
+struct SmallActionButtonStyle: ViewModifier {
+    var dark = false
+
+    func body(content: Content) -> some View {
+        content
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(dark ? Color.ctaText : Color.secondaryInk)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(dark ? Color.ctaBackground : Color.chip, in: Capsule())
+            .overlay(Capsule().stroke(Color.border.opacity(dark ? 0 : 1), lineWidth: 1))
+    }
+}
+
+extension View {
+    func primaryCTA() -> some View { modifier(PrimaryButtonStyle()) }
+    func secondaryCTA() -> some View { modifier(SecondaryButtonStyle()) }
+    func smallAction(dark: Bool = false) -> some View { modifier(SmallActionButtonStyle(dark: dark)) }
+    func iconAction() -> some View { modifier(IconActionButtonStyle()) }
+}
+
+struct IconActionButtonStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(Color.secondaryInk)
+            .frame(width: 26, height: 26)
+            .background(Color.chip, in: Circle())
+            .overlay(Circle().stroke(Color.border, lineWidth: 1))
+    }
+}

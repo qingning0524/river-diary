@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .simbuild/
 .build/
+.swiftpm/
 backups/
 dist/
 data/raw.json
