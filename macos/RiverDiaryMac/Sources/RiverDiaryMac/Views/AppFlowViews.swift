@@ -1,0 +1,391 @@
+import SwiftUI
+
+struct RhythmPulseCard: View {
+    let pulse: RhythmPulse
+    var trend: Int?
+
+    var body: some View {
+        SoftCard(padding: 24) {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .top, spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.border, lineWidth: 8)
+                        Circle()
+                            .trim(from: 0, to: max(0.02, Double(pulse.score) / 100))
+                            .stroke(Color(hex: pulse.tone.color), style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                    }
+                    .frame(width: 94, height: 94)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 8) {
+                            Text("\(pulse.score)")
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                            Text("脉搏")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            StatusBadge(pulse.tone.label, tone: pulse.score >= 68 ? .positive : .neutral)
+                            if let trend {
+                                Label("\(trend > 0 ? "+" : "")\(trend)", systemImage: trend >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(trend >= 0 ? Color(hex: "#2C8158") : Color(hex: "#B26B00"))
+                            }
+                        }
+
+                        Text(pulse.headline)
+                            .font(.title3.weight(.semibold))
+                        Text(pulse.narrative)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    pulseMetric("专注", "\(pulse.focusMinutes)分")
+                    pulseMetric("活跃", "\(pulse.activeMinutes)分")
+                    pulseMetric("情绪", "\(pulse.mood)")
+                    pulseMetric("碎片", "\(pulse.fragmentation)")
+                }
+            }
+        }
+    }
+
+    private func pulseMetric(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.headline)
+                .foregroundStyle(Color.ink)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.chip, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+struct TodayFlowView: View {
+    @ObservedObject var store: DiaryStore
+    @ObservedObject var activity: ActivityStore
+    @ObservedObject var ai: AIAssistantStore
+    @Binding var selectedDate: Date
+    @Binding var calmMode: Bool
+
+    @State private var draft = AIDraft(
+        headline: "正在整理", narrative: "", category: "随想", tags: [],
+        mood: 70, energy: 65, focus: 70, output: 65, confidence: 0,
+        confidenceFactors: [], evidence: [], signals: [], care: .none, isEmpty: true
+    )
+    @State private var editedDraft = ""
+    @State private var isEditing = false
+    @State private var mood: Double = 70
+    @State private var energy: Double = 65
+    @State private var focus: Double = 70
+    @State private var output: Double = 65
+    @State private var quickCaptureText = ""
+
+    private var entry: DiaryEntry {
+        store.entry(for: selectedDate)
+    }
+
+    private var pulse: RhythmPulse {
+        RhythmPulseEngine.pulse(date: selectedDate, store: store, activity: activity)
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+                RhythmPulseCard(pulse: pulse)
+
+                if calmMode {
+                    calmDraftCard
+                    quickCaptureRow
+                } else {
+                    TodayView(store: store, activity: activity, ai: ai, selectedDate: $selectedDate)
+                        .background(.clear)
+                }
+            }
+            .frame(maxWidth: 1280, alignment: .leading)
+            .padding(.top, 6)
+            .padding(.bottom, 34)
+        }
+        .scrollIndicators(.hidden)
+        .frame(maxWidth: .infinity)
+        .onAppear(perform: loadCalmDraft)
+        .onChange(of: selectedDate) { loadCalmDraft() }
+        .onChange(of: activity.sessions.count) { loadCalmDraft() }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(selectedDate == Calendar.current.startOfDay(for: Date()) ? "今天" : selectedDate.formatted(.dateTime.month().day().weekday()))
+                    .font(.largeTitle.weight(.bold))
+                Text("一条河，四个入口")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button {
+                calmMode.toggle()
+            } label: {
+                Label(calmMode ? "完整视图" : "安静模式", systemImage: calmMode ? "rectangle.expand.vertical" : "leaf.fill")
+                    .font(.caption.weight(.semibold))
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color(hex: "#4E8CFF"))
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var calmDraftCard: some View {
+        SoftCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 10) {
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(Color.ctaText)
+                    Text("今日草稿")
+                        .font(.headline)
+                    Spacer()
+                    if isEditing {
+                        Button("取消") { isEditing = false } .buttonStyle(.plain).smallAction()
+                    } else {
+                        Button("编辑") { isEditing = true } .buttonStyle(.plain).smallAction()
+                    }
+                }
+
+                Text(draft.headline)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                if isEditing {
+                    TextEditor(text: $editedDraft)
+                        .font(.body)
+                        .scrollContentBackground(.hidden)
+                        .frame(minHeight: 148)
+                        .padding(10)
+                        .background(Color.editor, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                } else {
+                    Text(editedDraft.isEmpty ? "这一天还没有草稿。" : editedDraft)
+                        .font(.body)
+                        .lineSpacing(5)
+                        .frame(maxWidth: .infinity, minHeight: 100, alignment: .topLeading)
+                }
+
+                HStack(spacing: 10) {
+                    slider("情绪", $mood)
+                    slider("精力", $energy)
+                    slider("专注", $focus)
+                    slider("产出", $output)
+                }
+
+                HStack {
+                    if case .saved(let date) = store.saveState {
+                        Text("已保存 \(date.formatted(date: .omitted, time: .shortened))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("存进今天") { save() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color.ctaText)
+                }
+            }
+        }
+    }
+
+    private var quickCaptureRow: some View {
+        SoftCard(padding: 18) {
+            HStack(spacing: 12) {
+                Image(systemName: "bolt.fill")
+                    .foregroundStyle(Color.ctaText)
+                TextField("一句话，先放进河里", text: $quickCaptureText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .onSubmit(addQuickCapture)
+                Button("加入") { addQuickCapture() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.ctaText)
+            }
+        }
+    }
+
+    private var saveState: JournalSaveState { store.saveState }
+
+    private func slider(_ title: String, _ value: Binding<Double>) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title).font(.caption2).foregroundStyle(.secondary)
+                Spacer()
+                Text("\(Int(value.wrappedValue))").font(.caption.weight(.semibold))
+            }
+            Slider(value: value, in: 0...100)
+        }
+    }
+
+    private func loadCalmDraft() {
+        guard !isEditing else { return }
+        let previous = store.entries.last { $0.date < entry.date }
+        draft = AIDraftEngine.compose(
+            entry: entry,
+            previous: previous,
+            quickCaptures: store.captures(for: entry),
+            autoPaused: store.autoDraftPaused || store.isAutoDraftTemporarilyPaused,
+            activitySessions: activity.liveSessions(for: selectedDate)
+        )
+        editedDraft = draft.narrative
+        mood = Double(draft.mood)
+        energy = Double(draft.energy)
+        focus = Double(draft.focus)
+        output = Double(draft.output)
+    }
+
+    private func save() {
+        store.save(
+            entry: entry,
+            text: isEditing ? editedDraft : draft.narrative,
+            mood: Int(mood),
+            energy: Int(energy),
+            focus: Int(focus),
+            output: Int(output),
+            category: draft.category,
+            tags: draft.tags
+        )
+        isEditing = false
+    }
+
+    private func addQuickCapture() {
+        let text = quickCaptureText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        store.addQuickCapture(text, for: selectedDate)
+        quickCaptureText = ""
+        loadCalmDraft()
+    }
+}
+
+struct RhythmFlowView: View {
+    @ObservedObject var store: DiaryStore
+    @ObservedObject var activity: ActivityStore
+    @ObservedObject var ai: AIAssistantStore
+    @Binding var selectedDate: Date
+
+    @State private var mode: Mode = .pulse
+
+    enum Mode: String, CaseIterable, Identifiable {
+        case pulse, metrics, footprint
+
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .pulse: "脉搏"
+            case .metrics: "指标"
+            case .footprint: "足迹"
+            }
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Picker("视图", selection: $mode.animation(.easeOut(duration: 0.2))) {
+                    ForEach(Mode.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 320)
+
+                if mode == .pulse {
+                    pulseView
+                } else if mode == .metrics {
+                    RhythmView(store: store, activity: activity, anchorDate: $selectedDate)
+                        .background(.clear)
+                } else {
+                    ActivityView(
+                        activity: activity,
+                        selectedDate: $selectedDate,
+                        ai: ai,
+                        entries: store.entries,
+                        quickCaptures: store.quickCaptures[DiaryEntry.dateFormatter.string(from: selectedDate)] ?? []
+                    )
+                    .background(.clear)
+                }
+            }
+            .frame(maxWidth: 1280, alignment: .leading)
+            .padding(.top, 6)
+            .padding(.bottom, 34)
+        }
+        .scrollIndicators(.hidden)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var pulseView: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            let pulses = recentPulses
+            RhythmPulseCard(pulse: pulses.last ?? RhythmPulseEngine.pulse(date: selectedDate, store: store, activity: activity))
+            SoftCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("近七日脉搏")
+                        .font(.headline)
+                    ForEach(pulses) { pulse in
+                        Button {
+                            selectedDate = DiaryEntry.dateFormatter.date(from: pulse.dateKey) ?? selectedDate
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text(pulse.dateKey.suffix(5))
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 48, alignment: .leading)
+                                ProgressBar(value: Double(pulse.score))
+                                Text("\(pulse.score)")
+                                    .font(.caption.weight(.semibold))
+                                    .frame(width: 28, alignment: .trailing)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private var recentPulses: [RhythmPulse] {
+        let calendar = Calendar.current
+        return (0..<7).compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: -offset, to: selectedDate) else { return nil }
+            return RhythmPulseEngine.pulse(date: date, store: store, activity: activity)
+        }.reversed()
+    }
+}
+
+struct MemoryFlowView: View {
+    @ObservedObject var store: DiaryStore
+    @ObservedObject var ai: AIAssistantStore
+    @Binding var selectedDate: Date
+
+    @State private var section: MemorySection = .search
+
+    var body: some View {
+        MemoryView(
+            ai: ai,
+            entries: store.entries,
+            quickCaptures: store.quickCaptures.values.flatMap(\.self),
+            section: $section
+        ) { date in
+            selectedDate = date
+        }
+    }
+}
+
+struct SettingsFlowView: View {
+    @ObservedObject var store: DiaryStore
+    @ObservedObject var activity: ActivityStore
+    @ObservedObject var ai: AIAssistantStore
+    @ObservedObject var ingestion: DataIngestionStore
+
+    var body: some View {
+        PrivacyView(store: store, activity: activity, ai: ai, ingestion: ingestion)
+            .background(.clear)
+    }
+}
