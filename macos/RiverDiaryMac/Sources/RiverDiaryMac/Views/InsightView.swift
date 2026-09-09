@@ -83,16 +83,19 @@ struct InsightView: View {
     }
 
     private func stat(_ title: String, _ value: String, _ detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 7) {
             Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.system(size: 24, weight: .semibold)).foregroundStyle(Color.ink)
+            Text(value)
+                .font(.editorial(26))
+                .foregroundStyle(LinearGradient.river())
             Text(detail).font(.caption).lineLimit(2).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(17)
-        .background(Color.surface, in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.border, lineWidth: 1))
-        .shadow(color: .black.opacity(0.06), radius: 16, y: 10)
+        .background(Color.surface, in: RoundedRectangle(cornerRadius: AppRadius.cardSmall, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AppRadius.cardSmall, style: .continuous).stroke(Color.border, lineWidth: 1))
+        .shadow(color: .black.opacity(0.10), radius: 2, x: 0, y: 1)
+        .shadow(color: .black.opacity(0.05), radius: 18, x: 0, y: 12)
     }
 
     private var detail: some View {
@@ -105,7 +108,7 @@ struct InsightView: View {
                         .lineSpacing(7)
                         .foregroundStyle(Color.secondaryInk)
 
-                    VStack(spacing: 12) {
+                    VStack(spacing: 13) {
                         bar("心情", recentAverage(\.mood))
                         bar("专注", recentAverage(\.focus))
                         bar("产出", recentAverage(\.output))

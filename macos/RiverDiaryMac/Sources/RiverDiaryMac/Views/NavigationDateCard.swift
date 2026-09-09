@@ -14,19 +14,24 @@ struct NavigationDateCard: View {
     }
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 7) {
             arrowButton(direction: -1)
 
             Button {
                 showsCalendar.toggle()
             } label: {
-                HStack(spacing: 7) {
+                HStack(spacing: 8) {
                     Image(systemName: "calendar")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.ctaText)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 21, height: 21)
+                        .background(
+                            LinearGradient.river(),
+                            in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        )
 
                     Text(dateText)
-                        .font(.system(size: 12.5, weight: .semibold))
+                        .font(.ui(12.5, weight: .semibold))
                         .foregroundStyle(Color.ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -41,12 +46,12 @@ struct NavigationDateCard: View {
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 9)
-                .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
+                .padding(.horizontal, 10)
+                .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
                 .background(Color.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(Color.border, lineWidth: 1))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.softPress)
             .popover(isPresented: $showsCalendar, arrowEdge: .bottom) {
                 DatePicker(
                     "统一选择日期",
@@ -68,11 +73,11 @@ struct NavigationDateCard: View {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Color.secondaryInk)
-                        .frame(width: 26, height: 32)
+                        .frame(width: 28, height: 34)
                         .background(Color.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(Color.border, lineWidth: 1))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.softPress)
                 .help("回今天")
             }
         }
@@ -87,11 +92,11 @@ struct NavigationDateCard: View {
             Image(systemName: direction < 0 ? "chevron.left" : "chevron.right")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(Color.secondaryInk)
-                .frame(width: 24, height: 32)
+                .frame(width: 26, height: 34)
                 .background(Color.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(Color.border, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.softPress)
         .disabled(direction > 0 && isTomorrow)
         .keyboardShortcut(direction < 0 ? .leftArrow : .rightArrow, modifiers: .command)
         .help(direction < 0 ? "前一天" : "后一天")

@@ -154,7 +154,7 @@ struct TodayView: View {
     @ViewBuilder
     private var moodStrip: some View {
         if recentEntries.count >= 2 {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("最近 14 天的节律")
                         .font(.caption.weight(.semibold))
@@ -164,23 +164,52 @@ struct TodayView: View {
                         .foregroundStyle(.tertiary)
                     Spacer()
                 }
+
                 MoodAreaChart(entries: recentEntries, selectedID: $selectedMoodID)
-                    .frame(height: 74)
+                    .frame(height: 84)
+
+                if let first = recentEntries.first, let last = recentEntries.last {
+                    HStack {
+                        Text(first.shortDate)
+                        Spacer()
+                        Text(last.shortDate)
+                    }
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                }
             }
             .frame(maxWidth: 1280, alignment: .leading)
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("River Diary")
-                .font(.caption.weight(.semibold).smallCaps())
-                .foregroundStyle(.secondary)
-            Text(isToday ? "今天" : entry.shortDate)
-                .font(.system(size: 42, weight: .semibold))
-                .foregroundStyle(Color.ink)
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 9) {
+                Text("River Diary")
+                    .font(.system(size: 11, weight: .semibold))
+                    .kerning(1.1)
+                    .foregroundStyle(.tertiary)
+
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(LinearGradient.river())
+                    .frame(width: 24, height: 2)
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 13) {
+                Text(isToday ? "今天" : entry.shortDate)
+                    .font(.editorial(40))
+                    .foregroundStyle(Color.ink)
+
+                Text(selectedDate.formatted(.dateTime.weekday(.wide)))
+                    .font(.ui(12, weight: .semibold))
+                    .foregroundStyle(Color.riverAmethyst)
+                    .padding(.horizontal, 11)
+                    .padding(.vertical, 6)
+                    .background(Color.riverAmethyst.opacity(0.10), in: Capsule())
+            }
+
             Text("日期由导航栏统一控制；你只管随手记，这里帮你把当天拢成一页。")
-                .font(.system(size: 14))
+                .font(.ui(13))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: 1280, alignment: .leading)
@@ -329,7 +358,7 @@ struct TodayView: View {
                         Label("本日概览", systemImage: "sparkles")
                             .font(.headline)
                         Text(draft.headline)
-                            .font(.system(size: 29, weight: .semibold))
+                            .font(.editorial(28))
                             .foregroundStyle(Color.ink)
                     }
 
@@ -377,24 +406,27 @@ struct TodayView: View {
                     }
                 } else {
                     Text(draft.narrative)
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.ui(17, weight: .medium))
                         .lineSpacing(9)
                         .foregroundStyle(Color.ink)
+                        .textSelection(.enabled)
                 }
 
                 HStack(spacing: 7) {
                     ForEach(selectedTags, id: \.self) { tag in
                         Text("#\(tag)")
                             .font(.caption.weight(.medium))
+                            .foregroundStyle(Color.secondaryInk)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background(Color.chip, in: Capsule())
                     }
                     Text(selectedCategory)
-                        .font(.caption.weight(.medium))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.riverAmethyst)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.chip, in: Capsule())
+                        .background(Color.riverAmethyst.opacity(0.10), in: Capsule())
                     Spacer()
                 }
 
@@ -500,9 +532,9 @@ struct TodayView: View {
 
     private var draftBandColors: [Color] {
         switch draft.mood {
-        case ..<39: [Color(hex: "#7FB3FF"), Color(hex: "#A5C6FF")]
-        case ..<63: [Color(hex: "#7F83FF"), Color(hex: "#9F9CFF")]
-        default: [Color(hex: "#FF8FB3"), Color(hex: "#FFC5D7")]
+        case ..<39: [Color.riverBlue, Color(hex: "#A9C2FF")]
+        case ..<63: [Color.riverAmethyst, Color(hex: "#B7A4FF")]
+        default: [Color.riverPink, Color(hex: "#FFC2D6")]
         }
     }
 
@@ -806,7 +838,7 @@ struct TodayView: View {
     private func slider(_ title: String, _ value: Binding<Double>) -> some View {
         HStack(spacing: 10) {
             Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary).frame(width: 38, alignment: .leading)
-            Slider(value: value, in: 0...100).tint(Color.ink)
+            Slider(value: value, in: 0...100).tint(Color.riverAmethyst)
             Text("\(Int(value.wrappedValue))").font(.caption.weight(.semibold)).frame(width: 26, alignment: .trailing)
         }
     }

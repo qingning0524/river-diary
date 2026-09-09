@@ -13,12 +13,18 @@ struct AppLockGate: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 16) {
-                Image(systemName: isLocked ? "lock.circle" : "lock.open.circle")
-                    .font(.system(size: 48, weight: .light))
-                    .foregroundStyle(Color.secondaryInk)
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient.river(startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 76, height: 76)
+                        .shadow(color: Color.riverAmethyst.opacity(0.35), radius: 14, y: 6)
+                    Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
 
                 Text("河流日记已上锁")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.ui(22, weight: .semibold))
                     .foregroundStyle(Color.ink)
 
                 Text("你的记录一直留在这里。想继续看的时候，解锁就好。")
@@ -36,8 +42,9 @@ struct AppLockGate: View {
                         .padding(.vertical, 10)
                         .background(Color.ctaBackground, in: Capsule())
                         .foregroundStyle(Color.ctaText)
+                        .shadow(color: .black.opacity(0.18), radius: 12, y: 7)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.softPress)
                 .padding(.top, 3)
 
                 if !message.isEmpty {

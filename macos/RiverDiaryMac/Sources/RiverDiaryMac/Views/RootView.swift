@@ -22,7 +22,7 @@ struct RootView: View {
         ZStack {
             VisualBackground()
 
-            HStack(alignment: .top, spacing: 20) {
+            HStack(alignment: .top, spacing: 18) {
                 sidebar
                     .frame(width: AppLayout.sidebarWidth, alignment: .topLeading)
 
@@ -37,6 +37,11 @@ struct RootView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .id(destination)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: 10)),
+                        removal: .opacity
+                    ))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
@@ -70,56 +75,94 @@ struct RootView: View {
         }
     }
 
-    private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            brand
+    // MARK: - 侧栏
 
-            VStack(alignment: .leading, spacing: 8) {
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            brand
+                .padding(.bottom, 13)
+
+            flowDivider
+                .padding(.bottom, 11)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("旅程")
+                    .font(.caption2.smallCaps().weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .padding(.leading, 9)
+
                 ForEach(AppDestination.allCases) { item in
                     navigationButton(item)
                 }
             }
+            .padding(.bottom, 12)
+
+            flowDivider
+                .padding(.bottom, 10)
+
+            statusSection
 
             Spacer(minLength: 12)
 
-            VStack(alignment: .leading, spacing: 8) {
-                quickCapture
-                navigationStatus("采集", ingestion.enabled ? ingestion.captureTimeLabel() : "关闭", ready: ingestion.enabled)
-                navigationStatus("足迹", activity.isTracking ? "开启" : "关闭", ready: activity.isTracking)
-                navigationStatus("AI", ai.analysisReady ? "就绪" : ai.isEnabled ? "未连" : "关闭", ready: ai.analysisReady)
+            quickCapture
+
+            HStack(spacing: 6) {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 9, weight: .medium))
+                Text("记录只在这台 Mac 上整理")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.tertiary)
             }
+            .padding(.top, 10)
         }
         .padding(14)
         .frame(maxHeight: .infinity, alignment: .topLeading)
-        .background(Color.surface, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .background {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(Color.surface)
+                .overlay(
+                    RadialGradient(
+                        colors: [Color.riverAmethyst.opacity(0.12), .clear],
+                        center: UnitPoint(x: 0.05, y: 0.02),
+                        startRadius: 0,
+                        endRadius: 320
+                    )
+                )
+        }
         .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(Color.border, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [Color.white.opacity(isDimmed ? 0.12 : 0.9), Color.white.opacity(0.05)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 1
+                )
         )
-        .shadow(color: .black.opacity(0.07), radius: 22, x: 0, y: 14)
+        .shadow(color: .black.opacity(isDimmed ? 0.05 : 0.09), radius: 3, x: 0, y: 1)
+        .shadow(color: .black.opacity(0.05), radius: 24, x: 0, y: 16)
     }
 
-    private var contentTopBar: some View {
-        HStack(spacing: 14) {
-            NavigationDateCard(selection: $selectedDate)
-                .frame(maxWidth: 368, alignment: .leading)
-
-            Spacer(minLength: 12)
-            themeButton
-        }
+    private var flowDivider: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [Color.ink.opacity(0), Color.ink.opacity(0.09), Color.ink.opacity(0)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .frame(height: 1)
     }
 
     private var brand: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.ctaText)
-                .frame(width: 32, height: 32)
-                .background(Color.ctaBackground, in: Circle())
+        HStack(spacing: 10) {
+            BrandMark(size: 36)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("River Diary")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.ui(14, weight: .semibold))
                 Text("生活节律")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.tertiary)
@@ -127,18 +170,51 @@ struct RootView: View {
         }
     }
 
+    private var statusSection: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 7) {
+                Text("此刻")
+                    .font(.caption2.smallCaps().weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                Spacer()
+            }
+
+            navigationStatus(
+                "采集",
+                icon: "waveform.badge.magnifyingglass",
+                value: ingestion.enabled ? ingestion.captureTimeLabel() : "关闭",
+                ready: ingestion.enabled
+            )
+            navigationStatus(
+                "足迹",
+                icon: "location.viewfinder",
+                value: activity.isTracking ? "开启" : "关闭",
+                ready: activity.isTracking
+            )
+            navigationStatus(
+                "AI",
+                icon: "brain",
+                value: ai.analysisReady ? "就绪" : ai.isEnabled ? "未连" : "关闭",
+                ready: ai.analysisReady
+            )
+        }
+    }
+
     private var quickCapture: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("快记")
-                .font(.caption.smallCaps())
+                .font(.caption2.smallCaps().weight(.semibold))
                 .foregroundStyle(.tertiary)
 
             HStack(spacing: 7) {
                 Image(systemName: "bolt.fill")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Color.ctaText)
+                    .foregroundStyle(.white)
                     .frame(width: 24, height: 24)
-                    .background(Color.ctaBackground, in: Circle())
+                    .background(
+                        LinearGradient.river(),
+                        in: Circle()
+                    )
 
                 TextField("一句话", text: $quickCaptureText, axis: .vertical)
                     .textFieldStyle(.plain)
@@ -148,6 +224,10 @@ struct RootView: View {
             }
             .padding(7)
             .background(Color.chip, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.border.opacity(0.6), lineWidth: 1)
+            )
 
             Button {
                 saveQuickCapture()
@@ -155,18 +235,31 @@ struct RootView: View {
                 Text("保留到今天")
                     .font(.caption2.weight(.semibold))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 7)
             }
             .buttonStyle(.plain)
             .primaryCTA()
         }
     }
 
+    private var contentTopBar: some View {
+        HStack(spacing: 14) {
+            NavigationDateCard(selection: $selectedDate)
+                .frame(maxWidth: 400, alignment: .leading)
+
+            Spacer(minLength: 12)
+
+            themeButton
+        }
+    }
+
     private var themeButton: some View {
         Button {
-            isDimmed.toggle()
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isDimmed.toggle()
+            }
         } label: {
-            Image(systemName: isDimmed ? "sun.max" : "moon")
+            Image(systemName: isDimmed ? "sun.max.fill" : "moon.stars.fill")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.secondaryInk)
                 .frame(width: 32, height: 32)
@@ -176,7 +269,7 @@ struct RootView: View {
                         .stroke(Color.border, lineWidth: 1)
                 )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.softPress)
         .help(isDimmed ? "切换到浅色" : "切换到深色")
     }
 
@@ -185,39 +278,48 @@ struct RootView: View {
         let isHovered = hoveredDestination == item
 
         return Button {
-            destination = item
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.88)) {
+                destination = item
+            }
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 9) {
                 Image(systemName: item.icon)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(isSelected ? Color.ctaText : Color.secondaryInk)
-                    .frame(width: 24, height: 24)
-                    .background(isSelected ? Color.ctaBackground : Color.chip, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(isSelected ? .white : Color.secondaryInk)
+                    .frame(width: 26, height: 26)
+                    .background(
+                        isSelected ? Color.white.opacity(0.20) : Color.chip,
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    )
 
                 Text(item.title)
-                    .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
-                    .foregroundStyle(isSelected ? Color.ink : Color.secondaryInk)
+                    .font(.ui(13, weight: isSelected ? .semibold : .medium))
+                    .foregroundStyle(isSelected ? .white : Color.ink)
                     .lineLimit(1)
 
                 Spacer(minLength: 0)
 
                 if let badge = badge(for: item) {
                     Text(badge)
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 5)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Color.ctaText)
+                        .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.chip, in: Capsule())
+                        .background(Color.ctaBackground.opacity(0.9), in: Capsule())
+                } else if !isSelected {
+                    Text("⌘\(item.shortcutNumber)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                        .opacity(isHovered ? 1 : 0.55)
                 }
             }
-            .padding(.horizontal, 7)
-            .padding(.vertical, 6)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 9)
+            .frame(height: 37)
             .background {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.strongSurface)
-                        .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
+                        .fill(LinearGradient.river())
+                        .shadow(color: Color.riverAmethyst.opacity(0.38), radius: 10, x: 0, y: 5)
                 } else if isHovered {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color.chip)
@@ -225,7 +327,7 @@ struct RootView: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.softPress)
         .onHover { isHovered in
             withAnimation(.easeInOut(duration: 0.15)) {
                 if isHovered {
@@ -251,19 +353,29 @@ struct RootView: View {
         }
     }
 
-    private func navigationStatus(_ title: String, _ value: String, ready: Bool) -> some View {
-        HStack(spacing: 7) {
-            Circle()
-                .fill(ready ? Color(hex: "#2C8158") : Color(hex: "#B26B00"))
-                .frame(width: 5, height: 5)
+    private func navigationStatus(_ title: String, icon: String, value: String, ready: Bool) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 20, height: 20)
+                .background(Color.chip, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+
             Spacer()
-            Text(value)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.ink)
-                .lineLimit(1)
+
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(ready ? Color(hex: "#2C8158") : Color(hex: "#B26B00"))
+                    .frame(width: 5, height: 5)
+                Text(value)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color.ink)
+                    .lineLimit(1)
+            }
         }
     }
 

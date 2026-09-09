@@ -6,11 +6,12 @@ struct QuickCaptureView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
+            HStack(spacing: 8) {
+                BrandMark(size: 22)
                 Text("River Diary 快记")
                     .font(.headline)
                 Spacer()
-                Circle().fill(store.autoDraftPaused ? Color.secondary : Color(hex: "#7CB342"))
+                Circle().fill(store.autoDraftPaused ? Color.secondary : Color(hex: "#2C8158"))
                     .frame(width: 7, height: 7)
             }
 
@@ -27,9 +28,17 @@ struct QuickCaptureView: View {
                 save()
             } label: {
                 Label("保留到今天", systemImage: "tray.and.arrow.down")
+                    .font(.ui(13, weight: .semibold))
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 9)
+                    .background(
+                        LinearGradient.river(),
+                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    )
+                    .shadow(color: Color.riverAmethyst.opacity(0.3), radius: 8, x: 0, y: 4)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.softPress)
 
             if case .saved(let date) = store.saveState {
                 Text("已保存 \(date.formatted(date: .omitted, time: .shortened))")

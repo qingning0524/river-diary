@@ -9,13 +9,22 @@ struct FlowPageHeader<Tab: Hashable>: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title)
-                    .font(.system(size: 32, weight: .semibold, design: .serif))
-                    .foregroundStyle(Color.ink)
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 9) {
+                    Text(title)
+                        .font(.editorial(34))
+                        .foregroundStyle(Color.ink)
+
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(LinearGradient.river())
+                        .frame(width: 28, height: 3)
+                        .offset(y: 6)
+                }
+
                 Text(caption)
-                    .font(.caption)
+                    .font(.ui(12))
                     .foregroundStyle(.secondary)
+                    .lineSpacing(3)
             }
 
             Spacer(minLength: 16)
@@ -27,7 +36,9 @@ struct FlowPageHeader<Tab: Hashable>: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: min(CGFloat(tabs.count) * 108, 420))
+            .tint(Color.riverAmethyst)
+            .controlSize(.large)
+            .frame(width: min(CGFloat(tabs.count) * 122, 460))
         }
         .frame(maxWidth: 1280, alignment: .leading)
     }

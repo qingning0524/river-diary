@@ -70,7 +70,7 @@ private struct CompactDateSelector: View {
                     dismiss()
                 }
                 .font(.caption)
-                .buttonStyle(.plain)
+                .buttonStyle(.softPress)
                 .smallAction()
 
                 Spacer()
@@ -121,15 +121,25 @@ private struct CompactDateSelector: View {
         } label: {
             Text("\(dayNumber)")
                 .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
-                .foregroundStyle(isFuture ? Color.secondaryInk.opacity(0.35) : isSelected ? Color.ctaText : isToday ? Color.ink : Color.secondaryInk)
+                .foregroundStyle(isFuture ? Color.secondaryInk.opacity(0.35) : isSelected ? .white : isToday ? Color.riverAmethyst : Color.secondaryInk)
                 .frame(width: 34, height: 32)
-                .background(
-                    isSelected ? Color.ctaBackground : isToday ? Color.chip : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 10)
-                )
+                .background {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(
+                            isSelected
+                                ? AnyShapeStyle(LinearGradient.river())
+                                : AnyShapeStyle(isToday ? Color.riverAmethyst.opacity(0.14) : Color.clear)
+                        )
+                        .overlay {
+                            if isToday && !isSelected {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(Color.riverAmethyst.opacity(0.45), lineWidth: 1)
+                            }
+                        }
+                }
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.softPress)
         .disabled(isFuture)
         .help(day.formatted(date: .complete, time: .omitted))
     }

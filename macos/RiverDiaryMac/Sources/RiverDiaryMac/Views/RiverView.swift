@@ -30,10 +30,10 @@ struct RiverView: View {
             VStack(alignment: .leading, spacing: 18) {
                 if showsHeader {
                     HStack(alignment: .bottom) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Replay").font(.caption.smallCaps()).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 7) {
+                            Text("Replay").font(.system(size: 11, weight: .semibold)).kerning(1.2).foregroundStyle(.tertiary)
                             Text("情绪河流")
-                                .font(.system(size: 34, weight: .semibold))
+                                .font(.editorial(34))
                                 .foregroundStyle(Color.ink)
                         }
                         Spacer()
@@ -43,7 +43,10 @@ struct RiverView: View {
                             Text("90天").tag(90)
                         }
                         .pickerStyle(.segmented)
-                        .frame(width: 260)
+                        .labelsHidden()
+                        .tint(Color.riverAmethyst)
+                        .controlSize(.large)
+                        .frame(width: 280)
                     }
                     .frame(maxWidth: 1280)
                 }
@@ -88,10 +91,10 @@ struct RiverView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    HStack(spacing: 8) {
-                        legend("安静", Color(hex: "#7FB3FF"))
-                        legend("变化", Color(hex: "#7F83FF"))
-                        legend("温暖", Color(hex: "#FF8FB3"))
+                    HStack(spacing: 7) {
+                        legend("安静", Color.riverBlue)
+                        legend("变化", Color.riverAmethyst)
+                        legend("温暖", Color.riverPink)
                     }
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -153,20 +156,31 @@ struct RiverView: View {
     }
 
     private func legend(_ title: String, _ color: Color) -> some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(title)
+                .font(.caption2.weight(.medium))
         }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background(Color.chip, in: Capsule())
     }
 
     private func riverStat(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.system(size: 16, weight: .semibold))
+            Text(value)
+                .font(.editorial(17))
+                .foregroundStyle(LinearGradient.river())
+                .monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Color.editor, in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.editor, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(Color.border.opacity(0.7), lineWidth: 1)
+        )
     }
 
     private var milestones: some View {

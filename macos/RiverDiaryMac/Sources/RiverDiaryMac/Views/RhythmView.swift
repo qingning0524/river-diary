@@ -82,13 +82,20 @@ struct RhythmView: View {
                         withAnimation(.easeOut(duration: 0.18)) { selectedDays = days }
                     } label: {
                         Text("\(days) 天")
-                            .font(.caption.weight(selectedDays == days ? .semibold : .medium))
-                            .padding(.horizontal, 12)
+                            .font(.ui(12, weight: selectedDays == days ? .semibold : .medium))
+                            .padding(.horizontal, 13)
                             .padding(.vertical, 8)
-                            .background(selectedDays == days ? Color.ctaBackground : Color.chip, in: Capsule())
-                            .foregroundStyle(selectedDays == days ? Color.ctaText : Color.secondaryInk)
+                            .background(
+                                selectedDays == days ? AnyShapeStyle(LinearGradient.river()) : AnyShapeStyle(Color.chip),
+                                in: Capsule()
+                            )
+                            .foregroundStyle(selectedDays == days ? .white : Color.secondaryInk)
+                            .shadow(
+                                color: selectedDays == days ? Color.riverAmethyst.opacity(0.3) : .clear,
+                                radius: 6, x: 0, y: 3
+                            )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.softPress)
                 }
 
                 Spacer()
@@ -114,7 +121,9 @@ struct RhythmView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    .frame(width: 380)
+                    .tint(Color.riverAmethyst)
+                    .controlSize(.large)
+                    .frame(width: 400)
                 }
 
                 if periodEntries.isEmpty {
@@ -287,13 +296,20 @@ struct RhythmView: View {
     }
 
     private func rhythmSummary(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title).font(.caption2).foregroundStyle(.tertiary)
-            Text(value).font(.system(size: 17, weight: .semibold)).foregroundStyle(Color.ink).monospacedDigit()
+            Text(value)
+                .font(.editorial(18))
+                .foregroundStyle(Color.ink)
+                .monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(11)
-        .background(Color.chip, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(12)
+        .background(Color.chip, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(Color.border.opacity(0.7), lineWidth: 1)
+        )
     }
 
     private func connection(_ title: String, metrics: [RhythmMetric]) -> ConnectionRow {
