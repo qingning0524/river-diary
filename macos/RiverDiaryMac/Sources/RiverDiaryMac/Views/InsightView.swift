@@ -3,6 +3,7 @@ import SwiftUI
 struct InsightView: View {
     let entries: [DiaryEntry]
     @ObservedObject var ai: AIAssistantStore
+    var showsHeader: Bool = true
 
     private var recentEntries: [DiaryEntry] {
         Array(entries.suffix(7))
@@ -38,7 +39,9 @@ struct InsightView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                header
+                if showsHeader {
+                    header
+                }
                 stats
                 detail
                 SoftCard {

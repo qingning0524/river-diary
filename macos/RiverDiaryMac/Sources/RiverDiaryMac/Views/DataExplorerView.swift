@@ -51,6 +51,7 @@ struct DataExplorerView: View {
     @ObservedObject var ingestion: DataIngestionStore
 
     @Binding var selectedDate: Date
+    var showsHeader: Bool = true
     @State private var category: DataExplorerCategory = .overview
     @State private var searchText = ""
 
@@ -70,7 +71,9 @@ struct DataExplorerView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                header
+                if showsHeader {
+                    header
+                }
                 toolbar
                 globalSearchCard
                 categoryContent

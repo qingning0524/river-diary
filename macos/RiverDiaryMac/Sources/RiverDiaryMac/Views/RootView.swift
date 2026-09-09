@@ -6,11 +6,14 @@ struct RootView: View {
     @ObservedObject var ai: AIAssistantStore
     @ObservedObject var ingestion: DataIngestionStore
 
-    @State private var destination: NavigationDestination = .today
+    @State private var destination: AppDestination = .today
+    @State private var timeSection: TimeSection = .river
     @State private var memorySection: MemorySection = .search
+    @State private var systemSection: SystemSection = .controls
     @State private var selectedDate = Date()
+    @State private var quickCaptureText = ""
     @AppStorage("appearance.prefersDark") private var isDimmed = false
-    @State private var hoveredDestination: NavigationDestination?
+    @State private var hoveredDestination: AppDestination?
     @AppStorage("privacy.appLockEnabled") private var appLockEnabled = false
     @State private var isLocked = false
     @State private var lockMessage = ""
@@ -33,6 +36,7 @@ struct RootView: View {
                             selectedView
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
@@ -67,29 +71,23 @@ struct RootView: View {
     }
 
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             brand
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 11) {
-                    ForEach(NavigationSection.allCases.filter { $0 != .control }) { section in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(section.title)
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(.tertiary)
-                                .padding(.leading, 6)
-
-                            ForEach(section.destinations) { item in
-                                navigationButton(item)
-                            }
-                        }
-                    }
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(AppDestination.allCases) { item in
+                    navigationButton(item)
                 }
-                .padding(.vertical, 1)
             }
-            .scrollIndicators(.hidden)
 
-            navigationButton(.privacy)
+            Spacer(minLength: 12)
+
+            VStack(alignment: .leading, spacing: 8) {
+                quickCapture
+                navigationStatus("采集", ingestion.enabled ? ingestion.captureTimeLabel() : "关闭", ready: ingestion.enabled)
+                navigationStatus("足迹", activity.isTracking ? "开启" : "关闭", ready: activity.isTracking)
+                navigationStatus("AI", ai.analysisReady ? "就绪" : ai.isEnabled ? "未连" : "关闭", ready: ai.analysisReady)
+            }
         }
         .padding(14)
         .frame(maxHeight: .infinity, alignment: .topLeading)
@@ -107,13 +105,6 @@ struct RootView: View {
                 .frame(maxWidth: 368, alignment: .leading)
 
             Spacer(minLength: 12)
-
-            HStack(spacing: 8) {
-                statusPill("采集", ingestion.enabled ? ingestion.captureTimeLabel() : "关闭", ready: ingestion.enabled)
-                statusPill("足迹", activity.isTracking ? "开启" : "关闭", ready: activity.isTracking)
-                statusPill("AI", ai.analysisReady ? "就绪" : ai.isEnabled ? "未连" : "关闭", ready: ai.analysisReady)
-            }
-
             themeButton
         }
     }
@@ -136,6 +127,41 @@ struct RootView: View {
         }
     }
 
+    private var quickCapture: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("快记")
+                .font(.caption.smallCaps())
+                .foregroundStyle(.tertiary)
+
+            HStack(spacing: 7) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Color.ctaText)
+                    .frame(width: 24, height: 24)
+                    .background(Color.ctaBackground, in: Circle())
+
+                TextField("一句话", text: $quickCaptureText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(.caption)
+                    .lineLimit(1...3)
+                    .onSubmit(saveQuickCapture)
+            }
+            .padding(7)
+            .background(Color.chip, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            Button {
+                saveQuickCapture()
+            } label: {
+                Text("保留到今天")
+                    .font(.caption2.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+            }
+            .buttonStyle(.plain)
+            .primaryCTA()
+        }
+    }
+
     private var themeButton: some View {
         Button {
             isDimmed.toggle()
@@ -154,14 +180,11 @@ struct RootView: View {
         .help(isDimmed ? "切换到浅色" : "切换到深色")
     }
 
-    private func navigationButton(_ item: NavigationDestination) -> some View {
+    private func navigationButton(_ item: AppDestination) -> some View {
         let isSelected = destination == item
         let isHovered = hoveredDestination == item
 
         return Button {
-            if let memory = item.memorySection {
-                memorySection = memory
-            }
             destination = item
         } label: {
             HStack(spacing: 8) {
@@ -192,7 +215,7 @@ struct RootView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 if isSelected {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color.strongSurface)
                         .shadow(color: .black.opacity(0.06), radius: 10, y: 4)
                 } else if isHovered {
@@ -212,41 +235,20 @@ struct RootView: View {
                 }
             }
         }
-        .keyboardShortcut(KeyEquivalent(Character("\(index(of: item) + 1)")), modifiers: .command)
+        .keyboardShortcut(KeyEquivalent(Character("\(item.shortcutNumber)")), modifiers: .command)
+        .help(item.caption)
     }
 
-    private func badge(for item: NavigationDestination) -> String? {
+    private func badge(for item: AppDestination) -> String? {
         switch item {
         case .today:
             return store.autoDraftPaused ? "暂停" : nil
-        case .activity:
-            return activity.isTracking ? nil : "关"
-        case .memoryNotes:
+        case .memory:
             let count = store.quickCaptures.values.reduce(0) { $0 + $1.count }
             return count > 0 ? "\(min(count, 99))" : nil
         default:
             return nil
         }
-    }
-
-    private func statusPill(_ title: String, _ value: String, ready: Bool) -> some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(ready ? Color(hex: "#2C8158") : Color(hex: "#B26B00"))
-                .frame(width: 5, height: 5)
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color.ink)
-                .lineLimit(1)
-        }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
-            .background(Color.surface, in: Capsule())
-            .overlay(Capsule().stroke(Color.border, lineWidth: 1))
-            .fixedSize()
     }
 
     private func navigationStatus(_ title: String, _ value: String, ready: Bool) -> some View {
@@ -265,37 +267,21 @@ struct RootView: View {
         }
     }
 
-    private var sourceReady: Bool {
-        store.externalSourceURL != nil && store.externalSourceError == nil
-    }
-
-    private func index(of item: NavigationDestination) -> Int {
-        NavigationDestination.allCases.firstIndex(of: item) ?? 0
-    }
-
     @ViewBuilder
     private var selectedView: some View {
         switch destination {
         case .today:
             TodayView(store: store, activity: activity, ai: ai, selectedDate: $selectedDate)
-        case .river:
-            RiverView(entries: store.entries, selectedDate: selectedDate, ai: ai)
-        case .rhythm:
-            RhythmView(store: store, activity: activity, anchorDate: $selectedDate)
-        case .activity:
-            ActivityView(
+        case .time:
+            TimeFlowView(
+                store: store,
                 activity: activity,
-                selectedDate: $selectedDate,
                 ai: ai,
-                entries: store.entries,
-                quickCaptures: store.quickCaptures[DiaryEntry.dateFormatter.string(from: selectedDate)] ?? []
+                selectedDate: $selectedDate,
+                section: $timeSection
             )
-        case .dataExplorer:
-            DataExplorerView(ingestion: ingestion, selectedDate: $selectedDate)
-        case .aiAnalysis:
-            AIAnalysisView(store: store, activity: activity, ai: ai, anchorDate: $selectedDate)
-        case .memorySearch, .memoryInsight, .memoryNotes:
-            MemoryView(
+        case .memory:
+            MemoryFlowView(
                 ai: ai,
                 entries: store.entries,
                 quickCaptures: store.quickCaptures.values.flatMap(\.self),
@@ -304,9 +290,25 @@ struct RootView: View {
                 selectedDate = date
                 destination = .today
             }
-        case .privacy:
-            PrivacyView(store: store, activity: activity, ai: ai, ingestion: ingestion)
+        case .insight:
+            InsightFlowView(store: store, activity: activity, ai: ai, selectedDate: $selectedDate)
+        case .system:
+            SystemFlowView(
+                store: store,
+                activity: activity,
+                ai: ai,
+                ingestion: ingestion,
+                selectedDate: $selectedDate,
+                section: $systemSection
+            )
         }
+    }
+
+    private func saveQuickCapture() {
+        let text = quickCaptureText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        store.addQuickCapture(text, for: selectedDate)
+        quickCaptureText = ""
     }
 
     private func errorView(_ message: String) -> some View {

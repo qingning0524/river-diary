@@ -6,6 +6,7 @@ struct RiverView: View {
     @ObservedObject var ai: AIAssistantStore
     @State private var dayRange = 7
     @State private var selectedEntryID: String?
+    var showsHeader: Bool = true
 
     private var visibleEntries: [DiaryEntry] {
         let endKey = DiaryEntry.dateFormatter.string(from: selectedDate)
@@ -27,23 +28,25 @@ struct RiverView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Replay").font(.caption.smallCaps()).foregroundStyle(.secondary)
-                        Text("情绪河流")
-                            .font(.system(size: 34, weight: .semibold))
-                            .foregroundStyle(Color.ink)
+                if showsHeader {
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Replay").font(.caption.smallCaps()).foregroundStyle(.secondary)
+                            Text("情绪河流")
+                                .font(.system(size: 34, weight: .semibold))
+                                .foregroundStyle(Color.ink)
+                        }
+                        Spacer()
+                        Picker("范围", selection: $dayRange) {
+                            Text("7天").tag(7)
+                            Text("30天").tag(30)
+                            Text("90天").tag(90)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 260)
                     }
-                    Spacer()
-                    Picker("范围", selection: $dayRange) {
-                        Text("7天").tag(7)
-                        Text("30天").tag(30)
-                        Text("90天").tag(90)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 260)
+                    .frame(maxWidth: 1280)
                 }
-                .frame(maxWidth: 1280)
 
                 chart
                 SoftCard {

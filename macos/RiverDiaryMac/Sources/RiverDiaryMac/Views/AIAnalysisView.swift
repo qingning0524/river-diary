@@ -7,6 +7,7 @@ struct AIAnalysisView: View {
     @ObservedObject var ai: AIAssistantStore
 
     @Binding var anchorDate: Date
+    var showsHeader: Bool = true
     @State private var selectedRange = 7
 
     private let columns: [GridItem] = [GridItem(.adaptive(minimum: 420), spacing: 14)]
@@ -97,7 +98,9 @@ struct AIAnalysisView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                header
+                if showsHeader {
+                    header
+                }
 
                 if !ai.isEnabled {
                     lockedView(

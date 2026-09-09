@@ -7,6 +7,7 @@ struct PrivacyView: View {
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore
     @ObservedObject var ingestion: DataIngestionStore
+    var showsHeader: Bool = true
     @State private var showsClearConfirmation = false
     @State private var showsClearActivityConfirmation = false
     @State private var showsRestoreConfirmation = false
@@ -21,7 +22,9 @@ struct PrivacyView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                header
+                if showsHeader {
+                    header
+                }
 
                 sectionLabel("分析")
                 modeCard

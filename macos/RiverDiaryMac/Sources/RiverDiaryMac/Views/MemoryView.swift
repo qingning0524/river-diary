@@ -5,12 +5,14 @@ enum MemorySection: String, CaseIterable, Identifiable {
     case insight
     case notes
 
+    static let displayOrder: [MemorySection] = [.search, .notes, .insight]
+
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .search: "回忆搜索"
-        case .insight: "状态"
+        case .insight: "重复信号"
         case .notes: "随笔"
         }
     }
@@ -29,6 +31,7 @@ struct MemoryView: View {
     let entries: [DiaryEntry]
     var quickCaptures: [QuickCapture] = []
     @Binding var section: MemorySection
+    var showsHeader: Bool = true
     let openDate: (Date) -> Void
 
     @State private var query = ""
@@ -42,7 +45,7 @@ struct MemoryView: View {
                 if section == .search {
                     searchSection
                 } else if section == .insight {
-                    InsightView(entries: entries, ai: ai)
+                    InsightView(entries: entries, ai: ai, showsHeader: false)
                         .background(.clear)
                 } else {
                     NotesView(entries: entries, quickCaptures: quickCaptures, ai: ai) { date in openDate(date) }
@@ -59,7 +62,9 @@ struct MemoryView: View {
 
     private var searchSection: some View {
         VStack(alignment: .leading, spacing: 18) {
-            searchHeader
+            if showsHeader {
+                searchHeader
+            }
 
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
