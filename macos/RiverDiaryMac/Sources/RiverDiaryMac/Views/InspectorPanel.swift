@@ -9,6 +9,7 @@ struct InspectorPanel: View {
     @State private var editingNote = ""
     @State private var editingFavorite = false
     @State private var isEditing = false
+    @State private var captureToDelete: QuickCapture?
 
     var body: some View {
         Group {
@@ -71,14 +72,35 @@ struct InspectorPanel: View {
                             EvidenceRow(session: session)
                         }
                         if item.kind == .capture, let capture = item.capture {
-                            HStack(spacing: 8) {
-                                Text(capture.createdAt.formatted(date: .omitted, time: .shortened))
-                                    .font(.system(size: 10).monospacedDigit())
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack(spacing: 8) {
+                                    Text(capture.createdAt.formatted(date: .omitted, time: .shortened))
+                                        .font(.system(size: 10).monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 46, alignment: .leading)
+                                    Text(capture.text)
+                                        .font(.system(size: 12))
+                                }
+                                HStack(spacing: 12) {
+                                    Button {
+                                        NSPasteboard.general.clearContents()
+                                        NSPasteboard.general.setString(capture.text, forType: .string)
+                                    } label: {
+                                        Label("复制", systemImage: "doc.on.doc")
+                                            .font(.system(size: 10))
+                                    }
+                                    .buttonStyle(.plain)
                                     .foregroundStyle(.secondary)
-                                    .frame(width: 46, alignment: .leading)
-                                Text(capture.text)
-                                    .font(.system(size: 12))
+                                    Button(role: .destructive) {
+                                        captureToDelete = capture
+                                    } label: {
+                                        Label("删除快记", systemImage: "trash")
+                                            .font(.system(size: 10))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
+                            .padding(.vertical, 2)
                         }
                     }
                 }
@@ -103,6 +125,27 @@ struct InspectorPanel: View {
             .padding(20)
         }
         .onAppear { isEditing = false }
+        .confirmationDialog(
+            "删除这条快记？",
+            isPresented: Binding(
+                get: { captureToDelete != nil },
+                set: { if !$0 { captureToDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("删除", role: .destructive) {
+                if let capture = captureToDelete {
+                    deleteCapture(capture)
+                }
+                captureToDelete = nil
+            }
+            Button("取消", role: .cancel) { captureToDelete = nil }
+        }
+    }
+
+    private func deleteCapture(_ capture: QuickCapture) {
+        let entry = store.entry(for: capture.createdAt)
+        store.removeQuickCapture(capture, entry: entry)
     }
 
     private func toggleEditing(_ item: ActivityTimelineItem) {

@@ -54,6 +54,7 @@ struct RiverShellView: View {
     @State private var selectedDate = Date()
     @State private var inspectorContent: InspectorContent?
     @State private var showsCapture = false
+    @State private var askQuery = "What have I been working on this week?"
     @AppStorage("appearance.prefersDark") private var isDimmed = false
     @AppStorage("privacy.appLockEnabled") private var appLockEnabled = false
     @State private var isLocked = false
@@ -71,6 +72,9 @@ struct RiverShellView: View {
                 }
                 .sheet(isPresented: $showsCapture) {
                     QuickNoteSheet(store: store, date: selectedDate)
+                }
+                .onExitCommand {
+                    if inspectorContent != nil { inspectorContent = nil }
                 }
         }
         .preferredColorScheme(isDimmed ? .dark : .light)
@@ -110,7 +114,13 @@ struct RiverShellView: View {
         )
     }
 
+    private func openAsk(_ query: String) {
+        askQuery = query
+        destination = .ask
+    }
+
     // MARK: Sidebar
+
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -237,11 +247,14 @@ struct RiverShellView: View {
             TodayRedesignView(
                 store: store,
                 activity: activity,
+                ingestion: ingestion,
                 selectedDate: $selectedDate,
                 onSelectTimelineItem: { item in
                     inspectorContent = .episode(item)
                 },
-                onShowCapture: { showsCapture = true }
+                onShowCapture: { showsCapture = true },
+                onOpenAsk: openAsk,
+                onOpenSettings: { destination = .settings }
             )
         case .memory:
             MemoryRedesignView(
@@ -256,6 +269,8 @@ struct RiverShellView: View {
             AskRedesignView(
                 store: store,
                 activity: activity,
+                query: $askQuery,
+                savedQueries: store.savedQueries,
                 onShowEvidence: { title, entries, captures in
                     inspectorContent = .evidence(title: title, entries: entries, captures: captures)
                 }

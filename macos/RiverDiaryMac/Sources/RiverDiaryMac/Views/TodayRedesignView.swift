@@ -1,12 +1,16 @@
 import SwiftUI
 
-/// Today is the home: a quiet timeline of what happened today.
+/// Today is the home: a quiet timeline of what happened today,
+/// with real "continue working / pending / status" entry points.
 struct TodayRedesignView: View {
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
+    @ObservedObject var ingestion: DataIngestionStore
     @Binding var selectedDate: Date
     var onSelectTimelineItem: (ActivityTimelineItem) -> Void
     var onShowCapture: () -> Void
+    var onOpenAsk: (String) -> Void
+    var onOpenSettings: () -> Void
 
     private var entry: DiaryEntry { store.entry(for: selectedDate) }
     private var captures: [QuickCapture] { store.captures(for: entry) }
@@ -24,6 +28,10 @@ struct TodayRedesignView: View {
         timeline.totalDuration
     }
 
+    private var focusToday: TimeInterval {
+        activity.dayStats(entries: store.entries, date: selectedDate).focusTotal
+    }
+
     private var isToday: Bool { Calendar.current.isDateInToday(selectedDate) }
     private var nowSession: ActivitySession? { isToday ? activity.activeSession : nil }
     @State private var selectedItemID: String?
@@ -32,6 +40,11 @@ struct TodayRedesignView: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider()
+            overviewStrip
+            if !store.savedQueries.isEmpty {
+                continueRow
+                Divider().padding(.horizontal, 24)
+            }
             timelineList
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -60,6 +73,7 @@ struct TodayRedesignView: View {
                     .font(.ui(12, weight: .semibold))
             }
             .buttonStyle(.bordered)
+            .keyboardShortcut("n", modifiers: .command)
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 14)
@@ -82,6 +96,7 @@ struct TodayRedesignView: View {
                 Image(systemName: "chevron.left")
             }
             .buttonStyle(.plain)
+            .keyboardShortcut(.leftArrow, modifiers: .command)
 
             Button(action: { selectedDate = Date() }) {
                 Text("今天")
@@ -95,6 +110,7 @@ struct TodayRedesignView: View {
             }
             .buttonStyle(.plain)
             .disabled(isToday)
+            .keyboardShortcut(.rightArrow, modifiers: .command)
         }
         .font(.system(size: 13))
     }
@@ -103,6 +119,83 @@ struct TodayRedesignView: View {
         if let day = Calendar.current.date(byAdding: .day, value: offset, to: Calendar.current.startOfDay(for: selectedDate)) {
             selectedDate = day
         }
+    }
+
+    // MARK: Overview (real data, keeps the timeline first-class)
+
+    private var overviewStrip: some View {
+        HStack(alignment: .center, spacing: 26) {
+            OverviewStat(icon: "waveform.path.ecg", value: ActivityFormatter.time(recordedToday), label: "已记录")
+            OverviewStat(
+                icon: "square.and.pencil",
+                value: "\(captures.count)",
+                label: "快记"
+            ) { onShowCapture() }
+            OverviewStat(icon: "timer", value: ActivityFormatter.time(focusToday), label: "专注", accent: focusToday > 0)
+            if !store.savedQueries.isEmpty, let first = store.savedQueries.first {
+                OverviewStat(
+                    icon: "bookmark.fill",
+                    value: "\(store.savedQueries.count)",
+                    label: "继续工作",
+                    accent: true
+                ) { onOpenAsk(first.query) }
+            }
+            Spacer(minLength: 12)
+            ingestionStatus
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 10)
+    }
+
+    private var ingestionStatus: some View {
+        let level: StatusDot.Level
+        let label: String
+        if let error = ingestion.lastError, !error.isEmpty {
+            level = .error
+            label = "采集有问题"
+        } else if ingestion.isRunning {
+            level = .running
+            label = "正在采集"
+        } else if ingestion.lastIngestedAt != nil {
+            level = .ok
+            label = "已采集"
+        } else {
+            level = .idle
+            label = "未采集"
+        }
+        return StatusDot(level: level, label: label) { onOpenSettings() }
+    }
+
+    private var continueRow: some View {
+        HStack(spacing: 8) {
+            Text("CONTINUE")
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .tracking(1.2)
+                .foregroundStyle(Color.secondaryInk.opacity(0.9))
+            ForEach(Array(store.savedQueries.prefix(4))) { query in
+                Button {
+                    onOpenAsk(query.query)
+                } label: {
+                    Label(query.name, systemImage: "arrow.turn.up.forward")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.secondaryInk)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.secondary.opacity(0.08), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(query.rangeLabel)
+            }
+            Spacer()
+            if store.savedQueries.count > 4 {
+                Text("+\(store.savedQueries.count - 4)")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Timeline
@@ -122,7 +215,16 @@ struct TodayRedesignView: View {
                         NowRow(session: now)
                     }
                     if timeline.items.isEmpty {
-                        emptyState
+                        EmptyStateView(
+                            title: isToday ? "River is recording." : "这一天还没有记录。",
+                            message: isToday
+                                ? "Your timeline will appear here as today unfolds."
+                                : "使用你身边的应用后，片段会按时间出现。",
+                            actionTitle: isToday ? "写一句" : nil,
+                            action: isToday ? { onShowCapture() } : nil
+                        )
+                        .padding(.leading, 80)
+                        .padding(.vertical, 24)
                     } else {
                         ForEach(Array(timeline.items.enumerated()), id: \.element.id) { _, item in
                             EpisodeRow(item: item, isSelected: selectedItemID == item.id)
@@ -141,18 +243,6 @@ struct TodayRedesignView: View {
             .padding(.bottom, 40)
         }
         .scrollIndicators(.hidden)
-    }
-
-    private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(isToday ? "River is recording." : "这一天还没有记录。")
-                .font(.system(size: 14, weight: .medium))
-            Text(isToday ? "Your timeline will appear here as today unfolds." : "使用你身边的应用后，片段会按时间出现。")
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-        }
-        .padding(.leading, 96)
-        .padding(.vertical, 30)
     }
 }
 
@@ -206,6 +296,13 @@ struct EpisodeRow: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(isSelected ? Color.riverAmethyst.opacity(0.32) : Color.clear, lineWidth: 1)
         )
+        .contextMenu {
+            Button(isSelected ? "收起详情" : "查看详情") {
+                // Selection is handled by onTap in the parent. ContextMenu keeps a
+                // reliable path for keyboard / trackpad users without losing feedback.
+            }
+            .disabled(true)
+        }
         .animation(.easeOut(duration: 0.14), value: isHovering)
         .animation(.easeOut(duration: 0.16), value: isSelected)
         .onHover { hover in isHovering = hover }
