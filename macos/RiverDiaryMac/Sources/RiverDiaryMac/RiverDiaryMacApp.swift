@@ -9,17 +9,14 @@ struct RiverDiaryMacApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(store: store, activity: activity, ai: ai, ingestion: ingestion)
-                .onDisappear {
-                    ingestion.stop()
-                }
-                .frame(minWidth: 1120, minHeight: 720)
+            RiverShellView(store: store, activity: activity, ai: ai, ingestion: ingestion)
+                .frame(minWidth: 960, minHeight: 640)
         }
-        .defaultSize(width: 1420, height: 920)
+        .defaultSize(width: 1280, height: 820)
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
 
-        MenuBarExtra("River Diary 快记", systemImage: "leaf.fill") {
+        MenuBarExtra("River 快记", systemImage: "leaf.fill") {
             QuickCaptureView(store: store)
         }
         .menuBarExtraStyle(.window)
