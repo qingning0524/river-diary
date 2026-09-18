@@ -280,7 +280,7 @@ struct EpisodeRow: View {
             Text(clock)
                 .font(.system(size: 12, weight: .medium).monospacedDigit())
                 .foregroundStyle(.secondary)
-                .frame(width: 46, alignment: .trailing)
+                .frame(width: 40, alignment: .trailing)
                 .padding(.top, 5)
 
             Circle()
@@ -289,12 +289,12 @@ struct EpisodeRow: View {
                 .padding(.top, 7)
 
             content
-                .padding(.bottom, 20)
+                .padding(.bottom, 14)
                 .padding(.top, 2)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.leading, 20)
-        .padding(.trailing, 8)
+        .padding(.leading, 12)
+        .padding(.trailing, 6)
         .contentShape(Rectangle())
         .background(backgroundFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
@@ -362,7 +362,7 @@ struct NowRow: View {
             Text("NOW")
                 .font(.system(size: 12, weight: .bold).monospacedDigit())
                 .foregroundStyle(Color.accentColor)
-                .frame(width: 46, alignment: .trailing)
+                .frame(width: 40, alignment: .trailing)
                 .padding(.top, 5)
             Circle()
                 .fill(Color.accentColor)
@@ -382,8 +382,8 @@ struct NowRow: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        .padding(.leading, 20)
-        .padding(.trailing, 8)
+        .padding(.leading, 12)
+        .padding(.trailing, 6)
         .padding(.bottom, 20)
     }
 }

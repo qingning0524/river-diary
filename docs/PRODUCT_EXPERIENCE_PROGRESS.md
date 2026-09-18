@@ -93,3 +93,20 @@ P0 信息架构（去掉大字标题/彩色眉标/仪表盘，页面差异化）
 - Inspector/Timeline：衬线标题换系统标题，内边距 20→16。
 - 验收：swift build 通过；swift test 93 项通过；`dist/RiverDiaryMac.app` 重新打包并已启动运行。
 - 限制：沙盒环境无屏幕录制权限，无法输出真实截图，视觉以“可运行 + 代码层审查”为准。
+
+## UI Review（近终版桌面重构，2026-09-19 第四轮）
+
+### 核心判断（基于读码）
+1. 整体“灰、空、闷”：大量浅灰容器、圆角卡片、大留白，AI Demo 感强。
+2. Sidebar 即使上一轮收紧仍是自定义按钮导航，像 iPad 放大版，不是 Mac 原生 Sidebar。
+3. 每页同一模板（标题+卡片/大留白），缺少面向任务的结构差异。
+4. Today 时间线松散、信息密度不足；Memory 像网页长文流不是可扫描知识库。
+5. Ask 结构单薄、大面积空白；Settings 像 Web 后台表单。
+6. 无统一的间距/圆角/行高/选中/强调色规则。
+
+### 第四轮实际落地
+- Sidebar → 原生 `List(selection:)` + `.sidebar`，Section 分组（RIVER/MEMORY/SYSTEM），系统选中/悬停/折叠，宽度收敛 150–204。
+- Today → 时间线行更密（时间列 40pt、行高/内边距收紧）。
+- Memory → 一行式表格化行（日期 72pt / 摘要自适应 / 元信息 132pt 右对齐 / 收藏星标），扫读性提升。
+- SharedUI → `PageTitle`、`ListRowContainer` 进入共享组件；FilterChip 统一用 accent。
+- Note：Settings/Ask 的深层结构仍偏向表单/单栏，本次未大幅重写（诚实记录）。

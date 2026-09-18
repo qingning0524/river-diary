@@ -62,7 +62,7 @@ struct RiverShellView: View {
     var body: some View {
         NavigationSplitView {
             sidebar
-                .navigationSplitViewColumnWidth(min: 158, ideal: 182, max: 216)
+                .navigationSplitViewColumnWidth(min: 150, ideal: 176, max: 204)
         } detail: {
             content
                 .ignoresSafeArea()
@@ -130,57 +130,64 @@ struct RiverShellView: View {
     }
 
     // MARK: Sidebar
+    // Native macOS sidebar: system List(.sidebar), compact sections, real selection.
 
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 7) {
-                Image(systemName: "leaf.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-                Text("River")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.primary)
+        VStack(spacing: 0) {
+            List(selection: sidebarSelection) {
+                Section {
+                    Label("Today", systemImage: "book.closed")
+                        .tag(RiverDestination.today)
+                } header: {
+                    sectionHeader("RIVER")
+                }
+                Section {
+                    Label("Memory", systemImage: "archivebox")
+                        .tag(RiverDestination.memory)
+                    Label("Ask", systemImage: "questionmark.circle")
+                        .tag(RiverDestination.ask)
+                } header: {
+                    sectionHeader("MEMORY")
+                }
+                Section {
+                    Label("Settings", systemImage: "gearshape")
+                        .tag(RiverDestination.settings)
+                } header: {
+                    sectionHeader("SYSTEM")
+                }
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 18)
+            .listStyle(.sidebar)
+            .frame(minWidth: 152)
 
-            sidebarSection("RIVER")
-            sidebarItem(.today)
+            Divider()
+            footer
+        }
+    }
 
-            sidebarSection("MEMORY").padding(.top, 12)
-            sidebarItem(.memory)
-            sidebarItem(.ask)
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.secondary)
+    }
 
-            Rectangle()
-                .fill(Color.separator)
-                .frame(height: 1)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+    private var sidebarSelection: Binding<RiverDestination?> {
+        Binding(
+            get: { destination },
+            set: { if let value = $0 { destination = value } }
+        )
+    }
 
-            sidebarSection("SYSTEM")
-            sidebarItem(.settings)
-
-            Spacer(minLength: 8)
-
+    private var footer: some View {
+        VStack(alignment: .leading, spacing: 5) {
             Button {
                 showsCapture = true
             } label: {
-                HStack(spacing: 7) {
-                    Image(systemName: "square.and.pencil")
-                        .font(.system(size: 12))
-                    Text("写一句")
-                        .font(.system(size: 12))
-                    Spacer()
-                }
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 10)
-                .frame(height: 26)
-                .contentShape(Rectangle())
+                Label("写一句", systemImage: "square.and.pencil")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help("记录一句（⌘N）")
-
             HStack(spacing: 6) {
                 Circle()
                     .fill(activity.isTracking ? Color(hex: "#2C8158") : Color.secondary.opacity(0.5))
@@ -189,43 +196,9 @@ struct RiverShellView: View {
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
         }
-        .background(Color(nsColor: .underPageBackgroundColor))
-    }
-
-    private func sidebarSection(_ title: String) -> some View {
-        Text(title)
-            .font(.system(size: 10, weight: .medium))
-            .foregroundStyle(.secondary)
-            .padding(.leading, 12)
-            .padding(.bottom, 3)
-    }
-
-    private func sidebarItem(_ item: RiverDestination) -> some View {
-        let selected = destination == item
-        return Button {
-            destination = item
-        } label: {
-            HStack(spacing: 9) {
-                Image(systemName: item.symbol)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(selected ? Color.accentColor : Color.secondary)
-                    .frame(width: 16)
-                Text(item.title)
-                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                    .foregroundStyle(.primary)
-                Spacer()
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 28)
-            .background(selected ? Color.accentColor.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 6)
-        .keyboardShortcut(KeyEquivalent(Character("\(item.shortcutNumber)")), modifiers: .command)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
 
     // MARK: Content

@@ -289,47 +289,52 @@ private struct MemoryRow: View {
     private var tags: [String] { day.entry.tags ?? [] }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 8) {
-                Text(day.entry.shortDate)
-                    .font(.system(size: 11).monospacedDigit())
-                    .foregroundStyle(.secondary)
-                if favorite {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.orange)
-                }
-                if !tags.isEmpty {
-                    Text(tags.prefix(2).joined(separator: " · "))
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                }
-            }
+        HStack(alignment: .top, spacing: 12) {
+            Text(day.entry.shortDate)
+                .font(.system(size: 11).monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 72, alignment: .leading)
+                .padding(.top, 2)
+
             Text(day.preview)
                 .font(.system(size: 13, weight: .medium))
                 .lineLimit(2)
-                .foregroundStyle(Color.ink)
-            HStack(spacing: 10) {
-                if day.hasWriting {
-                    Label("日记", systemImage: "doc.text")
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
+                    if day.hasWriting {
+                        Label("日记", systemImage: "doc.text")
+                    }
+                    if !day.captures.isEmpty {
+                        Label("\(day.captures.count)", systemImage: "square.and.pencil")
+                    }
                 }
-                if !day.captures.isEmpty {
-                    Label("\(day.captures.count) 条快记", systemImage: "square.and.pencil")
-                }
-                if !tags.isEmpty {
-                    Label("\(tags.count) 个标签", systemImage: "tag")
-                }
-                if let category = day.entry.category, !category.isEmpty {
-                    Label(category, systemImage: "folder")
+                HStack(spacing: 8) {
+                    if !tags.isEmpty {
+                        Label("\(tags.count)", systemImage: "tag")
+                    }
+                    if let category = day.entry.category, !category.isEmpty {
+                        Label(category, systemImage: "folder")
+                    }
                 }
             }
             .font(.system(size: 10))
             .foregroundStyle(.secondary)
+            .frame(width: 132, alignment: .trailing)
+
+            if favorite {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.orange)
+                    .frame(width: 14)
+                    .padding(.top, 3)
+            }
         }
         .padding(.vertical, 5)
-        .padding(.horizontal, 6)
-        .background(isHovering ? Color.primary.opacity(0.03) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+        .padding(.horizontal, 4)
+        .background(isHovering ? Color.primary.opacity(0.03) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
         .animation(.easeOut(duration: 0.12), value: isHovering)
         .onHover { isHovering = $0 }
     }
