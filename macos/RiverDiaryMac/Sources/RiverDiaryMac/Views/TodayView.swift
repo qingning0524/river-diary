@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct TodayView: View {
@@ -5,841 +6,247 @@ struct TodayView: View {
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore
     @Binding var selectedDate: Date
+    @ObservedObject var editor: JournalEditorStore
+    let openTimeline: () -> Void
+    @State private var suggestion: AIDraft?
+    @State private var showsAI = false
+    @State private var saveError: String?
+    @State private var savedDateKey: String?
 
-    @State private var draft: AIDraft = AIDraft(
-        headline: "正在整理今天", narrative: "", category: "随想", tags: [],
-        mood: 70, energy: 65, focus: 70, output: 65, confidence: 0,
-        confidenceFactors: [], evidence: [], signals: [], care: .none, isEmpty: true
-    )
-    @State private var editedDraft = ""
-    @State private var isEditing = false
-    @State private var showsEvidence = false
-    @State private var showsFineTune = false
-    @State private var selectedTags: [String] = []
-    @State private var selectedCategory = "随想"
-    @State private var mood: Double = 70
-    @State private var energy: Double = 65
-    @State private var focus: Double = 70
-    @State private var output: Double = 65
-    @State private var quickCaptureText = ""
-    @State private var quickCaptureTag: String?
-    @State private var selectedMoodID: String?
-
-    private var entry: DiaryEntry {
-        store.entry(for: selectedDate)
-    }
-
-    private var previousEntry: DiaryEntry? {
-        let dateString = DiaryEntry.dateFormatter.string(from: selectedDate)
-        return store.entries.last { $0.date < dateString }
-    }
-
-    private var captures: [QuickCapture] {
-        store.captures(for: entry)
-    }
-
-    private var overall: Int {
-        Int((mood * 0.4 + output * 0.25 + focus * 0.2 + energy * 0.15).rounded())
-    }
+    private var entry: DiaryEntry { store.entry(for: selectedDate) }
+    private var buffer: JournalEditingBuffer { editor.buffer(for: entry) }
+    private var captures: [QuickCapture] { store.captures(for: entry) }
+    private var sessions: [ActivitySession] { activity.liveSessions(for: selectedDate) }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                header
-                moodStrip
-                careCard
-                draftCard
-                if entry.hasMovementSignal || entry.hasStructuredSleepSignal || !entry.sleepSignals.isEmpty {
-                    HStack(alignment: .top, spacing: 18) {
-                        if entry.hasMovementSignal {
-                            movementCard
-                        }
-                        if entry.hasStructuredSleepSignal || !entry.sleepSignals.isEmpty {
-                            sleepCard
-                        }
+        VStack(alignment: .leading, spacing: 22) {
+            header
+            GeometryReader { geometry in
+                HStack(alignment: .top, spacing: 20) {
+                    writingDesk.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 18) {
+                            dayMaterials
+                            quickNotes
+                            writingAssistance
+                            if entry.health != nil { bodySignals }
+                        }.padding(.bottom, 20)
                     }
-                }
-                if entry.hasProjectSignals {
-                    projectSignalsCard
-                }
-                HStack(alignment: .top, spacing: 18) {
-                    quickCaptureCard
-                    fineTuneCard
+                    .frame(width: min(330, geometry.size.width * 0.32))
                 }
             }
-            .frame(maxWidth: 1280, alignment: .leading)
-            .padding(.top, 10)
-            .padding(.bottom, 36)
         }
-        .scrollIndicators(.hidden)
-        .frame(maxWidth: .infinity)
-        .onAppear(perform: loadDraft)
-        .onChange(of: selectedDate) {
+        .onChange(of: entry.date) {
+            suggestion = nil; showsAI = false; saveError = nil; savedDateKey = nil
             ai.clearTask(.dailyOverview)
-            loadDraft()
-        }
-        .onChange(of: entry.id) {
-            ai.clearTask(.dailyOverview)
-            loadDraft()
-        }
-        .onChange(of: activity.sessions.count) {
-            loadDraft()
-        }
-    }
-
-    private func loadDraft() {
-        guard !isEditing else { return }
-
-        draft = AIDraftEngine.compose(
-            entry: entry,
-            previous: previousEntry,
-            quickCaptures: store.captures(for: entry),
-            autoPaused: store.autoDraftPaused || store.isAutoDraftTemporarilyPaused,
-            activitySessions: activity.liveSessions(for: selectedDate)
-        )
-        editedDraft = draft.narrative
-        selectedCategory = draft.category
-        selectedTags = draft.tags
-        mood = Double(draft.mood)
-        energy = Double(draft.energy)
-        focus = Double(draft.focus)
-        output = Double(draft.output)
-        isEditing = false
-        showsEvidence = false
-    }
-
-    @ViewBuilder
-    private var saveFeedback: some View {
-        switch store.saveState {
-        case .saving:
-            Text("正在保存…")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        case .saved(let date):
-            Text("已保存 · \(date.formatted(date: .omitted, time: .shortened))")
-                .font(.caption2)
-                .foregroundStyle(Color(hex: "#2C8158"))
-        case .failed:
-            Text("保存失败")
-                .font(.caption2)
-                .foregroundStyle(.red)
-        case .idle:
-            EmptyView()
-        }
-    }
-
-    private func saveDraft() {
-        let text = isEditing ? editedDraft : draft.narrative
-        store.save(
-            entry: entry,
-            text: text,
-            mood: Int(mood),
-            energy: Int(energy),
-            focus: Int(focus),
-            output: Int(output),
-            category: selectedCategory,
-            tags: selectedTags
-        )
-        isEditing = false
-    }
-
-    private var isToday: Bool {
-        Calendar.current.isDateInToday(selectedDate)
-    }
-
-    private var recentEntries: [DiaryEntry] {
-        Array(store.entries.suffix(14))
-    }
-
-    @ViewBuilder
-    private var moodStrip: some View {
-        if recentEntries.count >= 2 {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("最近 14 天的节律")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.secondaryInk)
-                    Text("冷一点或暖一点，都只是此刻的形状。")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                    Spacer()
-                }
-
-                MoodAreaChart(entries: recentEntries, selectedID: $selectedMoodID)
-                    .frame(height: 84)
-
-                if let first = recentEntries.first, let last = recentEntries.last {
-                    HStack {
-                        Text(first.shortDate)
-                        Spacer()
-                        Text(last.shortDate)
-                    }
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                }
-            }
-            .frame(maxWidth: 1280, alignment: .leading)
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack(spacing: 9) {
-                Text("River Diary")
-                    .font(.system(size: 11, weight: .semibold))
-                    .kerning(1.1)
-                    .foregroundStyle(.tertiary)
-
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(LinearGradient.river())
-                    .frame(width: 24, height: 2)
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("A PAGE OF YOUR LIFE").font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .tracking(2).foregroundStyle(Color.riverAmethyst)
+                Text(Calendar.current.isDateInToday(selectedDate) ? "今天，写下一点。" : "\(entry.shortDate)，再翻一页。")
+                    .font(.editorial(32)).foregroundStyle(Color.ink)
+                Text("不用写得完整，真实的一句就很好。")
+                    .font(.system(size: 13)).foregroundStyle(.secondary)
             }
-
-            HStack(alignment: .firstTextBaseline, spacing: 13) {
-                Text(isToday ? "今天" : entry.shortDate)
-                    .font(.editorial(40))
-                    .foregroundStyle(Color.ink)
-
-                Text(selectedDate.formatted(.dateTime.weekday(.wide)))
-                    .font(.ui(12, weight: .semibold))
-                    .foregroundStyle(Color.riverAmethyst)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 6)
-                    .background(Color.riverAmethyst.opacity(0.10), in: Capsule())
-            }
-
-            Text("日期由导航栏统一控制；你只管随手记，这里帮你把当天拢成一页。")
-                .font(.ui(13))
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: 1280, alignment: .leading)
-    }
-
-    private var movementCard: some View {
-        SoftCard {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Label("身体活动", systemImage: "figure.walk.motion")
-                        .font(.headline)
-                    Spacer()
-                    StatusBadge(
-                        entry.hasMovementSignal ? "数据已同步" : "等待数据",
-                        tone: entry.hasMovementSignal ? .positive : .neutral
-                    )
-                }
-
-                if entry.hasMovementSignal {
-                    EqualWidthRow(spacing: 10) {
-                        if let steps = entry.health?.steps {
-                            bodyMetric("步数", "\(steps)", "figure.walk")
-                        }
-                        if let distance = entry.health?.distanceKM {
-                            bodyMetric("距离", String(format: "%.2f km", distance), "point.topleft.down.curvedto.point.bottomright.up")
-                        }
-                        if let energy = entry.health?.activeEnergyKcal {
-                            bodyMetric("活动热量", String(format: "%.1f kcal", energy), "flame.fill")
-                        }
-                    }
-                } else {
-                    Text("这一天还没有同步到步数、距离或活动热量。")
-                        .font(.caption)
-                        .lineSpacing(5)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            Spacer()
+            Text(selectedDate.formatted(.dateTime.weekday(.wide)))
+                .font(.system(size: 12)).foregroundStyle(.secondary)
         }
     }
 
-    private var sleepCard: some View {
-        SoftCard {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Label("睡眠", systemImage: "moon.zzz.fill")
-                        .font(.headline)
-                    Spacer()
-                    StatusBadge(
-                        entry.hasStructuredSleepSignal ? "结构化记录" : "文字线索",
-                        tone: entry.hasStructuredSleepSignal ? .positive : .neutral
-                    )
+    private var writingDesk: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Label("我的日记", systemImage: "text.alignleft").font(.system(size: 12, weight: .medium))
+                Spacer()
+                if buffer.isDirty {
+                    Text("未保存 · 切页会暂留草稿").font(.system(size: 10)).foregroundStyle(.secondary)
+                } else if savedDateKey == entry.date {
+                    Label("已保存", systemImage: "checkmark").font(.system(size: 10)).foregroundStyle(Color.riverAmethyst)
                 }
-
-                if let hours = entry.health?.resolvedSleepHours {
-                    EqualWidthRow(spacing: 10) {
-                        bodyMetric("睡眠时长", String(format: "%.1f 小时", hours), "bed.double.fill")
-                        if let bed = entry.health?.bedAt {
-                            bodyMetric("入睡", bed, "moon.zzz")
-                        }
-                        if let wake = entry.health?.wakeAt {
-                            bodyMetric("醒来", wake, "sunrise")
-                        }
+                Menu {
+                    Button("复制正文") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(buffer.text, forType: .string)
                     }
-                } else if let bed = entry.health?.bedAt, let wake = entry.health?.wakeAt {
-                    Text("入睡 \(bed) · 醒来 \(wake)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Button("复制 Markdown") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString("# \(entry.date)\n\n\(buffer.text)", forType: .string)
+                    }
+                } label: { Image(systemName: "ellipsis").frame(width: 22) }
+                .menuStyle(.borderlessButton).fixedSize()
+            }.foregroundStyle(Color.secondaryInk).padding(22)
+            Divider().opacity(0.6)
+            ZStack(alignment: .topLeading) {
+                if buffer.text.isEmpty {
+                    Text("今天有什么想留下的？\n\n一件小事、一段想法，或者此刻的心情。")
+                        .font(.system(size: 16)).lineSpacing(9).foregroundStyle(.tertiary)
+                        .padding(.horizontal, 28).padding(.top, 27).allowsHitTesting(false)
                 }
-
-                let signals = entry.sleepSignals
-                if signals.isEmpty {
-                    Text(entry.hasStructuredSleepSignal ? "健康记录已经显示在这里。" : "没有发现明显的睡眠线索，所以这里不会补写。")
-                        .font(.caption)
-                        .lineSpacing(5)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(signals.prefix(3)) { signal in
-                            HStack(alignment: .top, spacing: 9) {
-                                Image(systemName: "text.quote")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.top, 2)
-
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(signal.text)
-                                        .font(.caption)
-                                        .lineSpacing(4)
-                                    Text(signal.source)
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func bodyMetric(_ title: String, _ value: String, _ icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.secondaryInk)
-                .frame(width: 26, height: 26)
-                .background(Color.chip, in: Circle())
-            Text(title).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.ink)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(13)
-        .background(Color.chip, in: RoundedRectangle(cornerRadius: 18))
-    }
-
-    @ViewBuilder
-    private var careCard: some View {
-        if draft.care != .none && !store.careAcknowledged(entry) {
-            SoftCard {
-                HStack(alignment: .top, spacing: 14) {
-                    Image(systemName: draft.care == .support ? "heart.circle.fill" : "leaf.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(draft.care == .support ? Color(hex: "#FF8FB3") : Color(hex: "#7CB342"))
-
-                    VStack(alignment: .leading, spacing: 7) {
-                        Text(CareAdvisor.title(for: draft.care)).font(.headline)
-                        Text(CareAdvisor.message(for: draft.care))
-                            .font(.caption).lineSpacing(5).foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Button("知道了") { store.acknowledgeCare(entry) }
-                        .buttonStyle(.plain).smallAction()
-                }
-            }
-            .frame(maxWidth: 1280)
-        }
-    }
-
-    private var draftCard: some View {
-        SoftCard(padding: 32) {
-            VStack(alignment: .leading, spacing: 22) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 9) {
-                        Label("本日概览", systemImage: "sparkles")
-                            .font(.headline)
-                        Text(draft.headline)
-                            .font(.editorial(28))
-                            .foregroundStyle(Color.ink)
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 7) {
-                        saveFeedback
-                        confidence
-                        Toggle("自动整理", isOn: Binding(
-                            get: { !(store.autoDraftPaused || store.isAutoDraftTemporarilyPaused) },
-                            set: { enabled in
-                                if enabled && store.isAutoDraftTemporarilyPaused {
-                                    store.resumeAutoDraftPause()
-                                } else {
-                                    store.setAutoDraftPaused(!enabled)
-                                }
-                            }
-                        ))
-                        .toggleStyle(.switch)
-                        .font(.caption)
-                    }
-                }
-
-                if store.draftDismissed(entry) {
-                    HStack {
-                        Label("你选择了暂不整理。素材仍在本机保留。", systemImage: "moon.zzz")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Button("恢复草稿") { store.restoreDraft(for: entry) }
-                            .buttonStyle(.plain).smallAction()
-                    }
-                    .padding(12)
-                    .background(Color.chip, in: RoundedRectangle(cornerRadius: 14))
-                } else if isEditing {
-                    VStack(alignment: .leading, spacing: 9) {
-                        Text("修改这一句").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        TextEditor(text: $editedDraft)
-                            .font(.system(size: 14))
-                            .scrollContentBackground(.hidden)
-                            .frame(minHeight: 112)
-                            .padding(14)
-                            .background(Color.editor, in: RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.border, lineWidth: 1))
-                    }
-                } else {
-                    Text(draft.narrative)
-                        .font(.ui(17, weight: .medium))
-                        .lineSpacing(9)
-                        .foregroundStyle(Color.ink)
-                        .textSelection(.enabled)
-                }
-
-                HStack(spacing: 7) {
-                    ForEach(selectedTags, id: \.self) { tag in
-                        Text("#\(tag)")
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(Color.secondaryInk)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.chip, in: Capsule())
-                    }
-                    Text(selectedCategory)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.riverAmethyst)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.riverAmethyst.opacity(0.10), in: Capsule())
-                    Spacer()
-                }
-
+                TextEditor(text: Binding(get: { buffer.text }, set: { editor.edit(entry, text: $0) }))
+                    .font(.system(size: 16)).lineSpacing(9)
+                    .scrollContentBackground(.hidden).padding(20)
+                    .accessibilityLabel("日记正文")
+            }.frame(maxHeight: .infinity)
+            Divider().opacity(0.6)
+            VStack(alignment: .leading, spacing: 15) {
                 HStack(spacing: 8) {
-                    Button { saveDraft() } label: {
-                        Label(store.draftDismissed(entry) ? "恢复并保存" : "保存草稿", systemImage: "checkmark")
-                    }
-                    .buttonStyle(.plain).primaryCTA()
-                    .keyboardShortcut("s", modifiers: .command)
-                    .disabled(draft.isEmpty && editedDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                    Button(isEditing ? "预览" : "改一句") {
-                        if isEditing {
-                            editedDraft = editedDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                        } else {
-                            editedDraft = draft.narrative
-                        }
-                        isEditing.toggle()
-                    }
-                    .buttonStyle(.plain).secondaryCTA()
-
-                    if store.draftDismissed(entry) {
-                        Button("已暂不整理") {}
-                            .buttonStyle(.plain).secondaryCTA()
-                            .disabled(true)
-                    } else {
-                        Menu {
-                            Button("今天先不整理") { store.dismissDraft(for: entry) }
-                            Divider()
-                            Button("让 AI 安静 1 天") { store.pauseAutoDraft(days: 1) }
-                            Button("让 AI 安静 3 天") { store.pauseAutoDraft(days: 3) }
-                            Button("让 AI 安静 7 天") { store.pauseAutoDraft(days: 7) }
-                        } label: {
-                            Label("今天不记", systemImage: "moon.zzz")
-                        }
-                        .buttonStyle(.plain).secondaryCTA()
-                    }
-
-                    Button(showsEvidence ? "隐藏依据" : "查看依据") {
-                        showsEvidence.toggle()
-                    }
-                    .buttonStyle(.plain).secondaryCTA()
-                }
-
-                if showsEvidence {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(draft.evidence) { item in
-                            HStack(alignment: .top, spacing: 10) {
-                                Circle().fill(Color.ink.opacity(0.2)).frame(width: 6, height: 6).padding(.top, 5)
-                                VStack(alignment: .leading, spacing: 3) {
-                                    HStack {
-                                        Text(item.title).font(.caption.weight(.semibold))
-                                        Spacer()
-                                        Text(item.source).font(.caption2).foregroundStyle(.tertiary)
-                                    }
-                                    Text(item.detail)
-                                        .font(.caption).lineSpacing(4).foregroundStyle(.secondary)
-                                }
-                            }
-                            .padding(12)
-                            .background(Color.editor, in: RoundedRectangle(cornerRadius: 12))
-                        }
-
-                        if draft.evidence.isEmpty {
-                            Text("这里先不列依据。如果你愿意，再多写一句也可以。")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                }
-
-                Divider()
-                AITaskCard(
-                    ai: ai,
-                    task: .dailyOverview,
-                    buttonTitle: "AI 整理这一天",
-                    emptyMessage: "AI 会读取当天日记、快记和实时片段，生成一段可编辑的本日概览。"
-                ) {
-                    Task { await ai.generateDailyOverview(entry: entry, quickCaptures: captures, activitySessions: activity.liveSessions(for: selectedDate)) }
-                } trailing: {
-                    if let answer = ai.state(for: .dailyOverview)?.answer {
-                        Button("写入编辑框") {
-                            editedDraft = answer
-                            isEditing = true
-                        }
-                        .buttonStyle(.plain)
-                        .smallAction(dark: true)
-                    }
-                }
-            }
-        }
-        .overlay(alignment: .top) {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(LinearGradient(
-                    colors: draftBandColors,
-                    startPoint: .leading,
-                    endPoint: .trailing
-                ))
-                .frame(height: 4)
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        }
-        .frame(maxWidth: 1280)
-    }
-
-    private var draftBandColors: [Color] {
-        switch draft.mood {
-        case ..<39: [Color.riverBlue, Color(hex: "#A9C2FF")]
-        case ..<63: [Color.riverAmethyst, Color(hex: "#B7A4FF")]
-        default: [Color.riverPink, Color(hex: "#FFC2D6")]
-        }
-    }
-
-    private var confidence: some View {
-        HStack(spacing: 5) {
-            Image(systemName: draft.confidence >= 72 ? "checkmark.seal.fill" : draft.confidence >= 45 ? "questionmark.circle.fill" : "exclamationmark.circle.fill")
-            Text("参考度 \(draft.confidence)%")
-        }
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(draft.confidence >= 72 ? Color(hex: "#2C8158") : draft.confidence >= 45 ? Color.secondaryInk : Color(hex: "#B26B00"))
-        .help(draft.confidenceFactors.joined(separator: "\n"))
-    }
-
-    private var projectSignalsCard: some View {
-        SoftCard {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Label("当天自动记录", systemImage: "waveform.path.ecg")
-                        .font(.headline)
+                    Text("此刻的心情").font(.system(size: 11)).foregroundStyle(.secondary)
                     Spacer()
-                    StatusBadge(
-                        entry.hasProjectSignals ? "来自项目数据" : "等待当天记录",
-                        tone: entry.hasProjectSignals ? .positive : .neutral
-                    )
-                }
-
-                if !entry.hasProjectSignals {
-                    Text("今天还没有屏幕或运动数据。已有的日记文字仍会进入草稿。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    EqualWidthRow(spacing: 10) {
-                        if let minutes = entry.screenMinutes {
-                            signal("屏幕", ActivityFormatter.time(Double(minutes) * 60), "display")
-                        }
-                        if let steps = entry.health?.steps {
-                            signal("步数", "\(steps)", "figure.walk")
-                        }
-                        if let distance = entry.health?.distanceKM {
-                            signal("距离", String(format: "%.2f km", distance), "point.topleft.down.curvedto.point.bottomright.up")
-                        }
-                        if let energy = entry.health?.activeEnergyKcal {
-                            signal("活动热量", String(format: "%.1f kcal", energy), "flame.fill")
-                        }
-                    }
-
-                    if let apps = entry.screenApps, !apps.isEmpty {
-                        let sortedApps = apps.sorted { ($0.minutes ?? 0) > ($1.minutes ?? 0) }
-                        let maxMinutes = max(1, sortedApps.first?.minutes ?? 1)
-                        VStack(alignment: .leading, spacing: 9) {
-                            Text("屏幕应用 · 按时长排序")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            ForEach(sortedApps.prefix(5), id: \.app) { app in
-                                HStack(spacing: 10) {
-                                    AppIconBadge(app: app.app, size: 26)
-                                    Text(app.app)
-                                        .font(.caption)
-                                        .frame(width: 118, alignment: .leading)
-                                    ProgressBar(value: max(0, Double(app.minutes ?? 0) / Double(maxMinutes) * 100))
-                                    Text(app.minutes.map { ActivityFormatter.time(Double($0) * 60) } ?? app.time ?? "")
-                                        .font(.caption2.monospacedDigit())
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
-                    }
-
-                    if let sites = entry.browseSites, !sites.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("浏览足迹")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            HStack(spacing: 7) {
-                                ForEach(sites.sorted { ($0.visits ?? 0) > ($1.visits ?? 0) }.prefix(5), id: \.site) { site in
-                                    HStack(spacing: 6) {
-                                        SiteIconBadge(site: site.site, size: 20)
-                                        Text("\(site.site) · \(site.visits ?? 0)")
-                                            .font(.caption2)
-                                    }
-                                    .padding(.horizontal, 9)
-                                    .padding(.vertical, 6)
-                                    .background(Color.chip, in: Capsule())
-                                }
-                            }
-                        }
-                    }
-
-                    if entry.screenNote != nil || entry.browseNote != nil {
-                        VStack(alignment: .leading, spacing: 7) {
-                            if let note = entry.screenNote, !note.isEmpty {
-                                observation(note)
-                            }
-                            if let note = entry.browseNote, !note.isEmpty {
-                                observation(note)
-                            }
-                        }
-                        .padding(13)
-                        .background(Color.chip, in: RoundedRectangle(cornerRadius: 16))
+                    ForEach([(25, "低落"), (45, "有点累"), (65, "平静"), (80, "轻快"), (95, "很好")], id: \.0) { value, label in
+                        Button { editor.edit(entry, mood: value) } label: {
+                            Text(label).font(.system(size: 11))
+                                .padding(.horizontal, 9).padding(.vertical, 6)
+                                .foregroundStyle(buffer.mood == value ? Color.riverAmethyst : Color.secondaryInk)
+                                .background(buffer.mood == value ? Color.riverAmethyst.opacity(0.12) : Color.chip.opacity(0.5), in: Capsule())
+                        }.buttonStyle(.plain)
                     }
                 }
+                if let saveError { Text(saveError).font(.system(size: 11)).foregroundStyle(.red) }
+                HStack {
+                    Text("\(buffer.text.count) 字 · 心情可选")
+                        .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    Spacer()
+                    Button(action: save) {
+                        HStack(spacing: 10) {
+                            Text("保存这一页")
+                            Text("⌘S").font(.system(size: 10)).opacity(0.5)
+                        }
+                        .font(.system(size: 12, weight: .medium)).foregroundStyle(Color.ctaText)
+                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        .background(Color.ctaBackground, in: Capsule())
+                    }
+                    .buttonStyle(.plain).keyboardShortcut("s", modifiers: .command)
+                    .disabled(!buffer.isDirty)
+                }
+            }.padding(22)
+        }
+        .background(Color.strongSurface, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.separator, lineWidth: 1))
+    }
+
+    private var dayMaterials: some View {
+        SoftCard(padding: 18) {
+            VStack(alignment: .leading, spacing: 16) {
+                Label("当天留下的线索", systemImage: "point.3.connected.trianglepath.dotted")
+                    .font(.system(size: 13, weight: .medium))
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    let duration = sessions.reduce(0) { $0 + $1.duration }
+                    Text(duration > 0 ? ActivityFormatter.time(duration) : entry.screenMinutes.map { ActivityFormatter.time(Double($0) * 60) } ?? "尚无实时片段")
+                        .font(.editorial(24))
+                }
+                Text(sessions.isEmpty && entry.screenMinutes != nil ? "屏幕汇总 · 暂无精确时间片段" : "来自当天实时片段")
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                if sessions.isEmpty {
+                    ForEach(Array((entry.screenApps ?? []).sorted { ($0.minutes ?? 0) > ($1.minutes ?? 0) }.prefix(3)), id: \.app) { app in
+                        HStack {
+                            Text(app.app).lineLimit(1)
+                            Spacer()
+                            Text(app.minutes.map { ActivityFormatter.time(Double($0) * 60) } ?? app.time ?? "").foregroundStyle(.secondary)
+                        }.font(.system(size: 11))
+                    }
+                }
+                let model = ActivityTimelineEngine.build(for: selectedDate, sessions: sessions)
+                ForEach(model.items.filter { $0.kind == .activity }.suffix(3)) { item in
+                    HStack(alignment: .top, spacing: 9) {
+                        Circle().fill(Color(hex: ActivityClassifier.color(for: item.category))).frame(width: 5, height: 5).padding(.top, 5)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.narrativeTitle).font(.system(size: 12)).lineLimit(2)
+                            Text(item.start.formatted(date: .omitted, time: .shortened)).font(.system(size: 10)).foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+                Button(action: openTimeline) {
+                    HStack { Text("展开这一天的时间线"); Spacer(); Image(systemName: "arrow.up.right") }
+                        .font(.system(size: 11, weight: .medium)).foregroundStyle(Color.riverAmethyst)
+                }.buttonStyle(.plain)
             }
         }
     }
 
-    private func signal(_ title: String, _ value: String, _ icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.secondaryInk)
-                .frame(width: 26, height: 26)
-                .background(Color.chip, in: Circle())
-            Text(title).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.ink)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(13)
-        .background(Color.chip, in: RoundedRectangle(cornerRadius: 18))
-    }
-
-    private func observation(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "sparkle")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
-            Text(text)
-                .font(.caption)
-                .lineSpacing(5)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var quickCaptureCard: some View {
-        SoftCard {
+    private var quickNotes: some View {
+        SoftCard(padding: 18) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Label("菜单栏快记", systemImage: "tray.full")
-                        .font(.headline)
+                    Label("随手留下的", systemImage: "quote.bubble").font(.system(size: 13, weight: .medium))
                     Spacer()
-                    Text("就写一句也行").font(.caption).foregroundStyle(.secondary)
+                    Text("\(captures.count)").font(.system(size: 11)).foregroundStyle(.tertiary)
                 }
-
-                HStack(alignment: .top, spacing: 10) {
-                    TextField("就写一句也行；链接、待办、想法都可以", text: $quickCaptureText, axis: .vertical)
-                        .textFieldStyle(.plain)
-                        .lineLimit(1...4)
-                        .padding(13)
-                        .background(Color.editor, in: RoundedRectangle(cornerRadius: 13))
-                        .onSubmit(addQuickCapture)
-
-                    Button("保留", action: addQuickCapture)
-                        .buttonStyle(.plain).smallAction(dark: true)
-                }
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(["想法", "待办", "链接", "身体"], id: \.self) { tag in
-                            Button {
-                                quickCaptureTag = quickCaptureTag == tag ? nil : tag
-                            } label: {
-                                Text(tag)
-                                    .font(.caption.weight(quickCaptureTag == tag ? .semibold : .medium))
-                                    .padding(.horizontal, 9)
-                                    .padding(.vertical, 6)
-                                    .background(quickCaptureTag == tag ? Color.ctaBackground : Color.chip, in: Capsule())
-                                    .foregroundStyle(quickCaptureTag == tag ? Color.ctaText : Color.secondaryInk)
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        Divider().frame(height: 14)
-
-                        Button("记一件事") { applyTemplate("我想记一件事：") }
-                            .buttonStyle(.plain).smallAction()
-                        Button("先睡一觉") { applyTemplate("刚才累了一下，先睡一觉。") }
-                            .buttonStyle(.plain).smallAction()
-                        Button("补昨天") {
-                            let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) ?? selectedDate
-                            store.addQuickCapture(quickCaptureText, tag: quickCaptureTag, for: yesterday)
-                            quickCaptureText = ""
-                            quickCaptureTag = nil
-                            loadDraft()
-                        }
-                            .buttonStyle(.plain).smallAction()
-                            .disabled(quickCaptureText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                    .padding(.vertical, 1)
-                }
-                .scrollIndicators(.hidden)
-
                 if captures.isEmpty {
-                    Text("现在还没有快记。哪天只留一句话，也很好。")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else {
-                    ForEach(captures) { capture in
-                        let isPinned = capture.isPinned ?? false
-                        HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: "quote.opening")
-                                .font(.caption).foregroundStyle(.secondary)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(capture.text).font(.caption).lineSpacing(4)
-                                HStack(spacing: 5) {
-                                    if let tag = capture.tag {
-                                        Text(tag)
-                                            .font(.caption2.weight(.semibold))
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(Color.ctaBackground, in: Capsule())
-                                            .foregroundStyle(Color.ctaText)
-                                    }
-                                    Text(capture.createdAt.formatted(date: .omitted, time: .shortened) + " · " + capture.source)
-                                        .font(.caption2).foregroundStyle(.tertiary)
-                                }
-                            }
+                    Text("暂时没有快记。按 ⇧⌘N，可以随时留一句。")
+                        .font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(5)
+                }
+                ForEach(captures) { capture in
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text(capture.text).font(.system(size: 13)).lineSpacing(4).textSelection(.enabled)
+                        HStack {
+                            Text(Calendar.current.isDate(capture.createdAt, inSameDayAs: selectedDate) ? capture.createdAt.formatted(date: .omitted, time: .shortened) : "补记于 " + capture.createdAt.formatted(date: .abbreviated, time: .omitted))
+                                .font(.system(size: 10)).foregroundStyle(.tertiary)
                             Spacer()
-                            Button {
-                                store.setQuickCapturePinned(capture, entry: entry, pinned: !isPinned)
-                            } label: {
-                                Image(systemName: isPinned ? "pin.fill" : "pin")
-                                    .foregroundStyle(isPinned ? Color.ctaText : Color.secondary)
-                            }
-                            .buttonStyle(.plain).font(.caption2)
-                            .help(isPinned ? "取消置顶" : "置顶这条快记")
-
-                            Button {
-                                store.removeQuickCapture(capture, entry: entry)
-                                loadDraft()
-                            } label: { Image(systemName: "xmark") }
-                                .buttonStyle(.plain).font(.caption2)
+                            Button("放入日记") { append(capture.text) }.font(.system(size: 10)).buttonStyle(.plain).foregroundStyle(Color.riverAmethyst)
                         }
-                        .padding(11)
-                        .background(isPinned ? Color.ctaBackground.opacity(0.24) : Color.chip, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay {
-                            if isPinned {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(Color.ctaBackground.opacity(0.55), lineWidth: 1)
-                            }
-                        }
-                    }
+                    }.padding(.bottom, 8)
                 }
             }
         }
-        .frame(maxWidth: 1280)
     }
 
-    private func addQuickCapture() {
-        store.addQuickCapture(quickCaptureText, tag: quickCaptureTag, for: selectedDate)
-        quickCaptureText = ""
-        quickCaptureTag = nil
-        loadDraft()
-    }
-
-    private func applyTemplate(_ template: String) {
-        if quickCaptureText.isEmpty {
-            quickCaptureText = template
-        } else if !quickCaptureText.hasPrefix(template) {
-            quickCaptureText = template + quickCaptureText
-        }
-    }
-
-    private var fineTuneCard: some View {
-        SoftCard {
-            DisclosureGroup(isExpanded: $showsFineTune) {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 6) {
-                        ForEach(["随想", "工作", "身心", "休息"], id: \.self) { item in
-                            Button(item) { selectedCategory = item }
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(selectedCategory == item ? Color.ctaText : Color.secondaryInk)
-                                .padding(.horizontal, 11).padding(.vertical, 7)
-                                .background(selectedCategory == item ? Color.ink : Color.chip, in: Capsule())
-                                .buttonStyle(.plain)
+    private var writingAssistance: some View {
+        SoftCard(padding: 18) {
+            VStack(alignment: .leading, spacing: 14) {
+                Label("需要一点提示时", systemImage: "sparkles").font(.system(size: 13, weight: .medium))
+                Button("根据本机素材整理一段") {
+                    suggestion = AIDraftEngine.compose(entry: entry, previous: store.entries.last { $0.date < entry.date }, quickCaptures: captures, autoPaused: false, activitySessions: sessions)
+                }.font(.system(size: 12)).buttonStyle(.bordered)
+                if let suggestion {
+                    Text(suggestion.narrative).font(.system(size: 12)).lineSpacing(5).foregroundStyle(.secondary)
+                    Button("追加到草稿") { append(suggestion.narrative) }.buttonStyle(.plain).foregroundStyle(Color.riverAmethyst)
+                    DisclosureGroup("查看依据") {
+                        ForEach(suggestion.evidence) { evidence in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(evidence.title).font(.caption.weight(.medium))
+                                Text(evidence.detail).font(.caption).foregroundStyle(.secondary)
+                            }.padding(.vertical, 5)
+                        }
+                    }.font(.system(size: 11))
+                }
+                DisclosureGroup("AI 帮我回顾", isExpanded: $showsAI) {
+                    AITaskCard(ai: ai, task: .dailyOverview, buttonTitle: "AI 整理这一天", emptyMessage: "主动生成时，使用你已配置的模型整理当天素材。") {
+                        Task { await ai.generateDailyOverview(entry: entry, quickCaptures: captures, activitySessions: sessions) }
+                    } trailing: {
+                        if let answer = ai.state(for: .dailyOverview)?.answer {
+                            Button("追加到草稿") { append(answer) }.buttonStyle(.plain)
                         }
                     }
-
-                    slider("心情", $mood)
-                    slider("专注", $focus)
-                    slider("产出", $output)
-                    slider("精力", $energy)
-
-                    ProgressBar(value: Double(overall))
-
-                    Text("通常不用动。它若读得不太像你，就轻轻调一下。")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                .padding(.top, 14)
-            } label: {
-                HStack {
-                    Label("整理不准时调整", systemImage: "slider.horizontal.3")
-                        .font(.headline)
-                    Spacer()
-                    Text("可选").font(.caption).foregroundStyle(.secondary)
-                }
+                }.font(.system(size: 12))
             }
         }
-        .frame(maxWidth: 1280)
     }
 
-    private func slider(_ title: String, _ value: Binding<Double>) -> some View {
-        HStack(spacing: 10) {
-            Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary).frame(width: 38, alignment: .leading)
-            Slider(value: value, in: 0...100).tint(Color.riverAmethyst)
-            Text("\(Int(value.wrappedValue))").font(.caption.weight(.semibold)).frame(width: 26, alignment: .trailing)
+    private var bodySignals: some View {
+        SoftCard(padding: 18) {
+            VStack(alignment: .leading, spacing: 13) {
+                Label("身体的声音", systemImage: "leaf").font(.system(size: 13, weight: .medium))
+                if let steps = entry.health?.steps { detail("走过的步数", "\(steps) 步") }
+                if let distance = entry.health?.distanceKM { detail("活动距离", String(format: "%.1f 公里", distance)) }
+                if let energy = entry.health?.activeEnergyKcal { detail("活动能量", String(format: "%.0f 千卡", energy)) }
+            }
         }
+    }
+    private func detail(_ title: String, _ value: String) -> some View {
+        HStack { Text(title).foregroundStyle(.secondary); Spacer(); Text(value) }.font(.system(size: 12))
+    }
+    private func append(_ text: String) {
+        editor.edit(entry, text: buffer.text.isEmpty ? text : buffer.text + "\n\n" + text)
+    }
+    private func save() {
+        do {
+            try store.saveWriting(entry: entry, text: buffer.text, mood: buffer.mood)
+            editor.saved(entry.date); savedDateKey = entry.date; saveError = nil
+        } catch { saveError = error.localizedDescription }
     }
 }

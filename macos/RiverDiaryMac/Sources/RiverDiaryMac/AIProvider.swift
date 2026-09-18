@@ -54,10 +54,7 @@ enum AIProvider: String, CaseIterable, Identifiable, Codable {
     }
 
     var requiresAPIKey: Bool {
-        switch self {
-        case .ollama, .lmStudio: false
-        default: true
-        }
+        true
     }
 
     var defaultModel: String {

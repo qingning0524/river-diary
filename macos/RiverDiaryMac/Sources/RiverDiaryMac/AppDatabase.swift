@@ -128,9 +128,13 @@ final class AppDatabase {
             )
             """,
             "CREATE INDEX IF NOT EXISTS idx_chrome_date ON chrome_visits(date)",
+            "CREATE INDEX IF NOT EXISTS idx_chrome_date_visited ON chrome_visits(date, visited_at)",
             "CREATE INDEX IF NOT EXISTS idx_notes_date ON daily_notes(date)",
+            "CREATE INDEX IF NOT EXISTS idx_notes_date_modified ON daily_notes(date, modified_at)",
             "CREATE INDEX IF NOT EXISTS idx_sessions_date ON activity_sessions(date)",
+            "CREATE INDEX IF NOT EXISTS idx_sessions_date_start ON activity_sessions(date, start_time)",
             "CREATE INDEX IF NOT EXISTS idx_captures_date ON quick_captures(date)",
+            "CREATE INDEX IF NOT EXISTS idx_captures_date_created ON quick_captures(date, created_at)",
             "CREATE INDEX IF NOT EXISTS idx_sessions_start ON activity_sessions(start_time)",
             """
             CREATE TABLE IF NOT EXISTS ai_results (
@@ -140,10 +144,14 @@ final class AppDatabase {
                 task TEXT NOT NULL,
                 model TEXT NOT NULL,
                 answer TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                source_summary TEXT DEFAULT '',
+                created_at TEXT NOT NULL,
+                is_local INTEGER DEFAULT 0
             )
             """,
-            "CREATE INDEX IF NOT EXISTS idx_ai_results_range ON ai_results(start_date, end_date)"
+            "CREATE INDEX IF NOT EXISTS idx_ai_results_range ON ai_results(start_date, end_date)",
+            "CREATE INDEX IF NOT EXISTS idx_ai_results_created ON ai_results(created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_ai_results_task_range ON ai_results(task, start_date, end_date)"
         ]
 
         _ = transaction { database in
@@ -161,13 +169,15 @@ final class AppDatabase {
 
     private func migrateTables() {
         _ = transaction { database in
-            addColumnIfMissing("visited_at", "TEXT", to: "chrome_visits", database: database)
-            addColumnIfMissing("bundle_id", "TEXT DEFAULT ''", to: "activity_sessions", database: database)
+            guard addColumnIfMissing("visited_at", "TEXT", to: "chrome_visits", database: database) else { return false }
+            guard addColumnIfMissing("bundle_id", "TEXT DEFAULT ''", to: "activity_sessions", database: database) else { return false }
+            guard addColumnIfMissing("source_summary", "TEXT DEFAULT ''", to: "ai_results", database: database) else { return false }
+            guard addColumnIfMissing("is_local", "INTEGER DEFAULT 0", to: "ai_results", database: database) else { return false }
             return true
         }
     }
 
-    private func addColumnIfMissing(_ column: String, _ definition: String, to table: String, database: OpaquePointer) {
+    private func addColumnIfMissing(_ column: String, _ definition: String, to table: String, database: OpaquePointer) -> Bool {
         var checkStatement: OpaquePointer?
         let checkSQL = "PRAGMA table_info(\(table))"
         var exists = false
@@ -180,23 +190,35 @@ final class AppDatabase {
             }
         }
         sqlite3_finalize(checkStatement)
-        guard !exists else { return }
+        guard !exists else { return true }
         var statement: OpaquePointer?
         let sql = "ALTER TABLE \(table) ADD COLUMN \(column) \(definition)"
-        if sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_step(statement)
-        }
-        sqlite3_finalize(statement)
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+        guard let statement else { return false }
+        return sqlite3_step(statement) == SQLITE_DONE
     }
 
     func transaction(_ work: (OpaquePointer) -> Bool) -> Bool {
         queue.sync { [weak self] in
             guard let self, let db = self.db else { return false }
-            sqlite3_exec(db, "BEGIN IMMEDIATE", nil, nil, nil)
+            guard sqlite3_exec(db, "BEGIN IMMEDIATE", nil, nil, nil) == SQLITE_OK else {
+                self.lastError = databaseError(db)
+                return false
+            }
             let success = work(db)
-            sqlite3_exec(db, success ? "COMMIT" : "ROLLBACK", nil, nil, nil)
-            self.lastError = success ? nil : "数据库写入失败"
-            return success
+            guard success else {
+                sqlite3_exec(db, "ROLLBACK", nil, nil, nil)
+                if self.lastError == nil { self.lastError = databaseError(db) }
+                return false
+            }
+            guard sqlite3_exec(db, "COMMIT", nil, nil, nil) == SQLITE_OK else {
+                self.lastError = databaseError(db)
+                sqlite3_exec(db, "ROLLBACK", nil, nil, nil)
+                return false
+            }
+            self.lastError = nil
+            return true
         }
     }
 
@@ -428,14 +450,16 @@ final class AppDatabase {
         task: String,
         model: String,
         answer: String,
-        createdAt: Date = Date()
+        sourceSummary: String = "",
+        createdAt: Date = Date(),
+        isLocal: Bool = false
     ) -> Bool {
         transaction { database in
             execute(
                 """
                 INSERT OR REPLACE INTO ai_results
-                (result_key, start_date, end_date, task, model, answer, created_at)
-                VALUES (?,?,?,?,?,?,?)
+                (result_key, start_date, end_date, task, model, answer, source_summary, created_at, is_local)
+                VALUES (?,?,?,?,?,?,?,?,?)
                 """,
                 bindings: { statement in
                     sqlite3_bind_text(statement, 1, resultKey, -1, nil)
@@ -444,7 +468,9 @@ final class AppDatabase {
                     sqlite3_bind_text(statement, 4, task, -1, nil)
                     sqlite3_bind_text(statement, 5, model, -1, nil)
                     sqlite3_bind_text(statement, 6, answer, -1, nil)
-                    sqlite3_bind_text(statement, 7, DatabaseTime.isoFormatter.string(from: createdAt), -1, nil)
+                    sqlite3_bind_text(statement, 7, sourceSummary, -1, nil)
+                    sqlite3_bind_text(statement, 8, DatabaseTime.isoFormatter.string(from: createdAt), -1, nil)
+                    sqlite3_bind_int(statement, 9, isLocal ? 1 : 0)
                 },
                 database: database
             )
@@ -454,7 +480,7 @@ final class AppDatabase {
     func queryAIResults(startDate: String, endDate: String) -> [DBAIResult] {
         query(
             """
-            SELECT result_key, start_date, end_date, task, model, answer, created_at
+            SELECT result_key, start_date, end_date, task, model, answer, source_summary, created_at, is_local
             FROM ai_results WHERE start_date = ? AND end_date = ? ORDER BY created_at DESC
             """,
             bindings: {
@@ -469,7 +495,9 @@ final class AppDatabase {
                 task: text(statement, 3),
                 model: text(statement, 4),
                 answer: text(statement, 5),
-                createdAt: text(statement, 6)
+                sourceSummary: text(statement, 6),
+                createdAt: text(statement, 7),
+                isLocal: sqlite3_column_int(statement, 8) == 1
             )
         }
     }
@@ -477,7 +505,7 @@ final class AppDatabase {
     func queryRecentAIResults(limit: Int = 30) -> [DBAIResult] {
         query(
             """
-            SELECT result_key, start_date, end_date, task, model, answer, created_at
+            SELECT result_key, start_date, end_date, task, model, answer, source_summary, created_at, is_local
             FROM ai_results ORDER BY created_at DESC LIMIT ?
             """,
             bindings: { sqlite3_bind_int($0, 1, Int32(limit)) }
@@ -489,7 +517,9 @@ final class AppDatabase {
                 task: text(statement, 3),
                 model: text(statement, 4),
                 answer: text(statement, 5),
-                createdAt: text(statement, 6)
+                sourceSummary: text(statement, 6),
+                createdAt: text(statement, 7),
+                isLocal: sqlite3_column_int(statement, 8) == 1
             )
         }
     }
@@ -500,7 +530,15 @@ final class AppDatabase {
         let pattern = "%\(searchText.trimmingCharacters(in: .whitespacesAndNewlines))%"
         var snapshot = DatabaseCrossDaySnapshot(startDate: startDate, endDate: endDate, query: searchText)
 
-        snapshot.dailyRecords = queryDailyRecords(limit: 1000).filter { $0.date >= startDate && $0.date <= endDate }
+        snapshot.dailyRecords = query(
+            "SELECT * FROM daily_records WHERE date BETWEEN ? AND ? ORDER BY date DESC LIMIT ?",
+            bindings: {
+                sqlite3_bind_text($0, 1, startDate, -1, nil)
+                sqlite3_bind_text($0, 2, endDate, -1, nil)
+                sqlite3_bind_int($0, 3, Int32(max(0, limitPerType)))
+            },
+            read: { readDailyRecord($0) }
+        )
         snapshot.chromeVisits = query(
             """
             SELECT id, date, url, title, domain, visited_at, visit_count
@@ -687,11 +725,21 @@ final class AppDatabase {
 
     func execute(_ sql: String, bindings: ((OpaquePointer) -> Void)? = nil, database: OpaquePointer) -> Bool {
         var statement: OpaquePointer?
-        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else {
+            lastError = databaseError(database)
+            return false
+        }
         defer { sqlite3_finalize(statement) }
-        guard let preparedStatement = statement else { return false }
+        guard let preparedStatement = statement else {
+            lastError = "数据库语句为空"
+            return false
+        }
         bindings?(preparedStatement)
-        return sqlite3_step(preparedStatement) == SQLITE_DONE
+        guard sqlite3_step(preparedStatement) == SQLITE_DONE else {
+            lastError = databaseError(database)
+            return false
+        }
+        return true
     }
 
     private func bindText(_ value: String) -> (OpaquePointer) -> Void {
@@ -755,5 +803,9 @@ final class AppDatabase {
     private func text(_ statement: OpaquePointer?, _ index: Int32) -> String {
         guard let cString = sqlite3_column_text(statement, index) else { return "" }
         return String(cString: cString)
+    }
+
+    private func databaseError(_ database: OpaquePointer) -> String {
+        String(cString: sqlite3_errmsg(database))
     }
 }

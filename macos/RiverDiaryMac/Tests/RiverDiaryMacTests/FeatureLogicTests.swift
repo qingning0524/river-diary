@@ -79,4 +79,164 @@ final class FeatureLogicTests: XCTestCase {
         XCTAssertTrue(letter?.body.hasPrefix("我注意到") ?? false)
         XCTAssertTrue(letter?.body.hasSuffix("沉下来。") ?? false)
     }
+
+    func testRiverLetterUsesTheLowestScoredDayAsQuietDay() {
+        let high = DiaryEntry(
+            pageID: "high",
+            date: "2026-09-03",
+            score: 82,
+            daily: nil,
+            overview: nil,
+            thoughts: nil,
+            memos: nil,
+            tags: nil,
+            category: nil,
+            metrics: nil,
+            stage: nil
+        )
+        let low = DiaryEntry(
+            pageID: "low",
+            date: "2026-09-02",
+            score: 25,
+            daily: nil,
+            overview: nil,
+            thoughts: nil,
+            memos: nil,
+            tags: nil,
+            category: nil,
+            metrics: nil,
+            stage: nil
+        )
+
+        let letter = RiverLetter.make(entries: [high, low], captures: [], sessions: [], days: 30)
+        XCTAssertTrue(letter?.body.contains("安静一点的 9月2日") ?? false)
+    }
+
+    func testInsightRequestRoundTripPreservesArchiveIdentity() throws {
+        let request = InsightRequest(
+            task: .analysisMood,
+            startDate: "2026-09-01",
+            endDate: "2026-09-07",
+            sourceSummary: "7 天日记 · 12 段足迹 · 3 条快记",
+            createdAt: Date(timeIntervalSince1970: 1_788_000_000)
+        )
+
+        let data = try JSONEncoder().encode(request)
+        let decoded = try JSONDecoder().decode(InsightRequest.self, from: data)
+
+        XCTAssertEqual(decoded.id, request.id)
+        XCTAssertEqual(decoded.task, .analysisMood)
+        XCTAssertEqual(decoded.sourceSummary, request.sourceSummary)
+    }
+
+    func testSavedQueryRoundTripPreservesRangeAndUsageMetadata() throws {
+        var query = SavedQuery(name: "最近的工作", query: "Xcode", days: 30)
+        query.lastUsedAt = Date(timeIntervalSince1970: 1_788_000_000)
+
+        let encoded = try JSONEncoder().encode(query)
+        let decoded = try JSONDecoder().decode(SavedQuery.self, from: encoded)
+
+        XCTAssertEqual(decoded, query)
+        XCTAssertEqual(decoded.rangeLabel, "近 30 天")
+    }
+
+    func testAISearchAnswerFormatterNormalizesRequiredHeadings() {
+        let raw = """
+        【结论】
+        我注意到工作相关记录集中在本周。
+        【相关日期】
+        - 2026-09-03：留下工作记录
+        【证据】
+        - 2026-09-03 · 来源：日记
+        【边界】
+        只基于本机记录，相关性不代表因果关系。如果你想，可以继续查看原文。
+        """
+
+        let normalized = AISearchAnswerFormatter.normalize(raw)
+
+        XCTAssertTrue(normalized.contains("**结论**"))
+        XCTAssertTrue(normalized.contains("**相关日期**"))
+        XCTAssertTrue(normalized.contains("**证据**"))
+        XCTAssertTrue(normalized.contains("**边界**"))
+        XCTAssertFalse(normalized.contains("【结论】"))
+    }
+
+    func testAISearchAnswerFormatterAddsSectionsToUnstructuredOutput() {
+        let normalized = AISearchAnswerFormatter.normalize("我找到了几条记录。")
+
+        XCTAssertTrue(normalized.hasPrefix("**结论**"))
+        XCTAssertTrue(normalized.contains("**相关日期**"))
+        XCTAssertTrue(normalized.contains("**证据**"))
+        XCTAssertTrue(normalized.contains("**边界**"))
+    }
+
+    func testAISearchAnswerFormatterSplitsInlineHeading() {
+        let raw = """
+        **结论**：我注意到工作记录集中在本周。
+        **相关日期**：- 2026-09-03：工作
+        **证据**：- 2026-09-03 · 来源：日记
+        **边界**：相关性不代表因果关系。如果你想，可以继续查看。
+        """
+
+        let normalized = AISearchAnswerFormatter.normalize(raw)
+
+        XCTAssertTrue(normalized.contains("**结论**\n我注意到"))
+        XCTAssertTrue(normalized.contains("**相关日期**\n- 2026-09-03"))
+        XCTAssertTrue(normalized.contains("**证据**\n- 2026-09-03"))
+        XCTAssertTrue(normalized.contains("**边界**\n相关性"))
+    }
+
+    func testAIAnalysisBundleParserSplitsAllSixCards() {
+        let raw = AITask.analysisSuite.map { task in
+            """
+            ## \(task.title)
+            **结论**
+            \(task.title)结论
+            **关键依据**
+            - 2026-09-03 · 日记：依据
+            **建议**
+            做一件小事。
+            **边界**
+            只基于当前记录。
+            """
+        }.joined(separator: "\n\n")
+
+        let parsed = AIAnalysisBundleParser.parse(raw)
+
+        XCTAssertEqual(parsed.count, AITask.analysisSuite.count)
+        for task in AITask.analysisSuite {
+            XCTAssertTrue(parsed[task]?.contains("\(task.title)结论") == true)
+            XCTAssertTrue(parsed[task]?.contains("**关键依据**") == true)
+        }
+    }
+
+    func testAIAnalysisBundleParserAcceptsDecoratedNumberedHeadings() {
+        let raw = """
+        ### 1. 每日总结：
+        今天的记录很有限。
+        ### 2、情绪关联
+        暂时看不出稳定关联。
+        """
+
+        let parsed = AIAnalysisBundleParser.parse(raw)
+
+        XCTAssertNotNil(parsed[.analysisDaily])
+        XCTAssertNotNil(parsed[.analysisMood])
+    }
+
+    func testAIAnalysisFormatterCompletesTraceableStructure() {
+        let normalized = AIAnalysisAnswerFormatter.normalize("我注意到今天的专注片段较集中。")
+
+        XCTAssertTrue(normalized.hasPrefix("**结论**"))
+        XCTAssertTrue(normalized.contains("**关键依据**"))
+        XCTAssertTrue(normalized.contains("**建议**"))
+        XCTAssertTrue(normalized.contains("**边界**"))
+    }
+
+    func testOldUserStateDecodesWithoutSavedQueries() throws {
+        let json = Data(#"{"version":3,"entries":{}}"#.utf8)
+        let state = try JSONDecoder().decode(UserState.self, from: json)
+
+        XCTAssertNil(state.savedQueries)
+    }
 }

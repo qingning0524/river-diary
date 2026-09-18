@@ -16,6 +16,48 @@ struct MemoryAnswer {
     let usedFilters: [String]
 }
 
+struct AISearchDateReference: Identifiable, Hashable {
+    let id: String
+    let date: String
+    let title: String
+    let detail: String
+    let source: String
+    let score: Int?
+}
+
+enum AISearchDateReferenceParser {
+    static func references(
+        from answer: String,
+        entries: [DiaryEntry],
+        quickCaptures: [QuickCapture]
+    ) -> [AISearchDateReference] {
+        guard let regex = try? NSRegularExpression(pattern: "\\b\\d{4}-\\d{2}-\\d{2}\\b") else { return [] }
+        let range = NSRange(answer.startIndex..<answer.endIndex, in: answer)
+        var dates: [String] = []
+        for match in regex.matches(in: answer, range: range) {
+            guard let swiftRange = Range(match.range, in: answer) else { continue }
+            let date = String(answer[swiftRange])
+            if !dates.contains(date) { dates.append(date) }
+        }
+
+        return dates.compactMap { date in
+            if let entry = entries.first(where: { $0.date == date }) {
+                return AISearchDateReference(
+                    id: "entry-\(date)", date: date, title: entry.shortDate,
+                    detail: entry.displayOverview.isEmpty ? "这一天没有留下文字。" : entry.displayOverview,
+                    source: "日记", score: entry.overall
+                )
+            }
+            let captures = quickCaptures.filter { DiaryEntry.dateFormatter.string(from: $0.createdAt) == date }
+            guard !captures.isEmpty else { return nil }
+            return AISearchDateReference(
+                id: "capture-\(date)", date: date, title: date,
+                detail: captures.map(\.text).joined(separator: " · "), source: "快记", score: nil
+            )
+        }
+    }
+}
+
 enum MemorySearchEngine {
     static func search(
         _ rawQuery: String,
@@ -106,14 +148,7 @@ enum MemorySearchEngine {
             filters.append("综合高于 \(number)")
         }
 
-        // 先移除已被筛选器消费的范围/阈值短语，避免“本月低于40”被误当成主题词。
-        let topicQuery = query.replacingOccurrences(
-            of: "(今天|昨天|前天|本周|上周|本月|这个月|最近\\s*\\d+\\s*天|最近|低于\\s*\\d+|小于\\s*\\d+|低过\\s*\\d+|高于\\s*\\d+|大于\\s*\\d+|超过\\s*\\d+)",
-            with: " ",
-            options: .regularExpression
-        )
-        let topicWords = topicQuery.split(whereSeparator: { " ，。？？！、".contains($0) }).map(String.init)
-            .filter { $0.count >= 2 && !["哪", "哪些", "时候", "最近", "上个月", "这个月", "为什么", "什么"].contains($0) }
+        let topicWords = normalizedTopicWords(from: query)
 
         if !topicWords.isEmpty {
             filtered = filtered.filter { entry in
@@ -149,6 +184,40 @@ enum MemorySearchEngine {
             notes: Array(notes.prefix(12)),
             usedFilters: filters
         )
+    }
+
+    private static func normalizedTopicWords(from query: String) -> [String] {
+        // Remove range/threshold phrases first, then strip common question
+        // scaffolding so “本月提到工作了吗？” becomes “工作”.
+        var text = query.replacingOccurrences(
+            of: "(今天|昨天|前天|本周|上周|本月|这个月|最近\\s*\\d+\\s*天|最近|低于\\s*\\d+|小于\\s*\\d+|低过\\s*\\d+|高于\\s*\\d+|大于\\s*\\d+|超过\\s*\\d+)",
+            with: " ",
+            options: .regularExpression
+        )
+        text = text.replacingOccurrences(
+            of: "(有哪几天|哪几天|哪些天|哪天|提到|有没有|是否|了吗|吗|的|记录|看看|找出|什么)",
+            with: " ",
+            options: .regularExpression
+        )
+
+        let rawWords = text
+            .split(whereSeparator: { character in
+                character.isWhitespace || "，。！？?！、：:；;（）()\"“”".contains(character)
+            })
+            .map(String.init)
+            .filter { $0.count >= 2 }
+
+        var words: [String] = []
+        for word in rawWords {
+            let normalized: String
+            switch word {
+            case "很累", "累", "疲劳", "疲倦", "困倦", "无力": normalized = "疲惫"
+            case "安静", "稳定", "放松": normalized = "平静"
+            default: normalized = word
+            }
+            if !words.contains(normalized) { words.append(normalized) }
+        }
+        return words
     }
 
     private static func searchableText(_ entry: DiaryEntry) -> String {

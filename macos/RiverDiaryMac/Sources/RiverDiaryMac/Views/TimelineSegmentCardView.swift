@@ -48,7 +48,7 @@ struct TimelineSegmentCardView: View {
                 }
             }
         }
-        .frame(maxWidth: 1280)
+        .frame(maxWidth: AppLayout.contentMaxWidth)
     }
 }
 

@@ -10,10 +10,10 @@ struct AIConnectionCard: View {
                     Label("连接模型 API", systemImage: "sparkles.rectangle.stack")
                         .font(.headline)
                     Spacer()
-                    StatusBadge(ai.isConfigured ? "已连接" : "未连接", tone: ai.isConfigured ? .positive : .neutral)
+                    StatusBadge(ai.hasVerifiedConnection ? "已验证" : "待验证", tone: ai.hasVerifiedConnection ? .positive : .neutral)
                 }
 
-                Text("支持 OpenAI 兼容、DeepSeek、Moonshot、OpenRouter、阿里云百炼、智谱、xAI、Groq、Mistral、SiliconFlow、Ollama 和 LM Studio。可以保存多个方案，随时切换。")
+                Text("支持 OpenAI 兼容、DeepSeek、Moonshot、OpenRouter、阿里云百炼、智谱、xAI、Groq、Mistral、SiliconFlow、Ollama 和 LM Studio。所有方案都需要 API Key；首次启动会强制完成一次真实连接验证。")
                     .font(.caption)
                     .lineSpacing(6)
                     .foregroundStyle(.secondary)
@@ -83,7 +83,7 @@ struct AIConnectionCard: View {
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                             HStack(spacing: 8) {
-                                SecureField(ai.hasAPIKey ? "已保存到钥匙串" : "粘贴 API Key", text: $ai.apiKeyInput)
+                                SecureField(ai.hasAPIKey ? "已保存" : "粘贴 API Key", text: $ai.apiKeyInput)
                                     .textFieldStyle(.roundedBorder)
                                 Button("保存 Key") { ai.saveAPIKey() }
                                     .buttonStyle(.plain)
@@ -95,10 +95,6 @@ struct AIConnectionCard: View {
                                 }
                             }
                         }
-                    } else {
-                        Label("本地模型不需要 API Key。", systemImage: "desktopcomputer")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
 
                     VStack(alignment: .leading, spacing: 7) {
@@ -171,7 +167,7 @@ struct AIConnectionCard: View {
 
                             Spacer()
 
-                            Text(ai.isConfigured ? "已可使用" : ai.canTestConnection ? "Key 待保存，测试时会自动保存" : ai.providerRequiresAPIKey ? "还需要 API Key、地址和模型" : "还需要地址和模型")
+                            Text(ai.hasVerifiedConnection ? "已验证可用" : ai.canTestConnection ? "待验证，测试时会自动保存 Key" : "还需要 API Key、地址和模型")
                                 .font(.caption)
                                 .foregroundStyle(ai.isConfigured ? Color(hex: "#2C8158") : .secondary)
                         }
@@ -203,6 +199,6 @@ struct AIConnectionCard: View {
                 }
             }
         }
-        .frame(maxWidth: 1280)
+        .frame(maxWidth: AppLayout.contentMaxWidth)
     }
 }

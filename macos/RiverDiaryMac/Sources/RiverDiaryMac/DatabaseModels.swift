@@ -70,7 +70,9 @@ struct DBAIResult: Codable, Identifiable, Hashable {
     var task: String
     var model: String
     var answer: String
+    var sourceSummary: String
     var createdAt: String
+    var isLocal: Bool
 }
 
 struct DatabaseCrossDaySnapshot {

@@ -15,7 +15,7 @@ struct QuickCaptureView: View {
                     .frame(width: 7, height: 7)
             }
 
-            Text("先保留一句话或链接，稍后会并进当天草稿。")
+            Text("先保留一句话或链接，稍后可以放进当天日记。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -40,6 +40,9 @@ struct QuickCaptureView: View {
             }
             .buttonStyle(.softPress)
 
+            if case .failed(let message) = store.saveState {
+                Text(message).font(.caption2).foregroundStyle(.red)
+            }
             if case .saved(let date) = store.saveState {
                 Text("已保存 \(date.formatted(date: .omitted, time: .shortened))")
                     .font(.caption2)
@@ -51,7 +54,8 @@ struct QuickCaptureView: View {
     }
 
     private func save() {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         store.addQuickCapture(text)
-        text = ""
+        if case .saved = store.saveState { text = "" }
     }
 }

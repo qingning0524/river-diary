@@ -8,6 +8,7 @@ struct PrivacyView: View {
     @ObservedObject var ai: AIAssistantStore
     @ObservedObject var ingestion: DataIngestionStore
     var showsHeader: Bool = true
+    @State private var settingsSection = "记录与采集"
     @State private var showsClearConfirmation = false
     @State private var showsClearActivityConfirmation = false
     @State private var showsRestoreConfirmation = false
@@ -26,32 +27,32 @@ struct PrivacyView: View {
                     header
                 }
 
-                sectionLabel("分析")
-                modeCard
-
-                sectionLabel("模型连接")
-                aiCard
-
-                sectionLabel("数据采集")
-                autoRecordCard
-
-                sectionLabel("健康状态")
-                statusCard
-
-                EqualWidthRow(spacing: 18) {
+                Picker("设置分类", selection: $settingsSection) {
+                    Text("记录与采集").tag("记录与采集")
+                    Text("AI 与模型").tag("AI 与模型")
+                    Text("隐私与备份").tag("隐私与备份")
+                }
+                .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 480)
+                switch settingsSection {
+                case "AI 与模型":
+                    aiCard
+                case "隐私与备份":
                     storageCard
                     controlCard
+                default:
+                    autoRecordCard
+                    statusCard
                 }
 
                 if let exportMessage {
                     Label(exportMessage, systemImage: exportMessage.contains("失败") ? "exclamationmark.triangle" : "checkmark.circle")
                         .font(.caption)
                         .foregroundStyle(exportMessage.contains("失败") ? .red : Color(hex: "#2C8158"))
-                        .frame(maxWidth: 1280, alignment: .leading)
+                        .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .leading)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
-            .frame(maxWidth: 1280, alignment: .leading)
+            .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .leading)
             .padding(.top, 8)
             .animation(.easeOut(duration: 0.25), value: exportMessage)
             .animation(.easeOut(duration: 0.25), value: ingestion.lastStatus)
@@ -105,49 +106,18 @@ struct PrivacyView: View {
                 .fill(Color.border)
                 .frame(height: 1)
         }
-        .frame(maxWidth: 1280, alignment: .leading)
+        .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .leading)
         .padding(.top, 6)
-    }
-
-    private var modeCard: some View {
-        SoftCard {
-            VStack(alignment: .leading, spacing: 14) {
-                Label("分析模式", systemImage: "switch.2")
-                    .font(.headline)
-
-                Picker("分析模式", selection: Binding(
-                    get: { ai.isEnabled },
-                    set: { ai.isEnabled = $0 }
-                )) {
-                    Text("AI 分析模型").tag(true)
-                    Text("非 AI 分析模式").tag(false)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-
-                Text(ai.isEnabled ? "AI 分析模式会连接你选择的外部模型，用于问足迹分析。" : "非 AI 分析模式完全在本机运行，不会发送任何分析请求。")
-                    .font(.caption)
-                    .lineSpacing(5)
-                    .foregroundStyle(.secondary)
-
-                if ai.isEnabled && !ai.isConfigured {
-                    Label("尚未连接可用的 AI 模型。请先填写 API 信息并测试连接。", systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-            }
-        }
-        .frame(maxWidth: 1280)
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Settings").font(.caption.smallCaps()).foregroundStyle(.secondary)
             Text("设置").font(.system(size: 34, weight: .semibold)).foregroundStyle(Color.ink)
-            Text("日记状态使用 AES-GCM 加密，密钥由 macOS 钥匙串保护。")
+            Text("日记状态使用 AES-GCM 加密，密钥保存在本机应用目录并仅限当前用户访问。")
                 .font(.system(size: 13)).foregroundStyle(.secondary)
         }
-        .frame(maxWidth: 1280, alignment: .leading)
+        .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .leading)
     }
 
     private var autoRecordCard: some View {
@@ -207,11 +177,11 @@ struct PrivacyView: View {
                     }
 
                     HStack(spacing: 8) {
-                        Toggle("自动采集", isOn: Binding(
+                        Toggle("自动采集与 AI 分析", isOn: Binding(
                             get: { ingestion.enabled },
                             set: { ingestion.setEnabled($0) }
                         ))
-                        .toggleStyle(.switch)
+                        .toggleStyle(.switch).tint(Color.riverAmethyst)
                         .font(.caption)
 
                         DatePicker(
@@ -246,6 +216,10 @@ struct PrivacyView: View {
                             .smallAction(dark: true)
                     }
 
+                    Text("到这个时间会采集当天数据，并自动生成「每日总结」；同一天只自动生成一次。")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+
                     Divider()
 
                     VStack(alignment: .leading, spacing: 10) {
@@ -254,10 +228,10 @@ struct PrivacyView: View {
                             .foregroundStyle(.secondary)
 
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 210), spacing: 8)], alignment: .leading, spacing: 8) {
-                            Toggle("健康与快记", isOn: $optionHealth).toggleStyle(.switch).font(.caption)
-                            Toggle("Chrome 浏览", isOn: $optionChrome).toggleStyle(.switch).font(.caption)
-                            Toggle("备忘录", isOn: $optionNotes).toggleStyle(.switch).font(.caption)
-                            Toggle("实时足迹汇总", isOn: $optionScreenTime).toggleStyle(.switch).font(.caption)
+                            Toggle("健康与快记", isOn: $optionHealth).toggleStyle(.switch).tint(Color.riverAmethyst).font(.caption)
+                            Toggle("Chrome 浏览", isOn: $optionChrome).toggleStyle(.switch).tint(Color.riverAmethyst).font(.caption)
+                            Toggle("备忘录", isOn: $optionNotes).toggleStyle(.switch).tint(Color.riverAmethyst).font(.caption)
+                            Toggle("实时足迹汇总", isOn: $optionScreenTime).toggleStyle(.switch).tint(Color.riverAmethyst).font(.caption)
                         }
 
                         HStack(spacing: 8) {
@@ -409,7 +383,7 @@ struct PrivacyView: View {
                         get: { activity.pauseScheduleEnabled },
                         set: { activity.setPauseSchedule(enabled: $0) }
                     ))
-                    .toggleStyle(.switch)
+                    .toggleStyle(.switch).tint(Color.riverAmethyst)
                     .font(.caption)
 
                     if activity.pauseScheduleEnabled {
@@ -448,7 +422,7 @@ struct PrivacyView: View {
                         get: { activity.capturesTitles },
                         set: { activity.setCapturesTitles($0) }
                     ))
-                    .toggleStyle(.switch)
+                    .toggleStyle(.switch).tint(Color.riverAmethyst)
                     .font(.caption)
 
                     if activity.capturesTitles {
@@ -466,7 +440,7 @@ struct PrivacyView: View {
                 }
             }
         }
-        .frame(maxWidth: 1280)
+        .frame(maxWidth: AppLayout.contentMaxWidth)
     }
 
     private func pauseDate(_ minutes: Int) -> Date {
@@ -565,7 +539,7 @@ struct PrivacyView: View {
                 Text("数据控制").font(.headline)
 
                 Toggle("启动和应用切换时上锁", isOn: $appLockEnabled)
-                    .toggleStyle(.switch)
+                    .toggleStyle(.switch).tint(Color.riverAmethyst)
                     .font(.caption)
 
                 Text("应用锁会使用这台 Mac 的密码或生物识别；钥匙仍留在本机。")
@@ -657,12 +631,12 @@ struct PrivacyView: View {
 
                 EqualWidthRow(spacing: 14) {
                     rule("本地优先", "评分、筛选和图表本机完成；AI 只在你点生成时请求。")
-                    rule("密钥保护", "API Key 保存在 macOS 钥匙串。")
+                    rule("密钥保护", "API Key 保存在本机加密文件，并限制为当前用户可读。")
                     rule("最小请求", "只发送所选日期/范围的日记摘要；窗口标题需单独允许。")
                 }
             }
         }
-        .frame(maxWidth: 1280)
+        .frame(maxWidth: AppLayout.contentMaxWidth)
     }
 
     private var diagnoses: [String] {
@@ -709,8 +683,8 @@ struct PrivacyView: View {
         if activity.capturesTitles && !activity.accessibilityGranted {
             items.append("窗口标题权限未允许；足迹只能记录应用名，不能记录窗口标题。")
         }
-        if ai.isEnabled && !ai.isConfigured {
-            items.append("AI 分析模式已开启，但还没有可用的模型连接。")
+        if !ai.hasVerifiedConnection {
+            items.append("AI 分析还没有完成可用的模型连接验证。")
         }
         return items
     }
@@ -778,7 +752,7 @@ struct PrivacyView: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
-            try store.exportFullBackup(to: url, activitySessions: activity.sessions)
+            try store.exportFullBackup(to: url, activitySessions: activity.allSessionsIncludingActive())
             exportMessage = "已创建加密备份：\(url.lastPathComponent)"
         } catch {
             exportMessage = "备份失败：\(error.localizedDescription)"

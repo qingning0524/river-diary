@@ -24,6 +24,28 @@ struct ActivitySession: Codable, Hashable, Identifiable {
     }
 }
 
+enum ActivitySessionSnapshot {
+    static func day(
+        _ date: Date, sessions: [ActivitySession], active: ActivitySession?,
+        now: Date = Date(), calendar: Calendar = .current
+    ) -> [ActivitySession] {
+        guard let day = calendar.dateInterval(of: .day, for: date) else { return [] }
+        var candidates = sessions
+        if var active {
+            active.end = max(active.end, now)
+            candidates.append(active)
+        }
+        return candidates.compactMap { session -> ActivitySession? in
+            guard ActivityClassifier.isRecordable(appName: session.appName, bundleID: session.bundleID),
+                  session.start < day.end, session.end > day.start else { return nil }
+            var clipped = session
+            clipped.start = max(session.start, day.start)
+            clipped.end = min(session.end, day.end)
+            return clipped.end > clipped.start ? clipped : nil
+        }.sorted { $0.start < $1.start }
+    }
+}
+
 enum ActivitySourceKind: String, Hashable {
     case pipeline
     case live

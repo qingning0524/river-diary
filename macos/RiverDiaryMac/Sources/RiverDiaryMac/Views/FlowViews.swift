@@ -12,7 +12,7 @@ struct FlowPageHeader<Tab: Hashable>: View {
             VStack(alignment: .leading, spacing: 7) {
                 HStack(spacing: 9) {
                     Text(title)
-                        .font(.editorial(34))
+                        .font(.editorial(32))
                         .foregroundStyle(Color.ink)
 
                     RoundedRectangle(cornerRadius: 2, style: .continuous)
@@ -22,25 +22,45 @@ struct FlowPageHeader<Tab: Hashable>: View {
                 }
 
                 Text(caption)
-                    .font(.ui(12))
+                    .font(.ui(13))
                     .foregroundStyle(.secondary)
                     .lineSpacing(3)
             }
 
             Spacer(minLength: 16)
 
-            Picker(title, selection: $selection.animation(.easeOut(duration: 0.2))) {
+            HStack(spacing: 4) {
                 ForEach(tabs, id: \.self) { tab in
-                    Text(titleFor(tab)).tag(tab)
+                    let selected = selection == tab
+                    Button {
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            selection = tab
+                        }
+                    } label: {
+                        Text(titleFor(tab))
+                            .font(.ui(12, weight: selected ? .semibold : .medium))
+                            .foregroundStyle(selected ? Color.ink : Color.secondaryInk)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background {
+                                if selected {
+                                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                        .fill(Color.strongSurface)
+                                        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.separator, lineWidth: 1))
+                                }
+                            }
+                    }
+                    .buttonStyle(.softPress)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .tint(Color.riverAmethyst)
-            .controlSize(.large)
-            .frame(width: min(CGFloat(tabs.count) * 122, 460))
+            .padding(4)
+            .background(Color.chip, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.border.opacity(0.7), lineWidth: 1))
+            .frame(width: min(CGFloat(tabs.count) * 112, 420))
         }
-        .frame(maxWidth: 1280, alignment: .leading)
+        .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .leading)
+        .padding(.bottom, 2)
     }
 }
 
@@ -50,53 +70,74 @@ struct TimeFlowView: View {
     @ObservedObject var ai: AIAssistantStore
     @Binding var selectedDate: Date
     @Binding var section: TimeSection
+    var openDiary: (() -> Void)?
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 12) {
+            if section != .activity {
                 FlowPageHeader(
                     title: "时间",
-                    caption: "过去发生了什么：感受、状态和屏幕足迹。",
+                    caption: "沿着时间，找回做过的事与当时的感受。",
                     selection: $section,
-                    tabs: TimeSection.allCases,
+                    tabs: TimeSection.displayOrder,
                     titleFor: \.title
                 )
-
-                switch section {
-                case .river:
-                    RiverView(
-                        entries: store.entries,
-                        selectedDate: selectedDate,
-                        ai: ai,
-                        showsHeader: false
-                    )
-                    .background(.clear)
-                case .rhythm:
-                    RhythmView(
-                        store: store,
-                        activity: activity,
-                        anchorDate: $selectedDate,
-                        showsHeader: false
-                    )
-                    .background(.clear)
-                case .activity:
-                    ActivityView(
-                        activity: activity,
-                        selectedDate: $selectedDate,
-                        ai: ai,
-                        entries: store.entries,
-                        quickCaptures: store.quickCaptures[DiaryEntry.dateFormatter.string(from: selectedDate)] ?? [],
-                        showsHeader: false
-                    )
-                    .background(.clear)
+            } else {
+                HStack(spacing: 22) {
+                    ForEach(TimeSection.displayOrder) { item in
+                        Button { section = item } label: {
+                            Text(item.title)
+                                .font(.system(size: 12, weight: section == item ? .semibold : .regular))
+                                .foregroundStyle(section == item ? Color.ink : Color.secondaryInk)
+                                .padding(.bottom, 8)
+                                .overlay(alignment: .bottom) {
+                                    if section == item { Capsule().fill(Color.riverAmethyst).frame(height: 2) }
+                                }
+                        }.buttonStyle(.plain)
+                    }
+                    Spacer()
+                    Text("你的生活，自有节奏").font(.system(size: 11)).foregroundStyle(.tertiary)
                 }
             }
-            .frame(maxWidth: 1280, alignment: .leading)
-            .padding(.top, 6)
-            .padding(.bottom, 32)
+
+            switch section {
+            case .river:
+                RiverView(
+                    entries: store.entries,
+                    selectedDate: selectedDate,
+                    ai: ai,
+                    showsHeader: false
+                )
+            case .rhythm:
+                RhythmView(
+                    store: store,
+                    activity: activity,
+                    anchorDate: $selectedDate,
+                    showsHeader: false
+                )
+            case .activity:
+                ActivityView(
+                    activity: activity,
+                    selectedDate: $selectedDate,
+                    ai: ai,
+                    entries: store.entries,
+                    quickCaptures: store.quickCaptures[DiaryEntry.dateFormatter.string(from: selectedDate)] ?? [],
+                    showsHeader: false,
+                    addCapture: {
+                        store.addQuickCapture($0, for: selectedDate)
+                        if case .failed(let message) = store.saveState {
+                            throw NSError(domain: "RiverDiaryMac", code: 40, userInfo: [NSLocalizedDescriptionKey: message])
+                        }
+                    },
+                    openDiary: openDiary,
+                    annotations: store.timelineAnnotations,
+                    saveAnnotation: { key, annotation in try store.saveTimelineAnnotation(annotation, for: key) },
+                    additionalRecordedDays: Set(store.quickCaptures.filter { !$0.value.isEmpty }.keys)
+                )
+            }
         }
-        .scrollIndicators(.hidden)
-        .frame(maxWidth: .infinity)
+        .padding(.top, 6)
+        .frame(maxWidth: AppLayout.contentMaxWidth, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
@@ -104,37 +145,33 @@ struct MemoryFlowView: View {
     @ObservedObject var ai: AIAssistantStore
     let entries: [DiaryEntry]
     let quickCaptures: [QuickCapture]
+    var assignedCaptures: [String: [QuickCapture]] = [:]
     @Binding var section: MemorySection
     let openDate: (Date) -> Void
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                FlowPageHeader(
-                    title: "记忆",
-                    caption: "找回以前的字句、随笔和重复出现的感受。",
-                    selection: $section,
-                    tabs: MemorySection.displayOrder,
-                    titleFor: \.title
-                )
+        VStack(alignment: .leading, spacing: 12) {
+            FlowPageHeader(
+                title: "记忆",
+                caption: "那些写下的、想过的，随时可以再翻一遍。",
+                selection: $section,
+                tabs: MemorySection.displayOrder,
+                titleFor: \.title
+            )
 
-                MemoryView(
-                    ai: ai,
-                    entries: entries,
-                    quickCaptures: quickCaptures,
-                    section: $section,
-                    showsHeader: false
-                ) { date in
-                    openDate(date)
-                }
-                .background(.clear)
+            MemoryView(
+                ai: ai,
+                entries: entries,
+                quickCaptures: quickCaptures,
+                assignedCaptures: assignedCaptures,
+                section: $section,
+                showsHeader: false
+            ) { date in
+                openDate(date)
             }
-            .frame(maxWidth: 1280, alignment: .leading)
-            .padding(.top, 6)
-            .padding(.bottom, 32)
         }
-        .scrollIndicators(.hidden)
-        .frame(maxWidth: .infinity)
+        .padding(.top, 6)
+        .frame(maxWidth: AppLayout.contentMaxWidth, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
@@ -150,7 +187,7 @@ struct InsightFlowView: View {
             activity: activity,
             ai: ai,
             anchorDate: $selectedDate,
-            showsHeader: false
+            showsHeader: true
         )
         .background(.clear)
     }
@@ -165,40 +202,34 @@ struct SystemFlowView: View {
     @Binding var section: SystemSection
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                FlowPageHeader(
-                    title: "系统",
-                    caption: "管理数据源、实时采集、AI 连接和本地备份。",
-                    selection: $section,
-                    tabs: SystemSection.allCases,
-                    titleFor: \.title
-                )
+        VStack(alignment: .leading, spacing: 12) {
+            FlowPageHeader(
+                title: "设置",
+                caption: "每一份记录，都由你决定如何留下。",
+                selection: $section,
+                tabs: SystemSection.allCases,
+                titleFor: \.title
+            )
 
-                switch section {
-                case .controls:
-                    PrivacyView(
-                        store: store,
-                        activity: activity,
-                        ai: ai,
-                        ingestion: ingestion,
-                        showsHeader: false
-                    )
-                    .background(.clear)
-                case .data:
-                    DataExplorerView(
-                        ingestion: ingestion,
-                        selectedDate: $selectedDate,
-                        showsHeader: false
-                    )
-                    .background(.clear)
-                }
+            switch section {
+            case .controls:
+                PrivacyView(
+                    store: store,
+                    activity: activity,
+                    ai: ai,
+                    ingestion: ingestion,
+                    showsHeader: false
+                )
+            case .data:
+                DataExplorerView(
+                    store: store,
+                    ingestion: ingestion,
+                    selectedDate: $selectedDate,
+                    showsHeader: false
+                )
             }
-            .frame(maxWidth: 1280, alignment: .leading)
-            .padding(.top, 6)
-            .padding(.bottom, 32)
         }
-        .scrollIndicators(.hidden)
-        .frame(maxWidth: .infinity)
+        .padding(.top, 6)
+        .frame(maxWidth: AppLayout.contentMaxWidth, maxHeight: .infinity, alignment: .topLeading)
     }
 }

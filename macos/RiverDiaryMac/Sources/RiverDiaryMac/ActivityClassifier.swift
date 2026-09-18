@@ -3,6 +3,15 @@ import Foundation
 // MARK: - Classifier / formatter
 
 enum ActivityClassifier {
+    /// macOS can report these system surfaces as frontmost while no user app is active.
+    static func isRecordable(appName: String, bundleID: String) -> Bool {
+        let name = appName.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let bundle = bundleID.lowercased()
+        let systemNames: Set<String> = ["loginwindow", "screensaverengine", "screensaver", "windowserver"]
+        let systemBundles: Set<String> = ["com.apple.loginwindow", "com.apple.screensaver.engine", "com.apple.screensaver"]
+        return !systemNames.contains(name) && !systemBundles.contains(bundle)
+    }
+
     static func identity(appName: String, bundleID: String? = nil) -> String {
         let bundle = (bundleID ?? "").lowercased()
         let name = appName.lowercased()

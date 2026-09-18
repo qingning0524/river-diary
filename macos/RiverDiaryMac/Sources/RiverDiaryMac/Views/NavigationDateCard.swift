@@ -3,101 +3,42 @@ import SwiftUI
 struct NavigationDateCard: View {
     @Binding var selection: Date
     @State private var showsCalendar = false
-
     private var isToday: Bool { Calendar.current.isDateInToday(selection) }
-    private var isTomorrow: Bool { Calendar.current.isDate(selection, inSameDayAs: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()) }
-    private var latestSelectableDate: Date { Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date() }
-    private var dateText: String {
-        let weekday = selection.formatted(.dateTime.weekday(.abbreviated))
-        let day = selection.formatted(.dateTime.month().day())
-        return isToday ? "今天 · \(day)" : "\(day) \(weekday)"
-    }
+    private var latest: Date { Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date() }
 
     var body: some View {
-        HStack(spacing: 7) {
-            arrowButton(direction: -1)
-
-            Button {
-                showsCalendar.toggle()
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 21, height: 21)
-                        .background(
-                            LinearGradient.river(),
-                            in: RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        )
-
-                    Text(dateText)
-                        .font(.ui(12.5, weight: .semibold))
-                        .foregroundStyle(Color.ink)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-
-                    if !isToday {
-                        Text("统一")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(.secondary)
+        HStack(spacing: 5) {
+            arrow(-1)
+            Button { showsCalendar.toggle() } label: {
+                HStack(spacing: 7) {
+                    Text(isToday ? "今天" : selection.formatted(.dateTime.month().day()))
+                        .font(.system(size: 12, weight: .medium))
+                    Text(selection.formatted(.dateTime.weekday(.abbreviated)))
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                    Image(systemName: "chevron.down").font(.system(size: 8)).foregroundStyle(.tertiary)
                 }
-                .padding(.horizontal, 10)
-                .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
-                .background(Color.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(Color.border, lineWidth: 1))
+                .padding(.horizontal, 9).frame(height: 30)
+                .contentShape(Rectangle())
             }
-            .buttonStyle(.softPress)
-            .popover(isPresented: $showsCalendar, arrowEdge: .bottom) {
-                DatePicker(
-                    "统一选择日期",
-                    selection: $selection,
-                    in: ...latestSelectableDate,
-                    displayedComponents: [.date]
-                )
-                .datePickerStyle(.graphical)
-                .labelsHidden()
-                .padding(12)
+            .buttonStyle(.plain)
+            .popover(isPresented: $showsCalendar) {
+                DatePicker("选择日记日期", selection: $selection, in: ...latest, displayedComponents: .date)
+                    .datePickerStyle(.graphical).padding(14)
             }
-
-            arrowButton(direction: 1)
-
+            arrow(1)
             if !isToday {
-                Button {
-                    withAnimation(.easeOut(duration: 0.18)) { selection = Date() }
-                } label: {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color.secondaryInk)
-                        .frame(width: 28, height: 34)
-                        .background(Color.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(Color.border, lineWidth: 1))
-                }
-                .buttonStyle(.softPress)
-                .help("回今天")
+                Button("今天") { selection = Date() }.font(.system(size: 10)).buttonStyle(.plain)
+                    .foregroundStyle(Color.riverAmethyst).padding(.leading, 5)
             }
-        }
+        }.onChange(of: selection) { showsCalendar = false }
     }
-
-    private func arrowButton(direction: Int) -> some View {
-        Button {
-            withAnimation(.easeOut(duration: 0.18)) {
-                selection = Calendar.current.date(byAdding: .day, value: direction, to: selection) ?? selection
-            }
-        } label: {
+    private func arrow(_ direction: Int) -> some View {
+        Button { selection = Calendar.current.date(byAdding: .day, value: direction, to: selection) ?? selection } label: {
             Image(systemName: direction < 0 ? "chevron.left" : "chevron.right")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(Color.secondaryInk)
-                .frame(width: 26, height: 34)
-                .background(Color.surface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).stroke(Color.border, lineWidth: 1))
+                .font(.system(size: 10)).foregroundStyle(.secondary).frame(width: 23, height: 30)
         }
-        .buttonStyle(.softPress)
-        .disabled(direction > 0 && isTomorrow)
+        .buttonStyle(.plain)
+        .disabled(direction > 0 && Calendar.current.startOfDay(for: selection) >= Calendar.current.startOfDay(for: latest))
         .keyboardShortcut(direction < 0 ? .leftArrow : .rightArrow, modifiers: .command)
         .help(direction < 0 ? "前一天" : "后一天")
     }

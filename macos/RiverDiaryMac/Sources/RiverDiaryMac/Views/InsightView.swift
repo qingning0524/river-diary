@@ -54,7 +54,7 @@ struct InsightView: View {
                         Task { await ai.analyzeInsight(entries: entries) }
                     }
                 }
-                .frame(maxWidth: 1280)
+                .frame(maxWidth: AppLayout.contentMaxWidth)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 8)
@@ -69,7 +69,7 @@ struct InsightView: View {
             Text("这些都是从你的文字里读出来的，不会上传。")
                 .font(.system(size: 13)).foregroundStyle(.secondary)
         }
-        .frame(maxWidth: 1280, alignment: .leading)
+        .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .leading)
     }
 
     private var stats: some View {
@@ -79,7 +79,7 @@ struct InsightView: View {
             stat("近期变化", "\(recentChange >= 0 ? "+" : "")\(recentChange)", "分 · 近四天对比")
             stat("当前阶段", entries.last?.stateLabel ?? "平稳", "最新一天的状态")
         }
-        .frame(maxWidth: 1280)
+        .frame(maxWidth: AppLayout.contentMaxWidth)
     }
 
     private func stat(_ title: String, _ value: String, _ detail: String) -> some View {
@@ -172,7 +172,7 @@ struct InsightView: View {
                 }
             }
         }
-        .frame(maxWidth: 1280)
+        .frame(maxWidth: AppLayout.contentMaxWidth)
     }
 
     private func bar(_ title: String, _ value: Int) -> some View {

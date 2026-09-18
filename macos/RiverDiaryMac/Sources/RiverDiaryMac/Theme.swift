@@ -4,16 +4,16 @@ import SwiftUI
 // MARK: - 布局与圆角
 
 enum AppLayout {
-    static let sidebarWidth: CGFloat = 188
-    static let contentMaxWidth: CGFloat = 1280
-    static let outerPadding: CGFloat = 22
+    static let sidebarWidth: CGFloat = 206
+    static let contentMaxWidth: CGFloat = 1180
+    static let outerPadding: CGFloat = 20
 }
 
 enum AppRadius {
     static let control: CGFloat = 11
     static let inner: CGFloat = 16
-    static let card: CGFloat = 26
-    static let cardSmall: CGFloat = 20
+    static let card: CGFloat = 16
+    static let cardSmall: CGFloat = 13
 }
 
 private func dynamicColor(_ light: NSColor, _ dark: NSColor) -> Color {
@@ -135,89 +135,28 @@ extension Font {
 // MARK: - 背景
 
 struct VisualBackground: View {
-    @Environment(\.colorScheme) private var colorScheme
+    var body: some View { Color.workspace.ignoresSafeArea() }
+}
 
-    var body: some View {
-        ZStack {
-            if colorScheme == .dark {
-                LinearGradient(
-                    colors: [
-                        Color(hex: "#0E1015"),
-                        Color(hex: "#14141C"),
-                        Color(hex: "#171C26")
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-
-                RadialGradient(
-                    colors: [Color(hex: "#7087FF").opacity(0.16), .clear],
-                    center: UnitPoint(x: 0.16, y: 0.08),
-                    startRadius: 0,
-                    endRadius: 640
-                )
-
-                RadialGradient(
-                    colors: [Color(hex: "#9E7BFF").opacity(0.10), .clear],
-                    center: UnitPoint(x: 0.5, y: 0.60),
-                    startRadius: 0,
-                    endRadius: 720
-                )
-
-                RadialGradient(
-                    colors: [Color(hex: "#FF8FB3").opacity(0.085), .clear],
-                    center: UnitPoint(x: 0.90, y: 0.16),
-                    startRadius: 0,
-                    endRadius: 600
-                )
-            } else {
-                LinearGradient(
-                    colors: [
-                        Color(hex: "#FFF8F1"),
-                        Color(hex: "#FDF0EF"),
-                        Color(hex: "#EEF2F9")
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-
-                RadialGradient(
-                    colors: [.white.opacity(0.95), .clear],
-                    center: UnitPoint(x: 0.14, y: 0.10),
-                    startRadius: 0,
-                    endRadius: 620
-                )
-
-                RadialGradient(
-                    colors: [Color(hex: "#FFD2E0").opacity(0.42), .clear],
-                    center: UnitPoint(x: 0.92, y: 0.14),
-                    startRadius: 0,
-                    endRadius: 600
-                )
-
-                RadialGradient(
-                    colors: [Color(hex: "#C3D9FF").opacity(0.34), .clear],
-                    center: UnitPoint(x: 0.72, y: 0.66),
-                    startRadius: 0,
-                    endRadius: 640
-                )
-
-                RadialGradient(
-                    colors: [Color(hex: "#FFE3BA").opacity(0.20), .clear],
-                    center: UnitPoint(x: 0.30, y: 0.92),
-                    startRadius: 0,
-                    endRadius: 520
-                )
-            }
-        }
-        .ignoresSafeArea()
-    }
+extension Color {
+    static let workspace = dynamicColor(
+        NSColor(srgbRed: 0.975, green: 0.970, blue: 0.957, alpha: 1),
+        NSColor(srgbRed: 0.075, green: 0.080, blue: 0.092, alpha: 1)
+    )
+    static let sidebarSurface = dynamicColor(
+        NSColor(srgbRed: 0.946, green: 0.940, blue: 0.928, alpha: 1),
+        NSColor(srgbRed: 0.095, green: 0.10, blue: 0.116, alpha: 1)
+    )
+    static let separator = dynamicColor(
+        NSColor(srgbRed: 0.20, green: 0.18, blue: 0.16, alpha: 0.09),
+        NSColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.09)
+    )
 }
 
 // MARK: - 卡片
 
 struct SoftCard<Content: View>: View {
-    var padding: CGFloat = 24
+    var padding: CGFloat = 20
     @ViewBuilder var content: () -> Content
 
     @Environment(\.colorScheme) private var colorScheme
@@ -226,48 +165,12 @@ struct SoftCard<Content: View>: View {
         RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
     }
 
-    private var borderColors: [Color] {
-        if colorScheme == .dark {
-            return [Color.white.opacity(0.14), Color.white.opacity(0.04)]
-        } else {
-            return [Color.white.opacity(0.95), Color.white.opacity(0.28)]
-        }
-    }
-
     var body: some View {
         content()
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.surface, in: shape)
-            .overlay(
-                shape
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: borderColors,
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 1
-                    )
-            )
-            // 顶部柔光，让卡片有「浮在纸面上」的厚度
-            .overlay {
-                shape
-                    .strokeBorder(
-                        colorScheme == .dark ? Color.white.opacity(0.08) : Color.white.opacity(0.55),
-                        lineWidth: 0.5
-                    )
-                    .mask {
-                        LinearGradient(
-                            colors: [.black, .black.opacity(0.12), .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    }
-                    .allowsHitTesting(false)
-            }
-            .shadow(color: .black.opacity(0.10), radius: 2, x: 0, y: 1)
-            .shadow(color: .black.opacity(0.05), radius: 26, x: 0, y: 16)
+            .background(Color.strongSurface, in: shape)
+            .overlay(shape.strokeBorder(Color.separator, lineWidth: 1))
     }
 }
 
@@ -301,8 +204,8 @@ struct PrimaryButtonStyle: ViewModifier {
             .padding(.horizontal, 21)
             .padding(.vertical, 12)
             .background(Color.ctaBackground, in: Capsule())
-            .shadow(color: .black.opacity(0.20), radius: 14, y: 8)
-            .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
+            .shadow(color: .black.opacity(0.16), radius: 9, y: 5)
+            .shadow(color: .black.opacity(0.06), radius: 2, y: 1)
     }
 }
 
@@ -315,7 +218,7 @@ struct SecondaryButtonStyle: ViewModifier {
             .padding(.vertical, 12)
             .background(Color.surface, in: Capsule())
             .overlay(Capsule().stroke(Color.border, lineWidth: 1))
-            .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
+            .shadow(color: .black.opacity(0.045), radius: 8, y: 4)
     }
 }
 

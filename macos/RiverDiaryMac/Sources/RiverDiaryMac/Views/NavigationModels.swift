@@ -7,11 +7,11 @@ enum AppDestination: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .today: "今天"
-        case .time: "时间"
+        case .today: "日记"
+        case .time: "时间线"
         case .memory: "记忆"
         case .insight: "洞察"
-        case .system: "系统"
+        case .system: "设置"
         }
     }
 
@@ -27,11 +27,11 @@ enum AppDestination: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .today: "sunrise.fill"
-        case .time: "clock.badge.checkmark"
+        case .today: "book.closed"
+        case .time: "point.3.connected.trianglepath.dotted"
         case .memory: "sparkle.magnifyingglass"
         case .insight: "brain.head.profile"
-        case .system: "switch.2"
+        case .system: "gearshape"
         }
     }
 
@@ -43,13 +43,15 @@ enum AppDestination: String, CaseIterable, Identifiable {
 enum TimeSection: String, CaseIterable, Identifiable {
     case river, rhythm, activity
 
+    static let displayOrder: [TimeSection] = [.activity, .river, .rhythm]
+
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .river: "情绪河"
         case .rhythm: "节律"
-        case .activity: "足迹"
+        case .activity: "时间线"
         }
     }
 }
@@ -61,7 +63,7 @@ enum SystemSection: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .controls: "隐私与备份"
+        case .controls: "偏好设置"
         case .data: "高级数据"
         }
     }

@@ -26,7 +26,9 @@ struct NotesView: View {
 
     let entries: [DiaryEntry]
     var quickCaptures: [QuickCapture] = []
+    var assignedCaptures: [String: [QuickCapture]] = [:]
     @ObservedObject var ai: AIAssistantStore
+    var showsHeader: Bool = true
     var openDate: ((Date) -> Void)? = nil
 
     @State private var filter = "全部"
@@ -52,10 +54,13 @@ struct NotesView: View {
                 }
         }
 
+        let assignedDays = assignedCaptures.reduce(into: [UUID: String]()) { result, pair in
+            for capture in pair.value { result[capture.id] = pair.key }
+        }
         let captureNotes = quickCaptures.map { capture in
             Note(
                 id: capture.id.uuidString,
-                date: DiaryEntry.dateFormatter.string(from: capture.createdAt),
+                date: assignedDays[capture.id] ?? DiaryEntry.dateFormatter.string(from: capture.createdAt),
                 text: capture.text,
                 kind: "快记",
                 tags: [capture.source]
@@ -85,25 +90,43 @@ struct NotesView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .bottom) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Archive").font(.caption.smallCaps()).foregroundStyle(.secondary)
-                        Text("随笔与灵感").font(.system(size: 34, weight: .semibold)).foregroundStyle(Color.ink)
+                HStack(alignment: .center, spacing: 14) {
+                    if showsHeader {
+                        VStack(alignment: .leading, spacing: 7) {
+                            HStack(spacing: 9) {
+                                Text("随笔与灵感")
+                                    .font(.editorial(34))
+                                    .foregroundStyle(Color.ink)
+
+                                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                    .fill(LinearGradient.river())
+                                    .frame(width: 28, height: 3)
+                                    .offset(y: 6)
+                            }
+
+                            Text("保留随手写下的完整原文")
+                                .font(.ui(12))
+                                .foregroundStyle(.secondary)
+                        }
                     }
+
                     Spacer()
-                    HStack(spacing: 10) {
+
+                    HStack(spacing: 9) {
                         Image(systemName: "magnifyingglass")
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.tertiary)
                         TextField("搜索文字或标签", text: $searchText)
                             .textFieldStyle(.plain)
-                            .frame(width: 180)
+                            .font(.ui(12.5))
+                            .frame(width: 190)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 10)
                     .background(Color.strongSurface, in: Capsule())
                     .overlay(Capsule().stroke(Color.border, lineWidth: 1))
                 }
-                .frame(maxWidth: 1280)
+                .frame(maxWidth: AppLayout.contentMaxWidth)
 
                 SoftCard {
                     AITaskCard(
@@ -115,7 +138,7 @@ struct NotesView: View {
                         Task { await ai.organizeNotes(entries: entries, quickCaptures: quickCaptures) }
                     }
                 }
-                .frame(maxWidth: 1280)
+                .frame(maxWidth: AppLayout.contentMaxWidth)
 
                 HStack(spacing: 7) {
                     filterButton("全部", "全部")
@@ -129,7 +152,7 @@ struct NotesView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .frame(maxWidth: 1280)
+                .frame(maxWidth: AppLayout.contentMaxWidth)
 
                 Group {
                     if filtered.isEmpty {
@@ -149,7 +172,7 @@ struct NotesView: View {
                         }
                     }
                 }
-                .frame(maxWidth: 1280)
+                .frame(maxWidth: AppLayout.contentMaxWidth)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 8)
@@ -159,16 +182,20 @@ struct NotesView: View {
 
     private func filterButton(_ title: String, _ value: String) -> some View {
         Button {
-            filter = value
+            withAnimation(.easeOut(duration: 0.16)) { filter = value }
         } label: {
             Text(title)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(filter == value ? Color.ctaText : Color.secondaryInk)
-                .padding(.horizontal, 12)
+                .font(.ui(12, weight: filter == value ? .semibold : .medium))
+                .foregroundStyle(filter == value ? .white : Color.secondaryInk)
+                .padding(.horizontal, 13)
                 .padding(.vertical, 8)
-                .background(filter == value ? Color.ink : Color.chip, in: Capsule())
+                .background(
+                    filter == value ? AnyShapeStyle(LinearGradient.river()) : AnyShapeStyle(Color.chip),
+                    in: Capsule()
+                )
+                .shadow(color: filter == value ? Color.riverAmethyst.opacity(0.28) : .clear, radius: 6, x: 0, y: 3)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.softPress)
     }
 
     private func noteCard(_ note: Note) -> some View {
@@ -204,25 +231,27 @@ struct NotesView: View {
                     HStack(spacing: 5) {
                         ForEach(note.tags.prefix(3), id: \.self) { tag in
                             Text("#\(tag)")
-                                .font(.caption2)
-                                .padding(.horizontal, 7)
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(Color.riverAmethyst)
+                                .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Color.chip, in: Capsule())
+                                .background(Color.riverAmethyst.opacity(0.09), in: Capsule())
                         }
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(18)
-            .background(Color.surface, in: RoundedRectangle(cornerRadius: 20))
+            .background(Color.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .stroke(Color.border, lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.06), radius: 16, y: 10)
+            .shadow(color: .black.opacity(0.09), radius: 2, x: 0, y: 1)
+            .shadow(color: .black.opacity(0.05), radius: 16, x: 0, y: 10)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.softPress)
     }
 }
 

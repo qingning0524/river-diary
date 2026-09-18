@@ -20,6 +20,8 @@ enum StateEncryption {
     private static let magic = Data("RDMACv1\n".utf8)
     private static let service = "RiverDiaryMac.state"
     private static let account = "journal-encryption-key"
+    private static let keyFileName = "journal-encryption.key"
+    private static let fileManager = FileManager.default
 
     static func encrypt(_ plaintext: Data) throws -> Data {
         let key = try encryptionKey()
@@ -44,11 +46,31 @@ enum StateEncryption {
     }
 
     static func hasStateEncryptionKey() -> Bool {
-        (try? encryptionKey()) != nil
+        loadLocalKey() != nil
     }
 
     private static func encryptionKey() throws -> SymmetricKey {
-        var query: [String: Any] = [
+        if let localKey = loadLocalKey() {
+            return localKey
+        }
+
+        // Existing installations may still have their key in Keychain. Migrate
+        // it once, then keep normal launches independent from Keychain ACLs.
+        do {
+            let migratedKey = try keychainKey()
+            try saveLocalKey(migratedKey)
+            return migratedKey
+        } catch StateEncryptionError.keychainStatus(let status) where status == errSecItemNotFound {
+            // First launch on a clean installation: create a local key below.
+        }
+
+        let key = SymmetricKey(size: .bits256)
+        try saveLocalKey(key)
+        return key
+    }
+
+    private static func keychainKey() throws -> SymmetricKey {
+        let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
@@ -63,23 +85,38 @@ enum StateEncryption {
             return SymmetricKey(data: keyData)
         }
 
-        guard status == errSecItemNotFound else {
-            throw StateEncryptionError.keychainStatus(status)
+        throw StateEncryptionError.keychainStatus(status)
+    }
+
+    private static func loadLocalKey() -> SymmetricKey? {
+        guard let url = localKeyURL,
+              let keyData = try? Data(contentsOf: url),
+              keyData.count == 32 else { return nil }
+        return SymmetricKey(data: keyData)
+    }
+
+    private static func saveLocalKey(_ key: SymmetricKey) throws {
+        guard let url = localKeyURL,
+              let directory = localKeyDirectory else {
+            throw StateEncryptionError.keychainStatus(errSecIO)
         }
 
-        let key = SymmetricKey(size: .bits256)
         let keyData = key.withUnsafeBytes { Data($0) }
+        try fileManager.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try keyData.write(to: url, options: .atomic)
+        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    }
 
-        query.removeValue(forKey: kSecReturnData as String)
-        query.removeValue(forKey: kSecMatchLimit as String)
-        query[kSecValueData as String] = keyData
-        query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+    private static var localKeyDirectory: URL? {
+        guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
+        return base.appendingPathComponent("RiverDiaryMac", isDirectory: true)
+    }
 
-        let addStatus = SecItemAdd(query as CFDictionary, nil)
-        guard addStatus == errSecSuccess else {
-            throw StateEncryptionError.keychainStatus(addStatus)
-        }
-
-        return key
+    private static var localKeyURL: URL? {
+        localKeyDirectory?.appendingPathComponent(keyFileName, isDirectory: false)
     }
 }

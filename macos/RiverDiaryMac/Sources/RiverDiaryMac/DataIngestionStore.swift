@@ -76,6 +76,7 @@ final class DataIngestionStore: ObservableObject {
 
     weak var targetStore: DiaryStore?
     weak var targetActivity: ActivityStore?
+    weak var targetAI: AIAssistantStore?
 
     private var checkTimer: Timer?
     private var ingestTask: Task<Void, Never>?
@@ -155,9 +156,10 @@ final class DataIngestionStore: ObservableObject {
 
     // MARK: Public interface
 
-    func attach(to store: DiaryStore, activity: ActivityStore) {
+    func attach(to store: DiaryStore, activity: ActivityStore, ai: AIAssistantStore) {
         targetStore = store
         targetActivity = activity
+        targetAI = ai
         if let record = dailyRecord {
             saveToDatabase(record)
         }
@@ -256,7 +258,11 @@ final class DataIngestionStore: ObservableObject {
 
     func start() {
         restartSchedule()
-        captureNow()
+        let today = DiaryEntry.dateFormatter.string(from: Date())
+        let shouldRunMissedAnalysis = enabled
+            && isPastCaptureTime(Date())
+            && targetAI?.needsAutomaticAnalysis(for: today) == true
+        captureNow(runsAIAnalysis: shouldRunMissedAnalysis)
     }
 
     func stop() {
@@ -267,10 +273,10 @@ final class DataIngestionStore: ObservableObject {
         lastStatus = "定时采集已停止"
     }
 
-    func captureNow() {
+    func captureNow(runsAIAnalysis: Bool = false) {
         guard !isRunning else { return }
         ingestTask?.cancel()
-        ingestTask = Task { await captureDaily() }
+        ingestTask = Task { await captureDaily(runsAIAnalysis: runsAIAnalysis) }
     }
 
     // MARK: Scheduling (daily at specific time)
@@ -280,7 +286,7 @@ final class DataIngestionStore: ObservableObject {
         checkTimer = nil
 
         guard enabled else {
-            lastStatus = "定时采集已关闭"
+            lastStatus = "定时采集与 AI 分析已关闭"
             return
         }
 
@@ -291,7 +297,7 @@ final class DataIngestionStore: ObservableObject {
         }
         RunLoop.main.add(timer, forMode: .common)
         checkTimer = timer
-        lastStatus = "每日 \(captureTimeLabel()) 自动采集已开启"
+        lastStatus = "每日 \(captureTimeLabel()) 自动采集与 AI 分析已开启"
     }
 
     private func checkCaptureTime() {
@@ -303,14 +309,26 @@ final class DataIngestionStore: ObservableObject {
         guard currentHour == captureHour, currentMinute == captureMinute else { return }
 
         let todayKey = DiaryEntry.dateFormatter.string(from: now)
-        guard lastCaptureDate != todayKey else { return }
+        if lastCaptureDate != todayKey {
+            captureNow(runsAIAnalysis: true)
+        } else if let record = dailyRecord {
+            Task { await runAutomaticDailyAnalysis(for: record) }
+        }
+    }
 
-        captureNow()
+    private func isPastCaptureTime(_ date: Date) -> Bool {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        var scheduled = components
+        scheduled.hour = captureHour
+        scheduled.minute = captureMinute
+        guard let captureDate = calendar.date(from: scheduled) else { return false }
+        return date >= captureDate
     }
 
     // MARK: Daily capture
 
-    private func captureDaily() async {
+    private func captureDaily(runsAIAnalysis: Bool) async {
         guard !isRunning else { return }
         guard let url = sourceURL else {
             lastError = "未设置数据源。"
@@ -351,9 +369,10 @@ final class DataIngestionStore: ObservableObject {
 
             // 3. Clean iOS data and keep earlier iOS days in the database
             let iosData = Self.cleanIOSPayload(payload, syncedAt: Date())
-            Task.detached(priority: .utility) {
+            await Task.detached(priority: .utility) {
                 AppDatabase.shared.saveIOSHistory(iosData, excluding: today)
-            }
+            }.value
+            try Task.checkCancellation()
 
             // 4. Read Chrome history (background)
             let chromeVisits = collectsChrome
@@ -361,6 +380,7 @@ final class DataIngestionStore: ObservableObject {
                     ChromeHistoryReader.readTodaysVisits()
                 }.value
                 : []
+            try Task.checkCancellation()
 
             // 5. Read Apple Notes (background)
             let notes = collectsNotes
@@ -368,6 +388,7 @@ final class DataIngestionStore: ObservableObject {
                     AppleNotesReader.readTodaysNotes()
                 }.value
                 : []
+            try Task.checkCancellation()
 
             // 6. Screen time from ActivityStore
             let screenSnapshot = collectsScreenTime ? targetActivity?.screenTimeSnapshot() : nil
@@ -402,6 +423,7 @@ final class DataIngestionStore: ObservableObject {
             dailyRecord = record
             sourceHash = currentHash
             lastIngestedAt = Date()
+            refreshSourceMetadata()
             lastCaptureDate = today
             UserDefaults.standard.set(today, forKey: "ingestion.lastCaptureDate")
             UserDefaults.standard.set(currentHash, forKey: "ingestion.sourceHash")
@@ -416,6 +438,14 @@ final class DataIngestionStore: ObservableObject {
             // 11. Apply to store
             applyToStore()
 
+            // 12. Run the scheduled daily AI analysis after the day is captured.
+            if runsAIAnalysis {
+                await runAutomaticDailyAnalysis(for: record)
+            }
+
+        } catch is CancellationError {
+            lastError = nil
+            lastStatus = "采集已取消。"
         } catch {
             lastError = error.localizedDescription
             lastStatus = "采集失败"
@@ -475,6 +505,37 @@ final class DataIngestionStore: ObservableObject {
     private func applyToStore() {
         guard let record = dailyRecord else { return }
         targetStore?.applyDailyCapture(record)
+    }
+
+    private func runAutomaticDailyAnalysis(for record: DailyCaptureRecord) async {
+        guard let ai = targetAI,
+              let store = targetStore,
+              ai.hasVerifiedConnection,
+              ai.needsAutomaticAnalysis(for: record.date) else { return }
+
+        guard let date = DiaryEntry.dateFormatter.date(from: record.date) else { return }
+        let sessions = targetActivity?.liveSessions(for: date) ?? []
+        let captures = store.quickCaptures[record.date] ?? []
+        let entries = store.entries
+            .filter { $0.date == record.date }
+            .sorted { $0.date < $1.date }
+        let sourceSummary = "自动采集 · \(record.summary)"
+
+        let success = await ai.runAnalysisDaily(
+            entries: Array(entries.suffix(1)),
+            sessions: sessions,
+            captures: captures,
+            archiveStartDate: record.date,
+            archiveEndDate: record.date,
+            sourceSummary: sourceSummary
+        )
+
+        if success {
+            ai.markAutomaticAnalysisCompleted(for: record.date)
+            lastStatus = "采集完成 · \(record.summary) · 定时 AI 分析完成"
+        } else {
+            lastStatus = "采集完成 · \(record.summary) · 定时 AI 分析失败，将在下次到达定时或启动时重试"
+        }
     }
 
     private func refreshSourceMetadata() {
@@ -690,4 +751,3 @@ final class DataIngestionStore: ObservableObject {
         return nil
     }
 }
-

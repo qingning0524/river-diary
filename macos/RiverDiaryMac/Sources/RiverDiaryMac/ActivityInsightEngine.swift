@@ -23,7 +23,7 @@ enum ActivityCorrelationEngine {
 
         var results: [ActivityCorrelation] = []
 
-        let screenMood = pairs(paired.filter { $0.day.pipelineAvailable }) {
+        let screenMood = pairs(paired.filter { $0.day.pipelineAvailable && ($0.entry.metrics?.mood ?? $0.entry.score) != nil }) {
             ($0.pipelineTotal, Double($1.mood))
         }
         results.append(
@@ -38,7 +38,7 @@ enum ActivityCorrelationEngine {
             )
         )
 
-        let stepsMood = pairs(paired.filter { $0.day.health?.steps != nil }) {
+        let stepsMood = pairs(paired.filter { $0.day.health?.steps != nil && ($0.entry.metrics?.mood ?? $0.entry.score) != nil }) {
             (Double($0.health?.steps ?? 0), Double($1.mood))
         }
         results.append(
@@ -53,7 +53,7 @@ enum ActivityCorrelationEngine {
             )
         )
 
-        let focusOutput = pairs(paired.filter { $0.day.liveTotal > 0 }) {
+        let focusOutput = pairs(paired.filter { $0.day.liveTotal > 0 && $0.entry.metrics?.output != nil }) {
             ($0.focusTotal, Double($1.output))
         }
         results.append(
@@ -68,7 +68,7 @@ enum ActivityCorrelationEngine {
             )
         )
 
-        let entertainmentMood = pairs(paired.filter { !$0.day.appUsage.isEmpty }) {
+        let entertainmentMood = pairs(paired.filter { !$0.day.appUsage.isEmpty && ($0.entry.metrics?.mood ?? $0.entry.score) != nil }) {
             (
                 $0.categoryUsage.first { $0.category == "娱乐" }?.duration ?? 0,
                 Double($1.mood)

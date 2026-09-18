@@ -48,6 +48,7 @@ enum DataExplorerCategory: String, CaseIterable, Identifiable {
 }
 
 struct DataExplorerView: View {
+    @ObservedObject var store: DiaryStore
     @ObservedObject var ingestion: DataIngestionStore
 
     @Binding var selectedDate: Date
@@ -67,6 +68,8 @@ struct DataExplorerView: View {
     @State private var globalQuery = ""
     @State private var globalDays = 30
     @State private var globalSnapshot: DatabaseCrossDaySnapshot?
+    @State private var editingSavedQuery: SavedQuery?
+    @State private var queryMessage: String?
 
     var body: some View {
         ScrollView {
@@ -78,10 +81,9 @@ struct DataExplorerView: View {
                 globalSearchCard
                 categoryContent
             }
-            .padding(.horizontal, 26)
             .padding(.top, 12)
             .padding(.bottom, 32)
-            .frame(maxWidth: 1280, alignment: .topLeading)
+            .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .topLeading)
         }
         .scrollIndicators(.hidden)
         .onAppear(perform: loadData)
@@ -488,6 +490,8 @@ struct DataExplorerView: View {
                     .background(Color.surface, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).stroke(Color.border, lineWidth: 1))
 
+                    savedQueriesRow
+
                     if let snapshot {
                         Text("找到 \(snapshot.dailyRecords.count) 天概览 · \(snapshot.chromeVisits.count) 条浏览 · \(snapshot.notes.count) 条备忘录 · \(snapshot.sessions.count) 段足迹 · \(snapshot.quickCaptures.count) 条快记")
                             .font(.caption)
@@ -549,16 +553,96 @@ struct DataExplorerView: View {
     }
 
     private func runGlobalSearch() {
+        runGlobalSearch(query: globalQuery, days: globalDays)
+    }
+
+    private func runGlobalSearch(query: String, days: Int) {
         let calendar = Calendar.current
         let end = calendar.startOfDay(for: selectedDate)
-        let start = calendar.date(byAdding: .day, value: -(globalDays - 1), to: end) ?? end
+        let resolvedDays = min(365, max(1, days))
+        let start = calendar.date(byAdding: .day, value: -(resolvedDays - 1), to: end) ?? end
         let startKey = DiaryEntry.dateFormatter.string(from: start)
         let endKey = DiaryEntry.dateFormatter.string(from: end)
+        globalQuery = query
+        globalDays = resolvedDays
         globalSnapshot = AppDatabase.shared.queryCrossDaySnapshot(
             startDate: startKey,
             endDate: endKey,
             searchText: globalQuery
         )
+    }
+
+    private var savedQueriesRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Label("常用查询", systemImage: "bookmark")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.secondaryInk)
+                Spacer()
+                Button("保存当前查询") {
+                    let name = globalQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? "最近 \(globalDays) 天"
+                        : globalQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                    editingSavedQuery = SavedQuery(name: name, query: globalQuery, days: globalDays)
+                }
+                .buttonStyle(.plain)
+                .smallAction()
+                .disabled(globalQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && globalSnapshot == nil)
+            }
+
+            if store.savedQueries.isEmpty {
+                Text("把常查的词和时间范围保存下来，下次一键打开。")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 7) {
+                        ForEach(store.savedQueries) { saved in
+                            Button {
+                                globalQuery = saved.query
+                                globalDays = saved.days
+                                showsGlobalSearch = true
+                                runGlobalSearch(query: saved.query, days: saved.days)
+                                store.markSavedQueryUsed(saved.id)
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "bookmark.fill")
+                                        .font(.system(size: 9, weight: .semibold))
+                                    Text(saved.name)
+                                        .lineLimit(1)
+                                    Text(saved.rangeLabel)
+                                        .foregroundStyle(.tertiary)
+                                }
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(Color.secondaryInk)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(Color.chip, in: Capsule())
+                                .overlay(Capsule().stroke(Color.border, lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                            .contextMenu {
+                                Button("编辑") { editingSavedQuery = saved }
+                                Button("删除", role: .destructive) { store.removeSavedQuery(saved) }
+                            }
+                        }
+                    }
+                }
+                .scrollIndicators(.hidden)
+            }
+
+            if let queryMessage {
+                Text(queryMessage)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .sheet(item: $editingSavedQuery) { saved in
+            SavedQueryEditor(query: saved) { updated in
+                try store.saveSavedQuery(updated)
+                queryMessage = "已保存常用查询。"
+            }
+        }
     }
 
     private func exportGlobalCSV() {

@@ -10,9 +10,9 @@ struct RiverView: View {
 
     private var visibleEntries: [DiaryEntry] {
         let endKey = DiaryEntry.dateFormatter.string(from: selectedDate)
-        return entries
-            .filter { $0.date <= endKey }
-            .suffix(dayRange)
+        let start = Calendar.current.date(byAdding: .day, value: -(dayRange - 1), to: selectedDate) ?? selectedDate
+        let startKey = DiaryEntry.dateFormatter.string(from: start)
+        return entries.filter { $0.date >= startKey && $0.date <= endKey }.sorted { $0.date < $1.date }
     }
 
     private var average: Int {
@@ -48,9 +48,16 @@ struct RiverView: View {
                         .controlSize(.large)
                         .frame(width: 280)
                     }
-                    .frame(maxWidth: 1280)
+                    .frame(maxWidth: AppLayout.contentMaxWidth)
                 }
 
+                if !showsHeader {
+                    Picker("回顾范围", selection: $dayRange) {
+                        Text("7 天").tag(7)
+                        Text("30 天").tag(30)
+                        Text("90 天").tag(90)
+                    }.pickerStyle(.segmented).frame(width: 270)
+                }
                 chart
                 SoftCard {
                     AITaskCard(
@@ -62,10 +69,10 @@ struct RiverView: View {
                         Task { await ai.analyzeRiver(entries: visibleEntries) }
                     }
                 }
-                .frame(maxWidth: 1280)
+                .frame(maxWidth: AppLayout.contentMaxWidth)
                 milestones
             }
-            .frame(maxWidth: 1280, alignment: .leading)
+            .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .leading)
             .padding(.top, 8)
         }
         .scrollIndicators(.hidden)
@@ -100,8 +107,12 @@ struct RiverView: View {
                     .foregroundStyle(.secondary)
                 }
 
-                MoodAreaChart(entries: visibleEntries, selectedID: $selectedEntryID)
-                    .frame(height: 250)
+                if visibleEntries.filter({ $0.score != nil || $0.metrics?.overall != nil }).count < 2 {
+                    ContentUnavailableView("让感受慢慢连成河", systemImage: "water.waves", description: Text("至少留下两天评分后，这里会出现变化曲线。未评分的日子仍保留在记忆中。"))
+                        .frame(height: 220)
+                } else {
+                    MoodAreaChart(entries: visibleEntries, selectedID: $selectedEntryID).frame(height: 250)
+                }
 
                 if let first = visibleEntries.first, let last = visibleEntries.last {
                     HStack {
@@ -137,19 +148,19 @@ struct RiverView: View {
                 }
 
                 EqualWidthRow(spacing: 10) {
-                    riverStat("平均", "\(average)")
-                    riverStat("最低", "\(Int(lowEntry?.score ?? 0))")
-                    riverStat("今天", "\(entries.last?.overall ?? 0)")
+                    riverStat("平均", visibleEntries.contains { $0.score != nil } ? "\(average)" : "—")
+                    riverStat("最低", lowEntry?.score.map { "\(Int($0))" } ?? "—")
+                    riverStat("最近评分", visibleEntries.compactMap(\.score).last.map { "\(Int($0))" } ?? "—")
                     riverStat("趋势", trendText)
                 }
             }
         }
-        .frame(maxWidth: 1280)
+        .frame(maxWidth: AppLayout.contentMaxWidth)
     }
 
     private var trendText: String {
-        let scores = entries.compactMap(\.score)
-        guard scores.count >= 8 else { return "稳定" }
+        let scores = visibleEntries.compactMap(\.score)
+        guard scores.count >= 8 else { return "样本有限" }
         let previous = scores.suffix(8).prefix(4).reduce(0, +) / 4
         let current = scores.suffix(4).reduce(0, +) / 4
         return current >= previous ? "↑ 恢复" : "↓ 波动"
@@ -195,7 +206,7 @@ struct RiverView: View {
                 }
             }
         }
-        .frame(maxWidth: 1280)
+        .frame(maxWidth: AppLayout.contentMaxWidth)
     }
 
     private func milestone(_ date: String, _ title: String, _ text: String) -> some View {

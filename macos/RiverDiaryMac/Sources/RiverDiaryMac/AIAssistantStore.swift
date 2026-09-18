@@ -1,11 +1,8 @@
 import Foundation
 import LocalAuthentication
 import Security
+@MainActor
 final class AIAssistantStore: ObservableObject {
-    @Published var isEnabled: Bool {
-        didSet { UserDefaults.standard.set(isEnabled, forKey: "ai.footprint.enabled") }
-    }
-
     @Published var includeTitles: Bool {
         didSet { UserDefaults.standard.set(includeTitles, forKey: "ai.footprint.includeTitles") }
     }
@@ -21,6 +18,7 @@ final class AIAssistantStore: ObservableObject {
             modelMessage = nil
             apiKeyInput = ""
             hasAPIKey = AIKeychain.hasKey(for: selectedProfileID ?? "")
+            lastRequestRecord = nil
         }
     }
 
@@ -35,7 +33,20 @@ final class AIAssistantStore: ObservableObject {
     @Published private(set) var errorMessage: String?
     @Published private(set) var lastCompletedAt: Date?
     @Published private(set) var lastRequestRecord: AIRequestRecord?
+    @Published private(set) var lastAutomaticAnalysisDate: String? {
+        didSet { UserDefaults.standard.set(lastAutomaticAnalysisDate, forKey: "ai.footprint.lastAutomaticAnalysisDate") }
+    }
     @Published private(set) var taskStates: [AITask: AITaskState] = [:]
+
+    private var memorySearchCache: [String: String] = [:]
+    private var taskRequestIDs: [AITask: UUID] = [:]
+    private static let contextDateTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        return formatter
+    }()
 
     private var oldProviderDefaults: [String] {
         AIProvider.allCases.flatMap { [$0.defaultEndpoint, $0.defaultModel] }
@@ -84,7 +95,12 @@ final class AIAssistantStore: ObservableObject {
     }
 
     var analysisReady: Bool {
-        isEnabled && isConfigured
+        isConfigured
+    }
+
+    var hasVerifiedConnection: Bool {
+        guard isConfigured, hasAPIKey, let record = lastRequestRecord else { return false }
+        return record.success && record.provider == provider.label && record.model == model
     }
 
     var requestSummary: String? {
@@ -94,9 +110,6 @@ final class AIAssistantStore: ObservableObject {
     }
 
     init() {
-        isEnabled = UserDefaults.standard.object(forKey: "ai.footprint.enabled") == nil
-            ? false
-            : UserDefaults.standard.bool(forKey: "ai.footprint.enabled")
         includeTitles = UserDefaults.standard.bool(forKey: "ai.footprint.includeTitles")
         loadProfiles()
         selectedProfileID = UserDefaults.standard.string(forKey: "ai.footprint.selectedProfile")
@@ -105,6 +118,7 @@ final class AIAssistantStore: ObservableObject {
         hasAPIKey = selectedProfileID.map { AIKeychain.hasKey(for: $0) } ?? false
         lastRequestRecord = UserDefaults.standard.data(forKey: "ai.footprint.lastRequest")
             .flatMap { try? JSONDecoder().decode(AIRequestRecord.self, from: $0) }
+        lastAutomaticAnalysisDate = UserDefaults.standard.string(forKey: "ai.footprint.lastAutomaticAnalysisDate")
     }
 
     private func loadProfiles() {
@@ -154,6 +168,9 @@ final class AIAssistantStore: ObservableObject {
 
         profiles[index] = profile
         hasAPIKey = AIKeychain.hasKey(for: selectedProfileID ?? "")
+        if profile.provider != old.provider || profile.endpoint != old.endpoint || profile.model != old.model {
+            lastRequestRecord = nil
+        }
     }
 
     func addProfile() {
@@ -197,6 +214,7 @@ final class AIAssistantStore: ObservableObject {
             hasAPIKey = true
             apiKeyInput = ""
             errorMessage = nil
+            lastRequestRecord = nil
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -208,6 +226,7 @@ final class AIAssistantStore: ObservableObject {
         hasAPIKey = false
         apiKeyInput = ""
         answer = nil
+        lastRequestRecord = nil
     }
 
     func resetAnswer() {
@@ -221,6 +240,7 @@ final class AIAssistantStore: ObservableObject {
     }
 
     func clearTask(_ task: AITask) {
+        taskRequestIDs[task] = UUID()
         taskStates[task] = nil
     }
 
@@ -241,23 +261,29 @@ final class AIAssistantStore: ObservableObject {
                 answer: result.answer,
                 error: nil,
                 updatedAt: createdAt,
-                isArchived: true
+                isArchived: true,
+                sourceSummary: result.sourceSummary.isEmpty ? nil : result.sourceSummary,
+                model: result.model
             )
         }
     }
 
-    private func archiveResult(_ task: AITask, answer: String, startDate: String?, endDate: String?) {
-        guard let profile = activeProfile,
-              let start = startDate,
-              let end = endDate else { return }
+    func archivedResult(task: AITask, startDate: String, endDate: String) -> DBAIResult? {
+        AppDatabase.shared.queryAIResults(startDate: startDate, endDate: endDate)
+            .first { $0.task == task.rawValue }
+    }
 
+    private func archiveResult(_ result: InsightResult) {
         AppDatabase.shared.saveAIResult(
-            resultKey: "\(start)|\(end)|\(task.rawValue)",
-            startDate: start,
-            endDate: end,
-            task: task.rawValue,
-            model: profile.model,
-            answer: answer
+            resultKey: result.resultKey,
+            startDate: result.startDate,
+            endDate: result.endDate,
+            task: result.task.rawValue,
+            model: result.model,
+            answer: result.answer,
+            sourceSummary: result.sourceSummary,
+            createdAt: result.createdAt,
+            isLocal: result.isLocal
         )
     }
 
@@ -265,43 +291,108 @@ final class AIAssistantStore: ObservableObject {
         _ task: AITask,
         isLoading: Bool = false,
         answer: String? = nil,
-        error: String? = nil
+        error: String? = nil,
+        sourceSummary: String? = nil,
+        model: String? = nil,
+        isArchived: Bool = false
     ) {
         taskStates[task] = AITaskState(
             task: task,
             isLoading: isLoading,
             answer: answer,
             error: error,
-            updatedAt: Date()
+            updatedAt: Date(),
+            isArchived: isArchived,
+            sourceSummary: sourceSummary,
+            model: model
         )
     }
 
+    @discardableResult
     func runTask(
         _ task: AITask,
         system: String,
         prompt: String,
         temperature: Double = 0.25,
         archiveStartDate: String? = nil,
-        archiveEndDate: String? = nil
-    ) async {
-        guard analysisReady, taskStates[task]?.isLoading != true else { return }
+        archiveEndDate: String? = nil,
+        sourceSummary: String? = nil,
+        answerTransform: ((String) -> String)? = nil,
+        maxTokens: Int? = nil
+    ) async -> Bool {
+        guard analysisReady, taskStates[task]?.isLoading != true else { return false }
 
+        let requestID = UUID()
+        taskRequestIDs[task] = requestID
         setTask(task, isLoading: true)
         do {
+            let request = InsightRequest(
+                task: task,
+                startDate: archiveStartDate,
+                endDate: archiveEndDate,
+                sourceSummary: sourceSummary ?? "日期范围：\(archiveStartDate ?? "未指定") – \(archiveEndDate ?? "未指定")",
+                createdAt: Date()
+            )
+            let requestModel = model
+            let effectivePrompt: String
+            if task.isAnalysisSuiteTask {
+                effectivePrompt = prompt + """
+
+                最终请统一按以下四段输出，标题必须独占一行：
+                **结论**
+                **关键依据**
+                **建议**
+                **边界**
+                关键依据尽量引用日期、数值或来源；相关性不能写成因果关系。
+                """
+            } else {
+                effectivePrompt = prompt
+            }
             let messages = [
                 AIChatMessage(role: "system", content: system),
-                AIChatMessage(role: "user", content: prompt)
+                AIChatMessage(role: "user", content: effectivePrompt)
             ]
-            let answer = try await sendChat(messages: messages, temperature: temperature)
-            setTask(task, answer: answer)
-            archiveResult(task, answer: answer, startDate: archiveStartDate, endDate: archiveEndDate)
-            taskStates[task]?.isArchived = archiveStartDate != nil && archiveEndDate != nil
+            let rawAnswer = try await sendChat(messages: messages, temperature: temperature, maxTokens: maxTokens)
+            guard taskRequestIDs[task] == requestID else { return false }
+            let answer = answerTransform?(rawAnswer) ?? rawAnswer
+            let result = InsightResult(
+                resultKey: request.id,
+                startDate: archiveStartDate ?? "",
+                endDate: archiveEndDate ?? "",
+                task: task,
+                model: requestModel,
+                answer: answer,
+                sourceSummary: request.sourceSummary,
+                createdAt: Date(),
+                isLocal: false
+            )
+            if archiveStartDate != nil, archiveEndDate != nil {
+                archiveResult(result)
+            }
+            setTask(
+                task,
+                answer: answer,
+                sourceSummary: result.sourceSummary,
+                model: result.model,
+                isArchived: !result.startDate.isEmpty && !result.endDate.isEmpty
+            )
             recordRequest(success: true, message: task.title + "完成")
+            return true
         } catch {
+            guard taskRequestIDs[task] == requestID else { return false }
             let message = friendlyError(error)
             setTask(task, error: message)
             recordRequest(success: false, message: task.title + "失败：" + message)
+            return false
         }
+    }
+
+    func needsAutomaticAnalysis(for dateKey: String) -> Bool {
+        lastAutomaticAnalysisDate != dateKey
+    }
+
+    func markAutomaticAnalysisCompleted(for dateKey: String) {
+        lastAutomaticAnalysisDate = dateKey
     }
 
     func ask(
@@ -310,7 +401,7 @@ final class AIAssistantStore: ObservableObject {
         entries: [DiaryEntry],
         scopeLabel: String
     ) async {
-        guard isEnabled, isConfigured, !isLoading else { return }
+        guard isConfigured, !isLoading else { return }
 
         let trimmedQuestion = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuestion.isEmpty else { return }
@@ -431,9 +522,9 @@ final class AIAssistantStore: ObservableObject {
                 "date=\(entry.date)",
                 "score=\(entry.overall)",
                 "stage=\(entry.stateLabel)",
-                "overview=\(entry.displayOverview)",
-                "thoughts=\((entry.thoughts ?? []).joined(separator: " / "))",
-                "memos=\((entry.memos ?? []).joined(separator: " / "))",
+                "overview=\(compactContextText(entry.displayOverview, limit: 360))",
+                "thoughts=\(compactContextText((entry.thoughts ?? []).joined(separator: " / "), limit: 420))",
+                "memos=\(compactContextText((entry.memos ?? []).joined(separator: " / "), limit: 260))",
                 "tags=\((entry.tags ?? []).joined(separator: ","))",
                 "screenMinutes=\(entry.screenMinutes ?? -1)",
                 "steps=\(entry.health?.steps ?? -1)",
@@ -449,20 +540,83 @@ final class AIAssistantStore: ObservableObject {
 
     private func captureContext(_ captures: [QuickCapture], limit: Int = 20) -> String {
         captures.suffix(limit).map { capture in
-            "{date=\(DiaryEntry.dateFormatter.string(from: capture.createdAt)); text=\(capture.text)}"
+            "{date=\(DiaryEntry.dateFormatter.string(from: capture.createdAt)); text=\(compactContextText(capture.text, limit: 260))}"
         }.joined(separator: "\n")
     }
 
     private func activityContext(_ sessions: [ActivitySession], limit: Int = 20) -> String {
         sessions.suffix(limit).map { session in
-            "{start=\(session.start.formatted(date: .omitted, time: .shortened)); app=\(session.appName); category=\(session.category); minutes=\(Int(session.duration / 60)); title=\(session.windowTitle ?? "")}"
+            let title = includeTitles ? compactContextText(session.windowTitle ?? "", limit: 120) : ""
+            return "{start=\(contextDateTime(session.start)); app=\(session.appName); category=\(session.category); minutes=\(Int(session.duration / 60)); title=\(title)}"
         }.joined(separator: "\n")
+    }
+
+    private func compactContextText(_ text: String, limit: Int) -> String {
+        let compacted = text
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
+            .replacingOccurrences(of: "  +", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return String(compacted.prefix(limit))
+    }
+
+    private func contextDateTime(_ date: Date) -> String {
+        Self.contextDateTimeFormatter.string(from: date)
+    }
+
+    private func analysisFactSheet(entries: [DiaryEntry], sessions: [ActivitySession]) -> String {
+        let overallValues = entries.compactMap { $0.metrics?.overall ?? $0.score }
+        let moodValues = entries.compactMap { $0.metrics?.mood ?? $0.score }
+        let energyValues = entries.compactMap { $0.metrics?.energy }
+        let focusValues = entries.compactMap { $0.metrics?.focus }
+        let outputValues = entries.compactMap { $0.metrics?.output }
+        let steps = entries.compactMap { $0.health?.steps }
+        let sleep = entries.compactMap { $0.health?.resolvedSleepHours }
+
+        let appDurations = Dictionary(grouping: sessions, by: \.appName)
+            .mapValues { grouped in grouped.reduce(0) { $0 + $1.duration } }
+            .sorted { $0.value > $1.value }
+            .prefix(5)
+            .map { "\($0.key) \(Int(($0.value / 60).rounded())) 分钟" }
+            .joined(separator: "、")
+        let totalMinutes = Int((sessions.reduce(0) { $0 + $1.duration } / 60).rounded())
+        let focusMinutes = Int((sessions.filter { ActivityClassifier.isFocus($0.category) }.reduce(0) { $0 + $1.duration } / 60).rounded())
+
+        var lines = [
+            "覆盖：\(entries.count) 天日记，\(sessions.count) 段足迹",
+            "实时足迹：总计 \(totalMinutes) 分钟，专注类 \(focusMinutes) 分钟，片段切换约 \(max(0, sessions.count - 1)) 次"
+        ]
+        if !appDurations.isEmpty { lines.append("主要应用：" + appDurations) }
+        appendAverage("整体", values: overallValues, to: &lines)
+        appendAverage("心情", values: moodValues, to: &lines)
+        appendAverage("精力", values: energyValues, to: &lines)
+        appendAverage("专注", values: focusValues, to: &lines)
+        appendAverage("产出", values: outputValues, to: &lines)
+        if !steps.isEmpty {
+            lines.append("步数：\(steps.count) 天有数据，日均 \(Int((Double(steps.reduce(0, +)) / Double(steps.count)).rounded())) 步")
+        }
+        if !sleep.isEmpty {
+            lines.append("睡眠：\(sleep.count) 天有数据，平均 \(String(format: "%.1f", sleep.reduce(0, +) / Double(sleep.count))) 小时")
+        }
+        let scoredEntries = entries.filter { $0.metrics?.overall != nil || $0.score != nil }
+        if let highest = scoredEntries.max(by: { ($0.metrics?.overall ?? $0.score ?? 0) < ($1.metrics?.overall ?? $1.score ?? 0) }),
+           let lowest = scoredEntries.min(by: { ($0.metrics?.overall ?? $0.score ?? 0) < ($1.metrics?.overall ?? $1.score ?? 0) }) {
+            lines.append("记录高低点：\(highest.date) \(highest.overall) 分；\(lowest.date) \(lowest.overall) 分")
+        }
+        return lines.map { "- " + $0 }.joined(separator: "\n")
+    }
+
+    private func appendAverage(_ label: String, values: [Double], to lines: inout [String]) {
+        guard !values.isEmpty else { return }
+        let average = values.reduce(0, +) / Double(values.count)
+        lines.append("\(label)：\(values.count) 天有评分，平均 \(Int(average.rounded()))")
     }
 
     func generateDailyOverview(
         entry: DiaryEntry,
         quickCaptures: [QuickCapture],
-        activitySessions: [ActivitySession]
+        activitySessions: [ActivitySession],
+        sourceSummary: String? = nil
     ) async {
         let prompt = """
         请根据下面这一天的一手记录，生成一段本日概览。
@@ -486,31 +640,101 @@ final class AIAssistantStore: ObservableObject {
         await runTask(
             .dailyOverview,
             system: "你是河流日记的本日整理同伴。只用用户给定的一手记录做简洁观察；不评判、不补写。回答必须以「我注意到」开头，以「如果你想，可以」结尾。",
-            prompt: prompt
+            prompt: prompt,
+            sourceSummary: sourceSummary
         )
     }
 
     func searchMemory(query: String, entries: [DiaryEntry], quickCaptures: [QuickCapture]) async {
+        guard analysisReady else { return }
+
+        let cacheKey = memorySearchCacheKey(query: query, entries: entries, quickCaptures: quickCaptures)
+        if let cached = memorySearchCache[cacheKey] {
+            setTask(
+                .memorySearch,
+                answer: cached,
+                sourceSummary: "本机缓存 · 历史内容未变化",
+                model: model
+            )
+            return
+        }
+
         let local = MemorySearchEngine.search(query, entries: entries, quickCaptures: quickCaptures)
-        let candidates = Array(Set(local.entries + entries.suffix(40))).sorted { $0.date < $1.date }
+        var candidateEntries: [DiaryEntry] = []
+        var seenIDs = Set<String>()
+        for entry in local.entries.prefix(16) + entries.suffix(12) {
+            guard seenIDs.insert(entry.id).inserted else { continue }
+            candidateEntries.append(entry)
+        }
+        let candidates = candidateEntries.sorted { $0.date < $1.date }
+        let matchingCaptureIDs = Set(local.notes.map(\.id))
+        var candidateCaptures = quickCaptures.filter { matchingCaptureIDs.contains($0.id.uuidString) }
+        var seenCaptureIDs = Set(candidateCaptures.map(\.id))
+        for capture in quickCaptures.sorted(by: { $0.createdAt > $1.createdAt }).prefix(4) {
+            if seenCaptureIDs.insert(capture.id).inserted { candidateCaptures.append(capture) }
+        }
         let prompt = """
         用户的问题：\(query)
 
         本地搜索先筛出了以下候选日记。请只基于候选内容回答。
-        要求：先给一句直接摘要；再给出 2-4 条证据，每条带日期；如果候选中没有答案，就明说没有找到。
-        不要编造日期或内容。使用简体中文。
+        请严格按下面四段输出，标题必须独占一行，不能改名、合并或省略：
+        **结论**
+        1-2 句话直接回答，第一句以“我注意到”开头。如果没有找到，明确写“我没有找到匹配的记录”。
+        **相关日期**
+        最多列出 8 个相关日期，每行格式为“- YYYY-MM-DD：一句说明”。没有相关日期就写“- 无”。
+        **证据**
+        列出 2-6 条证据，每行格式为“- YYYY-MM-DD · 来源：内容”。来源只能写日记、快记或活动。如果没有证据就写“- 无”。
+        **边界**
+        用 1-2 句话说明搜索范围和缺失信息；必须说明相关性不代表因果关系，并以“如果你想，可以”结尾。
+        不要输出 JSON、表格、标题前言、额外章节或 emoji。只使用给定候选内容，不编造日期和内容。使用简体中文。
 
         候选日记 JSON：
-        \(diaryContext(candidates, limit: 40))
+        \(memorySearchDiaryContext(candidates, limit: 24))
 
         候选快记：
-        \(captureContext(quickCaptures))
+        \(memorySearchCaptureContext(candidateCaptures, limit: 12))
         """
         await runTask(
             .memorySearch,
-            system: "你是河流日记的回忆搜索同伴。找出有日期依据的内容，安静地呈现即可；不评判、不补写。回答必须以「我注意到」开头，以「如果你想，可以」结尾。",
-            prompt: prompt
+            system: "你是河流日记的 AI 搜索同伴。你的输出结构固定为结论、相关日期、证据、边界四段。只引用候选资料，保持温和、准确、可扫描，不把相关性说成因果关系。",
+            prompt: prompt,
+            temperature: 0.1,
+            answerTransform: AISearchAnswerFormatter.normalize,
+            maxTokens: 700
         )
+
+        if let answer = taskStates[.memorySearch]?.answer {
+            if memorySearchCache.count >= 20, let oldestKey = memorySearchCache.keys.first {
+                memorySearchCache.removeValue(forKey: oldestKey)
+            }
+            memorySearchCache[cacheKey] = answer
+        }
+    }
+
+    private func memorySearchDiaryContext(_ entries: [DiaryEntry], limit: Int) -> String {
+        entries.suffix(limit).map { entry in
+            let fragments = ([entry.displayOverview] + (entry.thoughts ?? []) + (entry.memos ?? []))
+                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            let detail = String(fragments.joined(separator: " / ").prefix(360))
+            return "{date=\(entry.date); score=\(entry.overall); tags=\((entry.tags ?? []).joined(separator: ",")); text=\(detail)}"
+        }.joined(separator: "\n")
+    }
+
+    private func memorySearchCaptureContext(_ captures: [QuickCapture], limit: Int) -> String {
+        captures.sorted { $0.createdAt > $1.createdAt }.prefix(limit).map { capture in
+            let text = String(capture.text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(220))
+            return "{date=\(DiaryEntry.dateFormatter.string(from: capture.createdAt)); text=\(text)}"
+        }.joined(separator: "\n")
+    }
+
+    private func memorySearchCacheKey(
+        query: String,
+        entries: [DiaryEntry],
+        quickCaptures: [QuickCapture]
+    ) -> String {
+        let entryFingerprint = entries.map { "\($0.id):\($0.date):\($0.overall):\($0.displayOverview.hashValue)" }.joined(separator: "|")
+        let captureFingerprint = quickCaptures.map { "\($0.id.uuidString):\($0.createdAt.timeIntervalSince1970):\($0.text.hashValue)" }.joined(separator: "|")
+        return SHA256Hex.hash(Data("\(query)|\(entryFingerprint)|\(captureFingerprint)".utf8))
     }
 
     func analyzeInsight(entries: [DiaryEntry]) async {
@@ -584,13 +808,149 @@ final class AIAssistantStore: ObservableObject {
 
     // MARK: - AI Analysis Page Tasks
 
+    func runAnalysisBundle(
+        entries: [DiaryEntry],
+        sessions: [ActivitySession],
+        captures: [QuickCapture],
+        archiveStartDate: String,
+        archiveEndDate: String,
+        sourceSummary: String
+    ) async {
+        let tasks = AITask.analysisSuite
+        guard analysisReady, !tasks.contains(where: { taskStates[$0]?.isLoading == true }) else { return }
+
+        let generationID = UUID()
+        let requestModel = model
+        for task in tasks {
+            taskRequestIDs[task] = generationID
+            setTask(task, isLoading: true, sourceSummary: sourceSummary, model: requestModel)
+        }
+
+        let endDaySessions = sessions.filter {
+            DiaryEntry.dateFormatter.string(from: $0.start) == archiveEndDate
+        }
+        let endDayCaptures = captures.filter {
+            DiaryEntry.dateFormatter.string(from: $0.createdAt) == archiveEndDate
+        }
+        let prompt = """
+        请对以下私人生活记录完成一次完整分析，并一次性返回六个部分。六个一级标题必须全部出现、独占一行且顺序固定：
+
+        ## 每日总结
+        ## 情绪关联
+        ## 专注分析
+        ## 健康恢复
+        ## 本周规律
+        ## 行动建议
+
+        每个部分内部必须使用这四个二级标题：
+        **结论**
+        **关键依据**
+        **建议**
+        **边界**
+
+        统一要求：
+        1. 使用简体中文，结论先行，每部分控制在 120-220 字。
+        2. 关键依据使用项目符号，优先写完整日期、数值、应用或原始记录来源。
+        3. 只使用给定数据；缺少数据就明确写出，不用常识补齐。
+        4. 相关性不写成因果关系；健康部分不做诊断或医疗建议。
+        5. 建议必须具体、可选、能在一天内完成，避免“多休息”“提高效率”这类空话。
+        6. “每日总结”只总结结束日 \(archiveEndDate)，不要把整个范围误写成当天。
+        7. 不输出 JSON、表格、前言、总结尾声或 emoji。
+
+        分析范围：\(archiveStartDate) – \(archiveEndDate)
+        数据摘要：\(sourceSummary)
+
+        本机已计算的确定性统计（优先引用，不要重新猜算）：
+        \(analysisFactSheet(entries: entries, sessions: sessions))
+
+        范围内日记、评分与健康数据：
+        \(diaryContext(entries, limit: 30))
+
+        范围内 macOS 实时片段：
+        \(activityContext(sessions, limit: 60))
+
+        范围内快记：
+        \(captureContext(captures, limit: 30))
+
+        结束日实时片段（仅用于每日总结）：
+        \(activityContext(endDaySessions, limit: 30))
+
+        结束日快记（仅用于每日总结）：
+        \(captureContext(endDayCaptures, limit: 20))
+        """
+
+        do {
+            let rawAnswer = try await sendChat(
+                messages: [
+                    AIChatMessage(
+                        role: "system",
+                        content: "你是河流日记的综合分析引擎。把主观日记、健康数据和真实活动足迹放在同一时间轴上观察。结论必须可追溯，语气温和但不含糊，不评判用户，也不编造缺失信息。"
+                    ),
+                    AIChatMessage(role: "user", content: prompt)
+                ],
+                temperature: 0.15,
+                maxTokens: 2600
+            )
+            let parsed = AIAnalysisBundleParser.parse(rawAnswer)
+
+            for task in tasks where taskRequestIDs[task] == generationID {
+                guard let answer = parsed[task] else {
+                    setTask(
+                        task,
+                        error: "综合分析没有返回“\(task.title)”部分，请单独重试。",
+                        sourceSummary: sourceSummary,
+                        model: requestModel
+                    )
+                    continue
+                }
+
+                let request = InsightRequest(
+                    task: task,
+                    startDate: archiveStartDate,
+                    endDate: archiveEndDate,
+                    sourceSummary: sourceSummary,
+                    createdAt: Date()
+                )
+                let result = InsightResult(
+                    resultKey: request.id,
+                    startDate: archiveStartDate,
+                    endDate: archiveEndDate,
+                    task: task,
+                    model: requestModel,
+                    answer: answer,
+                    sourceSummary: sourceSummary,
+                    createdAt: Date(),
+                    isLocal: false
+                )
+                archiveResult(result)
+                setTask(
+                    task,
+                    answer: answer,
+                    sourceSummary: sourceSummary,
+                    model: requestModel,
+                    isArchived: true
+                )
+            }
+
+            recordRequest(success: parsed.count == tasks.count, message: "综合分析完成 \(parsed.count)/\(tasks.count) 项")
+        } catch {
+            let message = friendlyError(error)
+            for task in tasks where taskRequestIDs[task] == generationID {
+                setTask(task, error: message, sourceSummary: sourceSummary, model: requestModel)
+            }
+            recordRequest(success: false, message: "综合分析失败：" + message)
+        }
+    }
+
+    @discardableResult
     func runAnalysisDaily(
         entries: [DiaryEntry],
         sessions: [ActivitySession],
         captures: [QuickCapture],
         archiveStartDate: String? = nil,
-        archiveEndDate: String? = nil
-    ) async {
+        archiveEndDate: String? = nil,
+        sourceSummary: String? = nil
+    ) async -> Bool {
         let today = entries.last
         let prompt = """
         请根据以下数据，为用户写一段今日总结。
@@ -612,16 +972,19 @@ final class AIAssistantStore: ObservableObject {
         快记：
         \(captureContext(captures))
         """
-        await runTask(
+        return await runTask(
             .analysisDaily,
             system: "你是河流日记的每日分析同伴。根据真实活动数据写出有温度的观察，不做没有依据的推测；把低落描述为安静，不用好坏标签。回答必须以「我注意到」开头，以「如果你想，可以」结尾。",
             prompt: prompt,
             archiveStartDate: archiveStartDate,
-            archiveEndDate: archiveEndDate
+            archiveEndDate: archiveEndDate,
+            sourceSummary: sourceSummary,
+            answerTransform: AIAnalysisAnswerFormatter.normalize,
+            maxTokens: 900
         )
     }
 
-    func runAnalysisMood(entries: [DiaryEntry], sessions: [ActivitySession], archiveStartDate: String? = nil, archiveEndDate: String? = nil) async {
+    func runAnalysisMood(entries: [DiaryEntry], sessions: [ActivitySession], archiveStartDate: String? = nil, archiveEndDate: String? = nil, sourceSummary: String? = nil) async {
         let prompt = """
         请分析用户最近的心情变化和活动之间的关联。
 
@@ -645,11 +1008,14 @@ final class AIAssistantStore: ObservableObject {
             system: "你是河流日记的情绪分析同伴。从行为数据中发现情绪模式，但只报告有数据支撑的结论；用冷/暖、活跃/安静描述节律，不评判好坏。回答必须以「我注意到」开头，以「如果你想，可以」结尾。",
             prompt: prompt,
             archiveStartDate: archiveStartDate,
-            archiveEndDate: archiveEndDate
+            archiveEndDate: archiveEndDate,
+            sourceSummary: sourceSummary,
+            answerTransform: AIAnalysisAnswerFormatter.normalize,
+            maxTokens: 900
         )
     }
 
-    func runAnalysisFocus(sessions: [ActivitySession], entries: [DiaryEntry], archiveStartDate: String? = nil, archiveEndDate: String? = nil) async {
+    func runAnalysisFocus(sessions: [ActivitySession], entries: [DiaryEntry], archiveStartDate: String? = nil, archiveEndDate: String? = nil, sourceSummary: String? = nil) async {
         let focusSessions = sessions.filter { ActivityClassifier.isFocus($0.category) }
         let prompt = """
         请分析用户的专注力和时间管理模式。
@@ -677,11 +1043,14 @@ final class AIAssistantStore: ObservableObject {
             system: "你是河流日记的专注力分析同伴。通过应用切换模式观察专注质量，只给有依据的建议；不命令、不评价人。回答必须以「我注意到」开头，以「如果你想，可以」结尾。",
             prompt: prompt,
             archiveStartDate: archiveStartDate,
-            archiveEndDate: archiveEndDate
+            archiveEndDate: archiveEndDate,
+            sourceSummary: sourceSummary,
+            answerTransform: AIAnalysisAnswerFormatter.normalize,
+            maxTokens: 900
         )
     }
 
-    func runAnalysisHealth(entries: [DiaryEntry], archiveStartDate: String? = nil, archiveEndDate: String? = nil) async {
+    func runAnalysisHealth(entries: [DiaryEntry], archiveStartDate: String? = nil, archiveEndDate: String? = nil, sourceSummary: String? = nil) async {
         let prompt = """
         请分析用户的健康恢复状况。
 
@@ -702,11 +1071,14 @@ final class AIAssistantStore: ObservableObject {
             system: "你是河流日记的健康分析同伴。关注睡眠、运动与恢复的关系，语气温和，不做医疗建议。回答必须以「我注意到」开头，以「如果你想，可以」结尾。",
             prompt: prompt,
             archiveStartDate: archiveStartDate,
-            archiveEndDate: archiveEndDate
+            archiveEndDate: archiveEndDate,
+            sourceSummary: sourceSummary,
+            answerTransform: AIAnalysisAnswerFormatter.normalize,
+            maxTokens: 900
         )
     }
 
-    func runAnalysisWeekly(entries: [DiaryEntry], sessions: [ActivitySession], archiveStartDate: String? = nil, archiveEndDate: String? = nil) async {
+    func runAnalysisWeekly(entries: [DiaryEntry], sessions: [ActivitySession], archiveStartDate: String? = nil, archiveEndDate: String? = nil, sourceSummary: String? = nil) async {
         let prompt = """
         请分析用户过去一周的规律和趋势。
 
@@ -730,11 +1102,14 @@ final class AIAssistantStore: ObservableObject {
             system: "你是河流日记的周报分析同伴。发现跨天规律，语气客观但不冷漠；用节律而不是好坏描述趋势。回答必须以「我注意到」开头，以「如果你想，可以」结尾。",
             prompt: prompt,
             archiveStartDate: archiveStartDate,
-            archiveEndDate: archiveEndDate
+            archiveEndDate: archiveEndDate,
+            sourceSummary: sourceSummary,
+            answerTransform: AIAnalysisAnswerFormatter.normalize,
+            maxTokens: 900
         )
     }
 
-    func runAnalysisAction(entries: [DiaryEntry], sessions: [ActivitySession], archiveStartDate: String? = nil, archiveEndDate: String? = nil) async {
+    func runAnalysisAction(entries: [DiaryEntry], sessions: [ActivitySession], archiveStartDate: String? = nil, archiveEndDate: String? = nil, sourceSummary: String? = nil) async {
         let prompt = """
         请基于用户的数据，给出 3 条明天可以行动的具体建议。
 
@@ -758,7 +1133,10 @@ final class AIAssistantStore: ObservableObject {
             system: "你是河流日记的行动建议同伴。基于数据给出具体、可执行的建议，不说空话；建议是可选的陪伴，不是命令。回答必须以「我注意到」开头，以「如果你想，可以」结尾。",
             prompt: prompt,
             archiveStartDate: archiveStartDate,
-            archiveEndDate: archiveEndDate
+            archiveEndDate: archiveEndDate,
+            sourceSummary: sourceSummary,
+            answerTransform: AIAnalysisAnswerFormatter.normalize,
+            maxTokens: 900
         )
     }
 
@@ -767,7 +1145,11 @@ final class AIAssistantStore: ObservableObject {
         entries: [DiaryEntry],
         scopeLabel: String
     ) -> AIAnalysisContext {
-        let entriesByDate = Dictionary(uniqueKeysWithValues: entries.map { ($0.date, $0) })
+        // Imported data can contain duplicate dates. Keep the latest entry rather
+        // than crashing while preparing an AI request.
+        let entriesByDate = entries.reduce(into: [String: DiaryEntry]()) { result, entry in
+            result[entry.date] = entry
+        }
 
         let daily = range.dayStats.map { day in
             let entry = entriesByDate[day.dateKey]
@@ -869,12 +1251,17 @@ final class AIAssistantStore: ObservableObject {
         return try await sendChat(messages: messages, temperature: 0.2)
     }
 
-    private func sendChat(messages: [AIChatMessage], temperature: Double) async throws -> String {
+    private func sendChat(
+        messages: [AIChatMessage],
+        temperature: Double,
+        maxTokens: Int? = nil
+    ) async throws -> String {
         let payload = AIChatRequest(
             model: model.trimmingCharacters(in: .whitespacesAndNewlines),
             messages: messages,
             temperature: temperature,
-            stream: false
+            stream: false,
+            maxTokens: maxTokens
         )
 
         var request = URLRequest(url: try normalizedEndpoint())

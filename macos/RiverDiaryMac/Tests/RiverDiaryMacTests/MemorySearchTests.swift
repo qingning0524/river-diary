@@ -66,6 +66,62 @@ final class MemorySearchTests: XCTestCase {
         XCTAssertEqual(answer.entries.count, 1)
         XCTAssertEqual(answer.entries.first?.id, lastWeek.id)
     }
+
+    func testNaturalLanguageQuestionFindsFatigueSignal() {
+        let tired = entry(date: Date(), overview: "今天很累，晚上只想早点睡。", score: 35)
+        let calm = entry(date: Date(), overview: "今天很平静，慢慢收尾。", score: 70)
+
+        let answer = MemorySearchEngine.search("哪几天很累？", entries: [tired, calm])
+
+        XCTAssertEqual(answer.entries.map(\.id), [tired.id])
+        XCTAssertTrue(answer.usedFilters.contains("主题：疲惫"))
+    }
+
+    func testThresholdQuestionDoesNotTreatQuestionScaffoldingAsTopic() {
+        let low = entry(date: Date(), overview: "今天有点沉重。", score: 35)
+        let high = entry(date: Date(), overview: "今天状态不错。", score: 75)
+
+        let answer = MemorySearchEngine.search("低于40有哪几天？", entries: [low, high])
+
+        XCTAssertEqual(answer.entries.map(\.id), [low.id])
+        XCTAssertEqual(answer.usedFilters, ["综合低于 40"])
+    }
+
+    func testQuestionScaffoldingLeavesTheActualTopicWord() {
+        let work = entry(date: Date(), overview: "今天提到工作安排。", score: 70)
+        let rest = entry(date: Date(), overview: "今天去散步，心情平静。", score: 70)
+
+        let answer = MemorySearchEngine.search("本月提到工作了吗？", entries: [work, rest])
+
+        XCTAssertEqual(answer.entries.map(\.id), [work.id])
+        XCTAssertTrue(answer.usedFilters.contains("本月"))
+        XCTAssertTrue(answer.usedFilters.contains("主题：工作"))
+    }
+
+    func testAISearchDateReferencesBecomeClickableDailyTargets() {
+        let work = entry(date: Date(), overview: "今天集中处理工作。", score: 72)
+        let capture = QuickCapture(text: "补记一个想法", createdAt: Date())
+        let answer = """
+        **结论**
+        我注意到相关内容集中在最近几天。
+        **相关日期**
+        - \(work.date)：工作记录
+        - \(DiaryEntry.dateFormatter.string(from: capture.createdAt))：补记
+        **证据**
+        - \(work.date) · 来源：日记
+        **边界**
+        相关性不代表因果关系。如果你想，可以继续查看。
+        """
+
+        let references = AISearchDateReferenceParser.references(
+            from: answer,
+            entries: [work],
+            quickCaptures: [capture]
+        )
+
+        XCTAssertEqual(references.map(\.date), [work.date])
+        XCTAssertEqual(references.first?.source, "日记")
+    }
 }
 
 final class MemorySearchWeekBoundaryTests: XCTestCase {

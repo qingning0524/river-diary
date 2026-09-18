@@ -72,7 +72,7 @@ struct AITaskCard<Trailing: View>: View {
             }
 
             if !ai.analysisReady {
-                Label(ai.isEnabled ? "AI 模型还没连接成功，可在「设置」页处理。" : "当前是非 AI 分析模式。可在「设置」页开启 AI 分析模型。", systemImage: "sparkles.slash")
+                Label("AI 模型还没连接成功，可在「设置」页处理。", systemImage: "sparkles.slash")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

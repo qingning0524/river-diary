@@ -23,11 +23,8 @@ struct RhythmView: View {
     }
 
     private var periodSessions: [ActivitySession] {
-        let startKey = DiaryEntry.dateFormatter.string(from: startDate)
-        let endKey = DiaryEntry.dateFormatter.string(from: endDate)
-        return activity.sessions
-            .filter { $0.dayKey >= startKey && $0.dayKey <= endKey }
-            .sorted { $0.start < $1.start }
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: endDate) ?? endDate
+        return activity.sessions(from: startDate, to: end)
     }
 
     private var periodCaptures: [QuickCapture] {
@@ -39,6 +36,40 @@ struct RhythmView: View {
             .sorted { $0.createdAt < $1.createdAt }
     }
 
+    private var monthInterval: DateInterval {
+        Calendar.current.dateInterval(of: .month, for: endDate)
+            ?? DateInterval(start: endDate, duration: 24 * 60 * 60)
+    }
+
+    private var monthDays: [Date] {
+        let calendar = Calendar.current
+        guard let dayRange = calendar.range(of: .day, in: .month, for: monthInterval.start) else { return [] }
+        return dayRange.compactMap { day in
+            calendar.date(bySetting: .day, value: day, of: monthInterval.start)
+        }
+    }
+
+    private var monthLeadingEmptyCount: Int {
+        max(0, Calendar.current.component(.weekday, from: monthInterval.start) - 1)
+    }
+
+    private var monthEntriesByDate: [String: DiaryEntry] {
+        store.entries.reduce(into: [String: DiaryEntry]()) { result, entry in
+            result[entry.date] = entry
+        }
+    }
+
+    private var monthTitle: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年M月"
+        return formatter.string(from: monthInterval.start)
+    }
+
+    private var monthEntryCount: Int {
+        let keys = Set(monthDays.map { DiaryEntry.dateFormatter.string(from: $0) })
+        return keys.intersection(monthEntriesByDate.keys).count
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -46,15 +77,15 @@ struct RhythmView: View {
                     header
                 }
                 controlPanel
+                monthGridCard
                 metricCard
                 connectionCard
                 lifeSegmentCard
-                riverLetterCard
+                MonthlyLetterCard(store: store, activity: activity, date: $anchorDate)
             }
-            .padding(.horizontal, 26)
             .padding(.top, 12)
             .padding(.bottom, 32)
-            .frame(maxWidth: 1280, alignment: .topLeading)
+            .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .topLeading)
         }
         .scrollIndicators(.hidden)
     }
@@ -108,7 +139,7 @@ struct RhythmView: View {
     }
 
     private var metricCard: some View {
-        SoftCard {
+        return SoftCard {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     Label("节律曲线", systemImage: "chart.dots.scatter")
@@ -126,7 +157,7 @@ struct RhythmView: View {
                     .frame(width: 400)
                 }
 
-                if periodEntries.isEmpty {
+                if periodEntries.compactMap({ selectedMetric.value($0) }).isEmpty {
                     Text("这段时间还没有评分。有记录的日子，自然会流进来。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -143,6 +174,114 @@ struct RhythmView: View {
                 }
             }
         }
+    }
+
+    private var monthGridCard: some View {
+        let entriesByDate = monthEntriesByDate
+
+        return SoftCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline) {
+                    Label("月度节律", systemImage: "calendar")
+                        .font(.headline)
+                    Spacer()
+                    Text("\(monthTitle) · \(selectedMetric.title)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+
+                Text("每一格只是当天的形状；留白也属于这段时间。点击某天可回到那一天。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible(), spacing: 7), count: 7),
+                    spacing: 7
+                ) {
+                    ForEach(["日", "一", "二", "三", "四", "五", "六"], id: \.self) { weekday in
+                        Text(weekday)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    ForEach(0..<monthLeadingEmptyCount, id: \.self) { _ in
+                        Color.clear.frame(height: 36)
+                    }
+
+                    ForEach(monthDays, id: \.self) { day in
+                        let key = DiaryEntry.dateFormatter.string(from: day)
+                        monthDayCell(day, entry: entriesByDate[key])
+                    }
+                }
+
+                HStack(spacing: 12) {
+                    monthLegend("暖", color: Color.riverPink)
+                    monthLegend("平", color: Color.riverAmethyst)
+                    monthLegend("冷", color: Color.riverBlue)
+                    monthLegend("留白", color: Color.border)
+                    Spacer()
+                    Text("\(monthEntryCount) 天有记录")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        }
+    }
+
+    private func monthDayCell(_ day: Date, entry: DiaryEntry?) -> some View {
+        let key = DiaryEntry.dateFormatter.string(from: day)
+        let value = entry.flatMap { selectedMetric.value($0) }
+        let isSelected = Calendar.current.isDate(day, inSameDayAs: anchorDate)
+
+        return Button {
+            anchorDate = day
+        } label: {
+            VStack(spacing: 4) {
+                Text("\(Calendar.current.component(.day, from: day))")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(isSelected ? Color.ink : .secondary)
+
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(monthColor(for: value))
+                    .frame(height: 13)
+                    .overlay {
+                        if let value {
+                            Text("\(Int(value.rounded()))")
+                                .font(.system(size: 8, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.9))
+                        }
+                    }
+            }
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity)
+            .background(isSelected ? Color.chip : .clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(Color.riverPink.opacity(0.75), lineWidth: 1)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .help(entry == nil ? "\(key)：留白" : "\(key)：\(Int(value ?? 0))")
+    }
+
+    private func monthColor(for value: Double?) -> Color {
+        guard let value else { return Color.border.opacity(0.45) }
+        if value >= 80 { return Color.riverPink }
+        if value >= 60 { return Color.riverAmethyst }
+        if value >= 40 { return Color.riverBlue.opacity(0.82) }
+        return Color.riverBlue.opacity(0.52)
+    }
+
+    private func monthLegend(_ title: String, color: Color) -> some View {
+        HStack(spacing: 4) {
+            Circle().fill(color).frame(width: 7, height: 7)
+            Text(title)
+        }
+        .font(.caption2)
+        .foregroundStyle(.tertiary)
     }
 
     private var averageText: String {
@@ -248,53 +387,6 @@ struct RhythmView: View {
         }
     }
 
-    private var riverLetterCard: some View {
-        let letter = RiverLetter.make(entries: periodEntries, captures: periodCaptures, sessions: periodSessions, days: selectedDays)
-
-        return SoftCard {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    Label("河流信", systemImage: "envelope.open")
-                        .font(.headline)
-                    Spacer()
-                    Text("本机生成")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-
-                if letter == nil {
-                    Text("攒够 30 天的痕迹后，这里会为你写一封安静的月度信。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text(letter?.title ?? "")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.ink)
-
-                    Text(letter?.body ?? "")
-                        .font(.system(size: 13))
-                        .lineSpacing(7)
-                        .foregroundStyle(Color.secondaryInk)
-
-                    HStack {
-                        Text("落款 · 河流日记")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                        Spacer()
-                        Button {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString([letter?.title ?? "", letter?.body ?? ""].joined(separator: "\n\n"), forType: .string)
-                        } label: {
-                            Label("复制", systemImage: "doc.on.doc")
-                        }
-                        .buttonStyle(.plain)
-                        .smallAction()
-                    }
-                }
-            }
-        }
-    }
-
     private func rhythmSummary(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title).font(.caption2).foregroundStyle(.tertiary)
@@ -370,7 +462,7 @@ struct RhythmChart: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let values = entries.map { metric.value($0) ?? 0 }
+            let values = entries.compactMap { metric.value($0) }.filter(\.isFinite)
             let width = proxy.size.width
             let height = proxy.size.height
             let step = values.count > 1 ? width / CGFloat(values.count - 1) : 0
@@ -405,8 +497,8 @@ struct RhythmChart: View {
                     style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
                 )
 
-                ForEach(entries.indices, id: \.self) { index in
-                    if index == entries.count - 1 {
+                ForEach(values.indices, id: \.self) { index in
+                    if index == values.count - 1 {
                         let x = CGFloat(index) * step
                         let value = values[index]
                         let y = height - max(0.04, min(1, value / 100)) * (height - 18)
@@ -472,7 +564,7 @@ struct RiverLetter {
         let scores = scored.map { $0.metrics?.overall ?? $0.score ?? 0 }
         let average = scores.isEmpty ? 0 : scores.reduce(0, +) / Double(scores.count)
         let best = scored.max { ($0.metrics?.overall ?? $0.score ?? 0) < ($1.metrics?.overall ?? $0.score ?? 0) }
-        let quiet = scored.min { ($0.metrics?.overall ?? $0.score ?? 0) < ($1.metrics?.overall ?? $0.score ?? 0) }
+        let quiet = scored.min { ($0.metrics?.overall ?? $0.score ?? 0) < ($1.metrics?.overall ?? $1.score ?? 0) }
         let topApp = Dictionary(grouping: sessions, by: \.appName)
             .mapValues { $0.reduce(0.0) { $0 + $1.duration } }
             .max { $0.value < $1.value }?.key

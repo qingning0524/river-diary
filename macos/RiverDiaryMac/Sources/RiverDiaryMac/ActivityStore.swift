@@ -179,8 +179,31 @@ final class ActivityStore: ObservableObject {
     }
 
     func liveSessions(for date: Date) -> [ActivitySession] {
-        let key = DiaryEntry.dateFormatter.string(from: date)
-        return sessions.filter { $0.dayKey == key }.sorted { $0.start < $1.start }
+        ActivitySessionSnapshot.day(date, sessions: sessions, active: activeSession)
+    }
+
+    func sessions(from start: Date, to end: Date) -> [ActivitySession] {
+        guard end > start else { return [] }
+
+        var result = sessions.filter { $0.start < end && $0.end > start }
+        if let activeSession, activeSession.start < end {
+            var snapshot = activeSession
+            snapshot.end = max(snapshot.end, Date())
+            if snapshot.end > start {
+                result.append(snapshot)
+            }
+        }
+        return result.filter { ActivityClassifier.isRecordable(appName: $0.appName, bundleID: $0.bundleID) }.sorted { $0.start < $1.start }
+    }
+
+    func allSessionsIncludingActive() -> [ActivitySession] {
+        var result = sessions
+        if let activeSession {
+            var snapshot = activeSession
+            snapshot.end = max(snapshot.end, Date())
+            result.append(snapshot)
+        }
+        return result.filter { ActivityClassifier.isRecordable(appName: $0.appName, bundleID: $0.bundleID) }.sorted { $0.start < $1.start }
     }
 
     func screenTimeSnapshot() -> ScreenTimeSnapshot? {
@@ -292,14 +315,13 @@ final class ActivityStore: ObservableObject {
         addWorkspaceObserver(NSWorkspace.sessionDidBecomeActiveNotification) { store, _ in
             store.startSessionAfterWake()
         }
-
-        appCenter.addObserver(
-            forName: NSApplication.willTerminateNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor [weak self] in self?.closeForTermination() }
+        addWorkspaceObserver(NSWorkspace.sessionDidResignActiveNotification) { store, _ in
+            store.closeActiveSession()
         }
+
+        observers.append(ActivityLifecycle.observeTermination(center: appCenter) { [weak self] in
+            self?.closeForTermination()
+        })
     }
 
     private func removeObservers() {
@@ -368,8 +390,9 @@ final class ActivityStore: ObservableObject {
         activeSession = newSession(for: app)
     }
 
-    private func newSession(for app: NSRunningApplication) -> ActivitySession {
+    private func newSession(for app: NSRunningApplication) -> ActivitySession? {
         let appName = app.localizedName ?? "未知应用"
+        guard ActivityClassifier.isRecordable(appName: appName, bundleID: app.bundleIdentifier ?? "") else { return nil }
         let title = currentTitle(for: app)
         return ActivitySession(
             appName: appName,
@@ -383,7 +406,19 @@ final class ActivityStore: ObservableObject {
 
     private func currentTitle(for app: NSRunningApplication) -> String? {
         guard capturesTitles, accessibilityGranted else { return nil }
-        let element = AXUIElementCreateApplication(app.processIdentifier)
+        let application = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetMessagingTimeout(application, 0.25)
+
+        var focusedWindow: CFTypeRef?
+        let windowResult = AXUIElementCopyAttributeValue(
+            application,
+            kAXFocusedWindowAttribute as CFString,
+            &focusedWindow
+        )
+        guard windowResult == .success, let window = focusedWindow else { return nil }
+
+        guard CFGetTypeID(window) == AXUIElementGetTypeID() else { return nil }
+        let element = unsafeBitCast(window, to: AXUIElement.self)
         AXUIElementSetMessagingTimeout(element, 0.25)
         var value: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(element, kAXTitleAttribute as CFString, &value)
@@ -516,4 +551,3 @@ private struct CachedDayStats {
     var fingerprint: String
     var stats: FusedDayStats
 }
-

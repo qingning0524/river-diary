@@ -7,10 +7,14 @@ struct ActivityView: View {
     let entries: [DiaryEntry]
     let quickCaptures: [QuickCapture]
     var showsHeader: Bool = true
+    var addCapture: ((String) throws -> Void)?
+    var openDiary: (() -> Void)?
+    var annotations: [String: TimelineAnnotation] = [:]
+    var saveAnnotation: ((String, TimelineAnnotation) throws -> Void)?
+    var additionalRecordedDays: Set<String> = []
 
     @State private var period = 1
     @State private var selectedApp: String?
-    @State private var showsConfidenceDetails = false
     @State private var showsDetails = false
 
     private var summary: FusedRangeStats {
@@ -18,70 +22,78 @@ struct ActivityView: View {
     }
 
 
-
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                if showsHeader {
-                    header
+        VStack(alignment: .leading, spacing: 12) {
+            TimelineWorkspaceHeader(
+                date: $selectedDate,
+                recordedDays: Set(entries.map(\.date) + activity.sessions.map(\.dayKey)).union(additionalRecordedDays),
+                openDiary: openDiary
+            )
+            periodPicker
+            if period == 1 {
+                SwiftUI.TimelineView(.periodic(from: .now, by: 30)) { _ in
+                    let day = Calendar.current.dateInterval(of: .day, for: selectedDate)
+                    DayTimelineView(
+                        sessions: day.map { activity.sessions(from: $0.start, to: $0.end) } ?? [],
+                        date: selectedDate,
+                        quickCaptures: quickCaptures,
+                        activeSessionID: activity.activeSession?.id,
+                        isTracking: activity.isTracking,
+                        isPaused: activity.isCurrentlyPaused,
+                        toggleTracking: {
+                            if activity.isTracking { activity.stopTracking() }
+                            else { activity.startTracking() }
+                        },
+                        addCapture: addCapture,
+                        diaryEntry: entries.first { $0.date == ActivitySession.dayKey(for: selectedDate) },
+                        openDiary: openDiary,
+                        annotations: annotations,
+                        saveAnnotation: saveAnnotation
+                    )
                 }
-                periodPicker
-                summaryCard
-                TimelineSegmentCardView(
-                    date: selectedDate,
-                    sessions: activity.liveSessions(for: selectedDate),
-                    quickCaptures: quickCaptures
-                )
-                correlationCard
-                DayTimelineView(
-                    sessions: activity.liveSessions(for: selectedDate),
-                    date: selectedDate
-                )
-                timelineCard
-                trendCard
-                appRankingCard
-                detailsCard
+                .frame(maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 18) {
+                        summaryCard
+                        correlationCard
+                        timelineCard
+                        trendCard
+                        appRankingCard
+                        detailsCard
+                    }
+                    .padding(.bottom, 28)
+                }
             }
-            .frame(maxWidth: 1280, alignment: .leading)
-            .padding(.top, 8)
-            .padding(.bottom, 28)
         }
-        .scrollIndicators(.hidden)
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Footprint")
-                .font(.caption.smallCaps())
-                .foregroundStyle(.secondary)
-            Text("足迹")
-                .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(Color.ink)
-            Text("项目数据提供每日总量，实时记录补充时间段。两者不会重复相加。")
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: 1280, alignment: .leading)
+        .frame(maxWidth: AppLayout.contentMaxWidth, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var periodPicker: some View {
         HStack(spacing: 7) {
             ForEach([1, 7, 30], id: \.self) { days in
                 Button {
-                    period = days
+                    withAnimation(.easeOut(duration: 0.16)) { period = days }
                 } label: {
-                    Text(days == 1 ? "今天" : "\(days) 天")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(period == days ? Color.ctaText : Color.secondaryInk)
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 6)
-                        .background(period == days ? Color.ctaBackground : Color.chip, in: Capsule())
+                    Text(days == 1 ? "时间线" : "\(days) 天概览")
+                        .font(.ui(12, weight: period == days ? .semibold : .medium))
+                        .foregroundStyle(period == days ? Color.ink : Color.secondaryInk)
+                        .padding(.horizontal, 13)
+                        .padding(.vertical, 8)
+                        .background(
+                            period == days ? AnyShapeStyle(Color.strongSurface) : AnyShapeStyle(Color.clear),
+                            in: Capsule()
+                        )
+                        .overlay(Capsule().stroke(period == days ? Color.ink.opacity(0.1) : .clear, lineWidth: 1))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.softPress)
             }
             Spacer()
+            Text(period == 1 ? "从一个片段，找回这一天" : "截至所选日期的最近 \(period) 天")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: 1280, alignment: .leading)
+        .frame(maxWidth: AppLayout.contentMaxWidth, alignment: .leading)
     }
 
     private var summaryCard: some View {
@@ -428,10 +440,17 @@ struct ActivityMetricView: View {
     let icon: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Label(title, systemImage: icon)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Color.riverAmethyst)
+                    .frame(width: 20, height: 20)
+                    .background(Color.riverAmethyst.opacity(0.10), in: Circle())
+                Text(title)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
             Text(value)
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color.ink)
@@ -469,21 +488,21 @@ struct ActivityAppRowView: View {
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(isSelected ? Color.strongSurface : Color.chip.opacity(0.5))
             )
             .overlay(alignment: .leading) {
                 GeometryReader { geo in
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color(hex: ActivityClassifier.color(for: app.category)).opacity(0.1))
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color(hex: ActivityClassifier.color(for: app.category)).opacity(isSelected ? 0.16 : 0.1))
                         .frame(width: geo.size.width * fraction)
                         .allowsHitTesting(false)
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.softPress)
     }
 }

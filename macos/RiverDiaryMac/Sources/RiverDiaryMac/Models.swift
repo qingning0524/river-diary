@@ -106,6 +106,8 @@ struct EntryOverride: Codable, Hashable {
     var category: String?
     var tags: [String]?
     var updatedAt: Date
+    var preservesMetrics: Bool? = nil
+    var writtenMood: Int? = nil
 }
 
 struct QuickCapture: Codable, Hashable, Identifiable {
@@ -134,6 +136,21 @@ struct UserState: Codable {
     var careAcknowledgments: [String: Date]?
     var autoDraftPaused: Bool?
     var draftPausedUntil: Date?
+    var monthlyLetters: [String: MonthlyLetter]?
+    var savedQueries: [SavedQuery]? = nil
+    var timelineAnnotations: [String: TimelineAnnotation]? = nil
+}
+
+struct SavedQuery: Codable, Hashable, Identifiable {
+    var id: UUID = UUID()
+    var name: String
+    var query: String
+    var days: Int
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
+    var lastUsedAt: Date?
+
+    var rangeLabel: String { "近 \(days) 天" }
 }
 
 struct DraftEvidence: Identifiable, Hashable {

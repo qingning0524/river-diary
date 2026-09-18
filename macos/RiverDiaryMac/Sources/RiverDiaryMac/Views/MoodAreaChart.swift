@@ -67,8 +67,7 @@ struct MoodAreaChart: View {
                     context.stroke(guide, with: .color(.black.opacity(0.12)), style: StrokeStyle(lineWidth: 1, dash: [3, 4]))
 
                     // 选中日期的悬浮小签
-                    let entryIndex = points.firstIndex { $0.id == selectedID } ?? 0
-                    let entry = entries[min(entryIndex, entries.count - 1)]
+                    let entry = entries.first { $0.id == selectedID } ?? entries[0]
                     let labelText = Text("\(entry.shortDate)  \(Int(selected.score))")
                         .font(.system(size: 10, weight: .semibold, design: .rounded))
                         .foregroundColor(.white)
@@ -100,7 +99,8 @@ struct MoodAreaChart: View {
     }
 
     private func chartPoints(in size: CGSize) -> [ChartPoint] {
-        let scores = entries.map { Double($0.metrics?.overall ?? $0.score ?? 0) }
+        let scoredEntries = entries.filter { ($0.metrics?.overall ?? $0.score)?.isFinite == true }
+        let scores = scoredEntries.compactMap { $0.metrics?.overall ?? $0.score }
         guard scores.count > 1, let maxValue = scores.max(), let minValue = scores.min() else { return [] }
 
         let span = max(maxValue - minValue, 18)
@@ -110,7 +110,7 @@ struct MoodAreaChart: View {
 
         return scores.enumerated().map { index, score in
             ChartPoint(
-                id: entries[index].id,
+                id: scoredEntries[index].id,
                 score: score,
                 point: CGPoint(
                     x: inset + CGFloat(index) * horizontalStep,

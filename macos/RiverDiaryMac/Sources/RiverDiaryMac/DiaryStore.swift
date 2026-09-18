@@ -19,6 +19,9 @@ struct LocalBackupPayload: Codable {
     var careAcknowledgments: [String: Date]
     var autoDraftPaused: Bool?
     var activitySessions: [ActivitySession]?
+    var monthlyLetters: [String: MonthlyLetter]?
+    var savedQueries: [SavedQuery]? = nil
+    var timelineAnnotations: [String: TimelineAnnotation]? = nil
 }
 
 @MainActor
@@ -29,6 +32,9 @@ final class DiaryStore: ObservableObject {
     @Published private(set) var hasLocalChanges = false
     @Published private(set) var isEncrypted = false
     @Published private(set) var quickCaptures: [String: [QuickCapture]] = [:]
+    @Published private(set) var monthlyLetters: [String: MonthlyLetter] = [:]
+    @Published private(set) var savedQueries: [SavedQuery] = []
+    @Published private(set) var timelineAnnotations: [String: TimelineAnnotation] = [:]
     @Published private(set) var dismissedDrafts: Set<String> = []
     @Published private(set) var careAcknowledgments: Set<String> = []
     @Published private(set) var autoDraftPaused = false
@@ -39,6 +45,7 @@ final class DiaryStore: ObservableObject {
 
     private var baseData: DiaryData?
     private var overrides: [String: EntryOverride] = [:]
+    private var localStateReadFailed = false
     private var ingestedHealth: [String: IOSHealthSummary] = [:]
     private var ingestedScores: [String: Int] = [:]
     private let fileManager = FileManager.default
@@ -79,6 +86,73 @@ final class DiaryStore: ObservableObject {
         entries.last
     }
 
+    /// Only publish a letter after its encrypted state has reached disk.
+    func saveMonthlyLetter(_ letter: MonthlyLetter) throws {
+        guard !localStateReadFailed else {
+            throw NSError(domain: "RiverDiaryMac", code: 31, userInfo: [NSLocalizedDescriptionKey: "本地日记尚未成功读取，请重新打开应用并完成解锁后再保存。"])
+        }
+        var updated = monthlyLetters
+        updated[letter.month] = letter
+        do {
+            try persist(monthlyLetters: updated)
+            monthlyLetters = updated
+            hasLocalChanges = true
+            saveState = .saved(Date())
+        } catch {
+            saveState = .failed(error.localizedDescription)
+            throw error
+        }
+    }
+
+    func saveTimelineAnnotation(_ annotation: TimelineAnnotation, for key: String) throws {
+        guard !localStateReadFailed else {
+            throw NSError(domain: "RiverDiaryMac", code: 41, userInfo: [NSLocalizedDescriptionKey: "本地日记尚未成功读取，暂时不能整理片段。"])
+        }
+        let updated = TimelineAnnotation.updating(timelineAnnotations, key: key, with: annotation)
+        do {
+            try persist(timelineAnnotations: updated)
+            timelineAnnotations = updated
+            hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !updated.isEmpty
+            saveState = .saved(Date())
+        } catch {
+            saveState = .failed(error.localizedDescription)
+            throw error
+        }
+    }
+
+    func saveSavedQuery(_ query: SavedQuery) throws {
+        guard !localStateReadFailed else {
+            throw NSError(domain: "RiverDiaryMac", code: 32, userInfo: [NSLocalizedDescriptionKey: "本地状态尚未成功读取，暂时不能保存查询。"])
+        }
+        var updated = savedQueries
+        if let index = updated.firstIndex(where: { $0.id == query.id }) {
+            updated[index] = query
+        } else {
+            updated.append(query)
+        }
+        updated.sort { ($0.lastUsedAt ?? $0.updatedAt) > ($1.lastUsedAt ?? $1.updatedAt) }
+        try persist(savedQueries: updated)
+        savedQueries = updated
+        hasLocalChanges = true
+        saveState = .saved(Date())
+    }
+
+    func markSavedQueryUsed(_ id: UUID) {
+        guard let index = savedQueries.firstIndex(where: { $0.id == id }) else { return }
+        savedQueries[index].lastUsedAt = Date()
+        do {
+            try persist(savedQueries: savedQueries)
+        } catch {
+            saveState = .failed(error.localizedDescription)
+        }
+    }
+
+    func removeSavedQuery(_ query: SavedQuery) {
+        savedQueries.removeAll { $0.id == query.id }
+        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
+        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+    }
+
     var poem: String {
         data?.poem ?? "情绪会沉淀，日子会向前。"
     }
@@ -113,8 +187,8 @@ final class DiaryStore: ObservableObject {
             memos: nil,
             tags: [],
             category: "随想",
-            metrics: DayMetrics(mood: 70, energy: 65, focus: 70, output: 65, overall: 68),
-            stage: Stage(label: "平稳", color: "#D4A017")
+            metrics: nil,
+            stage: nil
         )
     }
 
@@ -126,8 +200,14 @@ final class DiaryStore: ObservableObject {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
+        guard !localStateReadFailed else {
+            saveState = .failed("本地日记尚未成功读取，请重新打开应用后再保存。")
+            return
+        }
         let dateString = DiaryEntry.dateFormatter.string(from: date)
         let capture = QuickCapture(text: trimmed, createdAt: Date(), tag: tag?.isEmpty == false ? tag : nil)
+        let previousCaptures = quickCaptures[dateString]
+        let previouslyChanged = hasLocalChanges
         quickCaptures[dateString, default: []].append(capture)
         hasLocalChanges = true
         saveState = .saving
@@ -135,6 +215,8 @@ final class DiaryStore: ObservableObject {
             try persist()
             saveState = .saved(Date())
         } catch {
+            quickCaptures[dateString] = previousCaptures
+            hasLocalChanges = previouslyChanged
             saveState = .failed(error.localizedDescription)
         }
     }
@@ -144,7 +226,7 @@ final class DiaryStore: ObservableObject {
         if quickCaptures[entry.date]?.isEmpty == true {
             quickCaptures[entry.date] = nil
         }
-        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty
+        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
         do { try persist() } catch { saveState = .failed(error.localizedDescription) }
     }
 
@@ -226,6 +308,39 @@ final class DiaryStore: ObservableObject {
         overrides[entry.id] != nil
     }
 
+    func saveWriting(entry: DiaryEntry, text: String, mood: Int?) throws {
+        guard !localStateReadFailed else {
+            throw NSError(domain: "RiverDiaryMac", code: 42, userInfo: [NSLocalizedDescriptionKey: "本地日记尚未成功读取，暂时不能保存。"])
+        }
+        let existingOverride = overrides[entry.id] ?? overrides["local-\(entry.date)"] ?? overrides["ingested-\(entry.date)"]
+        var value = EntryOverride(
+            overview: text.trimmingCharacters(in: .whitespacesAndNewlines),
+            mood: entry.mood, energy: entry.energy, focus: entry.focus, output: entry.output,
+            category: entry.category, tags: entry.tags, updatedAt: Date(),
+            preservesMetrics: true, writtenMood: mood ?? existingOverride?.writtenMood
+        )
+        // Preserve legacy saved metrics when converting an older edited entry.
+        if let existing = existingOverride, existing.preservesMetrics != true {
+            value.mood = mood ?? existing.mood
+            value.energy = existing.energy
+            value.focus = existing.focus
+            value.output = existing.output
+            value.preservesMetrics = false
+        }
+        var updated = overrides
+        updated[entry.id] = value
+        do {
+            try persist(overrides: updated)
+            overrides = updated
+            apply(entry: entry.id, override: value)
+            hasLocalChanges = true
+            saveState = .saved(Date())
+        } catch {
+            saveState = .failed(error.localizedDescription)
+            throw error
+        }
+    }
+
     func save(
         entry: DiaryEntry,
         text: String,
@@ -267,7 +382,7 @@ final class DiaryStore: ObservableObject {
         guard overrides[entry.id] != nil else { return }
 
         overrides[entry.id] = nil
-        hasLocalChanges = !overrides.isEmpty
+        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !timelineAnnotations.isEmpty
         saveState = .idle
 
         if entry.id.hasPrefix("local-") {
@@ -290,7 +405,8 @@ final class DiaryStore: ObservableObject {
         overrides = [:]
         dismissedDrafts = []
         careAcknowledgments = []
-        hasLocalChanges = !quickCaptures.isEmpty
+        savedQueries = []
+        hasLocalChanges = !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !timelineAnnotations.isEmpty
         saveState = .idle
 
         if let baseData {
@@ -306,7 +422,7 @@ final class DiaryStore: ObservableObject {
             if let legacyStateURL, fileManager.fileExists(atPath: legacyStateURL.path) {
                 try fileManager.removeItem(at: legacyStateURL)
             }
-            if !quickCaptures.isEmpty {
+            if !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !timelineAnnotations.isEmpty {
                 try persist()
             } else {
                 isEncrypted = false
@@ -448,6 +564,7 @@ final class DiaryStore: ObservableObject {
 
         guard fileManager.fileExists(atPath: url.path) else {
             loadExternalOrBundledSnapshot()
+            watchExternalSnapshot()
             return
         }
 
@@ -456,6 +573,9 @@ final class DiaryStore: ObservableObject {
 
         if modified != externalSourceModifiedAt {
             loadExternalOrBundledSnapshot()
+            // The pipeline writes with an atomic replace, which swaps the inode.
+            // Reattach so future updates continue to be observed.
+            watchExternalSnapshot()
         }
     }
 
@@ -473,7 +593,10 @@ final class DiaryStore: ObservableObject {
             dismissedDrafts: dismissedDrafts.reduce(into: [:]) { result, value in result[value] = Date() },
             careAcknowledgments: careAcknowledgments.reduce(into: [:]) { result, value in result[value] = Date() },
             autoDraftPaused: autoDraftPaused,
-            activitySessions: exportedActivity
+            activitySessions: exportedActivity,
+            monthlyLetters: monthlyLetters,
+            savedQueries: savedQueries,
+            timelineAnnotations: timelineAnnotations
         )
 
         let encoder = JSONEncoder()
@@ -495,10 +618,13 @@ final class DiaryStore: ObservableObject {
 
         overrides = payload.overrides
         quickCaptures = payload.quickCaptures
+        monthlyLetters = payload.monthlyLetters ?? [:]
+        savedQueries = payload.savedQueries ?? []
+        timelineAnnotations = payload.timelineAnnotations ?? [:]
         dismissedDrafts = Set(payload.dismissedDrafts.keys)
         careAcknowledgments = Set(payload.careAcknowledgments.keys)
         autoDraftPaused = payload.autoDraftPaused ?? false
-        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty
+        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
 
         if let restoredData = payload.data, let directory = supportDirectory {
             let restoredURL = directory.appendingPathComponent("RestoredBackup.json", isDirectory: false)
@@ -525,6 +651,7 @@ final class DiaryStore: ObservableObject {
         try persist()
         isEncrypted = true
         try restoreActivity?(payload.activitySessions ?? [])
+        localStateReadFailed = false
         saveState = .saved(Date())
     }
 
@@ -545,63 +672,14 @@ final class DiaryStore: ObservableObject {
 
     var stateFileSummary: String {
         if isEncrypted {
-            return "AES-GCM 加密 · 钥匙串保护密钥"
+            return "AES-GCM 加密 · 本机用户权限保护密钥"
         }
         return hasLocalChanges ? "本地状态明文（旧版格式）" : "尚未写入修改"
     }
 
     private func apply(entry id: String, override: EntryOverride) {
-        guard data != nil else { return }
-
-        if let index = data?.entries.firstIndex(where: { $0.id == id }) {
-            data?.entries[index].overview = override.overview
-            data?.entries[index].score = Double(overallScore(override))
-            data?.entries[index].tags = override.tags
-            data?.entries[index].category = override.category
-            data?.entries[index].metrics = metrics(for: override)
-            data?.entries[index].stage = stage(for: overallScore(override))
-        } else if var updatedData = data, let date = dateFromLocalID(id) {
-            let newEntry = DiaryEntry(
-                pageID: id,
-                date: date,
-                score: Double(overallScore(override)),
-                daily: nil,
-                overview: override.overview,
-                thoughts: nil,
-                memos: nil,
-                tags: override.tags,
-                category: override.category,
-                metrics: metrics(for: override),
-                stage: stage(for: overallScore(override))
-            )
-            updatedData.entries.append(newEntry)
-            updatedData.entries.sort { $0.date < $1.date }
-            data = updatedData
-        }
-    }
-
-    private func stage(for score: Int) -> Stage {
-        if score >= 70 {
-            return Stage(label: "积极", color: "#7CB342")
-        }
-        if score >= 40 {
-            return Stage(label: "平稳", color: "#D4A017")
-        }
-        return Stage(label: "低落", color: "#E57373")
-    }
-
-    private func metrics(for override: EntryOverride) -> DayMetrics {
-        DayMetrics(
-            mood: Double(override.mood),
-            energy: Double(override.energy),
-            focus: Double(override.focus),
-            output: Double(override.output),
-            overall: Double(overallScore(override))
-        )
-    }
-
-    private func overallScore(_ override: EntryOverride) -> Int {
-        Int(Double(override.mood) * 0.4 + Double(override.output) * 0.25 + Double(override.focus) * 0.2 + Double(override.energy) * 0.15)
+        guard let current = data else { return }
+        data?.entries = JournalWriting.merging(entries: current.entries, overrides: [id: override])
     }
 
     private func dateFromLocalID(_ id: String) -> String? {
@@ -619,13 +697,17 @@ final class DiaryStore: ObservableObject {
                 let state = try decoder.decode(UserState.self, from: plaintext)
                 overrides = state.entries
                 quickCaptures = state.quickCaptures ?? [:]
+                monthlyLetters = state.monthlyLetters ?? [:]
+                savedQueries = state.savedQueries ?? []
+                timelineAnnotations = state.timelineAnnotations ?? [:]
                 dismissedDrafts = Set((state.dismissedDrafts ?? [:]).keys)
                 careAcknowledgments = Set((state.careAcknowledgments ?? [:]).keys)
                 autoDraftPaused = state.autoDraftPaused ?? false
                 draftPausedUntil = state.draftPausedUntil
-                hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty
+                hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
                 isEncrypted = true
             } catch {
+                localStateReadFailed = true
                 loadError = "本地日记无法读取：\(error.localizedDescription)"
             }
             return
@@ -639,15 +721,19 @@ final class DiaryStore: ObservableObject {
                 let state = try decoder.decode(UserState.self, from: raw)
                 overrides = state.entries
                 quickCaptures = state.quickCaptures ?? [:]
+                monthlyLetters = state.monthlyLetters ?? [:]
+                savedQueries = state.savedQueries ?? []
+                timelineAnnotations = state.timelineAnnotations ?? [:]
                 dismissedDrafts = Set((state.dismissedDrafts ?? [:]).keys)
                 careAcknowledgments = Set((state.careAcknowledgments ?? [:]).keys)
                 autoDraftPaused = state.autoDraftPaused ?? false
                 draftPausedUntil = state.draftPausedUntil
-                hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty
+                hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
                 try persist()
                 try? fileManager.removeItem(at: legacyStateURL)
                 isEncrypted = true
             } catch {
+                localStateReadFailed = true
                 loadError = "旧版本地日记迁移失败：\(error.localizedDescription)"
             }
         }
@@ -660,7 +746,8 @@ final class DiaryStore: ObservableObject {
         }
 
         guard let url = bundledURL else {
-            let empty = DiaryData(generated: "", today: "", poem: "情绪会沉淀，日子会向前。", entries: [])
+            let seeds = quickCaptures.keys.map { DiaryEntry(pageID: "ingested-\($0)", date: $0) }
+            let empty = DiaryData(generated: "", today: "", poem: "情绪会沉淀，日子会向前。", entries: JournalWriting.merging(entries: seeds, overrides: overrides))
             baseData = empty
             data = empty
             return
@@ -686,91 +773,26 @@ final class DiaryStore: ObservableObject {
     }
 
     private func mergeSnapshotData(_ decoded: DiaryData, from url: URL) {
-            var effective = decoded
-            for (index, entry) in decoded.entries.enumerated() {
-                if let override = overrides[entry.id] {
-                    effective.entries[index].overview = override.overview
-                    effective.entries[index].score = Double(overallScore(override))
-                    effective.entries[index].tags = override.tags
-                    effective.entries[index].category = override.category
-                    effective.entries[index].metrics = metrics(for: override)
-                    effective.entries[index].stage = stage(for: overallScore(override))
-                }
+        var effective = decoded
+        let knownDates = Set(effective.entries.map(\.date))
+        let ingestedDates = Set(ingestedHealth.keys).union(ingestedScores.keys).union(quickCaptures.keys)
+        for date in ingestedDates.subtracting(knownDates).sorted() {
+            effective.entries.append(DiaryEntry(pageID: "ingested-\(date)", date: date))
+        }
+        for index in effective.entries.indices {
+            let date = effective.entries[index].date
+            if let health = ingestedHealth[date] { effective.entries[index].health = health }
+            if let score = ingestedScores[date] {
+                effective.entries[index].score = Double(score)
+                var metrics = effective.entries[index].metrics ?? DayMetrics()
+                metrics.mood = Double(score)
+                effective.entries[index].metrics = metrics
             }
-
-            for (id, override) in overrides where id.hasPrefix("local-") {
-                guard let date = dateFromLocalID(id) else { continue }
-
-                effective.entries.append(
-                    DiaryEntry(
-                        pageID: id,
-                        date: date,
-                        score: Double(overallScore(override)),
-                        daily: nil,
-                        overview: override.overview,
-                        thoughts: nil,
-                        memos: nil,
-                        tags: override.tags,
-                        category: override.category,
-                        metrics: metrics(for: override),
-                        stage: stage(for: overallScore(override))
-                    )
-                )
-            }
-
-            let knownDates = Set(effective.entries.map(\.date))
-            var ingestedDates = Set(ingestedHealth.keys)
-            ingestedScores.keys.forEach { ingestedDates.insert($0) }
-            quickCaptures.keys.forEach { ingestedDates.insert($0) }
-
-            for date in ingestedDates.subtracting(knownDates).sorted() {
-                let score = ingestedScores[date]
-                let metrics = DayMetrics(
-                    mood: Double(score ?? 50),
-                    energy: 65,
-                    focus: 65,
-                    output: 65,
-                    overall: Double(score ?? 50)
-                )
-                effective.entries.append(
-                    DiaryEntry(
-                        pageID: "ingested-\(date)",
-                        date: date,
-                        score: score.map(Double.init),
-                        daily: nil,
-                        overview: "",
-                        thoughts: nil,
-                        memos: nil,
-                        tags: [],
-                        category: "身心",
-                        metrics: metrics,
-                        stage: stage(for: score ?? 50)
-                    )
-                )
-            }
-
-            for index in effective.entries.indices {
-                let date = effective.entries[index].date
-                if let health = ingestedHealth[date] {
-                    effective.entries[index].health = health
-                }
-                if let override = overrides[effective.entries[index].id] {
-                    effective.entries[index].overview = override.overview
-                    effective.entries[index].score = Double(overallScore(override))
-                    effective.entries[index].tags = override.tags
-                    effective.entries[index].category = override.category
-                    effective.entries[index].metrics = metrics(for: override)
-                    effective.entries[index].stage = stage(for: overallScore(override))
-                } else if let score = ingestedScores[date] {
-                    effective.entries[index].score = Double(score)
-                    effective.entries[index].metrics?.mood = Double(score)
-                }
-            }
-
-            effective.entries.sort { $0.date < $1.date }
-            data = effective
-            loadError = nil
-            externalSourceModifiedAt = fileModificationDate(for: url)
+        }
+        effective.entries = JournalWriting.merging(entries: effective.entries, overrides: overrides)
+        data = effective
+        loadError = nil
+        externalSourceModifiedAt = fileModificationDate(for: url)
     }
 
     private func watchExternalSnapshot() {
@@ -808,18 +830,26 @@ final class DiaryStore: ObservableObject {
         try? fileManager.attributesOfItem(atPath: url.path)[.modificationDate] as? Date
     }
 
-    private func persist() throws {
+    private func persist(
+        overrides replacementOverrides: [String: EntryOverride]? = nil,
+        monthlyLetters replacementLetters: [String: MonthlyLetter]? = nil,
+        savedQueries replacementQueries: [SavedQuery]? = nil,
+        timelineAnnotations replacementAnnotations: [String: TimelineAnnotation]? = nil
+    ) throws {
         guard let stateURL, let supportDirectory else {
             throw NSError(domain: "RiverDiaryMac", code: 1, userInfo: [NSLocalizedDescriptionKey: "无法访问应用支持目录"])
         }
 
         let state = UserState(
-            entries: overrides,
+            entries: replacementOverrides ?? overrides,
             quickCaptures: quickCaptures,
             dismissedDrafts: dismissedDrafts.reduce(into: [:]) { result, value in result[value] = Date() },
             careAcknowledgments: careAcknowledgments.reduce(into: [:]) { result, value in result[value] = Date() },
             autoDraftPaused: autoDraftPaused,
-            draftPausedUntil: draftPausedUntil
+            draftPausedUntil: draftPausedUntil,
+            monthlyLetters: replacementLetters ?? monthlyLetters,
+            savedQueries: replacementQueries ?? savedQueries,
+            timelineAnnotations: replacementAnnotations ?? timelineAnnotations
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

@@ -14,6 +14,7 @@ enum AIKeychainError: LocalizedError {
 enum AIKeychain {
     private static let service = "RiverDiaryMac.ai"
     private static let legacyAccount = "footprint-api-key"
+    private static let migrationCheckedKey = "ai.keychain.migrationChecked"
 
     private static func account(for profileID: String) -> String {
         "footprint-api-key-\(profileID)"
@@ -28,17 +29,30 @@ enum AIKeychain {
     }
 
     static func hasKey(for profileID: String) -> Bool {
-        var query = keychainQuery(account: account(for: profileID))
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-        if SecItemCopyMatching(query as CFDictionary, nil) == errSecSuccess { return true }
-
-        var legacyQuery = keychainQuery(account: legacyAccount)
-        legacyQuery[kSecMatchLimit as String] = kSecMatchLimitOne
-        if SecItemCopyMatching(legacyQuery as CFDictionary, nil) == errSecSuccess { return true }
-        return AISecureKeyStore.hasKey(for: profileID)
+        if AISecureKeyStore.hasKey(for: profileID) { return true }
+        guard !UserDefaults.standard.bool(forKey: migrationCheckedKey) else { return false }
+        guard let key = readKeychain(for: profileID) else {
+            UserDefaults.standard.set(true, forKey: migrationCheckedKey)
+            return false
+        }
+        try? AISecureKeyStore.saveKey(key, for: profileID)
+        UserDefaults.standard.set(true, forKey: migrationCheckedKey)
+        return true
     }
 
     static func readKey(for profileID: String) -> String? {
+        if let key = AISecureKeyStore.readKey(for: profileID) { return key }
+        guard !UserDefaults.standard.bool(forKey: migrationCheckedKey) else { return nil }
+        guard let key = readKeychain(for: profileID) else {
+            UserDefaults.standard.set(true, forKey: migrationCheckedKey)
+            return nil
+        }
+        try? AISecureKeyStore.saveKey(key, for: profileID)
+        UserDefaults.standard.set(true, forKey: migrationCheckedKey)
+        return key
+    }
+
+    private static func readKeychain(for profileID: String) -> String? {
         var item: CFTypeRef?
         var query = keychainQuery(account: account(for: profileID))
         query[kSecReturnData as String] = true
@@ -56,26 +70,12 @@ enum AIKeychain {
            let key = String(data: data, encoding: .utf8), !key.isEmpty {
             return key
         }
-        return AISecureKeyStore.readKey(for: profileID)
+        return nil
     }
 
     static func saveKey(_ value: String, for profileID: String) throws {
         try AISecureKeyStore.saveKey(value, for: profileID)
-        let keyData = Data(value.utf8)
-        var query = keychainQuery(account: account(for: profileID))
-        let update: [String: Any] = [kSecValueData as String: keyData]
-        let updateStatus = SecItemUpdate(query as CFDictionary, update as CFDictionary)
-        if updateStatus == errSecSuccess { return }
-        if updateStatus != errSecItemNotFound {
-            throw AIKeychainError.invalidStatus(updateStatus)
-        }
-
-        query[kSecValueData as String] = keyData
-        query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        let addStatus = SecItemAdd(query as CFDictionary, nil)
-        guard addStatus == errSecSuccess else {
-            throw AIKeychainError.invalidStatus(addStatus)
-        }
+        UserDefaults.standard.set(true, forKey: migrationCheckedKey)
     }
 
     static func deleteKey(for profileID: String) {

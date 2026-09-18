@@ -8,7 +8,9 @@ enum ActivityFusionEngine {
         entry: DiaryEntry?,
         liveSessions: [ActivitySession]
     ) -> FusedDayStats {
-        let live = liveSessions.sorted { $0.start < $1.start }
+        let live = liveSessions.filter {
+            ActivityClassifier.isRecordable(appName: $0.appName, bundleID: $0.bundleID)
+        }.sorted { $0.start < $1.start }
         let pipelineTotal = Double(entry?.screenMinutes ?? 0) * 60
         let liveTotal = live.reduce(0) { $0 + $1.duration }
         let appItems = fusedAppUsage(entry: entry, live: live, pipelineTotal: pipelineTotal)
@@ -436,4 +438,3 @@ enum ActivityFusionEngine {
         return lines.joined()
     }
 }
-

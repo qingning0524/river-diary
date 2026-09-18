@@ -10,14 +10,10 @@ struct RiverDiaryMacApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(store: store, activity: activity, ai: ai, ingestion: ingestion)
-                .onAppear {
-                    ingestion.attach(to: store, activity: activity)
-                    ingestion.start()
-                }
                 .onDisappear {
                     ingestion.stop()
                 }
-                .frame(minWidth: 1240, minHeight: 800)
+                .frame(minWidth: 1120, minHeight: 720)
         }
         .defaultSize(width: 1420, height: 920)
         .windowStyle(.hiddenTitleBar)
