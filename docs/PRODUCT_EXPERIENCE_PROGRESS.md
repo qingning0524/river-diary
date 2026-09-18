@@ -48,3 +48,19 @@
 - swift build --disable-sandbox：通过
 - swift test --disable-sandbox：80 项通过（0 失败）
 - 提交：`feat: mature macOS product experience (...)`（6 文件，+802/-148）
+
+## 追加：旧页面清理 + V2 数据层（2026-09-19 第二轮）
+
+### 旧页面清理（Phase 12 起点）
+- 删除 25 个无引用的旧页面/旧容器文件（AIAnalysis、AIRequiredSetup、AITaskCard、Activity、DataExplorer、DayTimeline、FlowViews、Insight、LocalReview、MemoryArchive、Memory、MonthlyLetterCard、MoodAreaChart、NavigationDateCard、Notes、Rhythm、River、Root、SavedQueryEditor、TimelineAnnotationEditor、TimelineJournalPanel、TimelineSegmentCard、TimelineWorkspaceHeader、TodayDateSelector、TodayView）。
+- 保留：AIConnectionCard（Settings 用）、AppLockGate、PrivacyView、QuickCaptureView、NavigationModels、WorkspaceUtilities（测试依赖其 parsedDate）。
+- 纯模型 LifeSegment / RiverLetter / Pearson 从 Rhythm 视图抽到 `Domain/LifeRhythm.swift`，测试继续通过，数据层不丢。
+- 旧能力去向：月度信(RiverLetter)模型与 store.monthlyLetters 数据仍在；采集与健康概览由 Settings/PrivacyView 与 Today 采集态承接；搜索由 Memory/Ask 承接；AI 由 Settings→配置 AI 承接。旧页面入口不再存在（这是本次“完成旧页面”的语义）。
+- 验收：swift build 通过；swift test 93 项通过。
+
+### V2 数据层（Phase 2–3 完成）
+- Domain 模型：RawEvent / Activity / Episode / Memory / AnalysisRun / EvidenceRef（纯 Codable+Hashable，带证据溯源辅助）。
+- `Storage/V2Store.swift`：独立 `river-v2.db`，建 9 张表 + 索引；raw_events 追加式，clearDerivedData 只清可重建衍生表、保留证据。
+- `docs/RIVER_V2_MIGRATION.md`：迁移策略（未执行，旧库不动）。
+- 验证：新增 13 项测试，总计 93 项全部通过。
+- 未做（下一步）：采集器写入 raw_events、Normalizer→Activity、EpisodeEngine、MemoryEngine、Ask grounding 接入 UI。
