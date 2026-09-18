@@ -10,10 +10,11 @@ struct SettingsRedesignView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Settings")
-                    .font(.system(size: 28, weight: .semibold, design: .serif))
+                    .font(.editorial(28, weight: .semibold))
+                    .foregroundStyle(Color.ink)
                 Text("Every record is yours to decide how it stays.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .font(.ui(11))
+                    .foregroundStyle(Color.secondaryInk)
 
                 PrivacyView(
                     store: store,

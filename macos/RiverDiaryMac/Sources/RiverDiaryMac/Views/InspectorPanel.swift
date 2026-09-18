@@ -169,7 +169,7 @@ struct InspectorPanel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold, design: .serif))
+                    .font(.editorial(16, weight: .semibold))
                 section("Diary") {
                     ForEach(Array(entries.prefix(12)), id: \.id) { entry in
                         VStack(alignment: .leading, spacing: 3) {

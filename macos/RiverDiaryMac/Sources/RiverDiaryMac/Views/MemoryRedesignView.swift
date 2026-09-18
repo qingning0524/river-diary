@@ -30,12 +30,17 @@ struct MemoryRedesignView: View {
     }
 
     private var important: [MemoryArchiveDay] {
-        let favoredKeys = Set(store.timelineAnnotations.filter { $0.value.isFavorite }.map(\.key))
+        let favoredKeys = store.timelineAnnotations.filter { $0.value.isFavorite }
+        let favoriteDates = Set(favoredKeys.map(\.key).compactMap { key -> String? in
+            guard let first = key.split(separator: "|").first,
+                  let timestamp = Int64(first) else { return nil }
+            return DiaryEntry.dateFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(timestamp)))
+        })
         let days = MemoryArchive.days(entries: store.entries, captures: store.quickCaptures)
         return days.filter { day in
             let tagged = !(day.entry.tags ?? []).isEmpty
-            let annotated = favoredKeys.contains { $0.contains(day.entry.date) }
-            return tagged || annotated
+            let favored = favoriteDates.contains(day.entry.date)
+            return tagged || favored
         }
         .prefix(5)
         .map { $0 }
@@ -180,7 +185,7 @@ private struct MemoryRow: View {
                 .font(.system(size: 11).monospacedDigit())
                 .foregroundStyle(.secondary)
             Text(day.preview)
-                .font(.system(size: 14, weight: .medium, design: .serif))
+                .font(.editorial(14, weight: .medium))
                 .lineLimit(2)
             Text(detail)
                 .font(.system(size: 10))

@@ -111,7 +111,7 @@ struct AskRedesignView: View {
                     }
                 }
                 Text(memory.summary)
-                    .font(.system(size: 17, weight: .regular, design: .serif))
+                    .font(.editorial(17, weight: .regular))
                     .lineSpacing(6)
                     .textSelection(.enabled)
                     .frame(maxWidth: 640, alignment: .leading)

@@ -6,7 +6,6 @@ struct TodayRedesignView: View {
     @ObservedObject var activity: ActivityStore
     @Binding var selectedDate: Date
     var onSelectTimelineItem: (ActivityTimelineItem) -> Void
-    var onAskEvidence: (String, [DiaryEntry], [QuickCapture]) -> Void
     var onShowCapture: () -> Void
 
     private var entry: DiaryEntry { store.entry(for: selectedDate) }
@@ -27,6 +26,7 @@ struct TodayRedesignView: View {
 
     private var isToday: Bool { Calendar.current.isDateInToday(selectedDate) }
     private var nowSession: ActivitySession? { isToday ? activity.activeSession : nil }
+    @State private var selectedItemID: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -125,10 +125,14 @@ struct TodayRedesignView: View {
                         emptyState
                     } else {
                         ForEach(Array(timeline.items.enumerated()), id: \.element.id) { _, item in
-                            EpisodeRow(item: item, isSelected: false)
+                            EpisodeRow(item: item, isSelected: selectedItemID == item.id)
                                 .contentShape(Rectangle())
-                                .onTapGesture { onSelectTimelineItem(item) }
+                                .onTapGesture {
+                                    selectedItemID = item.id
+                                    onSelectTimelineItem(item)
+                                }
                         }
+                        .animation(.easeOut(duration: 0.16), value: selectedItemID)
                     }
                 }
                 .padding(.horizontal, 28)
@@ -163,6 +167,11 @@ struct EpisodeRow: View {
         item.start.formatted(date: .omitted, time: .shortened)
     }
 
+    private var backgroundFill: Color {
+        if isSelected { return Color.riverAmethyst.opacity(0.08) }
+        return isHovering ? Color.primary.opacity(0.03) : Color.clear
+    }
+
     private var markerColor: Color {
         switch item.kind {
         case .capture: Color.accentColor
@@ -192,11 +201,13 @@ struct EpisodeRow: View {
         .padding(.leading, 20)
         .padding(.trailing, 8)
         .contentShape(Rectangle())
-        .background(
-            isHovering ? Color.primary.opacity(0.03) : Color.clear,
-            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .background(backgroundFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(isSelected ? Color.riverAmethyst.opacity(0.32) : Color.clear, lineWidth: 1)
         )
-        .animation(.easeOut(duration: 0.12), value: isHovering)
+        .animation(.easeOut(duration: 0.14), value: isHovering)
+        .animation(.easeOut(duration: 0.16), value: isSelected)
         .onHover { hover in isHovering = hover }
     }
 
@@ -258,7 +269,7 @@ struct NowRow: View {
                 .padding(.top, 7)
             VStack(alignment: .leading, spacing: 4) {
                 Text(session.appName)
-                    .font(.system(size: 15, weight: .semibold, design: .serif))
+                    .font(.editorial(15, weight: .semibold))
                 if let title = session.windowTitle, !title.isEmpty {
                     Text(title)
                         .font(.system(size: 12))

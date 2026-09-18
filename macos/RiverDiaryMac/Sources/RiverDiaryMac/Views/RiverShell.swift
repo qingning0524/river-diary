@@ -241,10 +241,6 @@ struct RiverShellView: View {
                 onSelectTimelineItem: { item in
                     inspectorContent = .episode(item)
                 },
-                onAskEvidence: { title, entries, captures in
-                    inspectorContent = .evidence(title: title, entries: entries, captures: captures)
-                    destination = .ask
-                },
                 onShowCapture: { showsCapture = true }
             )
         case .memory:

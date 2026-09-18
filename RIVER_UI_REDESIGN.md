@@ -270,3 +270,25 @@ Migration 不混入数据层重构；数据层（V2 Store）按 `RIVER_REFACTOR_
 - 视觉自律：系统字体、semantic colors、timeline 连续线、Inspector 滑入，无紫色渐变、无大欢迎横幅、无粒子。
 
 > 等待确认后再开始任意 UI 代码改动。
+
+---
+
+## 8. 执行状态（autonomous run，2026-09-19）
+
+| 步 | 状态 | 说明 |
+|---|---|---|
+| M1 | ✅ | NavigationSplitView 壳 + Inspector 容器 |
+| M2 | ✅ | 选择驱动 Inspector |
+| M3 | ✅ | Today 时间线优先，去除卡片栏，NOW 行 |
+| M4 | ✅ | 时间线并入 Today；情绪河/节律已从导航移除（代码 ARCHIVE） |
+| M5 | ✅ | Memory = 搜索 + Recent/Projects/Important |
+| M6 | ✅ | Ask 本地证据化问答 + Evidence Inspector |
+| M7 | ✅ | Settings 收敛，移除高级数据页 |
+| M8 | ✅ | 移除强制 AI 门禁 |
+| M9 | ✅ | 字体层级 / 语义色 / 悬停与选择动画已统一（参考预重构风格，几乎无渐变） |
+| M10 | ✅ | Build + 80 项测试通过；`.app` 已重新签名打包 |
+
+已同步修复：
+- 切换导航时 Inspector 自动关闭（不再跨页残留）。
+- Memory「Important」收藏日期映射改为按真实时间戳换算。
+- 清除未使用参数。
