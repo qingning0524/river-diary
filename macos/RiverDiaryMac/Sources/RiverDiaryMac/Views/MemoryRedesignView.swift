@@ -103,15 +103,20 @@ struct MemoryRedesignView: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text("Memory")
-                .font(.system(size: 28, weight: .semibold, design: .serif))
+            VStack(alignment: .leading, spacing: 5) {
+                Text("记住那些值得记住的")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .tracking(1.4)
+                    .foregroundStyle(Color.riverAmethyst)
+                Text("Memory")
+                    .font(.editorial(30, weight: .semibold))
+                    .foregroundStyle(Color.ink)
+            }
             Spacer()
-            Text("记住那些值得记住的。")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 24)
         .padding(.top, 16)
+        .padding(.bottom, 12)
     }
 
     private var searchField: some View {

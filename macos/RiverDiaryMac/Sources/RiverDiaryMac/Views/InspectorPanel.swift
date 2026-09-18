@@ -37,7 +37,8 @@ struct InspectorPanel: View {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(item.title)
-                        .font(.system(size: 18, weight: .semibold, design: .serif))
+                        .font(.editorial(18, weight: .semibold))
+                        .foregroundStyle(Color.ink)
                     HStack(spacing: 8) {
                         Text(clockRange(item))
                         if item.duration > 0 { Text(ActivityFormatter.time(item.duration)) }
@@ -51,7 +52,8 @@ struct InspectorPanel: View {
                 } else {
                     section("Summary") {
                         Text(item.summary)
-                            .font(.system(size: 12))
+                            .font(.ui(12))
+                            .foregroundStyle(Color.secondaryInk)
                             .lineSpacing(5)
                         if let note = item.annotation?.note, !note.isEmpty {
                             Text(note)
@@ -212,9 +214,9 @@ struct InspectorPanel: View {
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title.uppercased())
-                .font(.system(size: 10, weight: .medium))
-                .tracking(1)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .tracking(1.2)
+                .foregroundStyle(Color.secondaryInk.opacity(0.8))
             content()
         }
     }

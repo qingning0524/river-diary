@@ -92,6 +92,11 @@ struct RiverShellView: View {
         .onDisappear {
             ingestion.stop()
         }
+        .onChange(of: destination) { oldValue, newValue in
+            if oldValue != newValue {
+                inspectorContent = nil
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             store.checkExternalSnapshotChanged()
             if appLockEnabled && !isLocked { isLocked = true }
@@ -109,27 +114,28 @@ struct RiverShellView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 9) {
-                Image(systemName: "water.waves")
-                    .font(.system(size: 20, weight: .light))
+            HStack(spacing: 10) {
+                brandMark
                 Text("River")
-                    .font(.system(size: 17, weight: .medium, design: .serif))
+                    .font(.editorial(19, weight: .semibold))
+                    .foregroundStyle(Color.ink)
             }
             .padding(.horizontal, 14)
-            .padding(.top, 20)
-            .padding(.bottom, 28)
+            .padding(.top, 22)
+            .padding(.bottom, 26)
 
-            VStack(spacing: 2) {
-                sidebarButton(.today)
-                sidebarButton(.memory)
-                sidebarButton(.ask)
-            }
+            sidebarLabel("留在当下")
+            sidebarButton(.today)
+
+            sidebarLabel("回头看看").padding(.top, 20)
+            sidebarButton(.memory)
+            sidebarButton(.ask)
 
             Rectangle()
-                .fill(Color.secondary.opacity(0.25))
+                .fill(Color.separator)
                 .frame(height: 1)
                 .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                .padding(.vertical, 12)
 
             sidebarButton(.settings)
 
@@ -138,28 +144,55 @@ struct RiverShellView: View {
             Button {
                 showsCapture = true
             } label: {
-                Label("写一句", systemImage: "square.and.pencil")
-                    .font(.system(size: 12))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 7)
-                    .padding(.horizontal, 14)
-                    .contentShape(Rectangle())
+                HStack(spacing: 8) {
+                    Image(systemName: "square.and.pencil")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("写一句")
+                        .font(.ui(12, weight: .semibold))
+                    Spacer()
+                }
+                .foregroundStyle(Color.secondaryInk)
+                .padding(.horizontal, 13)
+                .frame(height: 32)
+                .background(Color.chip, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
 
-            HStack(spacing: 6) {
+            HStack(spacing: 7) {
                 Circle()
-                    .fill(activity.isTracking ? Color.green : Color.secondary.opacity(0.5))
+                    .fill(activity.isTracking ? Color(hex: "#2C8158") : Color.secondaryInk.opacity(0.45))
                     .frame(width: 6, height: 6)
                 Text(activity.isTracking ? "Recording" : "Recording paused")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Color.secondaryInk)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
         }
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .background(Color.sidebarSurface)
+    }
+
+    private var brandMark: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(Color.riverAmethyst)
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+        }
+        .frame(width: 30, height: 30)
+    }
+
+    private func sidebarLabel(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.system(size: 9, weight: .medium))
+            .tracking(1.2)
+            .foregroundStyle(Color.secondaryInk.opacity(0.7))
+            .padding(.leading, 14)
+            .padding(.bottom, 6)
+            .padding(.top, 2)
     }
 
     private func sidebarButton(_ item: RiverDestination) -> some View {
@@ -169,19 +202,29 @@ struct RiverShellView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: item.symbol)
-                    .font(.system(size: 14))
+                    .font(.system(size: 14, weight: selected ? .semibold : .regular))
                     .frame(width: 18)
                 Text(item.title)
-                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    .font(.ui(13, weight: selected ? .semibold : .regular))
                 Spacer()
+                if selected {
+                    Circle()
+                        .fill(Color.riverAmethyst)
+                        .frame(width: 5, height: 5)
+                }
             }
-            .foregroundStyle(selected ? Color.primary : Color.secondary)
+            .foregroundStyle(selected ? Color.ink : Color.secondaryInk)
             .padding(.horizontal, 13)
-            .frame(height: 34)
-            .background(selected ? Color.accentColor.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 8))
+            .frame(height: 36)
+            .background(selected ? Color.strongSurface : .clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(selected ? Color.separator : Color.clear, lineWidth: 1)
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, 6)
         .keyboardShortcut(KeyEquivalent(Character("\(item.shortcutNumber)")), modifiers: .command)
     }
 

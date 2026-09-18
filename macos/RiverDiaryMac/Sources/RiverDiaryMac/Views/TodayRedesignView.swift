@@ -41,18 +41,23 @@ struct TodayRedesignView: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("A PAGE OF YOUR LIFE")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .tracking(1.6)
+                    .foregroundStyle(Color.riverAmethyst)
                 Text("Today")
-                    .font(.system(size: 28, weight: .semibold, design: .serif))
+                    .font(.editorial(30, weight: .semibold))
+                    .foregroundStyle(Color.ink)
                 Text(subheadline)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .font(.ui(11))
+                    .foregroundStyle(Color.secondaryInk)
             }
             Spacer()
             dayNavigation
             Button(action: onShowCapture) {
                 Label("写一句", systemImage: "square.and.pencil")
-                    .font(.system(size: 12))
+                    .font(.ui(12, weight: .semibold))
             }
             .buttonStyle(.bordered)
         }
@@ -83,7 +88,7 @@ struct TodayRedesignView: View {
                     .font(.system(size: 12))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(isToday ? Color.secondary : Color.accentColor)
+            .foregroundStyle(isToday ? Color.secondary : Color.riverAmethyst)
 
             Button(action: { moveDay(1) }) {
                 Image(systemName: "chevron.right")
@@ -152,6 +157,7 @@ struct TodayRedesignView: View {
 struct EpisodeRow: View {
     let item: ActivityTimelineItem
     let isSelected: Bool
+    @State private var isHovering = false
 
     private var clock: String {
         item.start.formatted(date: .omitted, time: .shortened)
@@ -185,6 +191,13 @@ struct EpisodeRow: View {
         }
         .padding(.leading, 20)
         .padding(.trailing, 8)
+        .contentShape(Rectangle())
+        .background(
+            isHovering ? Color.primary.opacity(0.03) : Color.clear,
+            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+        )
+        .animation(.easeOut(duration: 0.12), value: isHovering)
+        .onHover { hover in isHovering = hover }
     }
 
     @ViewBuilder
@@ -197,10 +210,11 @@ struct EpisodeRow: View {
         } else {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title)
-                    .font(.system(size: 15, weight: .semibold, design: item.kind == .activity ? .serif : .default))
+                    .font(.editorial(15, weight: .semibold))
+                    .foregroundStyle(Color.ink)
                 Text(item.summary)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .font(.ui(12))
+                    .foregroundStyle(Color.secondaryInk)
                     .lineLimit(2)
                 if !item.apps.isEmpty {
                     HStack(spacing: 6) {

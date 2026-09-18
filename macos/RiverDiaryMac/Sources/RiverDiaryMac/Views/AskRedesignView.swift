@@ -23,11 +23,18 @@ struct AskRedesignView: View {
     var body: some View {
         VStack(alignment: .center, spacing: 24) {
             Spacer(minLength: 40)
-            Text("Ask River")
-                .font(.system(size: 30, weight: .semibold, design: .serif))
-            Text("Ask about your past. Answers point back to evidence.")
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+            VStack(alignment: .center, spacing: 6) {
+                Text("ASK YOUR PAST")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .tracking(1.8)
+                    .foregroundStyle(Color.riverAmethyst)
+                Text("Ask River")
+                    .font(.editorial(32, weight: .semibold))
+                    .foregroundStyle(Color.ink)
+            }
+            Text("Answers point back to evidence.")
+                .font(.ui(12))
+                .foregroundStyle(Color.secondaryInk)
 
             HStack(spacing: 8) {
                 TextField("Ask…", text: $query)
