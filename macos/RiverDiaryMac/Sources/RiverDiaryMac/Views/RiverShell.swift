@@ -76,6 +76,16 @@ struct RiverShellView: View {
                 .onExitCommand {
                     if inspectorContent != nil { inspectorContent = nil }
                 }
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            showsCapture = true
+                        } label: {
+                            Label("写一句", systemImage: "square.and.pencil")
+                        }
+                        .keyboardShortcut("n", modifiers: .command)
+                    }
+                }
         }
         .preferredColorScheme(isDimmed ? .dark : .light)
         .overlay {
