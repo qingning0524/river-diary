@@ -24,8 +24,7 @@ struct AskRedesignView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .center, spacing: 22) {
-                Spacer(minLength: 24)
+            VStack(alignment: .leading, spacing: 16) {
                 header
                 inputBar
                 if let answer {
@@ -37,26 +36,19 @@ struct AskRedesignView: View {
                 if !savedQueries.isEmpty {
                     savedQueryRow
                 }
-                Spacer(minLength: 48)
             }
-            .frame(maxWidth: .infinity, minHeight: 520, alignment: .top)
+            .frame(maxWidth: 760, minHeight: 520, alignment: .topLeading)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 40)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.horizontal, 32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var header: some View {
-        VStack(alignment: .center, spacing: 6) {
-            Text("ASK YOUR PAST")
-                .font(.system(size: 9, weight: .medium, design: .monospaced))
-                .tracking(1.8)
-                .foregroundStyle(Color.riverAmethyst)
-            Text("Ask River")
-                .font(.editorial(32, weight: .semibold))
-                .foregroundStyle(Color.ink)
-            Text("Answers point back to evidence.")
-                .font(.ui(12))
-                .foregroundStyle(Color.secondaryInk)
+        HStack {
+            PageTitle(title: "Ask River", subtitle: "答案会回到证据。")
+            Spacer()
         }
     }
 
@@ -79,10 +71,10 @@ struct AskRedesignView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(isSearching || query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
-        .font(.system(size: 14))
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-        .frame(maxWidth: 560)
+        .font(.system(size: 13))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .frame(maxWidth: 680)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
     }
 

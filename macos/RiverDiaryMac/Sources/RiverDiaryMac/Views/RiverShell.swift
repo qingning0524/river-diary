@@ -62,7 +62,7 @@ struct RiverShellView: View {
     var body: some View {
         NavigationSplitView {
             sidebar
-                .navigationSplitViewColumnWidth(min: 176, ideal: 208, max: 240)
+                .navigationSplitViewColumnWidth(min: 158, ideal: 182, max: 216)
         } detail: {
             content
                 .ignoresSafeArea()
@@ -131,116 +131,96 @@ struct RiverShellView: View {
 
     // MARK: Sidebar
 
-
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                brandMark
+            HStack(spacing: 7) {
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
                 Text("River")
-                    .font(.editorial(19, weight: .semibold))
-                    .foregroundStyle(Color.ink)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 22)
-            .padding(.bottom, 26)
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 18)
 
-            sidebarLabel("留在当下")
-            sidebarButton(.today)
+            sidebarSection("RIVER")
+            sidebarItem(.today)
 
-            sidebarLabel("回头看看").padding(.top, 20)
-            sidebarButton(.memory)
-            sidebarButton(.ask)
+            sidebarSection("MEMORY").padding(.top, 12)
+            sidebarItem(.memory)
+            sidebarItem(.ask)
 
             Rectangle()
                 .fill(Color.separator)
                 .frame(height: 1)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
 
-            sidebarButton(.settings)
+            sidebarSection("SYSTEM")
+            sidebarItem(.settings)
 
-            Spacer(minLength: 12)
+            Spacer(minLength: 8)
 
             Button {
                 showsCapture = true
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: 7) {
                     Image(systemName: "square.and.pencil")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 12))
                     Text("写一句")
-                        .font(.ui(12, weight: .semibold))
+                        .font(.system(size: 12))
                     Spacer()
                 }
-                .foregroundStyle(Color.secondaryInk)
-                .padding(.horizontal, 13)
-                .frame(height: 32)
-                .background(Color.chip, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 10)
+                .frame(height: 26)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 8)
+            .help("记录一句（⌘N）")
 
-            HStack(spacing: 7) {
+            HStack(spacing: 6) {
                 Circle()
-                    .fill(activity.isTracking ? Color(hex: "#2C8158") : Color.secondaryInk.opacity(0.45))
+                    .fill(activity.isTracking ? Color(hex: "#2C8158") : Color.secondary.opacity(0.5))
                     .frame(width: 6, height: 6)
                 Text(activity.isTracking ? "Recording" : "Recording paused")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color.secondaryInk)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
         }
-        .background(Color.sidebarSurface)
+        .background(Color(nsColor: .underPageBackgroundColor))
     }
 
-    private var brandMark: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Color.riverAmethyst)
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white)
-        }
-        .frame(width: 30, height: 30)
+    private func sidebarSection(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.leading, 12)
+            .padding(.bottom, 3)
     }
 
-    private func sidebarLabel(_ title: String) -> some View {
-        Text(title.uppercased())
-            .font(.system(size: 9, weight: .medium))
-            .tracking(1.2)
-            .foregroundStyle(Color.secondaryInk.opacity(0.7))
-            .padding(.leading, 14)
-            .padding(.bottom, 6)
-            .padding(.top, 2)
-    }
-
-    private func sidebarButton(_ item: RiverDestination) -> some View {
+    private func sidebarItem(_ item: RiverDestination) -> some View {
         let selected = destination == item
         return Button {
             destination = item
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: 9) {
                 Image(systemName: item.symbol)
-                    .font(.system(size: 14, weight: selected ? .semibold : .regular))
-                    .frame(width: 18)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(selected ? Color.accentColor : Color.secondary)
+                    .frame(width: 16)
                 Text(item.title)
-                    .font(.ui(13, weight: selected ? .semibold : .regular))
+                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    .foregroundStyle(.primary)
                 Spacer()
-                if selected {
-                    Circle()
-                        .fill(Color.riverAmethyst)
-                        .frame(width: 5, height: 5)
-                }
             }
-            .foregroundStyle(selected ? Color.ink : Color.secondaryInk)
-            .padding(.horizontal, 13)
-            .frame(height: 36)
-            .background(selected ? Color.strongSurface : .clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(selected ? Color.separator : Color.clear, lineWidth: 1)
-            )
+            .padding(.horizontal, 10)
+            .frame(height: 28)
+            .background(selected ? Color.accentColor.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

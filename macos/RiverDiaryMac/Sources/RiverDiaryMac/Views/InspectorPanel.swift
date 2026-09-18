@@ -38,7 +38,7 @@ struct InspectorPanel: View {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(item.title)
-                        .font(.editorial(18, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.ink)
                     HStack(spacing: 8) {
                         Text(clockRange(item))
@@ -122,7 +122,7 @@ struct InspectorPanel: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(16)
         }
         .onAppear { isEditing = false }
         .confirmationDialog(
@@ -212,7 +212,7 @@ struct InspectorPanel: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text(title)
-                    .font(.editorial(16, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                 section("Diary") {
                     ForEach(Array(entries.prefix(12)), id: \.id) { entry in
                         VStack(alignment: .leading, spacing: 3) {
@@ -250,7 +250,7 @@ struct InspectorPanel: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(16)
         }
     }
 

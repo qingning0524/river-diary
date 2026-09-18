@@ -22,8 +22,8 @@ struct SettingsRedesignView: View {
                 )
                 .frame(maxWidth: 720, alignment: .leading)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
             .padding(.bottom, 60)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -47,13 +47,9 @@ struct SettingsRedesignView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Settings")
-                .font(.editorial(28, weight: .semibold))
-                .foregroundStyle(Color.ink)
-            Text("Every record is yours to decide how it stays.")
-                .font(.ui(11))
-                .foregroundStyle(Color.secondaryInk)
+        HStack {
+            PageTitle(title: "Settings", subtitle: "每个记录都由你决定如何保存。")
+            Spacer()
         }
     }
 

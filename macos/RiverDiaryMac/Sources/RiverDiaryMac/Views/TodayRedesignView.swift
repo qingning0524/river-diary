@@ -54,29 +54,12 @@ struct TodayRedesignView: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("A PAGE OF YOUR LIFE")
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .tracking(1.6)
-                    .foregroundStyle(Color.riverAmethyst)
-                Text("Today")
-                    .font(.editorial(30, weight: .semibold))
-                    .foregroundStyle(Color.ink)
-                Text(subheadline)
-                    .font(.ui(11))
-                    .foregroundStyle(Color.secondaryInk)
-            }
+            PageTitle(title: "Today", subtitle: subheadline)
             Spacer()
             dayNavigation
-            Button(action: onShowCapture) {
-                Label("写一句", systemImage: "square.and.pencil")
-                    .font(.ui(12, weight: .semibold))
-            }
-            .buttonStyle(.bordered)
-            .keyboardShortcut("n", modifiers: .command)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private var subheadline: String {
@@ -124,27 +107,49 @@ struct TodayRedesignView: View {
     // MARK: Overview (real data, keeps the timeline first-class)
 
     private var overviewStrip: some View {
-        HStack(alignment: .center, spacing: 26) {
-            OverviewStat(icon: "waveform.path.ecg", value: ActivityFormatter.time(recordedToday), label: "已记录")
-            OverviewStat(
-                icon: "square.and.pencil",
-                value: "\(captures.count)",
-                label: "快记"
-            ) { onShowCapture() }
-            OverviewStat(icon: "timer", value: ActivityFormatter.time(focusToday), label: "专注", accent: focusToday > 0)
-            if !store.savedQueries.isEmpty, let first = store.savedQueries.first {
-                OverviewStat(
-                    icon: "bookmark.fill",
-                    value: "\(store.savedQueries.count)",
-                    label: "继续工作",
-                    accent: true
-                ) { onOpenAsk(first.query) }
+        HStack(spacing: 14) {
+            meta("已记录", ActivityFormatter.time(recordedToday))
+            dot
+            Button {
+                onShowCapture()
+            } label: {
+                HStack(spacing: 4) {
+                    Text("快记").foregroundStyle(.secondary)
+                    Text("\(captures.count)").fontWeight(.medium).foregroundStyle(.primary)
+                }
+                .contentShape(Rectangle())
             }
-            Spacer(minLength: 12)
+            .buttonStyle(.plain)
+            dot
+            meta("专注", ActivityFormatter.time(focusToday))
+            if !store.savedQueries.isEmpty, let first = store.savedQueries.first {
+                dot
+                Button {
+                    onOpenAsk(first.query)
+                } label: {
+                    Label("继续: \(first.name)", systemImage: "arrow.turn.up.forward")
+                        .foregroundStyle(Color.accentColor)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer(minLength: 10)
             ingestionStatus
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 10)
+        .font(.system(size: 11))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 7)
+    }
+
+    private var dot: some View {
+        Text("·").foregroundStyle(.tertiary)
+    }
+
+    private func meta(_ label: String, _ value: String) -> some View {
+        HStack(spacing: 4) {
+            Text(label).foregroundStyle(.secondary)
+            Text(value).fontWeight(.medium).foregroundStyle(.primary)
+        }
     }
 
     private var ingestionStatus: some View {
@@ -193,8 +198,8 @@ struct TodayRedesignView: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -284,7 +289,7 @@ struct EpisodeRow: View {
                 .padding(.top, 7)
 
             content
-                .padding(.bottom, 26)
+                .padding(.bottom, 20)
                 .padding(.top, 2)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -318,7 +323,7 @@ struct EpisodeRow: View {
         } else {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title)
-                    .font(.editorial(15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.ink)
                 Text(item.summary)
                     .font(.ui(12))
@@ -366,7 +371,7 @@ struct NowRow: View {
                 .padding(.top, 7)
             VStack(alignment: .leading, spacing: 4) {
                 Text(session.appName)
-                    .font(.editorial(15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                 if let title = session.windowTitle, !title.isEmpty {
                     Text(title)
                         .font(.system(size: 12))

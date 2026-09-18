@@ -30,6 +30,45 @@ struct EmptyStateView: View {
     }
 }
 
+
+// MARK: - Native page title
+// Small, toolbar-like page heading: one fact, once. Avoids oversized
+// consumer-app headlines and colored eyebrow labels.
+
+struct PageTitle: View {
+    let title: String
+    var subtitle: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.primary)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+}
+
+// MARK: - Compact list row (dense, scannable)
+
+struct ListRowContainer<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+    var isSelected = false
+
+    var body: some View {
+        content()
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .contentShape(Rectangle())
+    }
+}
+
 // MARK: - Filter chip
 
 struct FilterChip: View {
@@ -44,10 +83,10 @@ struct FilterChip: View {
                 .foregroundStyle(isSelected ? Color.ink : Color.secondaryInk)
                 .padding(.horizontal, 11)
                 .padding(.vertical, 5)
-                .background(isSelected ? Color.riverAmethyst.opacity(0.14) : Color.clear, in: Capsule())
+                .background(isSelected ? Color.accentColor.opacity(0.14) : Color.clear, in: Capsule())
                 .overlay(
                     Capsule().strokeBorder(
-                        isSelected ? Color.riverAmethyst.opacity(0.35) : Color.separator.opacity(0.0),
+                        isSelected ? Color.accentColor.opacity(0.35) : Color.separator.opacity(0.0),
                         lineWidth: 1
                     )
                 )

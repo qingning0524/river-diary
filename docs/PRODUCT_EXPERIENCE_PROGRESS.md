@@ -64,3 +64,32 @@
 - `docs/RIVER_V2_MIGRATION.md`：迁移策略（未执行，旧库不动）。
 - 验证：新增 13 项测试，总计 93 项全部通过。
 - 未做（下一步）：采集器写入 raw_events、Normalizer→Activity、EpisodeEngine、MemoryEngine、Ask grounding 接入 UI。
+
+## UI Review（MemoryOS macOS 深度重设计，2026-09-19 第三轮）
+
+### 当前 UI 最明显的问题（11 条）
+1. **页面标题过大、且用衬线大字**（Today 30pt / Ask 32pt / Settings 28pt editorial）——像消费级 App / AI 生成，不像 Mac 专业工具。
+2. **彩色装饰性眉标**（"A PAGE OF YOUR LIFE / 记住那些值得记住的" amethyst monospaced）——纯视觉噪音，重复表达当前位置。
+3. **Sidebar 仍是“大按钮+胶囊选中态+品牌贴片”**，每项有背景、行高 36、圆角 10——不是系统 Sidebar 的克制密度。
+4. **Today 顶部是“四格 KPI 仪表盘”**（已记录/快记/专注/继续 4 个大图标统计）——SaaS Dashboard 味道，信息密度假高。
+5. **Toolbar 基本只挂一个"写一句"**，搜索/筛选/Inspector 切换没有进 Toolbar，操作职责没真正落在桌面级 Toolbar 上。
+6. **同一主操作重复**：Today 头部“写一句”+ Toolbar“写一句”+ 概览里的快记入口，权重重复。
+7. **每页结构完全雷同**（大标题 + 卡片/列表容器），缺少面向任务的真实信息架构差异。
+8. **Memory 列表信息密度低**：行间距大、来源计数不够清晰，没有真正的表格/快速扫描结构。
+9. **Ask 居中大标题 + 居中输入**——ChatGPT 克隆感，大屏大量空白。
+10. **自定义语义色 use（ink/secondaryInk/amethyst）在正文头部过多**，应更多用系统语义色与单一 accent。
+11. **空白使用过度**：内边距 24/28、垂直间隙偏大，大窗口内容利用率低。
+
+### 优先执行
+P0 信息架构（去掉大字标题/彩色眉标/仪表盘，页面差异化）→ P1 Sidebar/List/Detail（系统密度）→ P2 排版/间距/颜色 → P3 Toolbar/Inspector/Context Menu → P4 Hover/动效/打磨。
+
+### 第三轮实现记录（UI 深度重设计，已完成）
+- 共享组件新增 `PageTitle`（原生导航式小标题：14pt semibold + 11pt subtitle），`ListRowContainer`（紧凑行容器、蓝色选中态）。
+- Sidebar 重写：品牌贴片/大胶囊选中态移除；改为系统 `underPageBackgroundColor`、14pt 图标、28pt 行高、6pt 圆角淡蓝选中、真实分组（RIVER / MEMORY / SYSTEM），底部"写一句"+记录状态轻量化，列宽收敛到 182。
+- Today：大衬线标题/彩色眉标/四格 KPI 移除；改为 `PageTitle` + 右侧日期导航，概览合并为一条紧凑 meta 行（已记录·快记·专注·继续·采集）。头部"写一句"移除（由 Toolbar 承担，避免重复）。
+- Memory：大标题改 `PageTitle`，行更密（预览换系统 13pt medium），间距收敛。
+- Ask：居中大标题 + 居中输入改为左上紧凑 `PageTitle` + 左对齐输入、建议、结果（消除 ChatGPT 克隆大空白）。
+- Settings：标题改 `PageTitle`，间距收敛。
+- Inspector/Timeline：衬线标题换系统标题，内边距 20→16。
+- 验收：swift build 通过；swift test 93 项通过；`dist/RiverDiaryMac.app` 重新打包并已启动运行。
+- 限制：沙盒环境无屏幕录制权限，无法输出真实截图，视觉以“可运行 + 代码层审查”为准。

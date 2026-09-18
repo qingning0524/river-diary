@@ -137,8 +137,8 @@ struct MemoryRedesignView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 28)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 6)
                 .padding(.bottom, 40)
             }
         }
@@ -156,21 +156,13 @@ struct MemoryRedesignView: View {
     // MARK: Header
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("记住那些值得记住的")
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .tracking(1.4)
-                    .foregroundStyle(Color.riverAmethyst)
-                Text("Memory")
-                    .font(.editorial(30, weight: .semibold))
-                    .foregroundStyle(Color.ink)
-            }
+        HStack(alignment: .center) {
+            PageTitle(title: "Memory", subtitle: "搜索你的过去")
             Spacer()
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.bottom, 12)
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
     }
 
     private var searchField: some View {
@@ -193,7 +185,7 @@ struct MemoryRedesignView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 9))
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 16)
     }
 
     // MARK: Filters
@@ -231,7 +223,7 @@ struct MemoryRedesignView: View {
                 .help("重置搜索与筛选")
             }
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 16)
         .padding(.vertical, 4)
     }
 
@@ -249,7 +241,7 @@ struct MemoryRedesignView: View {
     // MARK: Sections
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(title.uppercased())
                 .font(.system(size: 10, weight: .medium))
                 .tracking(1.2)
@@ -315,7 +307,7 @@ private struct MemoryRow: View {
                 }
             }
             Text(day.preview)
-                .font(.editorial(14, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .lineLimit(2)
                 .foregroundStyle(Color.ink)
             HStack(spacing: 10) {
