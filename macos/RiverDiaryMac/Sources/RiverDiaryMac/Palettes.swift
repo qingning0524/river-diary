@@ -237,6 +237,12 @@ enum PaletteStore {
     /// 主线程写、绘制线程读；切换频率极低，简单的静态变量即可。
     static var currentID: String = UserDefaults.standard.string(forKey: defaultsKey) ?? RiverPalette.seafoam.rawValue
 
+    private static let cacheLock = NSLock()
+    /// NSColor(hex:) 每次都要扫描字符串，而解析闭包在每一帧绘制里运行。
+    /// 以 (paletteID, dark, 属性) 缓存解析结果；切换调色板时整体失效。
+    /// 绘制可能发生在非主线程，读写都走锁（查表本身是纳秒级）。
+    private static var resolvedCache: [String: NSColor] = [:]
+
     static func palette() -> RiverPalette {
         RiverPalette(rawValue: currentID) ?? .seafoam
     }
@@ -249,6 +255,30 @@ enum PaletteStore {
     static func colorSet(for appearance: NSAppearance) -> RiverPaletteColorSet {
         colorSet(dark: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
     }
+
+    /// 解析并缓存一个调色板颜色的 NSColor。
+    static func resolvedColor(_ keyPath: KeyPath<RiverPaletteColorSet, String>, dark: Bool) -> NSColor {
+        let key = "\(currentID)|\(dark ? "d" : "l")|\(keyPath)"
+        cacheLock.lock()
+        if let cached = resolvedCache[key] {
+            cacheLock.unlock()
+            return cached
+        }
+        cacheLock.unlock()
+
+        let color = NSColor(hex: colorSet(dark: dark)[keyPath: keyPath])
+
+        cacheLock.lock()
+        resolvedCache[key] = color
+        cacheLock.unlock()
+        return color
+    }
+
+    static func invalidateResolvedColors() {
+        cacheLock.lock()
+        resolvedCache.removeAll()
+        cacheLock.unlock()
+    }
 }
 
 @MainActor
@@ -260,6 +290,7 @@ final class PaletteController: ObservableObject {
     func select(_ palette: RiverPalette) {
         guard palette != self.palette else { return }
         PaletteStore.currentID = palette.rawValue
+        PaletteStore.invalidateResolvedColors()
         UserDefaults.standard.set(palette.rawValue, forKey: PaletteStore.defaultsKey)
         self.palette = palette
         // 双保险：Shell 以配色为身份重建整棵子树；这里再请 AppKit 对所有可见

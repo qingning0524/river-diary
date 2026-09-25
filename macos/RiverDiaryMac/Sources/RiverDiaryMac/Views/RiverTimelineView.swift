@@ -31,7 +31,8 @@ struct RiverTimelineView: View {
 
     @ViewBuilder
     private var timelineContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        // 懒加载：一天可能有数百个融合节点，非懒容器会把整天的行一次性物化。
+        LazyVStack(alignment: .leading, spacing: 0) {
             if items.isEmpty && nowSession == nil {
                 EmptyStateView(
                     title: "这一天还没有记录。",

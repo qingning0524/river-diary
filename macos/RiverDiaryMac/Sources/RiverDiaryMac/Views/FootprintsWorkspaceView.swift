@@ -12,12 +12,21 @@ struct FootprintsWorkspaceView: View {
     @ObservedObject var location: LocationSourceStore
     var onOpenSources: () -> Void
 
-    private var timeline: ActivityTimeline {
-        ActivityTimelineEngine.build(for: selectedDate, sessions: activity.liveSessions(for: selectedDate))
-    }
-
     var body: some View {
-        RiverPage {
+        // 一帧只构建一次时间线；placeStatus 与 placeItems 都从同一份结果取。
+        let timeline = ActivityTimelineEngine.build(for: selectedDate, sessions: activity.liveSessions(for: selectedDate))
+        let placeItems = timeline.items.filter { item in
+            guard let place = item.annotation?.normalized.placeName else { return false }
+            return !place.isEmpty
+        }
+        let placeStatus: String
+        if !placeItems.isEmpty {
+            placeStatus = "\(location.statusDetail) · 已有 \(placeItems.count) 段足迹由你人工标注地点。"
+        } else {
+            placeStatus = "\(location.statusDetail)。电脑活动统一在时间线展示，足迹页只展示地点和停留。"
+        }
+
+        return RiverPage {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
                 PageHeader("足迹", context: selectedDate.formatted(.dateTime.year().month().day())) {
                     HStack(spacing: 6) {
@@ -105,21 +114,6 @@ struct FootprintsWorkspaceView: View {
                 }
                 .riverAppear(index: 2)
             }
-        }
-    }
-
-    private var placeStatus: String {
-        let corrected = placeItems.count
-        if corrected > 0 {
-            return "\(location.statusDetail) · 已有 \(corrected) 段足迹由你人工标注地点。"
-        }
-        return "\(location.statusDetail)。电脑活动统一在时间线展示，足迹页只展示地点和停留。"
-    }
-
-    private var placeItems: [ActivityTimelineItem] {
-        timeline.items.filter { item in
-            guard let place = item.annotation?.normalized.placeName else { return false }
-            return !place.isEmpty
         }
     }
 }

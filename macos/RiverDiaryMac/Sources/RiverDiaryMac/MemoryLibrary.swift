@@ -24,13 +24,19 @@ final class MemoryLibraryStore: ObservableObject {
         analysisRuns = v2.analysisRuns().sorted { $0.createdAt > $1.createdAt }
         savedReflections = letters.values.sorted { $0.updatedAt > $1.updatedAt }
         archiveDays = MemoryArchive.days(entries: entries, captures: captures)
+
+        // 一次性取回全部关联时间段与确认状态；此前对每条记忆各发一次
+        // 查询（N+1），且整段刷新同步跑在主线程上。
+        let allEpisodes = v2.episodes(ids: durableMemories.flatMap(\.sourceEpisodeIDs))
         sourceEpisodes = durableMemories.reduce(into: [:]) { result, memory in
-            result[memory.id.uuidString] = v2.episodes(ids: memory.sourceEpisodeIDs)
+            let ids = Set(memory.sourceEpisodeIDs)
+            result[memory.id.uuidString] = allEpisodes
+                .filter { ids.contains($0.id) }
+                .sorted { $0.startTime < $1.startTime }
         }
-        confirmations = durableMemories.reduce(into: [:]) { result, memory in
-            if let value = v2.memoryConfirmation(for: memory.id) {
-                result[memory.id.uuidString] = value
-            }
+        confirmations = [:]
+        for (id, value) in v2.memoryConfirmations(ids: durableMemories.map(\.id)) {
+            confirmations[id.uuidString] = value
         }
     }
 

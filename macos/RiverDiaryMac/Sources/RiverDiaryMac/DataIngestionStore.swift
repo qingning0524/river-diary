@@ -88,7 +88,8 @@ final class DataIngestionStore: ObservableObject {
 
     private var checkTimer: Timer?
     private var ingestTask: Task<Void, Never>?
-    private lazy var v2Store = V2Store()
+    private let providedV2Store: V2Store?
+    private lazy var v2Store: V2Store = providedV2Store ?? V2Store()
     private let fileManager = FileManager.default
 
     private static let defaultSource = FileManager.default.homeDirectoryForCurrentUser
@@ -124,7 +125,8 @@ final class DataIngestionStore: ObservableObject {
 
     // MARK: Init
 
-    init() {
+    init(v2Store: V2Store? = nil) {
+        providedV2Store = v2Store
         enabled = UserDefaults.standard.object(forKey: "ingestion.enabled") == nil
             ? true
             : UserDefaults.standard.bool(forKey: "ingestion.enabled")

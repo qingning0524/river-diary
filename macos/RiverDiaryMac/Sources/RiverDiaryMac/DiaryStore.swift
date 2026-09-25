@@ -62,7 +62,14 @@ private struct DiaryStoreRestoreCheckpoint {
 
 @MainActor
 final class DiaryStore: ObservableObject {
-    @Published private(set) var data: DiaryData?
+    // entries 的排序结果与按日期索引是纯派生数据：data 一变就整体失效。
+    // 侧栏状态、Today、时间线每帧都会取 entry(for:)，不能每次访问都全量排序。
+    @Published private(set) var data: DiaryData? {
+        didSet {
+            cachedSortedEntries = nil
+            cachedEntryIndex = nil
+        }
+    }
     @Published private(set) var loadError: String?
     @Published private(set) var saveState: JournalSaveState = .idle
     @Published private(set) var hasLocalChanges = false
@@ -86,6 +93,8 @@ final class DiaryStore: ObservableObject {
     private var localStateReadFailed = false
     private var ingestedHealth: [String: IOSHealthSummary] = [:]
     private var ingestedScores: [String: Int] = [:]
+    private var cachedSortedEntries: [DiaryEntry]?
+    private var cachedEntryIndex: [String: DiaryEntry]?
     private let fileManager = FileManager.default
     private let configuredSupportDirectory: URL?
 
@@ -140,7 +149,19 @@ final class DiaryStore: ObservableObject {
     }
 
     var entries: [DiaryEntry] {
-        (data?.entries ?? []).sorted { $0.date < $1.date }
+        if let cachedSortedEntries { return cachedSortedEntries }
+        let sorted = (data?.entries ?? []).sorted { $0.date < $1.date }
+        cachedSortedEntries = sorted
+        return sorted
+    }
+
+    /// date key → entry；数据不变时复用，避免每次查找都线性扫描。
+    private var entryIndex: [String: DiaryEntry] {
+        if let cachedEntryIndex { return cachedEntryIndex }
+        var index: [String: DiaryEntry] = [:]
+        for entry in entries { index[entry.date] = entry }
+        cachedEntryIndex = index
+        return index
     }
 
     var latestEntry: DiaryEntry? {
@@ -246,7 +267,7 @@ final class DiaryStore: ObservableObject {
 
     func entry(for date: Date = Date()) -> DiaryEntry {
         let dateString = DiaryEntry.dateFormatter.string(from: date)
-        if let existing = entries.first(where: { $0.date == dateString }) {
+        if let existing = entryIndex[dateString] {
             return existing
         }
 

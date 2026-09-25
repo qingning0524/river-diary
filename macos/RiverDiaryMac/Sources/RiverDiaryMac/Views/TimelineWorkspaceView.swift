@@ -33,7 +33,9 @@ struct TimelineWorkspaceView: View {
     private var isToday: Bool { Calendar.current.isDateInToday(selectedDate) }
     private var nowSession: ActivitySession? { isToday ? activity.activeSession : nil }
 
-    private var timeline: ActivityTimeline {
+    /// 每次求值只构建一次：日记编辑的每一次击键都会重渲染本页，
+    /// 引擎若在多个计算属性里重复运行，一天数百个节点的融合会被放大数倍。
+    private func buildTimeline() -> ActivityTimeline {
         ActivityTimelineEngine.build(
             for: selectedDate,
             sessions: activity.liveSessions(for: selectedDate),
@@ -43,14 +45,16 @@ struct TimelineWorkspaceView: View {
     }
 
     var body: some View {
-        RiverPage(maxWidth: 1040) {
-            PageHeader("时间线", context: subheadline) { quickNoteButton }
+        let timeline = buildTimeline()
+        let filteredItems = filteredTimelineItems(timeline)
+        return RiverPage(maxWidth: 1040) {
+            PageHeader("时间线", context: subheadline(timeline)) { quickNoteButton }
                 .riverAppear(index: 0)
-            dayOverview
+            dayOverview(timeline)
                 .riverAppear(index: 1)
             journalCard
                 .riverAppear(index: 2)
-            timelineCard
+            timelineCard(timeline, filtered: filteredItems)
                 .frame(minHeight: 380)
                 .riverAppear(index: 3)
         }
@@ -79,7 +83,7 @@ struct TimelineWorkspaceView: View {
 
     // MARK: Day overview
 
-    private var dayOverview: some View {
+    private func dayOverview(_ timeline: ActivityTimeline) -> some View {
         TimelineDayOverview(
             date: selectedDate,
             isToday: isToday,
@@ -96,7 +100,7 @@ struct TimelineWorkspaceView: View {
         .help("写下一句快记 (⌘N)")
     }
 
-    private var subheadline: String {
+    private func subheadline(_ timeline: ActivityTimeline) -> String {
         let dateText = selectedDate.formatted(.dateTime.month().day())
         if isToday {
             if timeline.totalDuration > 0 {
@@ -231,22 +235,22 @@ struct TimelineWorkspaceView: View {
 
     // MARK: Timeline
 
-    private var timelineCard: some View {
+    private func timelineCard(_ timeline: ActivityTimeline, filtered: [ActivityTimelineItem]) -> some View {
         RiverPanel(
             title: "时间线",
             systemImage: "list.bullet.indent",
             accent: AppTheme.accent,
-            trailingText: "\(filteredTimelineItems.count) 个节点",
+            trailingText: "\(filtered.count) 个节点",
             padding: AppSpacing.sm
         ) {
             VStack(alignment: .leading, spacing: 0) {
-                timelineToolbar
+                timelineToolbar(timeline)
                 RiverRule()
-                if filteredTimelineItems.isEmpty {
-                    noMatches
+                if filtered.isEmpty {
+                    noMatches(timeline)
                 } else {
                     RiverTimelineView(
-                        items: filteredTimelineItems,
+                        items: filtered,
                         nowSession: nowSession,
                         selectedItemID: selectedItemID,
                         onSelect: selectTimelineItem,
@@ -269,7 +273,7 @@ struct TimelineWorkspaceView: View {
             || !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var filteredTimelineItems: [ActivityTimelineItem] {
+    private func filteredTimelineItems(_ timeline: ActivityTimeline) -> [ActivityTimelineItem] {
         timeline.items.filter { item in
             if timelineFavoritesOnly { return item.isFavorite && item.matches(query: query, category: nil) }
             if timelineNeedsReviewOnly { return needsReview(item) && item.matches(query: query, category: nil) }
@@ -284,7 +288,7 @@ struct TimelineWorkspaceView: View {
         }
     }
 
-    private var timelineToolbar: some View {
+    private func timelineToolbar(_ timeline: ActivityTimeline) -> some View {
         VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
             HStack(spacing: density.spacing(AppSpacing.sm)) {
                 RiverSearchField(placeholder: "搜索节点、应用或窗口…", text: $query, symbol: "magnifyingglass")
@@ -344,7 +348,7 @@ struct TimelineWorkspaceView: View {
 
     /// An empty list must explain itself: "nothing matched" is not the same as
     /// "nothing was recorded".
-    private var noMatches: some View {
+    private func noMatches(_ timeline: ActivityTimeline) -> some View {
         EmptyStateView(
             title: timeline.items.isEmpty ? "这一天还没有记录。" : "没有符合条件的节点。",
             message: timeline.items.isEmpty

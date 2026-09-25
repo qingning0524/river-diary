@@ -200,15 +200,15 @@ struct PrivacyBackupSettingsView: View {
         }
 
         let sorted = store.entries.sorted { $0.date < $1.date }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+        // 用 Set 判断缺失：原来的 `entries.contains` 放在逐日循环里是 O(天数 × 条数)。
+        let existingDates = Set(store.entries.map(\.date))
         if let first = sorted.first, let last = sorted.last {
             let lastDate = last.entryDate ?? Date()
             var current = first.entryDate ?? Date()
             var missing = 0
             while current <= lastDate {
-                let key = formatter.string(from: current)
-                if !store.entries.contains(where: { $0.date == key }) { missing += 1 }
+                let key = DiaryEntry.dateFormatter.string(from: current)
+                if !existingDates.contains(key) { missing += 1 }
                 current = Calendar.current.date(byAdding: .day, value: 1, to: current) ?? current.addingTimeInterval(86400)
             }
             if missing > 0 {

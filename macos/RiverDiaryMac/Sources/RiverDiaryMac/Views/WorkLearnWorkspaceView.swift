@@ -8,12 +8,11 @@ struct WorkLearnWorkspaceView: View {
     @FocusState.Binding var inspectorSourceFocusID: String?
     var onSelectTimelineItem: (ActivityTimelineItem, String) -> Void
 
-    private var stats: FusedDayStats { activity.dayStats(entries: entries, date: selectedDate) }
-    private var sessions: [ActivitySession] { activity.liveSessions(for: selectedDate) }
-    private var timeline: ActivityTimeline { ActivityTimelineEngine.build(for: selectedDate, sessions: sessions) }
-
     var body: some View {
-        RiverPage {
+        // 一帧只算一次：dayStats 与时间线引擎不便宜，别在多个面板里重复调用。
+        let stats = activity.dayStats(entries: entries, date: selectedDate)
+        let timeline = ActivityTimelineEngine.build(for: selectedDate, sessions: activity.liveSessions(for: selectedDate))
+        return RiverPage {
             PageHeader("学习与工作", context: selectedDate.formatted(.dateTime.year().month().day())) {
                 StatusBadge("事实优先", tone: .neutral)
             }

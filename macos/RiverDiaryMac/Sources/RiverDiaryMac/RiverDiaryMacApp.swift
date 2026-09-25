@@ -35,13 +35,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct RiverDiaryMacApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var restoreRecovery = RestoreRecoveryBootstrap()
-    @StateObject private var ingestion = DataIngestionStore()
-    @StateObject private var store = DiaryStore()
-    @StateObject private var activity = ActivityStore()
-    @StateObject private var ai = AIAssistantStore()
-    @StateObject private var dateContext = DateContextStore()
-    @StateObject private var location = LocationSourceStore()
+    @StateObject private var restoreRecovery: RestoreRecoveryBootstrap
+    @StateObject private var ingestion: DataIngestionStore
+    @StateObject private var store: DiaryStore
+    @StateObject private var activity: ActivityStore
+    @StateObject private var ai: AIAssistantStore
+    @StateObject private var dateContext: DateContextStore
+    @StateObject private var location: LocationSourceStore
+    /// 全进程共享一条 V2 事实库连接：否则每个 store 各开一次 SQLCipher
+    /// 并在主线程重复建表 DDL；恢复快照时也只需重开这一条连接。
+    private let v2Store: V2Store
+
+    init() {
+        let sharedV2 = V2Store()
+        v2Store = sharedV2
+        _restoreRecovery = StateObject(wrappedValue: RestoreRecoveryBootstrap())
+        _ingestion = StateObject(wrappedValue: DataIngestionStore(v2Store: sharedV2))
+        _store = StateObject(wrappedValue: DiaryStore())
+        _activity = StateObject(wrappedValue: ActivityStore(v2Store: sharedV2))
+        _ai = StateObject(wrappedValue: AIAssistantStore(v2Store: sharedV2))
+        _dateContext = StateObject(wrappedValue: DateContextStore())
+        _location = StateObject(wrappedValue: LocationSourceStore(v2Store: sharedV2))
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -57,7 +72,8 @@ struct RiverDiaryMacApp: App {
                         ai: ai,
                         ingestion: ingestion,
                         dateContext: dateContext,
-                        location: location
+                        location: location,
+                        v2Store: v2Store
                     )
                 }
             }

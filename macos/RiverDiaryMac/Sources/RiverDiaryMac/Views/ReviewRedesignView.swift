@@ -38,7 +38,10 @@ struct ReviewContentView: View {
     private var startDate: Date {
         Calendar.current.date(byAdding: .day, value: -(dayRange - 1), to: endDate) ?? endDate
     }
-    private var review: LocalReview {
+
+    /// 周期内每天各构建一次时间线引擎，7/30 天就是 7/30 次构建——
+    /// body 每帧只允许调用一次，各分段接收现成结果。
+    private func makeReview() -> LocalReview {
         LocalReview.make(
             start: startDate,
             end: endDate,
@@ -49,7 +52,8 @@ struct ReviewContentView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: density.spacing(16)) {
+        let review = makeReview()
+        return VStack(alignment: .leading, spacing: density.spacing(16)) {
                 if showsHeader {
                     PageHeader("回顾", context: "从几天的记录里，看见自己的节奏。", emphasis: true) {
                         rangePicker
@@ -64,11 +68,11 @@ struct ReviewContentView: View {
                     .riverAppear(index: 0)
                 }
 
-                summary.riverAppear(index: 1)
-                rhythm.riverAppear(index: 2)
-                distribution.riverAppear(index: 3)
+                summary(review).riverAppear(index: 1)
+                rhythm(review).riverAppear(index: 2)
+                distribution(review).riverAppear(index: 3)
                 monthlyLetter.riverAppear(index: 4)
-                aiReview.riverAppear(index: 5)
+                aiReview(review).riverAppear(index: 5)
                 actionRow.riverAppear(index: 6)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -87,7 +91,7 @@ struct ReviewContentView: View {
         .accessibilityLabel("复盘范围")
     }
 
-    private var summary: some View {
+    private func summary(_ review: LocalReview) -> some View {
         RiverPanel(tint: AppTheme.accent) {
             HStack(alignment: .top, spacing: 0) {
                 RiverStat(title: "写下日记", value: "\(review.writingDays) 天", detail: "\(dayRange) 天内", valueFont: AppTypography.metricSmall())
@@ -106,9 +110,12 @@ struct ReviewContentView: View {
         }
     }
 
-    private var rhythm: some View {
+    private func rhythm(_ review: LocalReview) -> some View {
         RiverPanel(title: "每日节律", systemImage: "waveform.path", accent: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
+                // 柱高的分母在循环外算一次：放在每行的 GeometryReader 里
+                // 会让每根柱子都重新扫描全部天。
+                let maxDuration = max(review.days.map(\.duration).max() ?? 1, 1)
                 HStack(alignment: .bottom, spacing: 8) {
                     ForEach(Array(review.days.enumerated()), id: \.element.id) { index, day in
                         VStack(spacing: density.spacing(5)) {
@@ -117,14 +124,13 @@ struct ReviewContentView: View {
                                 .foregroundStyle(day.mood == nil ? Color.tertiaryInk : Color.secondaryInk)
                                 .frame(minHeight: 14)
                             GeometryReader { proxy in
-                                let maxDuration = max(review.days.map(\.duration).max() ?? 1, 1)
                                 RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
                                     .fill(day.mood == nil ? Color.secondary.opacity(0.18) : AppTheme.accent)
                                     .frame(height: max(8, proxy.size.height * min(1, day.duration / maxDuration)))
                                     .frame(maxHeight: .infinity, alignment: .bottom)
                             }
                             .frame(height: 68)
-                            Text(shouldShowDateLabel(index) ? shortDate(day.id) : "")
+                            Text(shouldShowDateLabel(index, dayCount: review.days.count) ? shortDate(day.id) : "")
                                 .font(AppTypography.metadata().monospacedDigit())
                                 .foregroundStyle(Color.tertiaryInk)
                         }
@@ -138,7 +144,7 @@ struct ReviewContentView: View {
         }
     }
 
-    private var distribution: some View {
+    private func distribution(_ review: LocalReview) -> some View {
         RiverPanel(title: "时间分布", systemImage: "chart.bar", accent: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(9)) {
                 if review.categories.isEmpty {
@@ -146,6 +152,7 @@ struct ReviewContentView: View {
                         .font(AppTypography.secondary())
                         .foregroundStyle(Color.secondaryInk)
                 } else {
+                    let maxDuration = max(review.categories.first?.duration ?? 1, 1)
                     ForEach(Array(review.categories.prefix(6)), id: \.name) { category in
                         HStack(spacing: density.spacing(9)) {
                             Text(category.name)
@@ -153,7 +160,6 @@ struct ReviewContentView: View {
                                 .foregroundStyle(Color.ink)
                                 .frame(width: 52, alignment: .leading)
                             GeometryReader { proxy in
-                                let maxDuration = max(review.categories.first?.duration ?? 1, 1)
                                 Capsule()
                                     .fill(AppTheme.categoryTint(category.name).opacity(0.85))
                                     .frame(width: max(8, proxy.size.width * category.duration / maxDuration))
@@ -280,7 +286,7 @@ struct ReviewContentView: View {
         }
     }
 
-    private var aiReview: some View {
+    private func aiReview(_ review: LocalReview) -> some View {
         RiverPanel(title: "AI 周期阅读", systemImage: "sparkles", accent: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(10)) {
                 HStack {
@@ -322,7 +328,7 @@ struct ReviewContentView: View {
 
     private func copyMarkdown() {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(review.markdown, forType: .string)
+        NSPasteboard.general.setString(makeReview().markdown, forType: .string)
         feedbackCenter.show("已复制回顾 Markdown", kind: .success)
     }
 
@@ -333,7 +339,7 @@ struct ReviewContentView: View {
         panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
-            try review.markdown.write(to: url, atomically: true, encoding: .utf8)
+            try makeReview().markdown.write(to: url, atomically: true, encoding: .utf8)
             feedbackCenter.show("已导出回顾 Markdown", kind: .success)
         } catch {
             feedbackCenter.show("导出失败：\(UserFacingError.message(for: error))", kind: .error)
@@ -346,9 +352,9 @@ struct ReviewContentView: View {
         return "\(parts[1]).\(parts[2])"
     }
 
-    private func shouldShowDateLabel(_ index: Int) -> Bool {
+    private func shouldShowDateLabel(_ index: Int, dayCount: Int) -> Bool {
         let interval = dayRange <= 7 ? 1 : 7
-        return index == 0 || index == review.days.count - 1 || index.isMultiple(of: interval)
+        return index == 0 || index == dayCount - 1 || index.isMultiple(of: interval)
     }
 
 }

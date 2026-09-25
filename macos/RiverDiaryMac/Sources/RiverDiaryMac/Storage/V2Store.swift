@@ -645,6 +645,23 @@ final class V2Store {
         return (sqlite3_column_int64(statement, 0) != 0, text(statement, 1) ?? "")
     }
 
+    /// 批量读取确认状态：记忆库刷新曾对每条记忆各发一次查询（N+1）。
+    func memoryConfirmations(ids: [UUID]) -> [UUID: (confirmed: Bool, note: String)] {
+        guard let db, !ids.isEmpty else { return [:] }
+        let placeholders = Array(repeating: "?", count: ids.count).joined(separator: ",")
+        let sql = "SELECT memory_id, is_confirmed, note FROM memory_confirmations WHERE memory_id IN (\(placeholders))"
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [:] }
+        for (index, id) in ids.enumerated() { bindText(statement, Int32(index + 1), id.uuidString) }
+        var result: [UUID: (confirmed: Bool, note: String)] = [:]
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let idText = text(statement, 0), let id = UUID(uuidString: idText) else { continue }
+            result[id] = (sqlite3_column_int64(statement, 1) != 0, text(statement, 2) ?? "")
+        }
+        return result
+    }
+
     @discardableResult
     func setMemoryConfirmation(_ memoryID: UUID, confirmed: Bool, note: String = "") -> Bool {
         let confirmedAt = Date()

@@ -28,10 +28,10 @@ extension NSColor {
 }
 
 /// A palette-resolved colour. The wrapper is cached; the hex is looked up at
-/// draw time from the current palette.
+/// draw time from the current palette (parsed once per palette, then cached).
 func paletteColor(_ keyPath: KeyPath<RiverPaletteColorSet, String>) -> Color {
     Color(nsColor: NSColor(name: nil) { appearance in
-        NSColor(hex: PaletteStore.colorSet(for: appearance)[keyPath: keyPath])
+        PaletteStore.resolvedColor(keyPath, dark: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
     })
 }
 
@@ -42,7 +42,7 @@ func paletteRuleColor(_ keyPath: KeyPath<RiverPaletteColorSet, String>, darkAlph
         if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
             return NSColor(white: 1, alpha: darkAlpha)
         }
-        return NSColor(hex: PaletteStore.colorSet(for: appearance)[keyPath: keyPath])
+        return PaletteStore.resolvedColor(keyPath, dark: false)
     })
 }
 

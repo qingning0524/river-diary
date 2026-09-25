@@ -12,11 +12,13 @@ final class LocationSourceStore: NSObject, ObservableObject, CLLocationManagerDe
 
     private let manager = CLLocationManager()
     private let geocoder = CLGeocoder()
-    private lazy var factStore = V2Store()
+    private let providedFactStore: V2Store?
+    private lazy var factStore: V2Store = providedFactStore ?? V2Store()
     private var lastRecordedLocation: CLLocation?
     private var lastRecordedAt: Date?
 
-    override init() {
+    init(v2Store: V2Store? = nil) {
+        providedFactStore = v2Store
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters

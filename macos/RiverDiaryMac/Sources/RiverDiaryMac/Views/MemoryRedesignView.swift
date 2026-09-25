@@ -13,7 +13,13 @@ struct MemoryRedesignView: View {
     var onInspectMemory: (Memory) -> Void = { _ in }
     var onInspectReflection: (MonthlyLetter) -> Void = { _ in }
 
-    @AppStorage("memory.query") private var query = ""
+    /// 输入框的实时文本。搜索不直接绑定它：每击键都写 UserDefaults 并全量重扫
+    /// 三个分区，代价太高——真正参与筛选的是防抖后的 appliedNeedle。
+    @State private var query = ""
+    /// 防抖后的搜索词；筛选与持久化都以它为准。
+    @State private var appliedNeedle = ""
+    private static let persistedQueryKey = "memory.query"
+
     @FocusState private var searchFocused: Bool
     @State private var scope: MemoryScope = .all
     @State private var showsReview = false
@@ -32,15 +38,15 @@ struct MemoryRedesignView: View {
     }
 
     private var filteredDurableMemories: [Memory] {
-        MemoryPresentation.durableMemories(library.durableMemories, query: memoryNeedle)
+        MemoryPresentation.durableMemories(library.durableMemories, query: appliedNeedle)
     }
 
     private var filteredReflections: [MonthlyLetter] {
-        MemoryPresentation.reflections(library.savedReflections, scope: scope, query: memoryNeedle)
+        MemoryPresentation.reflections(library.savedReflections, scope: scope, query: appliedNeedle)
     }
 
     private var filteredArchiveDays: [MemoryArchiveDay] {
-        MemoryPresentation.archiveDays(library.archiveDays, scope: scope, favoriteDates: favoriteDates, query: memoryNeedle)
+        MemoryPresentation.archiveDays(library.archiveDays, scope: scope, favoriteDates: favoriteDates, query: appliedNeedle)
     }
 
     var body: some View {
@@ -55,7 +61,20 @@ struct MemoryRedesignView: View {
                 .opacity(0)
                 .accessibilityHidden(true)
         }
-        .onAppear { refreshLibrary() }
+        .onAppear {
+            if query.isEmpty {
+                query = UserDefaults.standard.string(forKey: Self.persistedQueryKey) ?? ""
+                appliedNeedle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            refreshLibrary()
+        }
+        .task(id: memoryNeedle) {
+            guard memoryNeedle != appliedNeedle else { return }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled else { return }
+            appliedNeedle = memoryNeedle
+            UserDefaults.standard.set(query, forKey: Self.persistedQueryKey)
+        }
         .onChange(of: store.entries.count) { _, _ in refreshLibrary() }
         .onChange(of: store.quickCaptures.count) { _, _ in refreshLibrary() }
         .onChange(of: store.monthlyLetters.count) { _, _ in refreshLibrary() }
@@ -139,7 +158,7 @@ struct MemoryRedesignView: View {
                 RiverPanel { RiverInsetPanel(symbol: "brain.head.profile", title: "还没有长期记忆", message: "当足迹被整理成习惯、项目轨迹或长期主题后，会出现在这里。") }
             } else {
                 RiverPanel {
-                    VStack(spacing: 0) {
+                    LazyVStack(spacing: 0) {
                         ForEach(Array(filteredDurableMemories.enumerated()), id: \.element.id) { index, memory in
                             durableRow(memory, showsDivider: index < filteredDurableMemories.count - 1)
                         }
@@ -206,35 +225,38 @@ struct MemoryRedesignView: View {
                 RiverPanel { RiverInsetPanel(symbol: "text.book.closed", title: scope == .favorites ? "还没有收藏的回顾" : "还没有保存的回顾", message: "打开周期回顾，生成并保存一封河流信。") }
             } else {
                 RiverPanel {
-                    VStack(spacing: 0) {
+                    LazyVStack(spacing: 0) {
                         ForEach(Array(filteredReflections.enumerated()), id: \.element.id) { index, letter in
-                            HStack(alignment: .top, spacing: density.spacing(10)) {
-                                RiverIconWell(
-                                    systemImage: letter.isFavorite ? "star.fill" : "text.book.closed",
-                                    tint: letter.isFavorite ? AppTheme.warning : AppTheme.accent,
-                                    size: 26
-                                )
-                                VStack(alignment: .leading, spacing: density.spacing(4)) {
-                                    Text(letter.title)
-                                        .font(AppTypography.rowTitle())
-                                        .foregroundStyle(Color.ink)
-                                    Text(letter.body)
-                                        .font(AppTypography.secondary())
-                                        .foregroundStyle(Color.secondaryInk)
-                                        .lineLimit(2)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    Text(letter.evidence)
-                                        .font(AppTypography.metadata())
+                            Button { onInspectReflection(letter) } label: {
+                                HStack(alignment: .top, spacing: density.spacing(10)) {
+                                    RiverIconWell(
+                                        systemImage: letter.isFavorite ? "star.fill" : "text.book.closed",
+                                        tint: letter.isFavorite ? AppTheme.warning : AppTheme.accent,
+                                        size: 26
+                                    )
+                                    VStack(alignment: .leading, spacing: density.spacing(4)) {
+                                        Text(letter.title)
+                                            .font(AppTypography.rowTitle())
+                                            .foregroundStyle(Color.ink)
+                                        Text(letter.body)
+                                            .font(AppTypography.secondary())
+                                            .foregroundStyle(Color.secondaryInk)
+                                            .lineLimit(2)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                        Text(letter.evidence)
+                                            .font(AppTypography.metadata())
+                                            .foregroundStyle(Color.tertiaryInk)
+                                    }
+                                    Spacer(minLength: 0)
+                                    Text(letter.month)
+                                        .font(AppTypography.numeric())
                                         .foregroundStyle(Color.tertiaryInk)
                                 }
-                                Spacer(minLength: 0)
-                                Text(letter.month)
-                                    .font(AppTypography.numeric())
-                                    .foregroundStyle(Color.tertiaryInk)
+                                .padding(.vertical, density.spacing(10))
+                                .contentShape(Rectangle())
                             }
-                            .padding(.vertical, density.spacing(10))
-                            .contentShape(Rectangle())
-                            .onTapGesture { onInspectReflection(letter) }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("查看回顾 \(letter.title)")
                             .overlay(alignment: .bottom) {
                                 if index < filteredReflections.count - 1 { RiverRowDivider(inset: 0) }
                             }
@@ -249,10 +271,10 @@ struct MemoryRedesignView: View {
         VStack(alignment: .leading, spacing: density.spacing(10)) {
             RiverSectionHeading(title: "日期档案", detail: "按天浏览原始日记和快记")
             if filteredArchiveDays.isEmpty {
-                RiverPanel { RiverInsetPanel(symbol: "calendar", title: scope == .favorites ? "还没有收藏的日期" : "没有匹配的日期", message: memoryNeedle.isEmpty ? "写下日记或快记后，这里会保留每天的原始记录。" : "换个关键词试试看。") }
+                RiverPanel { RiverInsetPanel(symbol: "calendar", title: scope == .favorites ? "还没有收藏的日期" : "没有匹配的日期", message: appliedNeedle.isEmpty ? "写下日记或快记后，这里会保留每天的原始记录。" : "换个关键词试试看。") }
             } else {
                 RiverPanel {
-                    VStack(spacing: 0) {
+                    LazyVStack(spacing: 0) {
                         ForEach(Array(filteredArchiveDays.enumerated()), id: \.element.id) { index, day in
                             Button { onInspectArchive(day) } label: {
                                 HStack(spacing: density.spacing(AppSpacing.md)) {
@@ -269,6 +291,7 @@ struct MemoryRedesignView: View {
                                         Image(systemName: "star.fill")
                                             .font(.system(size: 10))
                                             .foregroundStyle(AppTheme.warning)
+                                            .accessibilityLabel("已收藏")
                                     }
                                     Text(day.hasWriting ? "日记" : "快记")
                                         .font(AppTypography.metadata())
@@ -281,6 +304,7 @@ struct MemoryRedesignView: View {
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("查看 \(day.entry.shortDate) 的档案")
                             .overlay(alignment: .bottom) {
                                 if index < filteredArchiveDays.count - 1 { RiverRowDivider(inset: 0) }
                             }

@@ -17,20 +17,29 @@ enum RiverPanelLevel: Hashable {
 }
 
 /// The panel chrome: fill, outline, radius and elevation for one level.
-/// 柔和景深: every card floats with a two-tier shadow — a tight contact
-/// shadow plus a wide, low-opacity ambient shadow.
+/// 柔和景深: `.raised` and `.floating` float with a two-tier shadow — a tight
+/// contact shadow plus a wide, low-opacity ambient shadow. `.inline` carries no
+/// shadow at all, by design: dozens of shadowed panels in one scroll view is
+/// slow to render and visually noisy; page depth comes from the canvas/panel
+/// colour step instead.
 struct RiverPanelSurface: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
     let level: RiverPanelLevel
     let radius: CGFloat
     var tint: Color?
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
+        let base = content
             .background(fill, in: shape)
             .overlay(shape.strokeBorder(Color.border, lineWidth: 1))
-            .shadow(color: contactShadow, radius: contactRadius, y: contactY)
-            .shadow(color: ambientShadow, radius: ambientRadius, y: ambientY)
+        if level == .inline {
+            base
+        } else {
+            base
+                .shadow(color: contactShadow, radius: contactRadius, y: contactY)
+                .shadow(color: ambientShadow, radius: ambientRadius, y: ambientY)
+        }
     }
 
     private var shape: RoundedRectangle {
@@ -54,51 +63,33 @@ struct RiverPanelSurface: ViewModifier {
     }
 
     private var contactShadow: Color {
-        switch level {
-        case .inline: .black.opacity(dark ? 0.20 : 0.035)
-        case .raised: .black.opacity(dark ? 0.24 : 0.04)
-        case .floating: .black.opacity(dark ? 0.32 : 0.07)
-        }
+        if level == .floating { return .black.opacity(dark ? 0.32 : 0.07) }
+        return .black.opacity(dark ? 0.24 : 0.04)
     }
 
     private var contactRadius: CGFloat {
-        switch level {
-        case .inline: 2
-        case .raised: 3
-        case .floating: 6
-        }
+        if level == .floating { return 6 }
+        return 3
     }
 
     private var contactY: CGFloat {
-        switch level {
-        case .inline: 1
-        case .raised: 1
-        case .floating: 3
-        }
+        if level == .floating { return 3 }
+        return 1
     }
 
     private var ambientShadow: Color {
-        switch level {
-        case .inline: .black.opacity(dark ? 0.22 : 0.05)
-        case .raised: .black.opacity(dark ? 0.28 : 0.08)
-        case .floating: .black.opacity(dark ? 0.45 : 0.18)
-        }
+        if level == .floating { return .black.opacity(dark ? 0.45 : 0.18) }
+        return .black.opacity(dark ? 0.28 : 0.08)
     }
 
     private var ambientRadius: CGFloat {
-        switch level {
-        case .inline: 20
-        case .raised: 24
-        case .floating: 38
-        }
+        if level == .floating { return 38 }
+        return 24
     }
 
     private var ambientY: CGFloat {
-        switch level {
-        case .inline: 7
-        case .raised: 9
-        case .floating: 14
-        }
+        if level == .floating { return 14 }
+        return 9
     }
 }
 

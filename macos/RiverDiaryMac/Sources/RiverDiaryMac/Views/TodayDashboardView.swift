@@ -31,74 +31,102 @@ struct TodayDashboardView: View {
     }
     private var dayName: String { isSelectedDateToday ? "今天" : "这一天" }
     private var captures: [QuickCapture] { store.captures(for: entry) }
-    private var stats: FusedDayStats { activity.dayStats(entries: store.entries, date: selectedDate) }
-    private var timeline: ActivityTimeline {
-        ActivityTimelineEngine.build(
+
+    /// 一帧渲染的全部昂贵派生值。dayStats、时间线引擎和日报生成都不便宜，
+    /// 而本页观察的 store 每次自动保存草稿都会发布变更——必须每帧只算一次。
+    struct Snapshot {
+        let entry: DiaryEntry
+        let captures: [QuickCapture]
+        let stats: FusedDayStats
+        let timeline: ActivityTimeline
+        let localReport: LocalDayReport
+    }
+
+    private func makeSnapshot() -> Snapshot {
+        let snapshotEntry = store.entry(for: selectedDate)
+        let snapshotCaptures = store.captures(for: snapshotEntry)
+        let snapshotStats = activity.dayStats(entries: store.entries, date: selectedDate)
+        let snapshotTimeline = ActivityTimelineEngine.build(
             for: selectedDate,
             sessions: activity.liveSessions(for: selectedDate),
-            captures: captures,
+            captures: snapshotCaptures,
             annotations: store.timelineAnnotations
         )
-    }
-
-    private var hasRecordedTime: Bool { timeline.totalDuration > 0 }
-
-    private var brief: String {
-        if !entry.displayOverview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return entry.displayOverview
+        let writing = snapshotEntry.displayOverview.trimmingCharacters(in: .whitespacesAndNewlines)
+        let brief: String
+        if !writing.isEmpty {
+            brief = snapshotEntry.displayOverview
+        } else if !snapshotStats.headline.isEmpty {
+            brief = snapshotStats.headline
+        } else if snapshotTimeline.items.isEmpty {
+            brief = "这一天还没有足够证据，先从一个来源开始。"
+        } else {
+            brief = "这一天已有 \(snapshotTimeline.items.count) 个时间节点，可以沿时间线查看。"
         }
-        if !stats.headline.isEmpty { return stats.headline }
-        if timeline.items.isEmpty { return "这一天还没有足够证据，先从一个来源开始。" }
-        return "这一天已有 \(timeline.items.count) 个时间节点，可以沿时间线查看。"
-    }
-
-    private var fallbackKind: LocalDayReportKind {
-        LocalDayReportKind.fallbackKind(
-            hasDiaryContent: !entry.displayOverview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-            hasSourceSnapshot: stats.pipelineAvailable
+        let fallbackKind = LocalDayReportKind.fallbackKind(
+            hasDiaryContent: !writing.isEmpty,
+            hasSourceSnapshot: snapshotStats.pipelineAvailable
+        )
+        let report = LocalDayReportBuilder.make(
+            timeline: snapshotTimeline,
+            stats: snapshotStats,
+            fallback: brief,
+            fallbackKind: fallbackKind
+        )
+        return Snapshot(
+            entry: snapshotEntry,
+            captures: snapshotCaptures,
+            stats: snapshotStats,
+            timeline: snapshotTimeline,
+            localReport: report
         )
     }
 
-    private var workDuration: TimeInterval {
-        stats.categoryUsage
+    private func hasRecordedTime(_ s: Snapshot) -> Bool { s.timeline.totalDuration > 0 }
+
+    private func focusShareText(_ s: Snapshot) -> String {
+        guard hasRecordedTime(s) else { return "还没有可计的记录" }
+        let share = Int((s.stats.focusTotal / s.timeline.totalDuration) * 100)
+        return "占全部记录 \(share)%"
+    }
+
+    private func longestSessionCaption(_ s: Snapshot) -> String {
+        guard let longest = s.stats.longestSession else { return "没有可识别的连续片段" }
+        return "\(longest.appName) · \(ActivityFormatter.timeRange(longest.start, longest.end))"
+    }
+
+    private func workDuration(_ s: Snapshot) -> TimeInterval {
+        s.stats.categoryUsage
             .filter { ActivityClassifier.isFocus($0.category) }
             .reduce(0) { $0 + $1.duration }
     }
 
-    private var unclassifiedDuration: TimeInterval {
-        stats.categoryUsage
-            .filter { $0.category == "其他" }
-            .reduce(0) { $0 + $1.duration }
-    }
-
-    private var entertainmentDuration: TimeInterval {
-        stats.categoryUsage
+    private func entertainmentDuration(_ s: Snapshot) -> TimeInterval {
+        s.stats.categoryUsage
             .filter { $0.category == "娱乐" }
             .reduce(0) { $0 + $1.duration }
     }
 
-    private var focusShareText: String {
-        guard hasRecordedTime else { return "还没有可计的记录" }
-        let share = Int((stats.focusTotal / timeline.totalDuration) * 100)
-        return "占全部记录 \(share)%"
+    private func categorySlices(_ s: Snapshot) -> [TodayCategorySlice] {
+        let total = s.stats.categoryUsage.reduce(0) { $0 + $1.duration }
+        guard total > 0 else { return [] }
+        return s.stats.categoryUsage.prefix(5).map { item in
+            TodayCategorySlice(
+                name: item.name,
+                durationText: ActivityFormatter.time(item.duration),
+                tint: AppTheme.categoryTint(item.category),
+                fraction: CGFloat(min(item.duration / total, 1))
+            )
+        }
     }
 
-    private var longestSessionCaption: String {
-        guard let longest = stats.longestSession else { return "没有可识别的连续片段" }
-        return "\(longest.appName) · \(ActivityFormatter.timeRange(longest.start, longest.end))"
-    }
-
-    private var healthSummary: String {
-        guard let health = entry.health else { return "健康数据未知，不按零计算" }
+    private func healthSummary(_ s: Snapshot) -> String {
+        guard let health = s.entry.health else { return "健康数据未知，不按零计算" }
         var values: [String] = []
         if let sleep = health.resolvedSleepHours { values.append("睡眠 \(sleep.formatted(.number.precision(.fractionLength(1))))h") }
         if let steps = health.steps { values.append("步数 \(steps)") }
         if let energy = health.activeEnergyKcal { values.append("活动 \(Int(energy))kcal") }
         return values.isEmpty ? "健康数据部分缺失" : values.joined(separator: " · ")
-    }
-
-    private var localReport: LocalDayReport {
-        LocalDayReportBuilder.make(timeline: timeline, stats: stats, fallback: brief, fallbackKind: fallbackKind)
     }
 
     private var dateKey: String { DiaryEntry.dateFormatter.string(from: selectedDate) }
@@ -127,12 +155,13 @@ struct TodayDashboardView: View {
     }
 
     var body: some View {
-        RiverPage(maxWidth: AppLayout.todayMaxWidth) {
+        let s = makeSnapshot()
+        return RiverPage(maxWidth: AppLayout.todayMaxWidth) {
             reportHeader.riverAppear(index: 0)
-            glanceHero.riverAppear(index: 1)
-            dayBrief.riverAppear(index: 2)
-            insightRow.riverAppear(index: 3)
-            evidenceInbox.riverAppear(index: 4)
+            glanceHero(s).riverAppear(index: 1)
+            dayBrief(s).riverAppear(index: 2)
+            insightRow(s).riverAppear(index: 3)
+            evidenceInbox(s).riverAppear(index: 4)
         }
         .task(id: dateKey) {
             ai.restoreAnalysisResults(startDate: dateKey, endDate: dateKey)
@@ -167,42 +196,42 @@ struct TodayDashboardView: View {
 
     /// The ten-second read of the day: four totals and the whole day in one band.
     /// Carries the page's accent wash so the eye lands here first.
-    private var glanceHero: some View {
+    private func glanceHero(_ s: Snapshot) -> some View {
         RiverPanel(padding: AppSpacing.panelPadding, tint: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.lg)) {
                 HStack(alignment: .top, spacing: 0) {
                     TodayHeroStat(
                         title: "记录总时长",
-                        value: hasRecordedTime ? ActivityFormatter.time(timeline.totalDuration) : "—",
-                        caption: hasRecordedTime
-                            ? "\(timeline.sessions.count) 段实时片段 · \(captures.count) 条快记"
+                        value: hasRecordedTime(s) ? ActivityFormatter.time(s.timeline.totalDuration) : "—",
+                        caption: hasRecordedTime(s)
+                            ? "\(s.timeline.sessions.count) 段实时片段 · \(s.captures.count) 条快记"
                             : "\(dayName)还没有记录的时间段",
                         valueFont: AppTypography.metricDisplay()
                     )
                     TodayStatDivider()
                     TodayHeroStat(
                         title: "专注时长",
-                        value: hasRecordedTime ? ActivityFormatter.time(stats.focusTotal) : "—",
-                        caption: focusShareText
+                        value: hasRecordedTime(s) ? ActivityFormatter.time(s.stats.focusTotal) : "—",
+                        caption: focusShareText(s)
                     )
                     TodayStatDivider()
                     TodayHeroStat(
                         title: "最长连续",
-                        value: stats.longestSession.map { ActivityFormatter.time($0.duration) } ?? "—",
-                        caption: longestSessionCaption
+                        value: s.stats.longestSession.map { ActivityFormatter.time($0.duration) } ?? "—",
+                        caption: longestSessionCaption(s)
                     )
                     TodayStatDivider()
                     TodayHeroStat(
                         title: "证据质量",
-                        value: "\(stats.confidence)%",
+                        value: "\(s.stats.confidence)%",
                         caption: "数据量与来源一致性",
-                        progress: Double(stats.confidence) / 100
+                        progress: Double(s.stats.confidence) / 100
                     )
                 }
 
                 RiverDayRibbon(
                     date: selectedDate,
-                    items: timeline.items,
+                    items: s.timeline.items,
                     now: isSelectedDateToday ? Date() : nil
                 )
             }
@@ -211,7 +240,7 @@ struct TodayDashboardView: View {
 
     // MARK: Day brief
 
-    private var dayBrief: some View {
+    private func dayBrief(_ s: Snapshot) -> some View {
         RiverPanel(
             title: isSelectedDateToday ? "今天发生了什么" : "\(selectedDateLabel)发生了什么",
             systemImage: "text.alignleft",
@@ -221,11 +250,11 @@ struct TodayDashboardView: View {
                 HStack(alignment: .top, spacing: density.spacing(AppSpacing.md)) {
                     VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
                         if dailyReport == nil && !isBriefExpanded {
-                            Text(localReport.headline)
+                            Text(s.localReport.headline)
                                 .font(AppTypography.sectionTitle())
                                 .foregroundStyle(Color.ink)
                                 .fixedSize(horizontal: false, vertical: true)
-                            ForEach(localReport.highlights, id: \.self) { highlight in
+                            ForEach(s.localReport.highlights, id: \.self) { highlight in
                                 HStack(alignment: .firstTextBaseline, spacing: density.spacing(AppSpacing.sm)) {
                                     Circle().fill(AppTheme.accent).frame(width: 5, height: 5)
                                     Text(highlight)
@@ -235,7 +264,7 @@ struct TodayDashboardView: View {
                                 }
                             }
                         } else {
-                            Text(dailyReport ?? localReport.overview)
+                            Text(dailyReport ?? s.localReport.overview)
                                 .font(AppTypography.primary())
                                 .foregroundStyle(Color.ink)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -243,12 +272,12 @@ struct TodayDashboardView: View {
                     }
                     Spacer(minLength: density.spacing(AppSpacing.sm))
                     StatusBadge(
-                        dailyReport == nil ? localReport.kind.title : "AI 摘要",
+                        dailyReport == nil ? s.localReport.kind.title : "AI 摘要",
                         tone: dailyReport == nil ? .neutral : .positive
                     )
                 }
 
-                Text(dailyReport == nil ? localReport.sourceLine : dailyReportSource)
+                Text(dailyReport == nil ? s.localReport.sourceLine : dailyReportSource)
                     .font(AppTypography.metadata())
                     .foregroundStyle(Color.tertiaryInk)
                     .fixedSize(horizontal: false, vertical: true)
@@ -308,26 +337,26 @@ struct TodayDashboardView: View {
     // MARK: Insight row
 
     /// Time split on the left; the day's goal and remaining facts on the right.
-    private var insightRow: some View {
+    private func insightRow(_ s: Snapshot) -> some View {
         HStack(alignment: .top, spacing: density.spacing(AppSpacing.panelGap)) {
-            timeBreakdown
+            timeBreakdown(s)
                 .frame(maxWidth: .infinity, alignment: .leading)
             VStack(spacing: density.spacing(AppSpacing.panelGap)) {
                 goalPanel
-                factsPanel
+                factsPanel(s)
             }
             .frame(width: AppLayout.todayAsideWidth)
         }
     }
 
-    private var timeBreakdown: some View {
+    private func timeBreakdown(_ s: Snapshot) -> some View {
         RiverPanel(
             title: "时间分布",
             systemImage: "chart.bar",
-            detail: "专注 \(ActivityFormatter.time(workDuration))",
+            detail: "专注 \(ActivityFormatter.time(workDuration(s)))",
             accent: AppTheme.accent
         ) {
-            if categorySlices.isEmpty {
+            if categorySlices(s).isEmpty {
                 HStack(spacing: density.spacing(AppSpacing.sm)) {
                     Image(systemName: "hourglass")
                         .foregroundStyle(Color.tertiaryInk)
@@ -337,7 +366,7 @@ struct TodayDashboardView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
-                    ForEach(categorySlices) { slice in
+                    ForEach(categorySlices(s)) { slice in
                         TodayCategoryBar(
                             name: slice.name,
                             durationText: slice.durationText,
@@ -351,7 +380,7 @@ struct TodayDashboardView: View {
                             .linkAction()
                             .font(AppTypography.secondary())
                         Spacer(minLength: density.spacing(AppSpacing.sm))
-                        Text("管道汇总 \(stats.pipelineTotal > 0 ? ActivityFormatter.time(stats.pipelineTotal) : "未知")")
+                        Text("管道汇总 \(s.stats.pipelineTotal > 0 ? ActivityFormatter.time(s.stats.pipelineTotal) : "未知")")
                             .font(AppTypography.metadata())
                             .foregroundStyle(Color.tertiaryInk)
                     }
@@ -361,38 +390,25 @@ struct TodayDashboardView: View {
         }
     }
 
-    private var categorySlices: [TodayCategorySlice] {
-        let total = stats.categoryUsage.reduce(0) { $0 + $1.duration }
-        guard total > 0 else { return [] }
-        return stats.categoryUsage.prefix(5).map { item in
-            TodayCategorySlice(
-                name: item.name,
-                durationText: ActivityFormatter.time(item.duration),
-                tint: AppTheme.categoryTint(item.category),
-                fraction: CGFloat(min(item.duration / total, 1))
-            )
-        }
-    }
-
     private var goalPanel: some View {
         RiverPanel(padding: AppSpacing.md) {
             DailyGoalControl(store: store, date: selectedDate)
         }
     }
 
-    private var factsPanel: some View {
+    private func factsPanel(_ s: Snapshot) -> some View {
         RiverPanel(title: "更多事实", systemImage: "list.bullet", accent: AppTheme.neutral) {
             VStack(spacing: 0) {
                 RiverValueRow(
                     title: "健康",
-                    value: entry.health == nil ? "未知" : "部分",
-                    detail: healthSummary
+                    value: s.entry.health == nil ? "未知" : "部分",
+                    detail: healthSummary(s)
                 )
                 RiverValueRow(
                     title: "娱乐与中断",
                     value: "事实",
-                    detail: entertainmentDuration > 0
-                        ? "视频/娱乐 \(ActivityFormatter.time(entertainmentDuration))"
+                    detail: entertainmentDuration(s) > 0
+                        ? "视频/娱乐 \(ActivityFormatter.time(entertainmentDuration(s)))"
                         : "\(dayName)没有可识别的娱乐片段"
                 )
                 RiverValueRow(
@@ -407,8 +423,8 @@ struct TodayDashboardView: View {
 
     // MARK: Review queue
 
-    private var evidenceInbox: some View {
-        let items = Array(timeline.items.filter { item in
+    private func evidenceInbox(_ s: Snapshot) -> some View {
+        let items = Array(s.timeline.items.filter { item in
             item.annotation?.isReviewed != true && (item.kind == .gap || item.sessions.contains { session in
                 let title = session.windowTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 return title.isEmpty

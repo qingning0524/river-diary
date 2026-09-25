@@ -40,7 +40,8 @@ final class AIAssistantStore: ObservableObject {
 
     private var memorySearchCache: [String: String] = [:]
     private var taskRequestIDs: [AITask: UUID] = [:]
-    private lazy var analysisStore = V2Store()
+    private let providedAnalysisStore: V2Store?
+    private lazy var analysisStore: V2Store = providedAnalysisStore ?? V2Store()
     private static let contextDateTimeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -110,7 +111,8 @@ final class AIAssistantStore: ObservableObject {
         return "\(time) · \(record.model) · \(record.success ? "成功" : "失败")"
     }
 
-    init() {
+    init(v2Store: V2Store? = nil) {
+        providedAnalysisStore = v2Store
         includeTitles = UserDefaults.standard.bool(forKey: "ai.footprint.includeTitles")
         loadProfiles()
         selectedProfileID = UserDefaults.standard.string(forKey: "ai.footprint.selectedProfile")

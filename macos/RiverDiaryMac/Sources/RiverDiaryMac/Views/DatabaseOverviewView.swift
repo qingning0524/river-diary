@@ -35,6 +35,9 @@ struct DatabasePreviewWindow: Equatable {
 
 struct DatabaseOverviewView: View {
     @Environment(\.riverDensity) private var density
+    /// 共享的 V2 连接。此页只读；每次刷新新建实例会在主线程反复打开
+    /// SQLCipher 并重跑全部建表 DDL。
+    let store: V2Store
     let selectedDate: Date
     let dailyGoal: DailyGoal?
     @State private var rows: [(table: V2Table, count: Int)] = []
@@ -82,9 +85,12 @@ struct DatabaseOverviewView: View {
 
                 RiverPanel(title: "数据表 · 全库", systemImage: "tablecells", accent: AppTheme.neutral) {
                     if rows.isEmpty {
-                        Text("数据库还没有可展示的表。")
-                            .font(AppTypography.secondary())
-                            .foregroundStyle(Color.secondaryInk)
+                        EmptyStateView(
+                            title: "数据库还没有可展示的表。",
+                            message: "实时记录开始写入后，V2 事实层的表会出现在这里。",
+                            symbol: "cylinder.split.1x2",
+                            showsChrome: false
+                        )
                     } else {
                         VStack(spacing: 0) {
                             ForEach(Array(rows.enumerated()), id: \.element.table.id) { index, row in
@@ -141,10 +147,13 @@ struct DatabaseOverviewView: View {
                     }
 
                     if previewRows.isEmpty {
-                        Text("这一天暂无 \(selectedTable.title) 记录。")
-                            .font(AppTypography.secondary())
-                            .foregroundStyle(Color.secondaryInk)
-                            .padding(.top, density.spacing(AppSpacing.xs))
+                        EmptyStateView(
+                            title: "这一天暂无 \(selectedTable.title) 记录。",
+                            message: "换一个日期或刷新试试；页面只读，不会修改任何数据。",
+                            symbol: "tablecells",
+                            showsChrome: false
+                        )
+                        .padding(.top, density.spacing(AppSpacing.xs))
                     } else {
                         VStack(spacing: 0) {
                             ForEach(Array(previewRows.enumerated()), id: \.element.id) { index, row in
@@ -197,9 +206,12 @@ struct DatabaseOverviewView: View {
                                 .foregroundStyle(Color.tertiaryInk)
                         }
                     } else {
-                        Text("这一天没有用户设定的目标记录。")
-                            .font(AppTypography.secondary())
-                            .foregroundStyle(Color.secondaryInk)
+                        EmptyStateView(
+                            title: "这一天没有用户设定的目标记录。",
+                            message: "在 Today 设定每日主目标后，它会作为用户记录出现在这里。",
+                            symbol: "target",
+                            showsChrome: false
+                        )
                     }
                 }
             }
@@ -215,7 +227,6 @@ struct DatabaseOverviewView: View {
     }
 
     private func reload() {
-        let store = V2Store()
         rows = V2Table.allCases.map { ($0, store.countRows(in: $0)) }
         lastLoadedAt = Date()
     }
@@ -228,27 +239,14 @@ struct DatabaseOverviewView: View {
 
     @ViewBuilder
     private func tableButton(_ table: V2Table) -> some View {
-        if selectedTable == table {
-            Button(table.title) {
-                selectedTable = table
-                previewWindow.reset()
-                loadPreview()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
-        } else {
-            Button(table.title) {
-                selectedTable = table
-                previewWindow.reset()
-                loadPreview()
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+        FilterChip(title: table.title, isSelected: selectedTable == table) {
+            selectedTable = table
+            previewWindow.reset()
+            loadPreview()
         }
     }
 
     private func loadPreview() {
-        let store = V2Store()
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: selectedDate)
         let end = calendar.date(byAdding: .day, value: 1, to: start)?.addingTimeInterval(-0.001) ?? selectedDate

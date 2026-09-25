@@ -20,6 +20,12 @@ struct RiverDayRibbon: View {
     static let trackHeight: CGFloat = 38
     /// Hour ticks every six hours: enough to place yourself, not a grid.
     private static let ticks = [0, 6, 12, 18, 24]
+    /// VoiceOver summary runs per render; don't allocate a formatter each time.
+    private static let accessibilityTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
@@ -156,8 +162,7 @@ struct RiverDayRibbon: View {
         let first = recorded.map(\.start).min() ?? date
         let last = recorded.map(\.end).max() ?? date
         let total = recorded.reduce(0.0) { $0 + max($1.end.timeIntervalSince($1.start), $1.duration) }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
+        let formatter = Self.accessibilityTimeFormatter
         return "\(formatter.string(from: first)) 到 \(formatter.string(from: last)) 之间共记录 \(ActivityFormatter.time(total))，其余时间没有记录"
     }
 }

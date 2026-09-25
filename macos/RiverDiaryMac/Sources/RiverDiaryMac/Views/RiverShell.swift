@@ -107,6 +107,7 @@ struct RiverShellView: View {
     @ObservedObject var ingestion: DataIngestionStore
     @ObservedObject var dateContext: DateContextStore
     @ObservedObject var location: LocationSourceStore
+    let v2Store: V2Store
 
     @State private var destination: RiverDestination = .today
     @State private var inspectorContent: InspectorContent?
@@ -125,9 +126,29 @@ struct RiverShellView: View {
     @State private var prefersHighContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
     @AppStorage("privacy.appLockEnabled") private var appLockEnabled = false
     @State private var isLocked = false
-    @StateObject private var memoryLibrary = MemoryLibraryStore()
+    @StateObject private var memoryLibrary: MemoryLibraryStore
     @StateObject private var journalEditor = JournalEditorStore()
     @StateObject private var feedback = FeedbackCenter()
+
+    init(
+        store: DiaryStore,
+        activity: ActivityStore,
+        ai: AIAssistantStore,
+        ingestion: DataIngestionStore,
+        dateContext: DateContextStore,
+        location: LocationSourceStore,
+        v2Store: V2Store
+    ) {
+        self.store = store
+        self.activity = activity
+        self.ai = ai
+        self.ingestion = ingestion
+        self.dateContext = dateContext
+        self.location = location
+        self.v2Store = v2Store
+        // 记忆库与全进程共享同一条 V2 连接，不再自开一份 SQLCipher。
+        _memoryLibrary = StateObject(wrappedValue: MemoryLibraryStore(v2Store: v2Store))
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -523,6 +544,7 @@ struct RiverShellView: View {
             ReviewRedesignView(store: store, activity: activity, ai: ai, library: memoryLibrary, selectedDate: dateContext.selectedDate)
         case .database:
             DatabaseOverviewView(
+                store: v2Store,
                 selectedDate: dateContext.selectedDate,
                 dailyGoal: store.dailyGoal(for: dateContext.selectedDate)
             )
