@@ -561,11 +561,3 @@ enum AskQuestionIntent {
     }
 }
 
-extension Array where Element == DiaryEntry {
-    func inDateRange(_ range: ClosedRange<Date>) -> [DiaryEntry] {
-        filter { entry in
-            guard let date = entry.entryDate else { return false }
-            return range.contains(date)
-        }
-    }
-}

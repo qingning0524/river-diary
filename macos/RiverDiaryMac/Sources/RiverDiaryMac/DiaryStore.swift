@@ -395,33 +395,6 @@ final class DiaryStore: ObservableObject {
         }
     }
 
-    func draftDismissed(_ entry: DiaryEntry) -> Bool {
-        dismissedDrafts.contains(entry.id)
-    }
-
-    func dismissDraft(for entry: DiaryEntry) {
-        dismissedDrafts.insert(entry.id)
-        careAcknowledgments.insert(entry.id)
-        hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
-    }
-
-    func restoreDraft(for entry: DiaryEntry) {
-        dismissedDrafts.remove(entry.id)
-        hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
-    }
-
-    func acknowledgeCare(_ entry: DiaryEntry) {
-        careAcknowledgments.insert(entry.id)
-        hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
-    }
-
-    func careAcknowledged(_ entry: DiaryEntry) -> Bool {
-        careAcknowledgments.contains(entry.id)
-    }
-
     func setAutoDraftPaused(_ paused: Bool) {
         let previousPaused = autoDraftPaused
         let previousPausedUntil = draftPausedUntil

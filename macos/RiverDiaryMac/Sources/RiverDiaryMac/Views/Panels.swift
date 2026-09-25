@@ -246,16 +246,6 @@ extension RiverPanel where Header == EmptyView {
 
 /// Wraps a header view so that a panel header always ends with the same
 /// full-bleed hairline, including custom headers.
-struct RiverPanelHeaderBox<Content: View>: View {
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        VStack(spacing: 0) {
-            content()
-            RiverRule()
-        }
-    }
-}
 
 // MARK: - Rules
 
@@ -445,13 +435,6 @@ struct RiverStat: View {
 }
 
 /// A horizontal strip of `RiverStat`s separated by hairlines.
-struct RiverStatStrip<Content: View>: View {
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 0) { content() }
-    }
-}
 
 /// Hairline separator used between `RiverStat`s in a strip.
 struct RiverStatDivider: View {

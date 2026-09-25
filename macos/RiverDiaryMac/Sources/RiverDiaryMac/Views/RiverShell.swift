@@ -374,8 +374,9 @@ struct RiverShellView: View {
     /// VoiceOver：Inspector 打开时右侧凭空多出一块详情面板，需要显式播报，
     /// 否则旁白用户无从知道选择记录后发生了什么。
     private func announceInspector(_ title: String) {
+        guard let app = NSApp else { return }
         NSAccessibility.post(
-            element: NSApp,
+            element: app,
             notification: .announcementRequested,
             userInfo: [
                 .announcement: NSAttributedString(string: "已打开详情：\(title)"),

@@ -247,10 +247,6 @@ final class AIAssistantStore: ObservableObject {
         taskStates[task]
     }
 
-    func clearTask(_ task: AITask) {
-        taskRequestIDs[task] = UUID()
-        taskStates[task] = nil
-    }
 
     func restoreAnalysisResults(startDate: String, endDate: String) {
         // Today can change its date context without recreating the AI store.
@@ -283,10 +279,6 @@ final class AIAssistantStore: ObservableObject {
         }
     }
 
-    func archivedResult(task: AITask, startDate: String, endDate: String) -> DBAIResult? {
-        AppDatabase.shared.queryAIResults(startDate: startDate, endDate: endDate)
-            .first { $0.task == task.rawValue }
-    }
 
     private func archiveResult(_ result: InsightResult) {
         AppDatabase.shared.saveAIResult(

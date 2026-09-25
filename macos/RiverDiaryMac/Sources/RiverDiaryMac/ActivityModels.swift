@@ -133,8 +133,3 @@ struct FusedRangeStats {
 }
 
 
-struct ActivityAnswer {
-    var summary: String
-    var filters: [String]
-    var sessions: [ActivitySession]
-}

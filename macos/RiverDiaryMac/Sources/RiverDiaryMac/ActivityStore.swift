@@ -217,15 +217,8 @@ final class ActivityStore: ObservableObject {
         try LocalStorageProtection.ensurePrivateDirectory(at: stagingDirectory)
         defer { try? fileManager.removeItem(at: stagingDirectory) }
 
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.sortedKeys]
-        let sessionsByDay = Dictionary(grouping: orderedSessions, by: \.dayKey)
-        for (dayKey, daySessions) in sessionsByDay.sorted(by: { $0.key < $1.key }) {
-            let file = stagingDirectory.appendingPathComponent("\(dayKey).activity")
-            let encrypted = try StateEncryption.encrypt(try encoder.encode(daySessions.sorted { $0.start < $1.start }))
-            try encrypted.write(to: file, options: .atomic)
-            try LocalStorageProtection.protectFile(at: file)
+        for (dayKey, daySessions) in Dictionary(grouping: orderedSessions, by: \.dayKey).sorted(by: { $0.key < $1.key }) {
+            try writeDayFile(daySessions.sorted { $0.start < $1.start }, to: stagingDirectory.appendingPathComponent("\(dayKey).activity"))
         }
 
         let shouldResumeTracking = isTracking

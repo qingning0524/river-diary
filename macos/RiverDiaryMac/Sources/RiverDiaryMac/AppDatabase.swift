@@ -500,141 +500,25 @@ final class AppDatabase {
 
     // MARK: Queries
 
-    func queryDailyRecord(date: String) -> DBDailyRecord? {
-        queue.sync { [weak self] in
-            guard let self, let db = self.db else { return nil }
-            let sql = "SELECT * FROM daily_records WHERE date = ? LIMIT 1"
-            var statement: OpaquePointer?
-            guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
-            defer { sqlite3_finalize(statement) }
-            sqlite3_bind_text(statement, 1, date, -1, Self.transientDestructor)
-            if sqlite3_step(statement) == SQLITE_ROW {
-                return readDailyRecord(statement)
-            }
-            return nil
-        }
-    }
+ 
 
-    func queryDailyRecords(limit: Int = 365) -> [DBDailyRecord] {
-        queue.sync { [weak self] in
-            guard let self, let db = self.db else { return [] }
-            let sql = "SELECT * FROM daily_records ORDER BY date DESC LIMIT ?"
-            var results: [DBDailyRecord] = []
-            var statement: OpaquePointer?
-            guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
-            defer { sqlite3_finalize(statement) }
-            sqlite3_bind_int(statement, 1, Int32(limit))
-            while sqlite3_step(statement) == SQLITE_ROW {
-                results.append(readDailyRecord(statement))
-            }
-            return results
-        }
-    }
+ 
 
-    func queryAvailableDates(limit: Int = 365) -> [String] {
-        queryDailyRecords(limit: limit).map(\.date)
-    }
+ 
 
-    func queryChromeVisits(date: String) -> [DBChromeVisit] {
-        query(
-            "SELECT id, date, url, title, domain, visited_at, visit_count FROM chrome_visits WHERE date = ? ORDER BY visited_at DESC",
-            bindings: bindText(date)
-        ) { statement in
-            DBChromeVisit(
-                id: Int(sqlite3_column_int64(statement, 0)),
-                date: text(statement, 1),
-                url: text(statement, 2),
-                title: text(statement, 3),
-                domain: text(statement, 4),
-                visitedAt: text(statement, 5),
-                visitCount: Int(sqlite3_column_int(statement, 6))
-            )
-        }
-    }
+ 
 
-    func queryDailyNotes(date: String) -> [DBDailyNote] {
-        query(
-            "SELECT id, date, title, modified_at FROM daily_notes WHERE date = ? ORDER BY modified_at DESC",
-            bindings: bindText(date)
-        ) { statement in
-            DBDailyNote(
-                id: Int(sqlite3_column_int64(statement, 0)),
-                date: text(statement, 1),
-                title: text(statement, 2),
-                modifiedAt: text(statement, 3)
-            )
-        }
-    }
+ 
 
-    func queryActivitySessions(date: String) -> [DBActivitySession] {
-        query(
-            "SELECT id, date, app_name, bundle_id, category, start_time, end_time, duration_minutes, window_title FROM activity_sessions WHERE date = ? ORDER BY start_time",
-            bindings: bindText(date)
-        ) { statement in
-            let title = sqlite3_column_type(statement, 8) == SQLITE_NULL ? nil : text(statement, 8)
-            return DBActivitySession(
-                id: text(statement, 0),
-                date: text(statement, 1),
-                appName: text(statement, 2),
-                category: text(statement, 4),
-                startTime: text(statement, 5),
-                endTime: text(statement, 6),
-                durationMinutes: Int(sqlite3_column_int(statement, 7)),
-                windowTitle: title
-            )
-        }
-    }
+ 
 
-    func queryQuickCaptures(date: String) -> [DBQuickCapture] {
-        query(
-            "SELECT id, date, text, created_at, source FROM quick_captures WHERE date = ? ORDER BY created_at",
-            bindings: bindText(date)
-        ) { statement in
-            DBQuickCapture(
-                id: text(statement, 0),
-                date: text(statement, 1),
-                text: text(statement, 2),
-                createdAt: text(statement, 3),
-                source: text(statement, 4)
-            )
-        }
-    }
+ 
 
-    func queryMoodScore(date: String) -> DBMoodScore? {
-        queryOne(
-            "SELECT date, score, source FROM mood_scores WHERE date = ? LIMIT 1",
-            bindings: bindText(date)
-        ) { DBMoodScore(date: text($0, 0), score: Int(sqlite3_column_int($0, 1)), source: text($0, 2)) }
-    }
+ 
 
-    func querySleepNight(date: String) -> DBSleepNight? {
-        queryOne(
-            "SELECT date, total_hours, deep_minutes, rem_minutes, awake_minutes FROM sleep_nights WHERE date = ? LIMIT 1",
-            bindings: bindText(date)
-        ) {
-            DBSleepNight(
-                date: text($0, 0),
-                totalHours: sqlite3_column_double($0, 1),
-                deepMinutes: sqlite3_column_double($0, 2),
-                remMinutes: sqlite3_column_double($0, 3),
-                awakeMinutes: sqlite3_column_double($0, 4)
-            )
-        }
-    }
+ 
 
-    func queryExerciseDay(date: String) -> DBExerciseDay? {
-        queryOne(
-            "SELECT date, steps, distance_km, active_energy_kcal FROM exercise_days WHERE date = ? LIMIT 1",
-            bindings: bindText(date)
-        ) {
-            DBExerciseDay(
-                date: text($0, 0),
-                steps: Int(sqlite3_column_int($0, 1)),
-                distanceKM: sqlite3_column_double($0, 2),
-                activeEnergyKcal: sqlite3_column_double($0, 3)
-            )
-        }
-    }
+ 
 
     // MARK: AI Archive
 
@@ -698,149 +582,7 @@ final class AppDatabase {
         }
     }
 
-    func queryRecentAIResults(limit: Int = 30) -> [DBAIResult] {
-        query(
-            """
-            SELECT result_key, start_date, end_date, task, model, answer, source_summary, created_at, is_local
-            FROM ai_results ORDER BY created_at DESC LIMIT ?
-            """,
-            bindings: { sqlite3_bind_int($0, 1, Int32(limit)) }
-        ) { statement in
-            DBAIResult(
-                resultKey: text(statement, 0),
-                startDate: text(statement, 1),
-                endDate: text(statement, 2),
-                task: text(statement, 3),
-                model: text(statement, 4),
-                answer: text(statement, 5),
-                sourceSummary: text(statement, 6),
-                createdAt: text(statement, 7),
-                isLocal: sqlite3_column_int(statement, 8) == 1
-            )
-        }
-    }
-
-    // MARK: Cross-day Query
-
-    func queryCrossDaySnapshot(startDate: String, endDate: String, searchText: String = "", limitPerType: Int = 200) -> DatabaseCrossDaySnapshot {
-        let pattern = "%\(searchText.trimmingCharacters(in: .whitespacesAndNewlines))%"
-        var snapshot = DatabaseCrossDaySnapshot(startDate: startDate, endDate: endDate, query: searchText)
-
-        snapshot.dailyRecords = query(
-            "SELECT * FROM daily_records WHERE date BETWEEN ? AND ? ORDER BY date DESC LIMIT ?",
-            bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
-                sqlite3_bind_int($0, 3, Int32(max(0, limitPerType)))
-            },
-            read: { readDailyRecord($0) }
-        )
-        snapshot.chromeVisits = query(
-            """
-            SELECT id, date, url, title, domain, visited_at, visit_count
-            FROM chrome_visits
-            WHERE date BETWEEN ? AND ? AND (? = '' OR lower(url) LIKE lower(?) OR lower(title) LIKE lower(?) OR lower(domain) LIKE lower(?))
-            ORDER BY date DESC, visited_at DESC LIMIT ?
-            """,
-            bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 4, pattern, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 5, pattern, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 6, pattern, -1, Self.transientDestructor)
-                sqlite3_bind_int($0, 7, Int32(limitPerType))
-            }
-        ) { statement in
-            DBChromeVisit(
-                id: Int(sqlite3_column_int64(statement, 0)),
-                date: text(statement, 1),
-                url: text(statement, 2),
-                title: text(statement, 3),
-                domain: text(statement, 4),
-                visitedAt: text(statement, 5),
-                visitCount: Int(sqlite3_column_int(statement, 6))
-            )
-        }
-
-        snapshot.notes = query(
-            """
-            SELECT id, date, title, modified_at FROM daily_notes
-            WHERE date BETWEEN ? AND ? AND (? = '' OR lower(title) LIKE lower(?))
-            ORDER BY date DESC, modified_at DESC LIMIT ?
-            """,
-            bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 4, pattern, -1, Self.transientDestructor)
-                sqlite3_bind_int($0, 5, Int32(limitPerType))
-            }
-        ) { statement in
-            DBDailyNote(
-                id: Int(sqlite3_column_int64(statement, 0)),
-                date: text(statement, 1),
-                title: text(statement, 2),
-                modifiedAt: text(statement, 3)
-            )
-        }
-
-        snapshot.sessions = query(
-            """
-            SELECT id, date, app_name, bundle_id, category, start_time, end_time, duration_minutes, window_title
-            FROM activity_sessions
-            WHERE date BETWEEN ? AND ? AND (? = '' OR lower(app_name) LIKE lower(?) OR lower(category) LIKE lower(?) OR lower(coalesce(window_title, '')) LIKE lower(?))
-            ORDER BY date DESC, start_time DESC LIMIT ?
-            """,
-            bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 4, pattern, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 5, pattern, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 6, pattern, -1, Self.transientDestructor)
-                sqlite3_bind_int($0, 7, Int32(limitPerType))
-            }
-        ) { statement in
-            let title = sqlite3_column_type(statement, 8) == SQLITE_NULL ? nil : text(statement, 8)
-            return DBActivitySession(
-                id: text(statement, 0),
-                date: text(statement, 1),
-                appName: text(statement, 2),
-                category: text(statement, 4),
-                startTime: text(statement, 5),
-                endTime: text(statement, 6),
-                durationMinutes: Int(sqlite3_column_int(statement, 7)),
-                windowTitle: title
-            )
-        }
-
-        snapshot.quickCaptures = query(
-            """
-            SELECT id, date, text, created_at, source FROM quick_captures
-            WHERE date BETWEEN ? AND ? AND (? = '' OR lower(text) LIKE lower(?) OR lower(source) LIKE lower(?))
-            ORDER BY date DESC, created_at DESC LIMIT ?
-            """,
-            bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 4, pattern, -1, Self.transientDestructor)
-                sqlite3_bind_text($0, 5, pattern, -1, Self.transientDestructor)
-                sqlite3_bind_int($0, 6, Int32(limitPerType))
-            }
-        ) { statement in
-            DBQuickCapture(
-                id: text(statement, 0),
-                date: text(statement, 1),
-                text: text(statement, 2),
-                createdAt: text(statement, 3),
-                source: text(statement, 4)
-            )
-        }
-
-        return snapshot
-    }
+ 
 
     // MARK: Retention
 
@@ -848,8 +590,7 @@ final class AppDatabase {
     func purgeData(before cutoffDate: String) -> Bool {
         transaction { database in
             for table in ["daily_records", "mood_scores", "sleep_nights", "exercise_days", "chrome_visits", "daily_notes", "activity_sessions", "quick_captures"] {
-                let column = table == "activity_sessions" ? "date" : "date"
-                guard execute("DELETE FROM \(table) WHERE \(column) < ?", bindings: { sqlite3_bind_text($0, 1, cutoffDate, -1, Self.transientDestructor) }, database: database) else { return false }
+                guard execute("DELETE FROM \(table) WHERE date < ?", bindings: { sqlite3_bind_text($0, 1, cutoffDate, -1, Self.transientDestructor) }, database: database) else { return false }
             }
             return execute("DELETE FROM ai_results WHERE end_date < ?", bindings: { sqlite3_bind_text($0, 1, cutoffDate, -1, Self.transientDestructor) }, database: database)
         }
