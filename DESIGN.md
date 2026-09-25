@@ -159,7 +159,7 @@ RiverHeaderBand        header stays put, body scrolls (记忆, 设置)
   └── RiverPageBody    the shared scrolling column, optionally lazy
 ```
 
-Both use `AppSpacing.headerTop` (20) below the toolbar, `AppSpacing.page` (24) as the side gutter, `AppSpacing.headerBottom` (16) above the first panel, and `AppLayout.contentMaxWidth` (920, or wider for Today and 进展) as the reading width. A page never hand-rolls `ScrollView` + padding + background.
+Both use `AppSpacing.headerTop` (20) below the toolbar, `AppSpacing.page` (24) as the side gutter, `AppSpacing.headerBottom` (16) above the first panel, and `AppLayout.contentMaxWidth` (920) as the reading width. **One content width for every destination** — dashboards and timelines used to run wider (1000/1040) and Ask/数据库 narrower (760/820), which made the版心 jump when switching pages; that inconsistency is gone. A page never hand-rolls `ScrollView` + padding + background.
 
 ### Page header
 
@@ -231,6 +231,10 @@ Four button treatments, and no ad-hoc `background` + `foregroundStyle` pairs:
 .smallAction(dark:)           compact inline action inside a panel or a row
 .iconAction(prominent:)       a single SF Symbol, square hit area
 ```
+
+### Segmented picker
+
+`RiverSegmentedPicker` is the only exclusive-mode switcher (复盘范围、记忆范围、对照周期、外观/密度). It is a chip-filled container with the selected segment raised on a `Color.surface` pill and a 1px border. The native `.pickerStyle(.segmented)` is banned: its filled-blue bezel belongs to System Settings, not to this instrument.
 
 ### Empty and partial states
 

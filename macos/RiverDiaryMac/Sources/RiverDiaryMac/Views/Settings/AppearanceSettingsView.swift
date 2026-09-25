@@ -34,14 +34,12 @@ struct AppearanceSettingsView: View {
             ) {
                 RiverPanel {
                     RiverPanelRow(title: "外观", detail: "应用到整个窗口", showsDivider: false) {
-                        Picker("显示模式", selection: $appearanceModeRaw) {
-                            ForEach(RiverAppearance.allCases) { mode in
-                                Text(mode.title).tag(mode.rawValue)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .frame(width: 240)
+                        RiverSegmentedPicker(
+                            title: "显示模式",
+                            selection: $appearanceModeRaw,
+                            options: RiverAppearance.allCases.map(\.rawValue),
+                            label: { RiverAppearance(rawValue: $0)?.title ?? $0 }
+                        )
                     }
                 }
             }
@@ -52,14 +50,12 @@ struct AppearanceSettingsView: View {
             ) {
                 RiverPanel {
                     RiverPanelRow(title: "密度", detail: "影响面板内边距与行高", showsDivider: false) {
-                        Picker("内容密度", selection: $densityRaw) {
-                            ForEach(RiverDensity.allCases) { density in
-                                Text(density.title).tag(density.rawValue)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .frame(width: 240)
+                        RiverSegmentedPicker(
+                            title: "内容密度",
+                            selection: $densityRaw,
+                            options: RiverDensity.allCases.map(\.rawValue),
+                            label: { RiverDensity(rawValue: $0)?.title ?? $0 }
+                        )
                     }
                 }
             }

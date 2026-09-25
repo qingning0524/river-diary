@@ -106,6 +106,51 @@ struct RiverInsetPanel: View {
     }
 }
 
+// MARK: - Segmented picker
+// 应用自己的分段选择器。原生 .segmented 的蓝色选中块与系统边框
+// 和整套克制的设计语言不搭：这里是 chip 底、surface 浮起段、1px 描边。
+
+struct RiverSegmentedPicker<Option: Hashable>: View {
+    @Environment(\.riverDensity) private var density
+    /// VoiceOver 总标签（如"复盘范围"）。
+    let title: String
+    @Binding var selection: Option
+    let options: [Option]
+    let label: (Option) -> String
+
+    var body: some View {
+        HStack(spacing: density.spacing(AppSpacing.xxs)) {
+            ForEach(options, id: \.self) { option in
+                let isSelected = selection == option
+                Button {
+                    selection = option
+                } label: {
+                    Text(label(option))
+                        .font(AppTypography.label().weight(isSelected ? .semibold : .medium))
+                        .foregroundStyle(isSelected ? Color.ink : Color.secondaryInk)
+                        .padding(.horizontal, density.spacing(AppSpacing.md))
+                        .frame(minHeight: density.spacing(AppSpacing.controlHeight))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .background(
+                    isSelected ? Color.surface : Color.clear,
+                    in: RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                        .strokeBorder(isSelected ? Color.border : Color.clear, lineWidth: 1)
+                )
+                .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+            }
+        }
+        .padding(density.spacing(AppSpacing.xxs))
+        .background(Color.chip, in: RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(title)
+    }
+}
+
 // MARK: - Filter chip
 // The one selection control for scopes, categories and filters.
 

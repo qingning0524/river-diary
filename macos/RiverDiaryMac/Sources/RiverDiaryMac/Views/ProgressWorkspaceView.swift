@@ -35,7 +35,7 @@ struct ProgressWorkspaceView: View {
         let currentTrend = trendPoints(currentStats, window: currentWindow, isCurrent: true)
         let previousTrend = trendPoints(previousStats, window: previousWindow, isCurrent: false)
 
-        RiverPage(maxWidth: 920, spacing: AppSpacing.sectionGap) {
+        RiverPage(spacing: AppSpacing.sectionGap) {
             PageHeader("进展", context: "与上一个同长度周期对照 · 截止\(dateLabel)") {
                 periodPicker
             }
@@ -63,14 +63,12 @@ struct ProgressWorkspaceView: View {
     }
 
     private var periodPicker: some View {
-        Picker("对照周期", selection: $dayCount) {
-            Text("30 天").tag(30)
-            Text("90 天").tag(90)
-            Text("365 天").tag(365)
-        }
-        .pickerStyle(.segmented)
-        .frame(width: 250)
-        .accessibilityLabel("进展对照周期")
+        RiverSegmentedPicker(
+            title: "进展对照周期",
+            selection: $dayCount,
+            options: [30, 90, 365],
+            label: { "\($0) 天" }
+        )
     }
 
     private var comparisonHeader: some View {

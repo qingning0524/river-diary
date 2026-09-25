@@ -9,7 +9,7 @@ struct SourcesOverviewView: View {
     var onOpenSettings: () -> Void
 
     var body: some View {
-        RiverPage(maxWidth: 760) {
+        RiverPage {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
                 PageHeader("数据源", context: "权限、覆盖和采集状态") {
                     Button("打开设置", action: onOpenSettings)

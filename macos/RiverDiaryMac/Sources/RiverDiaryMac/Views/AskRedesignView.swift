@@ -39,7 +39,7 @@ struct AskRedesignView: View {
     }
 
     var body: some View {
-        RiverPage(maxWidth: AppLayout.askMaxWidth, topPadding: AppSpacing.sm) {
+        RiverPage(topPadding: AppSpacing.sm) {
             header
                 .riverAppear(index: 0)
             inputBar

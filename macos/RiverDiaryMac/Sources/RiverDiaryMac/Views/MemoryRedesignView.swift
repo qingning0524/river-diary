@@ -90,14 +90,12 @@ struct MemoryRedesignView: View {
             HStack(spacing: density.spacing(AppSpacing.md)) {
                 searchField
                 Spacer(minLength: 0)
-                Picker("范围", selection: $scope) {
-                    ForEach(MemoryScope.allCases) { item in
-                        Text(item.title).tag(item)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 380)
+                RiverSegmentedPicker(
+                    title: "范围",
+                    selection: $scope,
+                    options: Array(MemoryScope.allCases),
+                    label: { $0.title }
+                )
             }
         }
     }

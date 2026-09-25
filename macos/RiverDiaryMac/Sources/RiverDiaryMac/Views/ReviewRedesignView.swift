@@ -81,14 +81,12 @@ struct ReviewContentView: View {
     }
 
     private var rangePicker: some View {
-        Picker("范围", selection: $dayRange) {
-            Text("近 7 天").tag(7)
-            Text("近 30 天").tag(30)
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .frame(width: 150)
-        .accessibilityLabel("复盘范围")
+        RiverSegmentedPicker(
+            title: "复盘范围",
+            selection: $dayRange,
+            options: [7, 30],
+            label: { $0 == 7 ? "近 7 天" : "近 30 天" }
+        )
     }
 
     private func summary(_ review: LocalReview) -> some View {

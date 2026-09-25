@@ -156,7 +156,7 @@ struct TodayDashboardView: View {
 
     var body: some View {
         let s = makeSnapshot()
-        return RiverPage(maxWidth: AppLayout.todayMaxWidth) {
+        return RiverPage {
             reportHeader.riverAppear(index: 0)
             glanceHero(s).riverAppear(index: 1)
             dayBrief(s).riverAppear(index: 2)

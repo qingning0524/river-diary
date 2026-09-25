@@ -51,7 +51,7 @@ struct DatabaseOverviewView: View {
     }
 
     var body: some View {
-        RiverPage(maxWidth: AppLayout.databaseMaxWidth) {
+        RiverPage {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
                 PageHeader("数据库", context: "\(dayLabel) · V2 本地事实层") {
                     Button("刷新", action: refresh)
