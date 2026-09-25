@@ -425,12 +425,7 @@ struct TodayDashboardView: View {
     // MARK: Review queue
 
     private func evidenceInbox(_ s: Snapshot) -> some View {
-        let items = Array(s.timeline.items.filter { item in
-            item.annotation?.isReviewed != true && (item.kind == .gap || item.sessions.contains { session in
-                let title = session.windowTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                return title.isEmpty
-            })
-        }.prefix(4))
+        let items = Array(s.timeline.items.filter(\.needsReview).prefix(4))
 
         return RiverPanel(
             title: "需要你确认",
@@ -588,7 +583,7 @@ private struct TodayReviewRow: View {
                         .font(AppTypography.rowTitle())
                         .foregroundStyle(Color.ink)
                         .lineLimit(1)
-                    Text("\(item.start.formatted(date: .omitted, time: .shortened)) · 查看依据或补充说明")
+                    Text("\(item.needsReviewReason ?? "待确认") · \(item.start.formatted(date: .omitted, time: .shortened))")
                         .font(AppTypography.metadata())
                         .foregroundStyle(Color.secondaryInk)
                 }

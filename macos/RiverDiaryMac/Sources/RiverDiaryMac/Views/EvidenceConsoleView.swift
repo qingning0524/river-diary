@@ -10,6 +10,7 @@ import SwiftUI
 /// 窄窗下整列收起，不挤压内容。
 struct EvidenceConsoleView: View {
     @Environment(\.riverDensity) private var density
+    @EnvironmentObject private var feedbackCenter: FeedbackCenter
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ingestion: DataIngestionStore
@@ -122,11 +123,7 @@ struct EvidenceConsoleView: View {
 
     private var reviewQueueCard: some View {
         let timeline = buildTimeline()
-        let items = Array(timeline.items.filter { item in
-            item.annotation?.isReviewed != true && (item.kind == .gap || item.sessions.contains { session in
-                (session.windowTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            })
-        }.prefix(4))
+        let items = Array(timeline.items.filter(\.needsReview).prefix(4))
 
         return RiverPanel(
             title: "需要你确认",
@@ -145,45 +142,84 @@ struct EvidenceConsoleView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             } else {
-                VStack(spacing: density.spacing(AppSpacing.xxs)) {
-                    ForEach(items) { item in
+                VStack(spacing: 0) {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                         consoleReviewRow(item)
+                        if index < items.count - 1 { RiverRowDivider(inset: density.spacing(AppSpacing.sm)) }
                     }
-                    Text("更多待确认项在时间线。")
-                        .font(AppTypography.metadata())
-                        .foregroundStyle(Color.tertiaryInk)
                 }
+                Text("点 ✓ 直接确认；要看证据或补充说明就打开详情。")
+                    .font(AppTypography.metadata())
+                    .foregroundStyle(Color.tertiaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, density.spacing(AppSpacing.sm))
             }
         }
     }
 
+    /// 一条待确认证据：是什么（标题）、为什么待确认（原因 + 时间范围）、
+    /// 多长（时长），以及不打开详情就能完成的"确认"动作。
     private func consoleReviewRow(_ item: ActivityTimelineItem) -> some View {
-        let focusID = "console-review:\(item.id)"
-        return Button {
-            onSelectTimelineItem(item, focusID)
-        } label: {
-            HStack(spacing: density.spacing(AppSpacing.sm)) {
-                VStack(alignment: .leading, spacing: density.spacing(2)) {
-                    Text(item.title)
-                        .font(AppTypography.rowTitle())
-                        .foregroundStyle(Color.ink)
-                        .lineLimit(1)
-                    Text(item.start.formatted(date: .omitted, time: .shortened))
-                        .font(AppTypography.metadata())
-                        .foregroundStyle(Color.secondaryInk)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
+        let spanText = item.duration >= 60
+            ? ActivityFormatter.time(item.duration)
+            : "不到 1 分钟"
+        return HStack(alignment: .top, spacing: density.spacing(AppSpacing.sm)) {
+            VStack(alignment: .leading, spacing: density.spacing(2)) {
+                Text(item.title)
+                    .font(AppTypography.rowTitle())
+                    .foregroundStyle(Color.ink)
+                    .lineLimit(1)
+                Text(consoleRowReasonLine(item))
+                    .font(AppTypography.metadata())
                     .foregroundStyle(Color.tertiaryInk)
-                    .accessibilityHidden(true)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
-            .padding(.horizontal, density.spacing(AppSpacing.sm))
-            .padding(.vertical, density.spacing(6))
-            .contentShape(Rectangle())
+            Spacer(minLength: 0)
+            VStack(alignment: .trailing, spacing: density.spacing(2)) {
+                Text(spanText)
+                    .font(AppTypography.numeric())
+                    .foregroundStyle(Color.secondaryInk)
+                if item.annotationKey != nil {
+                    Button {
+                        confirm(item)
+                    } label: {
+                        Label("确认", systemImage: "checkmark")
+                            .labelStyle(.titleAndIcon)
+                            .font(AppTypography.metadata())
+                    }
+                    .buttonStyle(.plain)
+                    .smallAction()
+                    .accessibilityLabel("确认这条证据：\(item.title)")
+                }
+            }
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("查看待确认：\(item.title)，\(item.start.formatted(date: .omitted, time: .shortened))")
+        .padding(.vertical, density.spacing(6))
+        .contentShape(Rectangle())
+        .onTapGesture { onSelectTimelineItem(item, "console-review:\(item.id)") }
+        .accessibilityElement(children: .contain)
+        .accessibilityHint("双击查看详情，或用确认按钮直接标记已确认")
+    }
+
+    /// 原因行的紧凑时间范围：HH:mm 起–止（.formatted 在中文环境输出 "0:01"），
+    /// 不用 ActivityFormatter.timeRange——它的全秒格式（00:01:09）在这一行太重。
+    private func consoleRowReasonLine(_ item: ActivityTimelineItem) -> String {
+        let start = item.start.formatted(date: .omitted, time: .shortened)
+        let end = item.end.formatted(date: .omitted, time: .shortened)
+        return "\(item.needsReviewReason ?? "待确认") · \(start)–\(end)"
+    }
+
+    private func confirm(_ item: ActivityTimelineItem) {
+        guard let key = item.annotationKey else { return }
+        var annotation = store.timelineAnnotations[key] ?? TimelineAnnotation()
+        annotation.isReviewed = true
+        annotation.reviewedAt = Date()
+        do {
+            try store.saveTimelineAnnotation(annotation, for: key)
+            feedbackCenter.show("已确认这条证据", kind: .success)
+        } catch {
+            feedbackCenter.show("确认失败：\(UserFacingError.message(for: error))", kind: .error)
+        }
     }
 
     // MARK: - 信任

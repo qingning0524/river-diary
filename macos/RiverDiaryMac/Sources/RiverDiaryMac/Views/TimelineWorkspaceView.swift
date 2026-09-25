@@ -283,10 +283,7 @@ struct TimelineWorkspaceView: View {
     }
 
     private func needsReview(_ item: ActivityTimelineItem) -> Bool {
-        guard item.annotation?.isReviewed != true else { return false }
-        return item.kind == .gap || item.sessions.contains {
-            ($0.windowTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
+        item.needsReview
     }
 
     private func timelineToolbar(_ timeline: ActivityTimeline) -> some View {

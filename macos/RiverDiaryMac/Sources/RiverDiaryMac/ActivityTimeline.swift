@@ -15,6 +15,19 @@ struct ActivityTimelineItem: Identifiable, Hashable {
 
     var isFavorite: Bool { annotation?.isFavorite == true }
 
+    /// 为什么这条节点待确认：时间空档，或实时片段缺少窗口标题。
+    /// 三个展示位（时间线筛选、今日队列、控制台队列）共用这一个判定。
+    var needsReviewReason: String? {
+        guard annotation?.isReviewed != true else { return nil }
+        if kind == .gap { return "这段时间没有记录" }
+        if sessions.contains(where: {
+            ($0.windowTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }) { return "缺少窗口标题" }
+        return nil
+    }
+
+    var needsReview: Bool { needsReviewReason != nil }
+
     var duration: TimeInterval { sessions.reduce(0) { $0 + $1.duration } }
     var category: String { capture != nil ? "快记" : sessions.first?.category ?? "未记录" }
     var apps: [TimelineAppUsage] {
