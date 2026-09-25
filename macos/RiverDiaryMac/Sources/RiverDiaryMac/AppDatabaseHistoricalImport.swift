@@ -9,7 +9,7 @@ extension AppDatabase {
             for (date, score) in data.moodScores where date != excludedDate {
                 let sql = "INSERT OR REPLACE INTO mood_scores (date, score, source) VALUES (?,?,'iOS 健康')"
                 guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, date, -1, nil)
+                    sqlite3_bind_text(statement, 1, date, -1, Self.transientDestructor)
                     sqlite3_bind_int(statement, 2, Int32(score))
                 }, database: database) else { return false }
             }
@@ -17,7 +17,7 @@ extension AppDatabase {
             for night in data.sleepNights where night.date != excludedDate {
                 let sql = "INSERT OR REPLACE INTO sleep_nights (date, total_hours, deep_minutes, rem_minutes, awake_minutes) VALUES (?,?,?,?,?)"
                 guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, night.date, -1, nil)
+                    sqlite3_bind_text(statement, 1, night.date, -1, Self.transientDestructor)
                     sqlite3_bind_double(statement, 2, night.totalHours)
                     sqlite3_bind_double(statement, 3, night.deepMinutes)
                     sqlite3_bind_double(statement, 4, night.remMinutes)
@@ -28,7 +28,7 @@ extension AppDatabase {
             for day in data.exerciseDays where day.date != excludedDate {
                 let sql = "INSERT OR REPLACE INTO exercise_days (date, steps, distance_km, active_energy_kcal) VALUES (?,?,?,?)"
                 guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, day.date, -1, nil)
+                    sqlite3_bind_text(statement, 1, day.date, -1, Self.transientDestructor)
                     sqlite3_bind_int(statement, 2, Int32(day.steps))
                     sqlite3_bind_double(statement, 3, day.distanceKilometers)
                     sqlite3_bind_double(statement, 4, day.activeEnergyKilocalories)
@@ -38,11 +38,11 @@ extension AppDatabase {
             for note in data.quickNotes where note.date != excludedDate {
                 let sql = "INSERT OR REPLACE INTO quick_captures (id, date, text, created_at, source) VALUES (?,?,?,?,?)"
                 guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, note.id, -1, nil)
-                    sqlite3_bind_text(statement, 2, note.date, -1, nil)
-                    sqlite3_bind_text(statement, 3, note.text, -1, nil)
-                    sqlite3_bind_text(statement, 4, note.createdAt.map(DatabaseTime.isoFormatter.string), -1, nil)
-                    sqlite3_bind_text(statement, 5, note.source, -1, nil)
+                    sqlite3_bind_text(statement, 1, note.id, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 2, note.date, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 3, note.text, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 4, note.createdAt.map(DatabaseTime.isoFormatter.string), -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 5, note.source, -1, Self.transientDestructor)
                 }, database: database) else { return false }
             }
 

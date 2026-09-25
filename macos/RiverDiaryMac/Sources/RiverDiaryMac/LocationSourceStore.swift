@@ -121,7 +121,9 @@ final class LocationSourceStore: NSObject, ObservableObject, CLLocationManagerDe
                 locationName: latestPlaceName
             )
         )
-        _ = factStore.insertRawEvent(event)
+        if !factStore.insertRawEvent(event) {
+            errorMessage = "位置事件写入失败：\(factStore.lastError ?? "未知错误")"
+        }
         lastRecordedLocation = location
         lastRecordedAt = location.timestamp
     }

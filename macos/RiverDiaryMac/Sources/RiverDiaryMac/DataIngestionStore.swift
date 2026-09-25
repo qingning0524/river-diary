@@ -492,7 +492,10 @@ final class DataIngestionStore: ObservableObject {
             ),
             sourceHash: sourceHash
         )
-        _ = v2Store.insertRawEvent(event)
+        if !v2Store.insertRawEvent(event) {
+            lastError = v2Store.lastError
+            lastStatus = "V2 事实库写入失败：\(v2Store.lastError ?? "未知错误")"
+        }
     }
 
     private func loadPersistedRecord() {

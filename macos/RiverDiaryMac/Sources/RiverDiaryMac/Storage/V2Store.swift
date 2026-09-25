@@ -50,6 +50,13 @@ final class V2Store {
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
+    /// Every live V2Store connection. A snapshot restore swaps the database file
+    /// under all of them at once; the registry lets each instance reopen onto
+    /// the restored file instead of keeping a handle to the replaced inode,
+    /// where writes would silently vanish until app restart.
+    @MainActor
+    private static let liveInstances = NSHashTable<V2Store>.weakObjects()
+
     // MARK: Location
 
     private static func defaultDatabaseURL() -> URL? {
@@ -76,6 +83,7 @@ final class V2Store {
         self.databaseURL = databaseURL ?? Self.defaultDatabaseURL()
         open()
         createSchema()
+        Self.liveInstances.add(self)
     }
 
     deinit {
@@ -103,6 +111,7 @@ final class V2Store {
         }
         do {
             db = try DatabaseCipher.open(at: url, purpose: "v2-facts-v1")
+            sqlite3_exec(db, "PRAGMA busy_timeout=5000;", nil, nil, nil)
         } catch {
             lastError = "V2 数据库无法安全打开：\(error.localizedDescription)"
             db = nil
@@ -300,6 +309,13 @@ final class V2Store {
             createSchema()
             if let lastError {
                 throw DatabaseCipherError.invalidDatabase(lastError)
+            }
+            // 恢复把磁盘文件从其余连接下面整体换掉了：让所有存活的兄弟实例
+            // 重开到恢复后的文件，避免它们的写入落进已被解绑的旧 inode。
+            for instance in Self.liveInstances.allObjects where instance !== self {
+                instance.close()
+                instance.open()
+                instance.createSchema()
             }
         } catch {
             if db == nil {

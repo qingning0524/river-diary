@@ -123,20 +123,25 @@ final class AIAssistantStore: ObservableObject {
     }
 
     private func loadProfiles() {
-        if let raw = UserDefaults.standard.data(forKey: "ai.footprint.profiles"),
-           var decoded = try? JSONDecoder().decode([AIProfile].self, from: raw),
-           !decoded.isEmpty {
-            for index in decoded.indices {
-                let endpoint = decoded[index].endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !endpoint.isEmpty,
-                   !endpoint.lowercased().hasPrefix("https://"),
-                   !endpoint.lowercased().hasPrefix("http://") {
-                    let scheme = decoded[index].provider == .ollama || decoded[index].provider == .lmStudio ? "http://" : "https://"
-                    decoded[index].endpoint = scheme + endpoint
+        if let raw = UserDefaults.standard.data(forKey: "ai.footprint.profiles") {
+            if var decoded = try? JSONDecoder().decode([AIProfile].self, from: raw), !decoded.isEmpty {
+                for index in decoded.indices {
+                    let endpoint = decoded[index].endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !endpoint.isEmpty,
+                       !endpoint.lowercased().hasPrefix("https://"),
+                       !endpoint.lowercased().hasPrefix("http://") {
+                        let scheme = decoded[index].provider == .ollama || decoded[index].provider == .lmStudio ? "http://" : "https://"
+                        decoded[index].endpoint = scheme + endpoint
+                    }
                 }
+                profiles = decoded
+                return
             }
-            profiles = decoded
-            return
+            // 配置数据存在但解码失败时，先把原始字节归档到带时间戳的键里：
+            // profiles 的 didSet 会在下一次变更时覆盖写入，不归档就等于静默丢失用户配置。
+            let archiveKey = "ai.footprint.profiles.unreadable-\(Int(Date().timeIntervalSince1970))"
+            UserDefaults.standard.set(raw, forKey: archiveKey)
+            modelMessage = "AI 配置数据无法读取（原始数据已归档）。已回退到默认配置；重新填写并保存后即可继续使用。"
         }
 
         let providerRaw = UserDefaults.standard.string(forKey: "ai.footprint.provider")
@@ -400,7 +405,11 @@ final class AIAssistantStore: ObservableObject {
                 model: requestModel,
                 createdAt: result.createdAt
             ))
-            if savedRun { NotificationCenter.default.post(name: .riverAnalysisRunDidChange, object: nil) }
+            if savedRun {
+                NotificationCenter.default.post(name: .riverAnalysisRunDidChange, object: nil)
+            } else {
+                errorMessage = "分析结果未能写入本地事实库：\(analysisStore.lastError ?? "未知错误")"
+            }
             setTask(
                 task,
                 answer: answer,
@@ -1020,7 +1029,11 @@ final class AIAssistantStore: ObservableObject {
                     model: requestModel,
                     createdAt: result.createdAt
                 ))
-                if savedRun { NotificationCenter.default.post(name: .riverAnalysisRunDidChange, object: nil) }
+                if savedRun {
+                NotificationCenter.default.post(name: .riverAnalysisRunDidChange, object: nil)
+            } else {
+                errorMessage = "分析结果未能写入本地事实库：\(analysisStore.lastError ?? "未知错误")"
+            }
                 setTask(
                     task,
                     answer: answer,

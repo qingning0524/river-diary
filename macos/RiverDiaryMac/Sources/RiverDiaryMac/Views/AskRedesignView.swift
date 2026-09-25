@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AskRedesignView: View {
     @Environment(\.riverDensity) private var density
+    @EnvironmentObject private var feedbackCenter: FeedbackCenter
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore
@@ -543,7 +544,11 @@ struct AskRedesignView: View {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !savedQueries.contains(where: { $0.query == trimmed }) else { return }
         let name = trimmed.count <= 16 ? trimmed : String(trimmed.prefix(16)) + "…"
-        try? store.saveSavedQuery(SavedQuery(name: name, query: trimmed, days: 30))
+        do {
+            try store.saveSavedQuery(SavedQuery(name: name, query: trimmed, days: 30))
+        } catch {
+            feedbackCenter.show("保存查询失败：\(UserFacingError.message(for: error))", kind: .error)
+        }
     }
 
     private var locationEmptyMessage: String {

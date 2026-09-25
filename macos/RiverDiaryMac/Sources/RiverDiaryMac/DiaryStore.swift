@@ -192,7 +192,12 @@ final class DiaryStore: ObservableObject {
             updated.append(query)
         }
         updated.sort { ($0.lastUsedAt ?? $0.updatedAt) > ($1.lastUsedAt ?? $1.updatedAt) }
-        try persist(savedQueries: updated)
+        do {
+            try persist(savedQueries: updated)
+        } catch {
+            saveState = .failed(UserFacingError.message(for: error))
+            throw error
+        }
         savedQueries = updated
         hasLocalChanges = true
         saveState = .saved(Date())
@@ -200,18 +205,25 @@ final class DiaryStore: ObservableObject {
 
     func markSavedQueryUsed(_ id: UUID) {
         guard let index = savedQueries.firstIndex(where: { $0.id == id }) else { return }
+        let previousUsedAt = savedQueries[index].lastUsedAt
         savedQueries[index].lastUsedAt = Date()
         do {
             try persist(savedQueries: savedQueries)
         } catch {
+            savedQueries[index].lastUsedAt = previousUsedAt
             saveState = .failed(UserFacingError.message(for: error))
         }
     }
 
     func removeSavedQuery(_ query: SavedQuery) {
+        let previousQueries = savedQueries
         savedQueries.removeAll { $0.id == query.id }
         hasLocalChanges = hasPersistentLocalEdits
-        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
+        do { try persist() } catch {
+            savedQueries = previousQueries
+            hasLocalChanges = hasPersistentLocalEdits
+            saveState = .failed(UserFacingError.message(for: error))
+        }
     }
 
     var poem: String {
@@ -335,19 +347,31 @@ final class DiaryStore: ObservableObject {
     }
 
     func removeQuickCapture(_ capture: QuickCapture, entry: DiaryEntry) {
+        let previousCaptures = quickCaptures[entry.date]
         quickCaptures[entry.date]?.removeAll { $0.id == capture.id }
         if quickCaptures[entry.date]?.isEmpty == true {
             quickCaptures[entry.date] = nil
         }
         hasLocalChanges = hasPersistentLocalEdits
-        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
+        do { try persist() } catch {
+            quickCaptures[entry.date] = previousCaptures
+            hasLocalChanges = hasPersistentLocalEdits
+            saveState = .failed(UserFacingError.message(for: error))
+        }
     }
 
     func setQuickCapturePinned(_ capture: QuickCapture, entry: DiaryEntry, pinned: Bool) {
         guard let index = quickCaptures[entry.date]?.firstIndex(where: { $0.id == capture.id }) else { return }
+        let previousPinned = quickCaptures[entry.date]?[index].isPinned
         quickCaptures[entry.date]?[index].isPinned = pinned
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
+        do { try persist() } catch {
+            if let previousPinned, let index = quickCaptures[entry.date]?.firstIndex(where: { $0.id == capture.id }) {
+                quickCaptures[entry.date]?[index].isPinned = previousPinned
+            }
+            hasLocalChanges = hasPersistentLocalEdits
+            saveState = .failed(UserFacingError.message(for: error))
+        }
     }
 
     func draftDismissed(_ entry: DiaryEntry) -> Bool {
@@ -378,10 +402,17 @@ final class DiaryStore: ObservableObject {
     }
 
     func setAutoDraftPaused(_ paused: Bool) {
+        let previousPaused = autoDraftPaused
+        let previousPausedUntil = draftPausedUntil
         autoDraftPaused = paused
         if paused { draftPausedUntil = nil }
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
+        do { try persist() } catch {
+            autoDraftPaused = previousPaused
+            draftPausedUntil = previousPausedUntil
+            hasLocalChanges = hasPersistentLocalEdits
+            saveState = .failed(UserFacingError.message(for: error))
+        }
     }
 
     var isAutoDraftTemporarilyPaused: Bool {
@@ -391,15 +422,25 @@ final class DiaryStore: ObservableObject {
 
     func pauseAutoDraft(days: Int) {
         let dayCount = min(7, max(1, days))
+        let previousPausedUntil = draftPausedUntil
         draftPausedUntil = Calendar.current.date(byAdding: .day, value: dayCount, to: Date())
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
+        do { try persist() } catch {
+            draftPausedUntil = previousPausedUntil
+            hasLocalChanges = hasPersistentLocalEdits
+            saveState = .failed(UserFacingError.message(for: error))
+        }
     }
 
     func resumeAutoDraftPause() {
+        let previousPausedUntil = draftPausedUntil
         draftPausedUntil = nil
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
+        do { try persist() } catch {
+            draftPausedUntil = previousPausedUntil
+            hasLocalChanges = hasPersistentLocalEdits
+            saveState = .failed(UserFacingError.message(for: error))
+        }
     }
 
     func overview(for entry: DiaryEntry) -> String {
@@ -500,7 +541,8 @@ final class DiaryStore: ObservableObject {
     }
 
     func clearOverride(for entry: DiaryEntry) {
-        guard overrides[entry.id] != nil else { return }
+        guard let removedOverride = overrides[entry.id] else { return }
+        let previousData = data
 
         overrides[entry.id] = nil
         hasLocalChanges = hasPersistentLocalEdits
@@ -518,11 +560,23 @@ final class DiaryStore: ObservableObject {
             try persist()
             saveState = .saved(Date())
         } catch {
+            // 恢复内存，避免下一次成功的持久化把这次未落盘的删除悄悄固化。
+            overrides[entry.id] = removedOverride
+            data = previousData
+            hasLocalChanges = hasPersistentLocalEdits
             saveState = .failed(UserFacingError.message(for: error))
         }
     }
 
     func clearLocalJournal() {
+        let previousOverrides = overrides
+        let previousGoals = dailyGoals
+        let previousDrafts = journalDrafts
+        let previousDismissed = dismissedDrafts
+        let previousCare = careAcknowledgments
+        let previousQueries = savedQueries
+        let previousData = data
+
         overrides = [:]
         dailyGoals = [:]
         journalDrafts = [:]
@@ -545,13 +599,22 @@ final class DiaryStore: ObservableObject {
             if let legacyStateURL, fileManager.fileExists(atPath: legacyStateURL.path) {
                 try fileManager.removeItem(at: legacyStateURL)
             }
-        if !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty
-            || !timelineAnnotations.isEmpty || !dailyGoals.isEmpty {
-            try persist()
-        } else {
-            isEncrypted = false
+            // 快记、月信和时间线标注不属于"本地日记"，清空后若仍有残留则重建状态文件。
+            if !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !timelineAnnotations.isEmpty {
+                try persist()
+            } else {
+                isEncrypted = false
             }
         } catch {
+            // 清空已落盘一半时回滚内存，保持内存与磁盘一致（宁可让数据回来，不能让状态悬空）。
+            overrides = previousOverrides
+            dailyGoals = previousGoals
+            journalDrafts = previousDrafts
+            dismissedDrafts = previousDismissed
+            careAcknowledgments = previousCare
+            savedQueries = previousQueries
+            data = previousData
+            hasLocalChanges = hasPersistentLocalEdits
             saveState = .failed(UserFacingError.message(for: error))
         }
     }

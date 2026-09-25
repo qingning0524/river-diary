@@ -5,6 +5,11 @@ import SQLCipher
 final class AppDatabase {
     static let shared = AppDatabase()
 
+    /// SQLITE_TRANSIENT: SQLite copies the bound buffer at bind time. Binding a
+    /// bridged Swift String with `nil` (SQLITE_STATIC) leaves SQLite reading a
+    /// temporary buffer at step() time — a dangling pointer.
+    static let transientDestructor = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+
     var db: OpaquePointer?
     let queue = DispatchQueue(label: "studio.riverdiary.database", qos: .utility)
     private(set) var lastError: String?
@@ -369,7 +374,7 @@ final class AppDatabase {
             if let mood = record.moodScore {
                 let sql = "INSERT OR REPLACE INTO mood_scores (date, score, source) VALUES (?,?,'iOS 健康')"
                 guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, record.date, -1, nil)
+                    sqlite3_bind_text(statement, 1, record.date, -1, Self.transientDestructor)
                     sqlite3_bind_int(statement, 2, Int32(mood))
                 }, database: database) else { return false }
             }
@@ -377,7 +382,7 @@ final class AppDatabase {
             if let sleep = record.sleep {
                 let sql = "INSERT OR REPLACE INTO sleep_nights (date, total_hours, deep_minutes, rem_minutes, awake_minutes) VALUES (?,?,?,?,?)"
                 guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, sleep.date, -1, nil)
+                    sqlite3_bind_text(statement, 1, sleep.date, -1, Self.transientDestructor)
                     sqlite3_bind_double(statement, 2, sleep.totalHours)
                     sqlite3_bind_double(statement, 3, sleep.deepMinutes)
                     sqlite3_bind_double(statement, 4, sleep.remMinutes)
@@ -388,7 +393,7 @@ final class AppDatabase {
             if let exercise = record.exercise {
                 let sql = "INSERT OR REPLACE INTO exercise_days (date, steps, distance_km, active_energy_kcal) VALUES (?,?,?,?)"
                 guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, exercise.date, -1, nil)
+                    sqlite3_bind_text(statement, 1, exercise.date, -1, Self.transientDestructor)
                     sqlite3_bind_int(statement, 2, Int32(exercise.steps))
                     sqlite3_bind_double(statement, 3, exercise.distanceKilometers)
                     sqlite3_bind_double(statement, 4, exercise.activeEnergyKilocalories)
@@ -400,11 +405,11 @@ final class AppDatabase {
                 for visit in record.chromeVisits {
                     let sql = "INSERT INTO chrome_visits (date, url, title, domain, visited_at, visit_count) VALUES (?,?,?,?,?,?)"
                     guard execute(sql, bindings: { statement in
-                        sqlite3_bind_text(statement, 1, record.date, -1, nil)
-                        sqlite3_bind_text(statement, 2, visit.url, -1, nil)
-                        sqlite3_bind_text(statement, 3, visit.title, -1, nil)
-                        sqlite3_bind_text(statement, 4, visit.domain, -1, nil)
-                        sqlite3_bind_text(statement, 5, DatabaseTime.isoFormatter.string(from: visit.visitedAt), -1, nil)
+                        sqlite3_bind_text(statement, 1, record.date, -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 2, visit.url, -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 3, visit.title, -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 4, visit.domain, -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 5, DatabaseTime.isoFormatter.string(from: visit.visitedAt), -1, Self.transientDestructor)
                         sqlite3_bind_int(statement, 6, Int32(visit.visitCount))
                     }, database: database) else { return false }
                 }
@@ -415,9 +420,9 @@ final class AppDatabase {
                 for note in record.notesModified {
                     let sql = "INSERT INTO daily_notes (date, title, modified_at) VALUES (?,?,?)"
                     guard execute(sql, bindings: { statement in
-                        sqlite3_bind_text(statement, 1, record.date, -1, nil)
-                        sqlite3_bind_text(statement, 2, note.title, -1, nil)
-                        sqlite3_bind_text(statement, 3, DatabaseTime.isoFormatter.string(from: note.modifiedAt), -1, nil)
+                        sqlite3_bind_text(statement, 1, record.date, -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 2, note.title, -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 3, DatabaseTime.isoFormatter.string(from: note.modifiedAt), -1, Self.transientDestructor)
                     }, database: database) else { return false }
                 }
             }
@@ -432,11 +437,11 @@ final class AppDatabase {
                 for note in record.quickNotes {
                     let sql = "INSERT OR REPLACE INTO quick_captures (id, date, text, created_at, source) VALUES (?,?,?,?,?)"
                     guard execute(sql, bindings: { statement in
-                        sqlite3_bind_text(statement, 1, note.id, -1, nil)
-                        sqlite3_bind_text(statement, 2, record.date, -1, nil)
-                        sqlite3_bind_text(statement, 3, note.text, -1, nil)
-                        sqlite3_bind_text(statement, 4, note.createdAt.map(DatabaseTime.isoFormatter.string), -1, nil)
-                        sqlite3_bind_text(statement, 5, note.source, -1, nil)
+                        sqlite3_bind_text(statement, 1, note.id, -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 2, record.date, -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 3, note.text, -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 4, note.createdAt.map(DatabaseTime.isoFormatter.string), -1, Self.transientDestructor)
+                        sqlite3_bind_text(statement, 5, note.source, -1, Self.transientDestructor)
                     }, database: database) else { return false }
                 }
             }
@@ -452,7 +457,7 @@ final class AppDatabase {
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
         defer { sqlite3_finalize(statement) }
-        sqlite3_bind_text(statement, 1, date, -1, nil)
+        sqlite3_bind_text(statement, 1, date, -1, Self.transientDestructor)
         guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
         return readDailyRecord(statement)
     }
@@ -478,8 +483,8 @@ final class AppDatabase {
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             """
         return execute(sql, bindings: { statement in
-            sqlite3_bind_text(statement, 1, record.date, -1, nil)
-            sqlite3_bind_text(statement, 2, DatabaseTime.isoFormatter.string(from: record.capturedAt), -1, nil)
+            sqlite3_bind_text(statement, 1, record.date, -1, Self.transientDestructor)
+            sqlite3_bind_text(statement, 2, DatabaseTime.isoFormatter.string(from: record.capturedAt), -1, Self.transientDestructor)
             self.sqlite3_bind_int_or_null(statement, 3, moodScore)
             self.sqlite3_bind_double_or_null(statement, 4, sleepHours)
             self.sqlite3_bind_int_or_null(statement, 5, exerciseSteps)
@@ -488,7 +493,7 @@ final class AppDatabase {
             sqlite3_bind_int(statement, 8, Int32(notesCount))
             sqlite3_bind_int(statement, 9, Int32(sessionCount))
             sqlite3_bind_int(statement, 10, Int32(quickCaptureCount))
-            sqlite3_bind_text(statement, 11, record.mixedOverview, -1, nil)
+            sqlite3_bind_text(statement, 11, record.mixedOverview, -1, Self.transientDestructor)
             sqlite3_bind_int(statement, 12, record.iosDataAvailable ? 1 : 0)
         }, database: database)
     }
@@ -502,7 +507,7 @@ final class AppDatabase {
             var statement: OpaquePointer?
             guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
             defer { sqlite3_finalize(statement) }
-            sqlite3_bind_text(statement, 1, date, -1, nil)
+            sqlite3_bind_text(statement, 1, date, -1, Self.transientDestructor)
             if sqlite3_step(statement) == SQLITE_ROW {
                 return readDailyRecord(statement)
             }
@@ -653,14 +658,14 @@ final class AppDatabase {
                 VALUES (?,?,?,?,?,?,?,?,?)
                 """,
                 bindings: { statement in
-                    sqlite3_bind_text(statement, 1, resultKey, -1, nil)
-                    sqlite3_bind_text(statement, 2, startDate, -1, nil)
-                    sqlite3_bind_text(statement, 3, endDate, -1, nil)
-                    sqlite3_bind_text(statement, 4, task, -1, nil)
-                    sqlite3_bind_text(statement, 5, model, -1, nil)
-                    sqlite3_bind_text(statement, 6, answer, -1, nil)
-                    sqlite3_bind_text(statement, 7, sourceSummary, -1, nil)
-                    sqlite3_bind_text(statement, 8, DatabaseTime.isoFormatter.string(from: createdAt), -1, nil)
+                    sqlite3_bind_text(statement, 1, resultKey, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 2, startDate, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 3, endDate, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 4, task, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 5, model, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 6, answer, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 7, sourceSummary, -1, Self.transientDestructor)
+                    sqlite3_bind_text(statement, 8, DatabaseTime.isoFormatter.string(from: createdAt), -1, Self.transientDestructor)
                     sqlite3_bind_int(statement, 9, isLocal ? 1 : 0)
                 },
                 database: database
@@ -675,8 +680,8 @@ final class AppDatabase {
             FROM ai_results WHERE start_date = ? AND end_date = ? ORDER BY created_at DESC
             """,
             bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, nil)
-                sqlite3_bind_text($0, 2, endDate, -1, nil)
+                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
             }
         ) { statement in
             DBAIResult(
@@ -724,8 +729,8 @@ final class AppDatabase {
         snapshot.dailyRecords = query(
             "SELECT * FROM daily_records WHERE date BETWEEN ? AND ? ORDER BY date DESC LIMIT ?",
             bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, nil)
-                sqlite3_bind_text($0, 2, endDate, -1, nil)
+                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
                 sqlite3_bind_int($0, 3, Int32(max(0, limitPerType)))
             },
             read: { readDailyRecord($0) }
@@ -738,12 +743,12 @@ final class AppDatabase {
             ORDER BY date DESC, visited_at DESC LIMIT ?
             """,
             bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, nil)
-                sqlite3_bind_text($0, 2, endDate, -1, nil)
-                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, nil)
-                sqlite3_bind_text($0, 4, pattern, -1, nil)
-                sqlite3_bind_text($0, 5, pattern, -1, nil)
-                sqlite3_bind_text($0, 6, pattern, -1, nil)
+                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 4, pattern, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 5, pattern, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 6, pattern, -1, Self.transientDestructor)
                 sqlite3_bind_int($0, 7, Int32(limitPerType))
             }
         ) { statement in
@@ -765,10 +770,10 @@ final class AppDatabase {
             ORDER BY date DESC, modified_at DESC LIMIT ?
             """,
             bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, nil)
-                sqlite3_bind_text($0, 2, endDate, -1, nil)
-                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, nil)
-                sqlite3_bind_text($0, 4, pattern, -1, nil)
+                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 4, pattern, -1, Self.transientDestructor)
                 sqlite3_bind_int($0, 5, Int32(limitPerType))
             }
         ) { statement in
@@ -788,12 +793,12 @@ final class AppDatabase {
             ORDER BY date DESC, start_time DESC LIMIT ?
             """,
             bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, nil)
-                sqlite3_bind_text($0, 2, endDate, -1, nil)
-                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, nil)
-                sqlite3_bind_text($0, 4, pattern, -1, nil)
-                sqlite3_bind_text($0, 5, pattern, -1, nil)
-                sqlite3_bind_text($0, 6, pattern, -1, nil)
+                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 4, pattern, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 5, pattern, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 6, pattern, -1, Self.transientDestructor)
                 sqlite3_bind_int($0, 7, Int32(limitPerType))
             }
         ) { statement in
@@ -817,11 +822,11 @@ final class AppDatabase {
             ORDER BY date DESC, created_at DESC LIMIT ?
             """,
             bindings: {
-                sqlite3_bind_text($0, 1, startDate, -1, nil)
-                sqlite3_bind_text($0, 2, endDate, -1, nil)
-                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, nil)
-                sqlite3_bind_text($0, 4, pattern, -1, nil)
-                sqlite3_bind_text($0, 5, pattern, -1, nil)
+                sqlite3_bind_text($0, 1, startDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 2, endDate, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 3, searchText.trimmingCharacters(in: .whitespacesAndNewlines), -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 4, pattern, -1, Self.transientDestructor)
+                sqlite3_bind_text($0, 5, pattern, -1, Self.transientDestructor)
                 sqlite3_bind_int($0, 6, Int32(limitPerType))
             }
         ) { statement in
@@ -844,9 +849,9 @@ final class AppDatabase {
         transaction { database in
             for table in ["daily_records", "mood_scores", "sleep_nights", "exercise_days", "chrome_visits", "daily_notes", "activity_sessions", "quick_captures"] {
                 let column = table == "activity_sessions" ? "date" : "date"
-                guard execute("DELETE FROM \(table) WHERE \(column) < ?", bindings: { sqlite3_bind_text($0, 1, cutoffDate, -1, nil) }, database: database) else { return false }
+                guard execute("DELETE FROM \(table) WHERE \(column) < ?", bindings: { sqlite3_bind_text($0, 1, cutoffDate, -1, Self.transientDestructor) }, database: database) else { return false }
             }
-            return execute("DELETE FROM ai_results WHERE end_date < ?", bindings: { sqlite3_bind_text($0, 1, cutoffDate, -1, nil) }, database: database)
+            return execute("DELETE FROM ai_results WHERE end_date < ?", bindings: { sqlite3_bind_text($0, 1, cutoffDate, -1, Self.transientDestructor) }, database: database)
         }
     }
 
@@ -859,16 +864,16 @@ final class AppDatabase {
             VALUES (?,?,?,?,?,?,?,?,?)
             """
         return execute(sql, bindings: { statement in
-            sqlite3_bind_text(statement, 1, session.id.uuidString, -1, nil)
-            sqlite3_bind_text(statement, 2, date, -1, nil)
-            sqlite3_bind_text(statement, 3, session.appName, -1, nil)
-            sqlite3_bind_text(statement, 4, session.bundleID, -1, nil)
-            sqlite3_bind_text(statement, 5, session.category, -1, nil)
-            sqlite3_bind_text(statement, 6, DatabaseTime.isoFormatter.string(from: session.start), -1, nil)
-            sqlite3_bind_text(statement, 7, DatabaseTime.isoFormatter.string(from: session.end), -1, nil)
+            sqlite3_bind_text(statement, 1, session.id.uuidString, -1, Self.transientDestructor)
+            sqlite3_bind_text(statement, 2, date, -1, Self.transientDestructor)
+            sqlite3_bind_text(statement, 3, session.appName, -1, Self.transientDestructor)
+            sqlite3_bind_text(statement, 4, session.bundleID, -1, Self.transientDestructor)
+            sqlite3_bind_text(statement, 5, session.category, -1, Self.transientDestructor)
+            sqlite3_bind_text(statement, 6, DatabaseTime.isoFormatter.string(from: session.start), -1, Self.transientDestructor)
+            sqlite3_bind_text(statement, 7, DatabaseTime.isoFormatter.string(from: session.end), -1, Self.transientDestructor)
             sqlite3_bind_int(statement, 8, Int32((session.duration / 60).rounded()))
             if let title = session.windowTitle {
-                sqlite3_bind_text(statement, 9, title, -1, nil)
+                sqlite3_bind_text(statement, 9, title, -1, Self.transientDestructor)
             } else {
                 sqlite3_bind_null(statement, 9)
             }
@@ -895,7 +900,7 @@ final class AppDatabase {
     }
 
     private func bindText(_ value: String) -> (OpaquePointer) -> Void {
-        { statement in sqlite3_bind_text(statement, 1, value, -1, nil) }
+        { statement in sqlite3_bind_text(statement, 1, value, -1, Self.transientDestructor) }
     }
 
     private func sqlite3_bind_int_or_null(_ statement: OpaquePointer, _ index: Int32, _ value: Int?) {

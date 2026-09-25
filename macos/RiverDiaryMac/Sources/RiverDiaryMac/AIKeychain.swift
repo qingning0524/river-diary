@@ -158,7 +158,11 @@ enum AISecureKeyStore {
     }
 
     private static func persist(_ keys: [String: String]) throws {
-        guard let url = keyFileURL else { return }
+        // 没有可写目标路径时必须抛错：静默返回会让 saveKey 假成功，
+        // 用户以为密钥已保存，实际什么都没写。
+        guard let url = keyFileURL else {
+            throw StateEncryptionError.keychainStatus(errSecIO)
+        }
         let plaintext = try JSONEncoder().encode(keys)
         try StateEncryption.encrypt(plaintext).write(to: url, options: .atomic)
         try LocalStorageProtection.protectFile(at: url)

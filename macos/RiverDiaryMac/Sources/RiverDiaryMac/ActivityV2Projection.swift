@@ -5,8 +5,13 @@ import Foundation
 /// same derived row instead of multiplying records.
 @MainActor
 enum ActivityV2Projection {
-    static func rebuildDay(_ sessions: [ActivitySession], into store: V2Store) {
+    /// Writes the day's activities and episodes into the V2 fact layer.
+    /// Returns false when any insert failed (the store's `lastError` says why);
+    /// callers surface that instead of letting the write vanish silently.
+    @discardableResult
+    static func rebuildDay(_ sessions: [ActivitySession], into store: V2Store) -> Bool {
         let sorted = sessions.sorted { $0.start < $1.start }
+        var succeeded = true
         for session in sorted {
             let activity = Activity(
                 id: session.id,
@@ -17,7 +22,7 @@ enum ActivityV2Projection {
                 category: activityCategory(session.category),
                 evidenceIDs: [session.id]
             )
-            _ = store.insertActivity(activity)
+            if !store.insertActivity(activity) { succeeded = false }
         }
 
         var groups: [[ActivitySession]] = []
@@ -50,8 +55,9 @@ enum ActivityV2Projection {
                 activityIDs: group.map(\.id),
                 evidenceIDs: group.map(\.id)
             )
-            _ = store.insertEpisode(episode)
+            if !store.insertEpisode(episode) { succeeded = false }
         }
+        return succeeded
     }
 
     private static func activityCategory(_ value: String) -> ActivityCategory {

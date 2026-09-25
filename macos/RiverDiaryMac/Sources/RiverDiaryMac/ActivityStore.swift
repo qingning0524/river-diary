@@ -563,38 +563,52 @@ final class ActivityStore: ObservableObject {
         sessions.append(contentsOf: segments)
         sessions.sort { $0.start < $1.start }
 
-        segments.forEach { persist($0) }
-        ActivityV2Projection.rebuildDay(
+        var failureSummary: String?
+        for segment in segments {
+            if !persist(segment), failureSummary == nil {
+                failureSummary = storageSummary
+            }
+        }
+        if !ActivityV2Projection.rebuildDay(
             sessions.filter { $0.dayKey == original.dayKey },
             into: v2Store
-        )
+        ) {
+            failureSummary = "V2 事实库投影写入失败：\(v2Store.lastError ?? "未知错误")"
+        }
         lastSavedAt = Date()
         lastSavedApp = original.appName
         Set(segments.map(\.dayKey)).forEach { dayStatsCache.removeValue(forKey: $0) }
-        storageSummary = "已加密保存 \(sessions.count) 段实时活动（最近 365 天）"
+        storageSummary = failureSummary ?? "已加密保存 \(sessions.count) 段实时活动（最近 365 天）"
     }
 
-    private func persist(_ session: ActivitySession) {
-        guard let directory = activityDirectory else { return }
+    /// Returns false when the segment did not reach disk (or was refused to
+    /// protect an unreadable day file); `storageSummary` then carries the reason.
+    private func persist(_ session: ActivitySession) -> Bool {
+        guard let directory = activityDirectory else { return false }
         do {
             if !fileManager.fileExists(atPath: directory.path) {
                 try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
             }
 
             let url = directory.appendingPathComponent("\(session.dayKey).activity")
-            var daySessions = readSessions(from: url).filter { $0.id != session.id }
-            daySessions.append(session)
-            daySessions.sort { $0.start < $1.start }
-
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.outputFormatting = [.sortedKeys]
-            let encrypted = try StateEncryption.encrypt(try encoder.encode(daySessions))
-            try encrypted.write(to: url, options: .atomic)
-            try LocalStorageProtection.protectFile(at: url)
+            switch readDayFile(from: url) {
+            case .sessions(let existing):
+                var daySessions = existing.filter { $0.id != session.id }
+                daySessions.append(session)
+                daySessions.sort { $0.start < $1.start }
+                try writeDayFile(daySessions, to: url)
+            case .unreadable:
+                // 我们无法解密这份既有日文件时，绝不能用"仅含新片段"的文件覆盖它——
+                // 那会静默抹掉当天全部记录。改为隔离原文件并放弃本次写盘。
+                let quarantined = quarantineCorruptFile(at: url)
+                storageSummary = "实时足迹文件无法解密，已隔离为 \(quarantined)；本段仅保留在内存中。"
+                return false
+            }
             persistV2Evidence(for: session)
+            return true
         } catch {
             storageSummary = "实时足迹保存失败：\(error.localizedDescription)"
+            return false
         }
     }
 
@@ -614,15 +628,54 @@ final class ActivityStore: ObservableObject {
             ),
             sourceHash: "\(session.bundleID)|\(session.start.timeIntervalSince1970)|\(session.end.timeIntervalSince1970)"
         )
-        _ = v2Store.insertRawEvent(event)
+        if !v2Store.insertRawEvent(event) {
+            storageSummary = "V2 事实库写入失败：\(v2Store.lastError ?? "未知错误")"
+        }
     }
 
-    private func readSessions(from url: URL) -> [ActivitySession] {
+    private enum DayFileReadResult {
+        case sessions([ActivitySession])
+        /// 文件存在但无法解密或解码。这与"空白天"完全不同：绝不能当作空数据处理，
+        /// 否则保留期清理会删除它、persist 会覆盖它，导致当天全部记录丢失。
+        case unreadable
+    }
+
+    private func readDayFile(from url: URL) -> DayFileReadResult {
+        guard fileManager.fileExists(atPath: url.path) else { return .sessions([]) }
         guard let raw = try? Data(contentsOf: url),
-              let decrypted = try? StateEncryption.decrypt(raw) else { return [] }
+              let decrypted = try? StateEncryption.decrypt(raw) else { return .unreadable }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return (try? decoder.decode([ActivitySession].self, from: decrypted)) ?? []
+        guard let decoded = try? decoder.decode([ActivitySession].self, from: decrypted) else { return .unreadable }
+        return .sessions(decoded)
+    }
+
+    private func writeDayFile(_ daySessions: [ActivitySession], to url: URL) throws {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        let encrypted = try StateEncryption.encrypt(try encoder.encode(daySessions))
+        try encrypted.write(to: url, options: .atomic)
+        try LocalStorageProtection.protectFile(at: url)
+    }
+
+    /// 把无法解密的日文件改名隔离而不是删除：字节仍在磁盘上，
+    /// 密钥找回后仍可手工恢复。隔离名冲突时追加序号，绝不覆盖。
+    private func quarantineCorruptFile(at url: URL) -> String {
+        var target = url.appendingPathExtension("corrupt")
+        var counter = 1
+        while fileManager.fileExists(atPath: target.path) {
+            target = URL(fileURLWithPath: url.path + ".corrupt-\(counter)")
+            counter += 1
+        }
+        do {
+            try fileManager.moveItem(at: url, to: target)
+            try? LocalStorageProtection.protectFile(at: target)
+        } catch {
+            // 连改名都失败时，原地保留原文件——删除是更坏的选择。
+            return url.lastPathComponent
+        }
+        return target.lastPathComponent
     }
 
     private func loadStoredSessions() {
@@ -634,24 +687,27 @@ final class ActivityStore: ObservableObject {
 
         let cutoff = Calendar.current.date(byAdding: .day, value: -365, to: Date()) ?? Date()
         var loaded: [ActivitySession] = []
+        var quarantinedCount = 0
 
         for file in files where file.pathExtension == "activity" {
-            let daySessions = readSessions(from: file)
-            let kept = daySessions.filter { $0.end >= cutoff }
-            loaded.append(contentsOf: kept)
+            switch readDayFile(from: file) {
+            case .sessions(let daySessions):
+                let kept = daySessions.filter { $0.end >= cutoff }
+                loaded.append(contentsOf: kept)
 
-            // 超过保留期的文件不再继续留在磁盘上，避免旧数据越积越多。
-            if kept.count != daySessions.count {
-                if kept.isEmpty {
-                    try? fileManager.removeItem(at: file)
-                } else {
-                    let encoder = JSONEncoder()
-                    encoder.dateEncodingStrategy = .iso8601
-                    encoder.outputFormatting = [.sortedKeys]
-                    if let encrypted = try? StateEncryption.encrypt(try encoder.encode(kept)) {
-                        try? encrypted.write(to: file, options: .atomic)
+                // 超过保留期的文件不再继续留在磁盘上，避免旧数据越积越多。
+                if kept.count != daySessions.count {
+                    if kept.isEmpty {
+                        try? fileManager.removeItem(at: file)
+                    } else {
+                        try? writeDayFile(kept, to: file)
                     }
                 }
+            case .unreadable:
+                // 解密失败通常意味着密钥丢失或被重建：隔离文件保留密文，
+                // 等待人工恢复，而不是把用户数据静默清空。
+                _ = quarantineCorruptFile(at: file)
+                quarantinedCount += 1
             }
         }
 
@@ -660,12 +716,24 @@ final class ActivityStore: ObservableObject {
             persistV2Evidence(for: session)
         }
         let grouped = Dictionary(grouping: sessions, by: \.dayKey)
+        var projectionFailedDays = 0
         for daySessions in grouped.values {
-            ActivityV2Projection.rebuildDay(daySessions, into: v2Store)
+            if !ActivityV2Projection.rebuildDay(daySessions, into: v2Store) {
+                projectionFailedDays += 1
+            }
         }
-        storageSummary = sessions.isEmpty
-            ? "尚未开始 macOS 实时记录"
-            : "已加密保存 \(sessions.count) 段实时活动（最近 365 天）"
+        var summary: String
+        if quarantinedCount > 0 {
+            summary = "有 \(quarantinedCount) 个实时足迹文件无法解密，已隔离保留在磁盘上；其余 \(sessions.count) 段记录已加载。"
+        } else {
+            summary = sessions.isEmpty
+                ? "尚未开始 macOS 实时记录"
+                : "已加密保存 \(sessions.count) 段实时活动（最近 365 天）"
+        }
+        if projectionFailedDays > 0 {
+            summary += "；\(projectionFailedDays) 天的 V2 投影写入失败。"
+        }
+        storageSummary = summary
     }
 }
 
