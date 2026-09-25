@@ -46,26 +46,28 @@ struct CommandPaletteView: View {
         let title: String
         let symbol: String
         let keywords: String
+        /// 右侧尾注（如 ⌘1）：与「前往」菜单一致的快捷键。
+        var shortcutText: String?
         let run: () -> Void
     }
 
     private var all: [CommandItem] {
         [
-            .init(id: "today", title: "前往今日", symbol: "book.closed", keywords: "today 今天 首页") { onNavigate(.today) },
-            .init(id: "timeline", title: "打开时间线", symbol: "timeline.selection", keywords: "timeline 时间线 足迹") { onNavigate(.timeline) },
-            .init(id: "daily-review", title: "打开每日复盘", symbol: "checklist", keywords: "review 复盘 回顾") { onNavigate(.dailyReview) },
-            .init(id: "health", title: "查看健康", symbol: "heart.text.square", keywords: "health 健康 睡眠 心情 运动") { onNavigate(.health) },
-            .init(id: "footprints", title: "查看足迹", symbol: "mappin.and.ellipse", keywords: "footprints 足迹 地点 位置") { onNavigate(.footprints) },
-            .init(id: "work-learn", title: "查看学习与工作", symbol: "hammer.fill", keywords: "work learn 学习 工作 项目") { onNavigate(.workLearn) },
-            .init(id: "memory", title: "前往记忆", symbol: "archivebox", keywords: "memory 记忆 搜索") { onNavigate(.memory) },
-            .init(id: "ask", title: "前往询问", symbol: "questionmark.circle", keywords: "ask 询问 提问") { onNavigate(.ask) },
-            .init(id: "progress", title: "查看进展", symbol: "chart.line.uptrend.xyaxis", keywords: "progress 进展 对比 趋势") { onNavigate(.progress) },
-            .init(id: "database", title: "打开数据库", symbol: "cylinder.split.1x2", keywords: "database 数据库 原始数据 证据") { onNavigate(.database) },
-            .init(id: "sources", title: "查看数据源", symbol: "antenna.radiowaves.left.and.right", keywords: "sources 数据源 权限 采集") { onNavigate(.sources) },
-            .init(id: "settings", title: "打开设置", symbol: "gearshape", keywords: "settings 设置") { onNavigate(.settings) },
-            .init(id: "note", title: "写一句快记", symbol: "square.and.pencil", keywords: "note 快记 写") { onWriteNote() },
-            .init(id: "refresh", title: "立即采集", symbol: "arrow.clockwise", keywords: "refresh 采集 刷新") { onRefresh() },
-            .init(id: "source", title: "打开数据源…", symbol: "folder", keywords: "source 数据 导入") { onOpenSource() },
+            .init(id: "today", title: "前往今日", symbol: "book.closed", keywords: "today 今天 首页", shortcutText: RiverDestination.today.navigationShortcut.label) { onNavigate(.today) },
+            .init(id: "timeline", title: "打开时间线", symbol: "timeline.selection", keywords: "timeline 时间线 足迹", shortcutText: RiverDestination.timeline.navigationShortcut.label) { onNavigate(.timeline) },
+            .init(id: "daily-review", title: "打开每日复盘", symbol: "checklist", keywords: "review 复盘 回顾", shortcutText: RiverDestination.dailyReview.navigationShortcut.label) { onNavigate(.dailyReview) },
+            .init(id: "health", title: "查看健康", symbol: "heart.text.square", keywords: "health 健康 睡眠 心情 运动", shortcutText: RiverDestination.health.navigationShortcut.label) { onNavigate(.health) },
+            .init(id: "footprints", title: "查看足迹", symbol: "mappin.and.ellipse", keywords: "footprints 足迹 地点 位置", shortcutText: RiverDestination.footprints.navigationShortcut.label) { onNavigate(.footprints) },
+            .init(id: "work-learn", title: "查看学习与工作", symbol: "hammer.fill", keywords: "work learn 学习 工作 项目", shortcutText: RiverDestination.workLearn.navigationShortcut.label) { onNavigate(.workLearn) },
+            .init(id: "memory", title: "前往记忆", symbol: "archivebox", keywords: "memory 记忆 搜索", shortcutText: RiverDestination.memory.navigationShortcut.label) { onNavigate(.memory) },
+            .init(id: "ask", title: "前往询问", symbol: "questionmark.circle", keywords: "ask 询问 提问", shortcutText: RiverDestination.ask.navigationShortcut.label) { onNavigate(.ask) },
+            .init(id: "progress", title: "查看进展", symbol: "chart.line.uptrend.xyaxis", keywords: "progress 进展 对比 趋势", shortcutText: RiverDestination.progress.navigationShortcut.label) { onNavigate(.progress) },
+            .init(id: "database", title: "打开数据库", symbol: "cylinder.split.1x2", keywords: "database 数据库 原始数据 证据", shortcutText: RiverDestination.database.navigationShortcut.label) { onNavigate(.database) },
+            .init(id: "sources", title: "查看数据源", symbol: "antenna.radiowaves.left.and.right", keywords: "sources 数据源 权限 采集", shortcutText: RiverDestination.sources.navigationShortcut.label) { onNavigate(.sources) },
+            .init(id: "settings", title: "打开设置", symbol: "gearshape", keywords: "settings 设置", shortcutText: "⌘,") { onNavigate(.settings) },
+            .init(id: "note", title: "写一句快记", symbol: "square.and.pencil", keywords: "note 快记 写", shortcutText: "⌘N") { onWriteNote() },
+            .init(id: "refresh", title: "立即采集", symbol: "arrow.clockwise", keywords: "refresh 采集 刷新", shortcutText: nil) { onRefresh() },
+            .init(id: "source", title: "打开数据源…", symbol: "folder", keywords: "source 数据 导入", shortcutText: nil) { onOpenSource() },
         ]
     }
 
@@ -135,6 +137,11 @@ struct CommandPaletteView: View {
                                         .font(AppTypography.primary())
                                         .foregroundStyle(index == selection.index ? Color.ctaText : Color.ink)
                                     Spacer(minLength: 0)
+                                    if let shortcutText = item.shortcutText {
+                                        Text(shortcutText)
+                                            .font(AppTypography.kicker())
+                                            .foregroundStyle(index == selection.index ? Color.ctaText.opacity(0.8) : Color.tertiaryInk)
+                                    }
                                 }
                                 .padding(.horizontal, AppSpacing.sm)
                                 .frame(minHeight: AppSpacing.rowHeight)
@@ -150,6 +157,21 @@ struct CommandPaletteView: View {
                     .padding(AppSpacing.xs)
                 }
             }
+
+            // 操作提示：面板自解释，不猜按键。
+            RiverRule()
+            HStack(spacing: AppSpacing.sm) {
+                Text("↑↓ 选择")
+                Text("·").foregroundStyle(Color.tertiaryInk)
+                Text("↩ 执行")
+                Text("·").foregroundStyle(Color.tertiaryInk)
+                Text("esc 关闭")
+            }
+            .font(AppTypography.micro())
+            .foregroundStyle(Color.secondaryInk)
+            .padding(.horizontal, AppSpacing.md)
+            .padding(.vertical, AppSpacing.xs)
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .frame(width: 460)
         .background(Color.strongSurface)

@@ -700,11 +700,14 @@ struct QuickNoteSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.lg) {
-            HStack(alignment: .firstTextBaseline) {
-                RiverSectionHeading(
-                    title: "写一句",
-                    detail: date.formatted(.dateTime.year().month().day())
-                )
+            HStack(alignment: .center) {
+                HStack(spacing: AppSpacing.sm) {
+                    RiverIconWell(systemImage: "square.and.pencil", tint: AppTheme.accent, size: 26)
+                    RiverSectionHeading(
+                        title: "写一句",
+                        detail: date.formatted(.dateTime.year().month().day())
+                    )
+                }
                 Spacer()
                 Button("关闭") { dismiss() }
                     .linkAction()
@@ -720,7 +723,7 @@ struct QuickNoteSheet: View {
                         .strokeBorder(Color.border, lineWidth: 1)
                 )
             HStack {
-                Text("会保留到所选日期，稍后可以放进当天日记。")
+                Text("会保留到所选日期 · ⌘↩ 立即保存")
                     .font(AppTypography.metadata())
                     .foregroundStyle(Color.tertiaryInk)
                 Spacer()
@@ -735,6 +738,7 @@ struct QuickNoteSheet: View {
                     }
                 }
                 .primaryCTA()
+                .keyboardShortcut(.defaultAction)
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
