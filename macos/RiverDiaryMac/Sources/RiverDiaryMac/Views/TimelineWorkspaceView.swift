@@ -138,6 +138,7 @@ struct TimelineWorkspaceView: View {
                         Text(buffer.text)
                             .font(AppTypography.primary())
                             .foregroundStyle(Color.ink)
+                            .lineSpacing(5)
                             .lineLimit(4)
                             .fixedSize(horizontal: false, vertical: true)
                     }

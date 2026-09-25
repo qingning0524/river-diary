@@ -190,6 +190,7 @@ struct MemoryRedesignView: View {
                         Text(memory.body)
                             .font(AppTypography.secondary())
                             .foregroundStyle(Color.secondaryInk)
+                            .lineSpacing(4)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }

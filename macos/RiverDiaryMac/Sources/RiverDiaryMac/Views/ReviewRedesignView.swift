@@ -124,12 +124,12 @@ struct ReviewContentView: View {
                                 .foregroundStyle(day.mood == nil ? Color.tertiaryInk : Color.secondaryInk)
                                 .frame(minHeight: 14)
                             GeometryReader { proxy in
-                                RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                                Capsule()
                                     .fill(day.mood == nil ? Color.tertiaryInk.opacity(0.25) : AppTheme.accent)
                                     .frame(height: max(8, proxy.size.height * min(1, day.duration / maxDuration)))
                                     .frame(maxHeight: .infinity, alignment: .bottom)
                             }
-                            .frame(height: 68)
+                            .frame(height: 56)
                             Text(shouldShowDateLabel(index, dayCount: review.days.count) ? shortDate(day.id) : "")
                                 .font(AppTypography.metadata().monospacedDigit())
                                 .foregroundStyle(Color.tertiaryInk)
@@ -139,6 +139,8 @@ struct ReviewContentView: View {
                         .accessibilityLabel("\(day.id)，记录时长 \(ActivityFormatter.time(day.duration))，状态评分 \(day.mood.map { String(Int($0.rounded())) } ?? "未知")")
                     }
                 }
+                // 基线：柱子坐在同一条 1px 线上，不再像悬空的砖块。
+                RiverRule()
                 SettingsFootnote(text: "数字为已有状态评分；柱高表示实时记录量，灰色表示暂无评分。缺失不会按零计算。")
             }
         }
@@ -163,15 +165,22 @@ struct ReviewContentView: View {
                                 .foregroundStyle(Color.ink)
                                 .frame(width: 52, alignment: .leading)
                             GeometryReader { proxy in
-                                Capsule()
-                                    .fill(AppTheme.categoryTint(category.name).opacity(0.85))
-                                    .frame(width: max(8, proxy.size.width * category.duration / maxDuration))
+                                // 每行都有轨道：小数值读作"轨道上的短填充"，
+                                // 而不是一颗悬空的圆点。
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(Color.editor)
+                                    Capsule()
+                                        .fill(AppTheme.categoryTint(category.name).opacity(0.85))
+                                        .frame(width: max(8, proxy.size.width * category.duration / maxDuration))
+                                }
                             }
                             .frame(height: 7)
                             Text(ActivityFormatter.time(category.duration))
                                 .font(AppTypography.metadata().monospacedDigit())
                                 .foregroundStyle(Color.secondaryInk)
-                                .frame(width: 62, alignment: .trailing)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                                .frame(width: 88, alignment: .trailing)
                         }
                     }
                 }

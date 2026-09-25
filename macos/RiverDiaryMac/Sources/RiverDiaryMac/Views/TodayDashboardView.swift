@@ -260,6 +260,7 @@ struct TodayDashboardView: View {
                                     Text(highlight)
                                         .font(AppTypography.secondary())
                                         .foregroundStyle(Color.secondaryInk)
+                                        .lineSpacing(4)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
@@ -267,6 +268,7 @@ struct TodayDashboardView: View {
                             Text(dailyReport ?? s.localReport.overview)
                                 .font(AppTypography.primary())
                                 .foregroundStyle(Color.ink)
+                                .lineSpacing(5)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -495,11 +497,11 @@ private struct TodayHeroStat: View {
             if let progress {
                 Capsule()
                     .fill(Color.chip)
-                    .frame(width: 56, height: 4)
+                    .frame(width: 80, height: 5)
                     .overlay(alignment: .leading) {
                         Capsule()
                             .fill(AppTheme.accent)
-                            .frame(width: 56 * min(max(progress, 0), 1))
+                            .frame(width: 80 * min(max(progress, 0), 1))
                     }
                     .padding(.top, density.spacing(2))
             }
