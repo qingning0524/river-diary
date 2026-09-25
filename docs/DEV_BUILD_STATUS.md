@@ -1,7 +1,52 @@
 # River Diary 开发版说明
 
-更新时间：2026-09-23
-分支：`codex/ui-redesign`
+更新时间：2026-09-25
+分支：`全局`（重构在 `b47defd` 备份快照之上分波次提交）
+
+## 2026-09-25 全面重构与加固（本次）
+
+按 `docs/REFACTOR_PLAN_20260925.md` 分七个波次执行完毕，基线 194 项测试全绿，收尾 **199 项测试全绿**（新增 5 项数据安全回归测试），`make mac` 重建发布包成功。
+
+### 数据安全（P0）
+
+- legacy 库 73 处 `sqlite3_bind_text(..., nil)`（SQLITE_STATIC）全部替换为 SQLITE_TRANSIENT：此前 Swift 字符串临时缓冲区可能在 `step()` 时已被释放（悬垂指针）。unicode/长文本往返有回归测试。
+- 无法解密的活动日文件改为**隔离**（改名 `.corrupt`）而非删除；`persist` 遇到不可读的既有日文件拒绝覆盖（此前会用"仅含新片段"的文件覆盖整天记录）。
+- V2 快照恢复后，通过实例登记表让全部存活的兄弟连接重开到恢复后的文件；此前其余连接继续写向已被解绑的旧 inode，写入会静默丢失。
+- DiaryStore 的"先改内存后持久化"路径（删除保存的查询、快记删除/置顶、清除覆盖、自动草稿暂停、clearLocalJournal）全部补上失败回滚；`clearLocalJournal` 顺带修掉了引用已清空字典的死条件与缩进错误。
+- 写失败不再静默：V2 证据/采集快照/位置事件/分析结果写入失败都会进入既有状态栏与反馈条；AIKeychain 目录不可写时抛错而非假成功；AI 配置数据无法解码时先归档原始字节再回退默认，防止下一次保存把用户配置永久覆盖。
+- 全进程共享一条 V2 事实库连接（此前 6 个 SQLCipher 连接各自建表）；V2Store 补 `busy_timeout`。
+
+### 性能
+
+- 时间线引擎、dayStats、LocalReview 改为每帧只构建一次（此前时间线/今日页每次渲染重建 8–13 次，日记编辑每击键触发完整会话融合引擎）。
+- 节律图柱高分母移出逐行循环（此前 O(n²) 重建 LocalReview）。
+- DiaryStore 维护 entries 排序缓存与日期索引；侧栏状态不再每帧全量排序。
+- `.inline` 面板按设计规范去掉双重阴影（每页几十个面板的滚动开销），同时修复规范违规。
+- 数据库页复用共享连接；记忆库 N+1 查询改为批量确认 + 一次取回全部时间段；记忆搜索 250ms 防抖并移除每击键的 UserDefaults 写入；记忆页行容器改 LazyVStack。
+- 调色板颜色按 (调色板, 深浅, 令牌) 缓存 NSColor 解析，绘制不再逐帧扫描 hex 字符串。
+- 逐日缺失检查由 O(天数×条数) 降为 Set 查询。
+
+### 设计系统与可访问性
+
+- 颜色漂移清零（`.secondary`/`.tertiary`/`.white` → 语义 token）；15 处 `.bordered*` 按钮迁移到 primaryCTA/secondaryCTA/smallAction/linkAction（含 EmptyStateView 原语本身）；手搓胶囊按钮改 FilterChip。
+- 10 处 ad-hoc 空状态改为 `EmptyStateView(showsChrome:false)` 并补齐"缺什么/为什么/下一步"文案。
+- 删除 4 个确认无引用的死文件（SignalStyle/ActivityChatEngine/ActivityQuestionEngine/ActivityInsightEngine）与约 20 处死成员（AppDatabase 无引用查询、DatabaseModels 孤儿类型、Panels 死原语等）。
+- 间距/页宽魔数收编为 token 与具名常量（AppLayout.timeline/database/askMaxWidth、ProgressColumnMetrics、TimelineRowMetrics 对齐）；跨列对齐不再用裸数字。
+- 可访问性：图标按钮补齐 accessibilityLabel；记忆页随笔行改为可键盘操作的 Button；Inspector 打开时向旁白播报详情标题；时间线脊柱装饰对 VoiceOver 隐藏；固定行高改 minHeight；快记状态点加文字（不再仅靠颜色）。
+
+### 已知保留项
+
+- `MoodInsight.swift` 的 AIDraftEngine 链路生产端未接线但仍有测试覆盖，按"可能有后续用途"保留。
+- `DatabaseTime.shortTime/fullTime` 等跨线程路径的 formatter 保持逐调用创建（DateFormatter 非线程安全，静态化有竞态风险，且这些路径每采集周期才走一次）。
+- 密钥丢失后的跨设备恢复/轮换仍按 `TODOS.md` 的 P1 设计推进，本轮不涉及。
+- iOS 工程、网页原型、pipeline 本轮未改动。
+
+## 历史记录（2026-09-23 及之前）
+
+以下为此前版本说明，工具链路径等仍适用。
+
+<details>
+<summary>展开历史记录</summary>
 
 ## 启动开发版
 
@@ -84,4 +129,7 @@ open ../../dist/River\ Diary.app
 - 地点反向地理编码和地点停留段合并仍是下一阶段；当前已保存原始位置事件和手动地点标注。
 - 云同步、跨设备冲突处理、密钥恢复和删除传播尚未实现。
 - AI 日报/AI 询问需要用户自行配置模型连接并实际验证模型返回质量。
-- 当前工作区仍有大量未提交改动，发布前需要人工审阅后再提交或创建 PR。
+
+（历史记录到此为止；2026-09-25 的"大量未提交改动"已在备份快照 `b47defd` 固化，并经七波次重构后分批提交。）
+
+</details>
