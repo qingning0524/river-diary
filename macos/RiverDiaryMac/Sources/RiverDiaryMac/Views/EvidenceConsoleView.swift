@@ -48,7 +48,7 @@ struct EvidenceConsoleView: View {
             .padding(.top, AppSpacing.headerTop)
             .padding(.bottom, density.spacing(AppSpacing.lg))
         }
-        .scrollIndicators(.hidden)
+        .riverScrollIndicators()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.workspace)
         .overlay(alignment: .leading) { RiverRule().frame(width: 1) }

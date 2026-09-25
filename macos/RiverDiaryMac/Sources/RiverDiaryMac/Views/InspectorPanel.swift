@@ -212,6 +212,7 @@ struct InspectorPanel: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(AppSpacing.panelPadding)
         }
+        .riverScrollIndicators()
         .onAppear { isEditing = false }
         .confirmationDialog(
             "删除这条快记？",
@@ -408,6 +409,7 @@ struct InspectorPanel: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(AppSpacing.panelPadding)
         }
+        .riverScrollIndicators()
     }
 
     private func archiveDayInspector(_ day: MemoryArchiveDay) -> some View {
@@ -454,6 +456,7 @@ struct InspectorPanel: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(AppSpacing.panelPadding)
         }
+        .riverScrollIndicators()
     }
 
     private func durableMemoryInspector(_ memory: Memory) -> some View {
@@ -525,6 +528,7 @@ struct InspectorPanel: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(AppSpacing.panelPadding)
         }
+        .riverScrollIndicators()
     }
 
     private func reflectionInspector(_ letter: MonthlyLetter) -> some View {
@@ -553,6 +557,7 @@ struct InspectorPanel: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(AppSpacing.panelPadding)
         }
+        .riverScrollIndicators()
     }
 
     /// One evidence block inside the inspector: the same panel as everywhere else.

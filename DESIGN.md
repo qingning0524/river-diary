@@ -237,6 +237,10 @@ Four button treatments, and no ad-hoc `background` + `foregroundStyle` pairs:
 .iconAction(prominent:)       a single SF Symbol, square hit area
 ```
 
+### Scroll indicator
+
+Scrolling surfaces never show the system NSScroller — it is chunky, stays resident under the "always show scrollbars" preference, and ignores `.scrollIndicators(.hidden)` on some containers. `riverScrollIndicators()` replaces it with two layers: an AppKit-level suppressor that closes the native scroller, and (macOS 15+) a 3pt hairline thumb in 22% ink that appears while scrolling and fades out shortly after. Wheel, trackpad and swipe scrolling are unaffected. Every `ScrollView` in the app goes through this primitive — a bare `ScrollView` is drift.
+
 ### Segmented picker
 
 `RiverSegmentedPicker` is the only exclusive-mode switcher (复盘范围、记忆范围、对照周期、外观/密度). It is a chip-filled container with the selected segment raised on a `Color.surface` pill and a 1px border. The native `.pickerStyle(.segmented)` is banned: its filled-blue bezel belongs to System Settings, not to this instrument.

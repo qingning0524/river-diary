@@ -156,6 +156,7 @@ struct CommandPaletteView: View {
                     }
                     .padding(AppSpacing.xs)
                 }
+                .riverScrollIndicators()
             }
 
             // 操作提示：面板自解释，不猜按键。

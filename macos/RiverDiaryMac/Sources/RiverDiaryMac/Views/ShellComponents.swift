@@ -34,7 +34,7 @@ struct RiverPageBody<Content: View>: View {
             .padding(.bottom, density.spacing(bottomPadding))
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .scrollIndicators(showsIndicators ? .visible : .hidden)
+        .riverScrollIndicators()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.workspace)
     }

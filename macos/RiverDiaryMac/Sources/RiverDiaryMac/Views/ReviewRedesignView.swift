@@ -200,6 +200,7 @@ struct ReviewContentView: View {
                     .font(AppTypography.secondary())
                     .frame(minHeight: 120, maxHeight: 180)
                     .scrollContentBackground(.hidden)
+                    .scrollIndicators(.hidden)
                     .padding(AppSpacing.sm)
                     .background(Color.editor, in: RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous))
                     .overlay(

@@ -464,7 +464,7 @@ struct SettingsPage<Content: View>: View {
             .padding(.bottom, density.spacing(48))
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .scrollIndicators(.hidden)
+        .riverScrollIndicators()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.workspace)
     }

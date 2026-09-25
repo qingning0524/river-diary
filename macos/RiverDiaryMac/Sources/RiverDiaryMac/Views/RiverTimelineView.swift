@@ -26,7 +26,7 @@ struct RiverTimelineView: View {
                 timelineContent
             }
         }
-        .scrollIndicators(.hidden)
+        .riverScrollIndicators()
     }
 
     @ViewBuilder

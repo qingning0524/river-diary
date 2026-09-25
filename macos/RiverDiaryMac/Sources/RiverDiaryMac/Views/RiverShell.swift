@@ -477,6 +477,7 @@ struct RiverShellView: View {
                 }
                 .padding(.bottom, 10)
             }
+            .riverScrollIndicators()
             .scrollIndicators(.hidden)
 
             RiverRule()

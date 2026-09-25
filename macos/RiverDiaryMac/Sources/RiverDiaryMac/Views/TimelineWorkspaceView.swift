@@ -171,6 +171,7 @@ struct TimelineWorkspaceView: View {
                 set: { editor.edit(entry, text: $0) }
             ))
             .font(AppTypography.primary())
+            .scrollIndicators(.hidden)
             .frame(minHeight: 110, maxHeight: 180)
             .scrollContentBackground(.hidden)
             .padding(density.spacing(AppSpacing.xs))

@@ -53,6 +53,16 @@
 - **应用自身不再被记录**：`isRecordable` 排除 River Diary（bundle `studio.riverdiary.mac` 与应用名）。注意这也影响统计口径——今日累计等聚合不再包含使用 River Diary 本身的时间。
 - 实机验证：队列从"4 条碎片"变为"按 15/10/8/5 分钟排序的实质未知"；空态、窄窗、深色均正常；199/199 测试通过。
 
+### 滚动条重设计（2026-09-25 深夜）
+
+- 实窗截图确认系统 NSScroller 的粗灰滑块会在页面右侧驻留（且 `.scrollIndicators(.hidden)` 压不住），与设计语言冲突。
+- 新增 `riverScrollIndicators()` 原语并应用到全部 13 个滚动容器（页面体、时间线、命令面板、控制台、Inspector×5、设置页、侧栏）+ 3 个 TextEditor：
+  1. AppKit 层压制器关闭祖先 NSScrollView 的原生滚动条（滚轮/触控板滚动不受影响）；
+  2. macOS 15+ 用 `onScrollGeometryChange` 绘制 3pt 发丝滑块（22% 墨色），滚动时浮现、停止 0.7s 后淡出。
+- 已知取舍：发丝滑块不可拖动（轮式/触控板滚动不受影响）；若依赖拖动滚动条请反馈。
+- 测试环境的 ImageRenderer 像素测试与 AppKit 挂载不兼容，指示器机制在测试进程自动退化为纯视图（以 XCTest 类是否加载判定）。
+- 199/199 测试通过；实窗验证原生条消失、新滑块随滚动出现。
+
 ### 已知保留项
 
 - `MoodInsight.swift` 的 AIDraftEngine 链路生产端未接线但仍有测试覆盖，按"可能有后续用途"保留。
