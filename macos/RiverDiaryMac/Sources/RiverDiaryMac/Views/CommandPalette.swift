@@ -103,6 +103,8 @@ struct CommandPaletteView: View {
                         Image(systemName: "xmark.circle.fill").foregroundStyle(Color.tertiaryInk)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("清除命令")
+                    .help("清除搜索词")
                 }
             }
             .padding(AppSpacing.md)
@@ -135,7 +137,7 @@ struct CommandPaletteView: View {
                                     Spacer(minLength: 0)
                                 }
                                 .padding(.horizontal, AppSpacing.sm)
-                                .frame(height: AppSpacing.rowHeight)
+                                .frame(minHeight: AppSpacing.rowHeight)
                                 .contentShape(Rectangle())
                                 .background(
                                     index == selection.index ? AppTheme.accent : Color.clear,

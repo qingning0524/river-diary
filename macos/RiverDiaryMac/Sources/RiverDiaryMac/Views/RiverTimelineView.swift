@@ -256,6 +256,7 @@ private struct TimelineRow: View {
         }
         .padding(.horizontal, density.spacing(AppSpacing.sm))
         .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     private var spineLineColor: Color {
@@ -426,6 +427,7 @@ private struct TimelineNowRow: View {
             }
             .padding(.horizontal, density.spacing(AppSpacing.sm))
             .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("正在记录，\(session.appName)，已持续 \(ActivityFormatter.time(Date().timeIntervalSince(session.start)))")

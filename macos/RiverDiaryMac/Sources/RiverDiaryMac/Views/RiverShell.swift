@@ -88,6 +88,16 @@ enum InspectorContent: Identifiable {
     case durableMemory(Memory)
     case reflection(MonthlyLetter)
 
+    var title: String {
+        switch self {
+        case .episode(let item): item.title
+        case .evidence(let title, _): title
+        case .archiveDay(let day): day.entry.shortDate
+        case .durableMemory(let memory): memory.title
+        case .reflection(let letter): letter.title
+        }
+    }
+
     var id: String {
         switch self {
         case .episode(let item): "episode-\(item.id)"
@@ -352,11 +362,26 @@ struct RiverShellView: View {
         inspectorReturnFocusID = focusID
         if let focusID { inspectorSourceFocusID = focusID }
         inspectorContent = .episode(item)
+        announceInspector(item.title)
     }
 
     private func presentInspector(_ content: InspectorContent, returningFocusTo focusID: String? = nil) {
         inspectorReturnFocusID = focusID
         inspectorContent = content
+        announceInspector(content.title)
+    }
+
+    /// VoiceOver：Inspector 打开时右侧凭空多出一块详情面板，需要显式播报，
+    /// 否则旁白用户无从知道选择记录后发生了什么。
+    private func announceInspector(_ title: String) {
+        NSAccessibility.post(
+            element: NSApp,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: NSAttributedString(string: "已打开详情：\(title)"),
+                .priority: NSNumber(value: 2),
+            ]
+        )
     }
 
     private func closeInspector() {

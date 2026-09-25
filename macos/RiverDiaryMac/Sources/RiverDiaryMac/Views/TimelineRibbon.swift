@@ -89,7 +89,7 @@ struct RiverDayRibbon: View {
                     .offset(x: min(max(x - 17, 0), max(proxy.size.width - 34, 0)))
             }
         }
-        .frame(height: 12)
+        .frame(minHeight: 12)
     }
 
     // MARK: Segments
@@ -162,7 +162,10 @@ struct RiverDayRibbon: View {
         let first = recorded.map(\.start).min() ?? date
         let last = recorded.map(\.end).max() ?? date
         let total = recorded.reduce(0.0) { $0 + max($1.end.timeIntervalSince($1.start), $1.duration) }
+        let focus = recorded.filter { ActivityClassifier.isFocus($0.category) }
+            .reduce(0.0) { $0 + max($1.end.timeIntervalSince($1.start), $1.duration) }
         let formatter = Self.accessibilityTimeFormatter
-        return "\(formatter.string(from: first)) 到 \(formatter.string(from: last)) 之间共记录 \(ActivityFormatter.time(total))，其余时间没有记录"
+        let focusText = focus > 0 ? "，其中专注 \(ActivityFormatter.time(focus))" : ""
+        return "\(formatter.string(from: first)) 到 \(formatter.string(from: last)) 之间共记录 \(ActivityFormatter.time(total))\(focusText)，其余时间没有记录"
     }
 }
