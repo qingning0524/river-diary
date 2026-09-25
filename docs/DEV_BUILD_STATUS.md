@@ -34,6 +34,14 @@
 - 间距/页宽魔数收编为 token 与具名常量（AppLayout.timeline/database/askMaxWidth、ProgressColumnMetrics、TimelineRowMetrics 对齐）；跨列对齐不再用裸数字。
 - 可访问性：图标按钮补齐 accessibilityLabel；记忆页随笔行改为可键盘操作的 Button；Inspector 打开时向旁白播报详情标题；时间线脊柱装饰对 VoiceOver 隐藏；固定行高改 minHeight；快记状态点加文字（不再仅靠颜色）。
 
+### 视觉工艺打磨（2026-09-25 晚，实窗截图逐页复核）
+
+- 每日复盘「时间分布」：条形加轨道，小数值不再是一颗悬空圆点；时长列 62→88pt 并禁折行（"47 小时 31 分" 不再断行）。
+- 每日复盘「每日节律」：柱体改为胶囊并坐在共享 1px 基线上（68→56pt），深浅两色外观下均复核。
+- Today 证据质量进度条 56→80pt；档案预览剥除 Markdown 源标记（`[文字](url)`→文字）；day brief/手记预览/记忆正文补 CJK 行距。
+- ⌘K 命令面板：每条命令显示对应快捷键尾注（与"前往"菜单一致），底部加操作提示行；⌘N 快记浮层：标题加图标锚点，⌘↩ 设为默认保存动作并在提示中说明。
+- 深色模式实窗复核 Today/复盘/记忆（外观经 defaults 往返切换，已恢复浅色）；dist 重建；199/199 测试通过。
+
 ### 已知保留项
 
 - `MoodInsight.swift` 的 AIDraftEngine 链路生产端未接线但仍有测试覆盖，按"可能有后续用途"保留。
