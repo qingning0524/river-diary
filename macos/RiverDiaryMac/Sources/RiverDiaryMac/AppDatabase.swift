@@ -1,5 +1,5 @@
 import Foundation
-import SQLite3
+import SQLCipher
 // MARK: - Database
 
 final class AppDatabase {
@@ -8,14 +8,27 @@ final class AppDatabase {
     var db: OpaquePointer?
     let queue = DispatchQueue(label: "studio.riverdiary.database", qos: .utility)
     private(set) var lastError: String?
+    private let configuredDatabaseURL: URL?
 
     private var databasePath: URL? {
+        if let configuredDatabaseURL {
+            do {
+                try LocalStorageProtection.ensurePrivateDirectory(at: configuredDatabaseURL.deletingLastPathComponent())
+                return configuredDatabaseURL
+            } catch {
+                lastError = "数据库目录权限设置失败：\(error.localizedDescription)"
+                return nil
+            }
+        }
         guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
         let directory = base
             .appendingPathComponent("RiverDiaryMac", isDirectory: true)
             .appendingPathComponent("Database", isDirectory: true)
         do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try LocalStorageProtection.ensurePrivateDirectory(
+                at: base.appendingPathComponent("RiverDiaryMac", isDirectory: true)
+            )
+            try LocalStorageProtection.ensurePrivateDirectory(at: directory)
             return directory.appendingPathComponent("river-diary.db")
         } catch {
             lastError = error.localizedDescription
@@ -23,25 +36,100 @@ final class AppDatabase {
         }
     }
 
-    private init() {
+    init(databaseURL: URL? = nil) {
+        configuredDatabaseURL = databaseURL
         open()
         createTables()
         migrateTables()
     }
 
     deinit {
-        if db != nil { sqlite3_close(db) }
+        close()
+    }
+
+    func close() {
+        guard let db else { return }
+        sqlite3_close(db)
+        self.db = nil
+    }
+
+    func encryptedSnapshot() throws -> Data {
+        try queue.sync {
+            guard let db, let path = databasePath else {
+                throw DatabaseCipherError.invalidDatabase("兼容数据库尚未打开")
+            }
+            return try DatabaseCipher.encryptedSnapshot(
+                of: db,
+                purpose: "legacy-records-v1",
+                in: path.deletingLastPathComponent()
+            )
+        }
+    }
+
+    func validateEncryptedSnapshot(_ snapshot: Data) throws {
+        guard let path = databasePath else {
+            throw DatabaseCipherError.invalidDatabase("兼容数据库路径不可用")
+        }
+        try DatabaseCipher.validateEncryptedSnapshot(
+            snapshot,
+            purpose: "legacy-records-v1",
+            in: path.deletingLastPathComponent()
+        )
+    }
+
+    func restoreEncryptedSnapshot(_ snapshot: Data) throws {
+        guard let path = databasePath else {
+            throw DatabaseCipherError.invalidDatabase("兼容数据库路径不可用")
+        }
+        try validateEncryptedSnapshot(snapshot)
+
+        try queue.sync {
+            guard let currentDatabase = db else {
+                throw DatabaseCipherError.invalidDatabase("兼容数据库尚未打开")
+            }
+            sqlite3_exec(currentDatabase, "PRAGMA wal_checkpoint(TRUNCATE)", nil, nil, nil)
+            guard sqlite3_close(currentDatabase) == SQLITE_OK else {
+                throw DatabaseCipherError.invalidDatabase("兼容数据库正在使用，无法安全恢复")
+            }
+            db = nil
+
+            do {
+                try DatabaseCipher.replaceEncryptedDatabase(
+                    at: path,
+                    with: snapshot,
+                    purpose: "legacy-records-v1"
+                )
+                db = try DatabaseCipher.open(at: path, purpose: "legacy-records-v1")
+                sqlite3_exec(db, "PRAGMA journal_mode=WAL;", nil, nil, nil)
+                sqlite3_exec(db, "PRAGMA synchronous=FULL;", nil, nil, nil)
+                sqlite3_exec(db, "PRAGMA busy_timeout=5000;", nil, nil, nil)
+            } catch {
+                db = try? DatabaseCipher.open(at: path, purpose: "legacy-records-v1")
+                throw error
+            }
+        }
+
+        createTables()
+        migrateTables()
     }
 
     // MARK: Setup
 
     private func open() {
         guard let path = databasePath else { return }
-        let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX
-        if sqlite3_open_v2(path.path, &db, flags, nil) != SQLITE_OK {
-            lastError = "数据库无法打开"
+        do {
+            db = try DatabaseCipher.open(at: path, purpose: "legacy-records-v1")
+        } catch {
+            lastError = "数据库无法安全打开：\(error.localizedDescription)"
             db = nil
+            return
         }
+        // WAL journaling + full sync reduce the risk of a half-written transaction
+        // being left behind by a crash or power loss; busy_timeout keeps concurrent
+        // readers/writers from failing spuriously.
+        sqlite3_exec(db, "PRAGMA journal_mode=WAL;", nil, nil, nil)
+        sqlite3_exec(db, "PRAGMA synchronous=FULL;", nil, nil, nil)
+        sqlite3_exec(db, "PRAGMA busy_timeout=5000;", nil, nil, nil)
     }
 
     private func createTables() {
@@ -165,6 +253,13 @@ final class AppDatabase {
             }
             return true
         }
+        if let path = databasePath {
+            do {
+                try LocalStorageProtection.protectFile(at: path)
+            } catch {
+                lastError = "数据库权限设置失败：\(error.localizedDescription)"
+            }
+        }
     }
 
     private func migrateTables() {
@@ -225,9 +320,51 @@ final class AppDatabase {
     // MARK: Complete Daily Capture
 
     @discardableResult
-    func saveDailyCapture(_ record: DailyCaptureRecord, sessions: [ActivitySession]) -> Bool {
+    func saveDailyCapture(
+        _ record: DailyCaptureRecord,
+        sessions: [ActivitySession],
+        collectedChrome: Bool = true,
+        collectedNotes: Bool = true,
+        collectedHealth: Bool = true,
+        collectedScreenTime: Bool = true
+    ) -> Bool {
         transaction { database in
-            guard bindDailyRecord(record, sessionCount: sessions.count, database: database) else { return false }
+            // Preserve previously captured data for any source that did not run this
+            // cycle (e.g. a collector was toggled off, or a permissions failure yielded
+            // an empty read). Without this, a disabled collector would silently erase
+            // data that was already captured for the day.
+            var moodScore = record.moodScore
+            var sleepHours = record.sleepHours
+            var exerciseSteps = record.exerciseSteps
+            var chromeCount = record.chromeVisits.count
+            var notesCount = record.notesModified.count
+            var quickCaptureCount = record.quickNotes.count
+            var screenMinutes = record.screenTimeMinutes
+
+            if let existing = existingDailyRecord(date: record.date, database: database) {
+                if !collectedChrome { chromeCount = existing.chromeVisitCount }
+                if !collectedNotes { notesCount = existing.notesCount }
+                if !collectedHealth {
+                    moodScore = existing.moodScore ?? moodScore
+                    sleepHours = existing.sleepHours ?? sleepHours
+                    exerciseSteps = existing.exerciseSteps ?? exerciseSteps
+                    quickCaptureCount = existing.quickCaptureCount
+                }
+                if !collectedScreenTime { screenMinutes = existing.screenTimeMinutes ?? screenMinutes }
+            }
+
+            guard upsertDailyRecord(
+                record,
+                moodScore: moodScore,
+                sleepHours: sleepHours,
+                exerciseSteps: exerciseSteps,
+                screenTimeMinutes: screenMinutes,
+                chromeCount: chromeCount,
+                notesCount: notesCount,
+                sessionCount: sessions.count,
+                quickCaptureCount: quickCaptureCount,
+                database: database
+            ) else { return false }
 
             if let mood = record.moodScore {
                 let sql = "INSERT OR REPLACE INTO mood_scores (date, score, source) VALUES (?,?,'iOS 健康')"
@@ -258,27 +395,31 @@ final class AppDatabase {
                 }, database: database) else { return false }
             }
 
-            guard execute("DELETE FROM chrome_visits WHERE date = ?", bindings: bindText(record.date), database: database) else { return false }
-            for visit in record.chromeVisits {
-                let sql = "INSERT INTO chrome_visits (date, url, title, domain, visited_at, visit_count) VALUES (?,?,?,?,?,?)"
-                guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, record.date, -1, nil)
-                    sqlite3_bind_text(statement, 2, visit.url, -1, nil)
-                    sqlite3_bind_text(statement, 3, visit.title, -1, nil)
-                    sqlite3_bind_text(statement, 4, visit.domain, -1, nil)
-                    sqlite3_bind_text(statement, 5, DatabaseTime.isoFormatter.string(from: visit.visitedAt), -1, nil)
-                    sqlite3_bind_int(statement, 6, Int32(visit.visitCount))
-                }, database: database) else { return false }
+            if collectedChrome {
+                guard execute("DELETE FROM chrome_visits WHERE date = ?", bindings: bindText(record.date), database: database) else { return false }
+                for visit in record.chromeVisits {
+                    let sql = "INSERT INTO chrome_visits (date, url, title, domain, visited_at, visit_count) VALUES (?,?,?,?,?,?)"
+                    guard execute(sql, bindings: { statement in
+                        sqlite3_bind_text(statement, 1, record.date, -1, nil)
+                        sqlite3_bind_text(statement, 2, visit.url, -1, nil)
+                        sqlite3_bind_text(statement, 3, visit.title, -1, nil)
+                        sqlite3_bind_text(statement, 4, visit.domain, -1, nil)
+                        sqlite3_bind_text(statement, 5, DatabaseTime.isoFormatter.string(from: visit.visitedAt), -1, nil)
+                        sqlite3_bind_int(statement, 6, Int32(visit.visitCount))
+                    }, database: database) else { return false }
+                }
             }
 
-            guard execute("DELETE FROM daily_notes WHERE date = ?", bindings: bindText(record.date), database: database) else { return false }
-            for note in record.notesModified {
-                let sql = "INSERT INTO daily_notes (date, title, modified_at) VALUES (?,?,?)"
-                guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, record.date, -1, nil)
-                    sqlite3_bind_text(statement, 2, note.title, -1, nil)
-                    sqlite3_bind_text(statement, 3, DatabaseTime.isoFormatter.string(from: note.modifiedAt), -1, nil)
-                }, database: database) else { return false }
+            if collectedNotes {
+                guard execute("DELETE FROM daily_notes WHERE date = ?", bindings: bindText(record.date), database: database) else { return false }
+                for note in record.notesModified {
+                    let sql = "INSERT INTO daily_notes (date, title, modified_at) VALUES (?,?,?)"
+                    guard execute(sql, bindings: { statement in
+                        sqlite3_bind_text(statement, 1, record.date, -1, nil)
+                        sqlite3_bind_text(statement, 2, note.title, -1, nil)
+                        sqlite3_bind_text(statement, 3, DatabaseTime.isoFormatter.string(from: note.modifiedAt), -1, nil)
+                    }, database: database) else { return false }
+                }
             }
 
             guard execute("DELETE FROM activity_sessions WHERE date = ?", bindings: bindText(record.date), database: database) else { return false }
@@ -286,20 +427,70 @@ final class AppDatabase {
                 guard bindSession(session, date: record.date, database: database) else { return false }
             }
 
-            guard execute("DELETE FROM quick_captures WHERE date = ?", bindings: bindText(record.date), database: database) else { return false }
-            for note in record.quickNotes {
-                let sql = "INSERT OR REPLACE INTO quick_captures (id, date, text, created_at, source) VALUES (?,?,?,?,?)"
-                guard execute(sql, bindings: { statement in
-                    sqlite3_bind_text(statement, 1, note.id, -1, nil)
-                    sqlite3_bind_text(statement, 2, record.date, -1, nil)
-                    sqlite3_bind_text(statement, 3, note.text, -1, nil)
-                    sqlite3_bind_text(statement, 4, note.createdAt.map(DatabaseTime.isoFormatter.string), -1, nil)
-                    sqlite3_bind_text(statement, 5, note.source, -1, nil)
-                }, database: database) else { return false }
+            if collectedHealth {
+                guard execute("DELETE FROM quick_captures WHERE date = ?", bindings: bindText(record.date), database: database) else { return false }
+                for note in record.quickNotes {
+                    let sql = "INSERT OR REPLACE INTO quick_captures (id, date, text, created_at, source) VALUES (?,?,?,?,?)"
+                    guard execute(sql, bindings: { statement in
+                        sqlite3_bind_text(statement, 1, note.id, -1, nil)
+                        sqlite3_bind_text(statement, 2, record.date, -1, nil)
+                        sqlite3_bind_text(statement, 3, note.text, -1, nil)
+                        sqlite3_bind_text(statement, 4, note.createdAt.map(DatabaseTime.isoFormatter.string), -1, nil)
+                        sqlite3_bind_text(statement, 5, note.source, -1, nil)
+                    }, database: database) else { return false }
+                }
             }
 
             return true
         }
+    }
+
+    /// Reads an existing `daily_records` row within the current transaction so callers
+    /// can preserve non-collected summary columns instead of resetting them to zero.
+    func existingDailyRecord(date: String, database: OpaquePointer) -> DBDailyRecord? {
+        let sql = "SELECT * FROM daily_records WHERE date = ? LIMIT 1"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, date, -1, nil)
+        guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+        return readDailyRecord(statement)
+    }
+
+    /// Upserts the `daily_records` summary row, writing through the provided aggregate
+    /// values (which may have been preserved from a prior capture for non-collected sources).
+    func upsertDailyRecord(
+        _ record: DailyCaptureRecord,
+        moodScore: Int?,
+        sleepHours: Double?,
+        exerciseSteps: Int?,
+        screenTimeMinutes: Int?,
+        chromeCount: Int,
+        notesCount: Int,
+        sessionCount: Int,
+        quickCaptureCount: Int,
+        database: OpaquePointer
+    ) -> Bool {
+        let sql = """
+            INSERT OR REPLACE INTO daily_records
+            (date, captured_at, mood_score, sleep_hours, exercise_steps, screen_time_minutes,
+             chrome_visit_count, notes_count, session_count, quick_capture_count, mixed_overview, ios_data_available)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            """
+        return execute(sql, bindings: { statement in
+            sqlite3_bind_text(statement, 1, record.date, -1, nil)
+            sqlite3_bind_text(statement, 2, DatabaseTime.isoFormatter.string(from: record.capturedAt), -1, nil)
+            self.sqlite3_bind_int_or_null(statement, 3, moodScore)
+            self.sqlite3_bind_double_or_null(statement, 4, sleepHours)
+            self.sqlite3_bind_int_or_null(statement, 5, exerciseSteps)
+            self.sqlite3_bind_int_or_null(statement, 6, screenTimeMinutes)
+            sqlite3_bind_int(statement, 7, Int32(chromeCount))
+            sqlite3_bind_int(statement, 8, Int32(notesCount))
+            sqlite3_bind_int(statement, 9, Int32(sessionCount))
+            sqlite3_bind_int(statement, 10, Int32(quickCaptureCount))
+            sqlite3_bind_text(statement, 11, record.mixedOverview, -1, nil)
+            sqlite3_bind_int(statement, 12, record.iosDataAvailable ? 1 : 0)
+        }, database: database)
     }
 
     // MARK: Queries
@@ -661,45 +852,6 @@ final class AppDatabase {
 
     // MARK: Binding Helpers
 
-    func bindDailyRecord(_ record: DailyCaptureRecord, sessionCount: Int, database: OpaquePointer) -> Bool {
-        let sql = """
-            INSERT OR REPLACE INTO daily_records
-            (date, captured_at, mood_score, sleep_hours, exercise_steps, screen_time_minutes,
-             chrome_visit_count, notes_count, session_count, quick_capture_count, mixed_overview, ios_data_available)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-            """
-        return execute(sql, bindings: { statement in
-            sqlite3_bind_text(statement, 1, record.date, -1, nil)
-            sqlite3_bind_text(statement, 2, DatabaseTime.isoFormatter.string(from: record.capturedAt), -1, nil)
-            if let mood = record.moodScore {
-                sqlite3_bind_int(statement, 3, Int32(mood))
-            } else {
-                sqlite3_bind_null(statement, 3)
-            }
-            if let sleepHours = record.sleepHours {
-                sqlite3_bind_double(statement, 4, sleepHours)
-            } else {
-                sqlite3_bind_null(statement, 4)
-            }
-            if let exerciseSteps = record.exerciseSteps {
-                sqlite3_bind_int(statement, 5, Int32(exerciseSteps))
-            } else {
-                sqlite3_bind_null(statement, 5)
-            }
-            if let screenTimeMinutes = record.screenTimeMinutes {
-                sqlite3_bind_int(statement, 6, Int32(screenTimeMinutes))
-            } else {
-                sqlite3_bind_null(statement, 6)
-            }
-            sqlite3_bind_int(statement, 7, Int32(record.chromeVisits.count))
-            sqlite3_bind_int(statement, 8, Int32(record.notesModified.count))
-            sqlite3_bind_int(statement, 9, Int32(sessionCount))
-            sqlite3_bind_int(statement, 10, Int32(record.quickNotes.count))
-            sqlite3_bind_text(statement, 11, record.mixedOverview, -1, nil)
-            sqlite3_bind_int(statement, 12, record.iosDataAvailable ? 1 : 0)
-        }, database: database)
-    }
-
     private func bindSession(_ session: ActivitySession, date: String, database: OpaquePointer) -> Bool {
         let sql = """
             INSERT OR REPLACE INTO activity_sessions
@@ -744,6 +896,22 @@ final class AppDatabase {
 
     private func bindText(_ value: String) -> (OpaquePointer) -> Void {
         { statement in sqlite3_bind_text(statement, 1, value, -1, nil) }
+    }
+
+    private func sqlite3_bind_int_or_null(_ statement: OpaquePointer, _ index: Int32, _ value: Int?) {
+        if let value {
+            sqlite3_bind_int(statement, index, Int32(value))
+        } else {
+            sqlite3_bind_null(statement, index)
+        }
+    }
+
+    private func sqlite3_bind_double_or_null(_ statement: OpaquePointer, _ index: Int32, _ value: Double?) {
+        if let value {
+            sqlite3_bind_double(statement, index, value)
+        } else {
+            sqlite3_bind_null(statement, index)
+        }
     }
 
     // MARK: Query Helpers

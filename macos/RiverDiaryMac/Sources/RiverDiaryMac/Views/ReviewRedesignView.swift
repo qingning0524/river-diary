@@ -1,0 +1,354 @@
+import AppKit
+import SwiftUI
+
+/// Standalone review route. The actual review content is reusable inside Memory.
+struct ReviewRedesignView: View {
+    @Environment(\.riverDensity) private var density
+    @ObservedObject var store: DiaryStore
+    @ObservedObject var activity: ActivityStore
+    @ObservedObject var ai: AIAssistantStore
+    @ObservedObject var library: MemoryLibraryStore
+    let selectedDate: Date
+
+    var body: some View {
+        RiverPage {
+            ReviewContentView(store: store, activity: activity, ai: ai, library: library, selectedDate: selectedDate)
+        }
+    }
+}
+
+/// Non-scrolling review content. Memory embeds this view so its parent remains
+/// the only vertical scroll owner and the review does not become a mini-app.
+struct ReviewContentView: View {
+    @Environment(\.riverDensity) private var density
+    @ObservedObject var store: DiaryStore
+    @ObservedObject var activity: ActivityStore
+    @ObservedObject var ai: AIAssistantStore
+    @ObservedObject var library: MemoryLibraryStore
+    let selectedDate: Date
+
+    @State private var dayRange = 7
+    @State private var editingLetter: MonthlyLetter?
+    @State private var letterDrafts: [String: MonthlyLetter] = [:]
+    @State private var letterMessage: String?
+    var showsHeader = true
+    @EnvironmentObject private var feedbackCenter: FeedbackCenter
+
+    private var endDate: Date { ProgressAnchor.completedEndDate(selectedDate: selectedDate) }
+    private var startDate: Date {
+        Calendar.current.date(byAdding: .day, value: -(dayRange - 1), to: endDate) ?? endDate
+    }
+    private var review: LocalReview {
+        LocalReview.make(
+            start: startDate,
+            end: endDate,
+            entries: store.entries,
+            sessions: activity.sessions(from: startDate, to: endDate.addingTimeInterval(24 * 60 * 60)),
+            captures: store.quickCaptures
+        )
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: density.spacing(16)) {
+                if showsHeader {
+                    PageHeader("回顾", context: "从几天的记录里，看见自己的节奏。", emphasis: true) {
+                        rangePicker
+                    }
+                    .riverAppear(index: 0)
+                } else {
+                    HStack {
+                        RiverSectionHeading(title: "周期回顾", detail: "从几天的记录里，看见自己的节奏")
+                        Spacer()
+                        rangePicker
+                    }
+                    .riverAppear(index: 0)
+                }
+
+                summary.riverAppear(index: 1)
+                rhythm.riverAppear(index: 2)
+                distribution.riverAppear(index: 3)
+                monthlyLetter.riverAppear(index: 4)
+                aiReview.riverAppear(index: 5)
+                actionRow.riverAppear(index: 6)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        .onAppear { loadMonthlyLetter() }
+        .onChange(of: endDate) { _, _ in loadMonthlyLetter() }
+    }
+
+    private var rangePicker: some View {
+        Picker("范围", selection: $dayRange) {
+            Text("近 7 天").tag(7)
+            Text("近 30 天").tag(30)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(width: 150)
+        .accessibilityLabel("复盘范围")
+    }
+
+    private var summary: some View {
+        RiverPanel(tint: AppTheme.accent) {
+            HStack(alignment: .top, spacing: 0) {
+                RiverStat(title: "写下日记", value: "\(review.writingDays) 天", detail: "\(dayRange) 天内", valueFont: AppTypography.metricSmall())
+                RiverStatDivider()
+                RiverStat(title: "快记", value: "\(review.captureCount) 条", detail: "手动留下", valueFont: AppTypography.metricSmall())
+                RiverStatDivider()
+                RiverStat(title: "实时足迹", value: ActivityFormatter.time(review.duration), detail: "已记录", valueFont: AppTypography.metricSmall())
+                RiverStatDivider()
+                RiverStat(
+                    title: "平均心情",
+                    value: review.averageMood.map { "\(Int($0.rounded()))" } ?? "—",
+                    detail: review.moodSamples > 0 ? "\(review.moodSamples) 天评分" : "暂无评分",
+                    valueFont: AppTypography.metricSmall()
+                )
+            }
+        }
+    }
+
+    private var rhythm: some View {
+        RiverPanel(title: "每日节律", systemImage: "waveform.path", accent: AppTheme.accent) {
+            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
+                HStack(alignment: .bottom, spacing: 8) {
+                    ForEach(Array(review.days.enumerated()), id: \.element.id) { index, day in
+                        VStack(spacing: density.spacing(5)) {
+                            Text(day.mood.map { "\(Int($0.rounded()))" } ?? "—")
+                                .font(AppTypography.numeric())
+                                .foregroundStyle(day.mood == nil ? Color.tertiaryInk : Color.secondaryInk)
+                                .frame(minHeight: 14)
+                            GeometryReader { proxy in
+                                let maxDuration = max(review.days.map(\.duration).max() ?? 1, 1)
+                                RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                                    .fill(day.mood == nil ? Color.secondary.opacity(0.18) : AppTheme.accent)
+                                    .frame(height: max(8, proxy.size.height * min(1, day.duration / maxDuration)))
+                                    .frame(maxHeight: .infinity, alignment: .bottom)
+                            }
+                            .frame(height: 68)
+                            Text(shouldShowDateLabel(index) ? shortDate(day.id) : "")
+                                .font(AppTypography.metadata().monospacedDigit())
+                                .foregroundStyle(Color.tertiaryInk)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("\(day.id)，记录时长 \(ActivityFormatter.time(day.duration))，状态评分 \(day.mood.map { String(Int($0.rounded())) } ?? "未知")")
+                    }
+                }
+                SettingsFootnote(text: "数字为已有状态评分；柱高表示实时记录量，灰色表示暂无评分。缺失不会按零计算。")
+            }
+        }
+    }
+
+    private var distribution: some View {
+        RiverPanel(title: "时间分布", systemImage: "chart.bar", accent: AppTheme.accent) {
+            VStack(alignment: .leading, spacing: density.spacing(9)) {
+                if review.categories.isEmpty {
+                    Text("这段时间还没有足够的活动分类。")
+                        .font(AppTypography.secondary())
+                        .foregroundStyle(Color.secondaryInk)
+                } else {
+                    ForEach(Array(review.categories.prefix(6)), id: \.name) { category in
+                        HStack(spacing: density.spacing(9)) {
+                            Text(category.name)
+                                .font(AppTypography.label())
+                                .foregroundStyle(Color.ink)
+                                .frame(width: 52, alignment: .leading)
+                            GeometryReader { proxy in
+                                let maxDuration = max(review.categories.first?.duration ?? 1, 1)
+                                Capsule()
+                                    .fill(AppTheme.categoryTint(category.name).opacity(0.85))
+                                    .frame(width: max(8, proxy.size.width * category.duration / maxDuration))
+                            }
+                            .frame(height: 7)
+                            Text(ActivityFormatter.time(category.duration))
+                                .font(AppTypography.metadata().monospacedDigit())
+                                .foregroundStyle(Color.secondaryInk)
+                                .frame(width: 62, alignment: .trailing)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var monthlyLetter: some View {
+        RiverPanel(title: "河流信", systemImage: "envelope.open", accent: AppTheme.accent) {
+            VStack(alignment: .leading, spacing: density.spacing(10)) {
+                if let letter = activeLetter {
+                    Text(letter.title)
+                        .font(AppTypography.sectionTitle())
+                        .foregroundStyle(Color.ink)
+                    TextEditor(text: Binding(
+                        get: { editingLetter?.body ?? letter.body },
+                        set: { editingLetter?.body = $0 }
+                    ))
+                    .font(AppTypography.secondary())
+                    .frame(minHeight: 120, maxHeight: 180)
+                    .scrollContentBackground(.hidden)
+                    .padding(AppSpacing.sm)
+                    .background(Color.editor, in: RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous)
+                            .strokeBorder(Color.border, lineWidth: 1)
+                    )
+                    Text("依据：\(letter.evidence)")
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(Color.tertiaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: density.spacing(AppSpacing.sm)) {
+                        Button("保存河流信") { saveLetter() }
+                            .primaryCTA()
+                        Button(letter.isFavorite ? "取消收藏" : "收藏") {
+                            editingLetter?.isFavorite.toggle()
+                        }
+                        .buttonStyle(.plain)
+                        .smallAction()
+                        Spacer()
+                        Button("复制") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(letter.markdown, forType: .string)
+                            feedbackCenter.show("已复制河流信", kind: .success)
+                        }
+                        .buttonStyle(.plain)
+                        .smallAction()
+                    }
+                    if let letterMessage {
+                        Text(letterMessage)
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.secondaryInk)
+                    }
+                } else {
+                    Text("本月还没有足够的日记、快记或足迹生成河流信。")
+                        .font(AppTypography.secondary())
+                        .foregroundStyle(Color.secondaryInk)
+                }
+            }
+        }
+    }
+
+    private var activeLetter: MonthlyLetter? {
+        let key = MonthlyLetter.monthKey(for: endDate)
+        if let editingLetter, editingLetter.month == key { return editingLetter }
+        if let draft = letterDrafts[key] { return draft }
+        return store.monthlyLetters[key] ?? MonthlyLetter.make(
+            for: endDate,
+            entries: store.entries,
+            captures: store.quickCaptures,
+            sessions: activity.allSessionsIncludingActive()
+        )
+    }
+
+    private func loadMonthlyLetter() {
+        if let editingLetter { letterDrafts[editingLetter.month] = editingLetter }
+        let key = MonthlyLetter.monthKey(for: endDate)
+        editingLetter = letterDrafts[key] ?? store.monthlyLetters[key] ?? MonthlyLetter.make(
+            for: endDate,
+            entries: store.entries,
+            captures: store.quickCaptures,
+            sessions: activity.allSessionsIncludingActive()
+        )
+        letterMessage = nil
+    }
+
+    private func saveLetter() {
+        guard let letter = editingLetter ?? activeLetter else { return }
+        do {
+            try store.saveMonthlyLetter(letter)
+            editingLetter = letter
+            letterDrafts[letter.month] = nil
+            library.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
+            letterMessage = "已保存到加密本地状态。"
+            feedbackCenter.show("已保存河流信", kind: .success)
+        } catch {
+            let message = UserFacingError.message(for: error)
+            letterMessage = message
+            feedbackCenter.show("保存失败：\(message)", kind: .error)
+        }
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: density.spacing(AppSpacing.sm)) {
+            Text("这份回顾只使用本机已有数据，不会自动请求 AI。")
+                .font(AppTypography.metadata())
+                .foregroundStyle(Color.secondaryInk)
+            Spacer()
+            Button("复制 Markdown") { copyMarkdown() }
+                .buttonStyle(.plain)
+                .smallAction()
+            Button("导出 Markdown") { exportMarkdown() }
+                .buttonStyle(.plain)
+                .smallAction()
+        }
+    }
+
+    private var aiReview: some View {
+        RiverPanel(title: "AI 周期阅读", systemImage: "sparkles", accent: AppTheme.accent) {
+            VStack(alignment: .leading, spacing: density.spacing(10)) {
+                HStack {
+                    Text(ai.hasVerifiedConnection ? "按需生成一份带范围依据的本周期观察" : "连接 AI 后，可以生成带依据的周期观察")
+                        .font(AppTypography.secondary())
+                        .foregroundStyle(Color.secondaryInk)
+                    Spacer()
+                    Button(ai.state(for: .analysisWeekly)?.isLoading == true ? "生成中…" : "生成阅读") {
+                        Task {
+                            await ai.runAnalysisWeekly(
+                                entries: store.entries,
+                                sessions: activity.sessions(from: startDate, to: endDate.addingTimeInterval(24 * 60 * 60)),
+                                archiveStartDate: ActivitySession.dayKey(for: startDate),
+                                archiveEndDate: ActivitySession.dayKey(for: endDate),
+                                sourceSummary: "本机回顾 · \(dayRange) 天 · 日记 \(review.writingDays) 天 · 足迹 \(ActivityFormatter.time(review.duration))"
+                            )
+                            library.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(!ai.hasVerifiedConnection || ai.state(for: .analysisWeekly)?.isLoading == true)
+                }
+                if let state = ai.state(for: .analysisWeekly), let answer = state.answer {
+                    Text(answer)
+                        .font(AppTypography.primary())
+                        .foregroundStyle(Color.ink)
+                        .lineSpacing(5)
+                        .textSelection(.enabled)
+                } else if let error = ai.state(for: .analysisWeekly)?.error {
+                    Text(error)
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(AppTheme.error)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func copyMarkdown() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(review.markdown, forType: .string)
+        feedbackCenter.show("已复制回顾 Markdown", kind: .success)
+    }
+
+    private func exportMarkdown() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "河流回顾-\(ActivitySession.dayKey(for: endDate)).md"
+        panel.allowedContentTypes = [.plainText]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try review.markdown.write(to: url, atomically: true, encoding: .utf8)
+            feedbackCenter.show("已导出回顾 Markdown", kind: .success)
+        } catch {
+            feedbackCenter.show("导出失败：\(UserFacingError.message(for: error))", kind: .error)
+        }
+    }
+
+    private func shortDate(_ key: String) -> String {
+        let parts = key.split(separator: "-")
+        guard parts.count == 3 else { return key }
+        return "\(parts[1]).\(parts[2])"
+    }
+
+    private func shouldShowDateLabel(_ index: Int) -> Bool {
+        let interval = dayRange <= 7 ? 1 : 7
+        return index == 0 || index == review.days.count - 1 || index.isMultiple(of: interval)
+    }
+
+}

@@ -154,7 +154,7 @@ enum ActivityTimelineExport {
             if item.kind == .capture {
                 lines += ["## \(clock) · 快记", "", item.capture?.text ?? "", ""]
             } else {
-                lines += ["## \(clock)–\(item.end.formatted(date: .omitted, time: .shortened)) · \(item.title)", ""]
+                lines += ["## \(ActivityFormatter.timeRange(item.start, item.end)) · \(item.title)", ""]
                 if item.kind == .activity {
                     lines += ["记录时长：\(ActivityFormatter.time(item.duration))", ""]
                     if item.isFavorite { lines += ["★ 已收藏", ""] }

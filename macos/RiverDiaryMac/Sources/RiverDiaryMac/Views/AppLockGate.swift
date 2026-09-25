@@ -12,54 +12,56 @@ struct AppLockGate: View {
                 .fill(.ultraThinMaterial)
                 .ignoresSafeArea()
 
-            VStack(spacing: 16) {
+            VStack(spacing: AppSpacing.lg) {
                 ZStack {
                     Circle()
-                        .fill(LinearGradient.river(startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .fill(AppTheme.accent)
                         .frame(width: 76, height: 76)
-                        .shadow(color: Color.riverAmethyst.opacity(0.35), radius: 14, y: 6)
                     Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
-                        .font(.system(size: 24, weight: .semibold))
+                        .font(.system(size: 24, weight: .medium))
                         .foregroundStyle(.white)
                 }
 
-                Text("河流日记已上锁")
-                    .font(.ui(22, weight: .semibold))
-                    .foregroundStyle(Color.ink)
+                VStack(spacing: AppSpacing.xs) {
+                    Text("河流日记已上锁")
+                        .font(AppTypography.sheetTitle())
+                        .foregroundStyle(Color.ink)
 
-                Text("你的记录一直留在这里。想继续看的时候，解锁就好。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(4)
+                    Text("你的记录一直留在这里。想继续看的时候，解锁就好。")
+                        .font(AppTypography.secondary())
+                        .foregroundStyle(Color.secondaryInk)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(5)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 Button {
                     onUnlock()
                 } label: {
                     Label("解锁日记", systemImage: "faceid")
-                        .font(.callout.weight(.semibold))
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 10)
-                        .background(Color.ctaBackground, in: Capsule())
-                        .foregroundStyle(Color.ctaText)
-                        .shadow(color: .black.opacity(0.18), radius: 12, y: 7)
                 }
-                .buttonStyle(.softPress)
-                .padding(.top, 3)
+                .primaryCTA()
+                .controlSize(.large)
+                .padding(.top, AppSpacing.xs)
 
                 if !message.isEmpty {
                     Text(message)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(Color.secondaryInk)
                         .frame(maxWidth: 320)
                 }
             }
-            .padding(30)
-            .background(Color.strongSurface, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(Color.border, lineWidth: 1)
+            .padding(AppSpacing.xl)
+            .frame(width: 380)
+            .background(
+                Color.strongSurface,
+                in: RoundedRectangle(cornerRadius: AppRadius.floating, style: .continuous)
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.floating, style: .continuous)
+                    .strokeBorder(Color.border, lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.22), radius: 26, y: 12)
         }
     }
 }

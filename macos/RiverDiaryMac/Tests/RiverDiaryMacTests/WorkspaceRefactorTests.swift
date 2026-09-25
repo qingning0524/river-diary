@@ -43,6 +43,27 @@ final class WorkspaceRefactorTests: XCTestCase {
         XCTAssertEqual(result.tags, source.tags)
         XCTAssertEqual(result.category, source.category)
     }
+
+    func testExplicitMoodUpdatePreservesOtherSourceMetrics() {
+        let source = entry("2026-09-03", text: "既有日记文本", score: 72)
+        var measured = source
+        measured.metrics = DayMetrics(mood: nil, energy: 61, focus: 74, output: 70, overall: 72)
+        let override = EntryOverride(
+            overview: "既有日记文本",
+            mood: 0, energy: 0, focus: 0, output: 0,
+            category: nil, tags: nil, updatedAt: Date(),
+            preservesMetrics: true, writtenMood: 58
+        )
+
+        let saved = JournalWriting.applying(override, to: measured)
+
+        XCTAssertEqual(saved.metrics?.mood, 58)
+        XCTAssertEqual(saved.metrics?.energy, 61)
+        XCTAssertEqual(saved.metrics?.focus, 74)
+        XCTAssertEqual(saved.metrics?.output, 70)
+        XCTAssertEqual(saved.metrics?.overall, 72)
+        XCTAssertEqual(saved.displayOverview, "既有日记文本")
+    }
     func testSavedWritingReloadUsesSameMergeWithoutInventingScores() throws {
         let value = override("保持原文")
         let state = UserState(entries: ["local-2026-09-16": value])
@@ -76,11 +97,16 @@ final class WorkspaceRefactorTests: XCTestCase {
         let second = entry("2026-09-16")
         editor.edit(first, text: "昨天的草稿")
         editor.edit(second, text: "今天的草稿", mood: 80)
+        XCTAssertTrue(editor.hasUnsavedChanges)
         XCTAssertEqual(editor.buffer(for: first).text, "昨天的草稿")
         XCTAssertEqual(editor.buffer(for: second).mood, 80)
         editor.saved(first.date)
         XCTAssertFalse(editor.buffer(for: first).isDirty)
+        XCTAssertTrue(editor.hasUnsavedChanges)
         XCTAssertEqual(editor.buffer(for: second).text, "今天的草稿")
+        editor.discarded(second.date)
+        XCTAssertFalse(editor.hasUnsavedChanges)
+        XCTAssertEqual(editor.buffer(for: second).text, second.displayOverview)
     }
     func testMemoryIncludesCaptureOnlyDayAtAssignedDateAndSearchesIt() {
         let note = QuickCapture(text: "补记旅行", createdAt: Date())
@@ -122,10 +148,16 @@ final class WorkspaceRefactorTests: XCTestCase {
         XCTAssertEqual(review.duration, 0)
         XCTAssertTrue(review.markdown.contains("暂无评分"))
     }
-    func testCommandDateParsingRejectsInvalidOrPartialDates() {
-        XCTAssertNotNil(WorkspaceCommandPalette.parsedDate("2026-09-16"))
-        XCTAssertNil(WorkspaceCommandPalette.parsedDate("2026-02-30"))
-        XCTAssertNil(WorkspaceCommandPalette.parsedDate("9/16"))
-        XCTAssertNil(WorkspaceCommandPalette.parsedDate("日记"))
+    func testRepoStrictDateParsingRejectsInvalidOrPartialDates() {
+        let parsed = { (text: String) -> Date? in
+            guard text.count == 10,
+                  let date = DiaryEntry.dateFormatter.date(from: text),
+                  DiaryEntry.dateFormatter.string(from: date) == text else { return nil }
+            return date
+        }
+        XCTAssertNotNil(parsed("2026-09-16"))
+        XCTAssertNil(parsed("2026-02-30"))
+        XCTAssertNil(parsed("9/16"))
+        XCTAssertNil(parsed("日记"))
     }
 }

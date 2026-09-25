@@ -1,31 +1,26 @@
 import SwiftUI
 
-private enum MemoryFilter: String, CaseIterable, Identifiable {
-    case all
-    case writing
-    case captures
-    case favorites
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .all: "全部"
-        case .writing: "有笔记"
-        case .captures: "快记"
-        case .favorites: "收藏"
-        }
-    }
-}
-
+/// A single memory browser. Search, scope and details all stay in one flow;
+/// the shell inspector owns the deep view instead of opening another app shell.
 struct MemoryRedesignView: View {
+    @Environment(\.riverDensity) private var density
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
-    var onSelectDate: (Date) -> Void
+    @ObservedObject var ai: AIAssistantStore
+    @ObservedObject var library: MemoryLibraryStore
+    let selectedDate: Date
+    var onInspectArchive: (MemoryArchiveDay) -> Void = { _ in }
+    var onInspectMemory: (Memory) -> Void = { _ in }
+    var onInspectReflection: (MonthlyLetter) -> Void = { _ in }
 
-    @State private var query = ""
-    @State private var filter: MemoryFilter = .all
-    @State private var newestFirst = true
+    @AppStorage("memory.query") private var query = ""
+    @FocusState private var searchFocused: Bool
+    @State private var scope: MemoryScope = .all
+    @State private var showsReview = false
+
+    private var memoryNeedle: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     private var favoriteDates: Set<String> {
         let favoredKeys = store.timelineAnnotations.filter { $0.value.isFavorite }
@@ -36,321 +31,263 @@ struct MemoryRedesignView: View {
         })
     }
 
-    private var allDays: [MemoryArchiveDay] {
-        MemoryArchive.days(entries: store.entries, captures: store.quickCaptures)
+    private var filteredDurableMemories: [Memory] {
+        MemoryPresentation.durableMemories(library.durableMemories, query: memoryNeedle)
     }
 
-    private var filteredDays: [MemoryArchiveDay] {
-        let favorites = favoriteDates
-        var days = allDays.filter { day in
-            switch filter {
-            case .all: true
-            case .writing: day.hasWriting
-            case .captures: !day.captures.isEmpty
-            case .favorites: favorites.contains(day.id)
-            }
-        }
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !needle.isEmpty {
-            days = days.filter { $0.matches(needle) }
-        }
-        return days.sorted {
-            newestFirst ? $0.id > $1.id : $0.id < $1.id
-        }
+    private var filteredReflections: [MonthlyLetter] {
+        MemoryPresentation.reflections(library.savedReflections, scope: scope, query: memoryNeedle)
     }
 
-    private var recent: [MemoryArchiveDay] { Array(filteredDays.prefix(10)) }
-
-    private var projects: [ProjectRow] {
-        let cutoff = Calendar.current.date(byAdding: .day, value: -90, to: Date()) ?? Date()
-        let cutoffKey = DiaryEntry.dateFormatter.string(from: cutoff)
-        let recentEntries = store.entries.filter { $0.date >= cutoffKey }
-        let grouped = Dictionary(grouping: recentEntries, by: { $0.category ?? "未分类" })
-        return grouped.map { category, entries in
-            ProjectRow(name: category, dayCount: entries.count, latestDate: entries.map(\.date).max() ?? "")
-        }
-        .sorted { $0.latestDate > $1.latestDate }
-        .prefix(6)
-        .map { $0 }
-    }
-
-    private var isFiltering: Bool {
-        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || filter != .all
+    private var filteredArchiveDays: [MemoryArchiveDay] {
+        MemoryPresentation.archiveDays(library.archiveDays, scope: scope, favoriteDates: favoriteDates, query: memoryNeedle)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            header
-            searchField
-            filterBar
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 26) {
-                    if filteredDays.isEmpty {
-                        emptyResult
-                    } else if isFiltering {
-                        section("Results") {
-                            ForEach(recent) { day in
-                                MemoryRow(day: day, favorite: favoriteDates.contains(day.id))
-                                    .contentShape(Rectangle())
-                                    .contextMenu { openMenu(day) }
-                                    .onTapGesture { open(day) }
-                            }
-                        }
-                    } else {
-                        let favored = favoriteDates
-                        let importantDays = filteredDays.filter { favoriteContains($0, favored) || tagged($0) }
-                        if !importantDays.isEmpty {
-                            section("Important") {
-                                ForEach(importantDays.prefix(5)) { day in
-                                    MemoryRow(day: day, favorite: favoriteDates.contains(day.id))
-                                        .contentShape(Rectangle())
-                                        .contextMenu { openMenu(day) }
-                                        .onTapGesture { open(day) }
-                                }
-                            }
-                        }
-                        section("Recent") {
-                            ForEach(recent) { day in
-                                MemoryRow(day: day, favorite: favoriteDates.contains(day.id))
-                                    .contentShape(Rectangle())
-                                    .contextMenu { openMenu(day) }
-                                    .onTapGesture { open(day) }
-                            }
-                            if recent.isEmpty {
-                                EmptyStateView(
-                                    title: "还没有内容",
-                                    message: "多写几句、记录快记，或打开 Today 看看这一天的片段，记忆会在这里成形。"
-                                )
-                            }
-                        }
-                        if !projects.isEmpty {
-                            section("Projects") {
-                                ForEach(projects) { project in
-                                    ProjectRowView(project: project)
-                                        .contentShape(Rectangle())
-                                        .contextMenu {
-                                            Button("打开最近一天") { openLatest(project) }
-                                        }
-                                        .onTapGesture { openLatest(project) }
-                                }
-                            }
-                        }
+        VStack(spacing: 0) {
+            unifiedHeader
+            unifiedLibrary
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .top) {
+            Button("聚焦记忆搜索") { searchFocused = true }
+                .keyboardShortcut("f", modifiers: .command)
+                .opacity(0)
+                .accessibilityHidden(true)
+        }
+        .onAppear { refreshLibrary() }
+        .onChange(of: store.entries.count) { _, _ in refreshLibrary() }
+        .onChange(of: store.quickCaptures.count) { _, _ in refreshLibrary() }
+        .onChange(of: store.monthlyLetters.count) { _, _ in refreshLibrary() }
+    }
+
+    private func refreshLibrary() {
+        library.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
+    }
+
+    private var unifiedHeader: some View {
+        RiverHeaderBand {
+            PageHeader("记忆", context: "从一个入口浏览长期记忆、回顾和日期档案。")
+            HStack(spacing: density.spacing(AppSpacing.md)) {
+                searchField
+                Spacer(minLength: 0)
+                Picker("范围", selection: $scope) {
+                    ForEach(MemoryScope.allCases) { item in
+                        Text(item.title).tag(item)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 6)
-                .padding(.bottom, 40)
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 380)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private func favoriteContains(_ day: MemoryArchiveDay, _ favorites: Set<String>) -> Bool {
-        favorites.contains(day.id)
-    }
-
-    private func tagged(_ day: MemoryArchiveDay) -> Bool {
-        !(day.entry.tags ?? []).isEmpty
-    }
-
-    // MARK: Header
-
-    private var header: some View {
-        HStack(alignment: .center) {
-            PageTitle(title: "Memory", subtitle: "搜索你的过去")
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 10)
     }
 
     private var searchField: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField("Search your past…", text: $query)
-                .textFieldStyle(.plain)
-                .onSubmit { /* results update live */ }
-            if !query.isEmpty {
-                Button { query = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("清除搜索")
-            }
-        }
-        .font(.system(size: 13))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 9))
-        .padding(.horizontal, 16)
-    }
-
-    // MARK: Filters
-
-    private var filterBar: some View {
-        HStack(alignment: .center, spacing: 6) {
-            ForEach(MemoryFilter.allCases) { item in
-                FilterChip(
-                    title: item.title,
-                    isSelected: filter == item
-                ) {
-                    filter = item
-                }
-            }
-            Spacer()
-            Button {
-                newestFirst.toggle()
-            } label: {
-                Label(newestFirst ? "最近优先" : "最早优先", systemImage: "arrow.up.arrow.down")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.secondaryInk)
-            }
-            .buttonStyle(.plain)
-            .help("切换排序")
-            if isFiltering {
-                Button {
-                    query = ""
-                    filter = .all
-                } label: {
-                    Label("重置", systemImage: "arrow.counterclockwise")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.riverAmethyst)
-                }
-                .buttonStyle(.plain)
-                .help("重置搜索与筛选")
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 4)
-    }
-
-    private var emptyResult: some View {
-        EmptyStateView(
-            title: "没有找到匹配的记忆",
-            message: "换个关键词或筛选条件。搜索范围包括日期、笔记、标签、想法和快记。",
-            actionTitle: isFiltering ? "重置条件" : nil,
-            action: isFiltering ? { query = ""; filter = .all } : nil
+        RiverSearchField(
+            placeholder: "搜索你的过去…",
+            text: $query,
+            focus: $searchFocused
         )
-        .padding(.horizontal, 28)
-        .padding(.top, 18)
+        .frame(maxWidth: 420)
     }
 
-    // MARK: Sections
-
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title.uppercased())
-                .font(.system(size: 10, weight: .medium))
-                .tracking(1.2)
-                .foregroundStyle(.secondary)
-            content()
-        }
-    }
-
-    @ViewBuilder
-    private func openMenu(_ day: MemoryArchiveDay) -> some View {
-        Button("打开这一天") { open(day) }
-        if day.hasWriting || !day.captures.isEmpty {
-            Button("复制预览") {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(day.preview, forType: .string)
+    private var unifiedLibrary: some View {
+        RiverPageBody(spacing: AppSpacing.sectionGap, lazy: true) {
+            if showsReview {
+                reviewCard
+                    .riverAppear(index: 0)
+            }
+            ForEach(Array(MemoryPresentation.sections(for: scope).enumerated()), id: \.element) { index, section in
+                Group {
+                    switch section {
+                    case .durable: durableSection
+                    case .reflections: reflectionSection
+                    case .archive: archiveSection
+                    }
+                }
+                .riverAppear(index: index + 1)
             }
         }
     }
 
-    private func open(_ day: MemoryArchiveDay) {
-        if let date = DiaryEntry.dateFormatter.date(from: day.id) {
-            onSelectDate(date)
+    private var reviewCard: some View {
+        VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
+            HStack(alignment: .firstTextBaseline) {
+                RiverSectionHeading(title: "周期回顾", detail: "把这段时间整理成一条可回看的线索")
+                Spacer()
+                Button("收起") { showsReview = false }
+                    .buttonStyle(.plain)
+                    .smallAction()
+            }
+            RiverPanel {
+                ReviewContentView(store: store, activity: activity, ai: ai, library: library, selectedDate: selectedDate, showsHeader: false)
+            }
         }
     }
 
-    private func openLatest(_ project: ProjectRow) {
-        if let date = DiaryEntry.dateFormatter.date(from: project.latestDate) {
-            onSelectDate(date)
-        }
-    }
-}
-
-private struct ProjectRow: Identifiable {
-    var id: String { name }
-    var name: String
-    var dayCount: Int
-    var latestDate: String
-}
-
-private struct MemoryRow: View {
-    let day: MemoryArchiveDay
-    let favorite: Bool
-    @State private var isHovering = false
-
-    private var tags: [String] { day.entry.tags ?? [] }
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(day.entry.shortDate)
-                .font(.system(size: 11).monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(width: 72, alignment: .leading)
-                .padding(.top, 2)
-
-            Text(day.preview)
-                .font(.system(size: 13, weight: .medium))
-                .lineLimit(2)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 8) {
-                    if day.hasWriting {
-                        Label("日记", systemImage: "doc.text")
-                    }
-                    if !day.captures.isEmpty {
-                        Label("\(day.captures.count)", systemImage: "square.and.pencil")
-                    }
-                }
-                HStack(spacing: 8) {
-                    if !tags.isEmpty {
-                        Label("\(tags.count)", systemImage: "tag")
-                    }
-                    if let category = day.entry.category, !category.isEmpty {
-                        Label(category, systemImage: "folder")
+    private var durableSection: some View {
+        VStack(alignment: .leading, spacing: density.spacing(10)) {
+            HStack(alignment: .firstTextBaseline) {
+                RiverSectionHeading(title: "长期记忆", detail: "跨时间沉淀的主题与轨迹")
+                Spacer()
+                Text("\(filteredDurableMemories.count) 条")
+                    .font(AppTypography.numeric())
+                    .foregroundStyle(Color.tertiaryInk)
+            }
+            if filteredDurableMemories.isEmpty {
+                RiverPanel { RiverInsetPanel(symbol: "brain.head.profile", title: "还没有长期记忆", message: "当足迹被整理成习惯、项目轨迹或长期主题后，会出现在这里。") }
+            } else {
+                RiverPanel {
+                    VStack(spacing: 0) {
+                        ForEach(Array(filteredDurableMemories.enumerated()), id: \.element.id) { index, memory in
+                            durableRow(memory, showsDivider: index < filteredDurableMemories.count - 1)
+                        }
                     }
                 }
             }
-            .font(.system(size: 10))
-            .foregroundStyle(.secondary)
-            .frame(width: 132, alignment: .trailing)
+        }
+    }
 
-            if favorite {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.orange)
-                    .frame(width: 14)
-                    .padding(.top, 3)
+    private func durableRow(_ memory: Memory, showsDivider: Bool) -> some View {
+        let confirmed = library.confirmations[memory.id.uuidString]?.confirmed == true
+        return VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: density.spacing(AppSpacing.md)) {
+                RiverIconWell(systemImage: "brain.head.profile", tint: AppTheme.accent, size: 26)
+                VStack(alignment: .leading, spacing: density.spacing(5)) {
+                    HStack(spacing: density.spacing(AppSpacing.sm)) {
+                        Text(memory.title)
+                            .font(AppTypography.rowTitle())
+                            .foregroundStyle(Color.ink)
+                        Text(memory.kind.displayName)
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.tertiaryInk)
+                        Spacer(minLength: 0)
+                        Text("置信度 \(memory.confidence)")
+                            .font(AppTypography.numeric())
+                            .foregroundStyle(Color.tertiaryInk)
+                    }
+                    if !memory.body.isEmpty {
+                        Text(memory.body)
+                            .font(AppTypography.secondary())
+                            .foregroundStyle(Color.secondaryInk)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack(spacing: density.spacing(AppSpacing.sm)) {
+                        StatusBadge(confirmed ? "已确认" : "待确认", tone: confirmed ? .positive : .neutral)
+                        Text("来源 \(library.sourceEpisodes[memory.id.uuidString]?.count ?? memory.sourceEpisodeIDs.count) 个片段")
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.tertiaryInk)
+                    }
+                }
+                Spacer(minLength: 0)
+                Button("查看") { onInspectMemory(memory) }
+                    .buttonStyle(.plain)
+                    .smallAction()
+            }
+            .padding(.vertical, density.spacing(10))
+
+            if showsDivider { RiverRowDivider(inset: 0) }
+        }
+        .contentShape(Rectangle())
+    }
+
+    private var reflectionSection: some View {
+        VStack(alignment: .leading, spacing: density.spacing(10)) {
+            HStack(alignment: .firstTextBaseline) {
+                RiverSectionHeading(title: "回顾与河流信", detail: "周期阅读与保存过的文字")
+                Spacer()
+                Button(showsReview ? "收起周期回顾" : "打开周期回顾") { showsReview.toggle() }
+                    .buttonStyle(.plain)
+                    .smallAction(dark: !showsReview)
+            }
+            if filteredReflections.isEmpty {
+                RiverPanel { RiverInsetPanel(symbol: "text.book.closed", title: scope == .favorites ? "还没有收藏的回顾" : "还没有保存的回顾", message: "打开周期回顾，生成并保存一封河流信。") }
+            } else {
+                RiverPanel {
+                    VStack(spacing: 0) {
+                        ForEach(Array(filteredReflections.enumerated()), id: \.element.id) { index, letter in
+                            HStack(alignment: .top, spacing: density.spacing(10)) {
+                                RiverIconWell(
+                                    systemImage: letter.isFavorite ? "star.fill" : "text.book.closed",
+                                    tint: letter.isFavorite ? AppTheme.warning : AppTheme.accent,
+                                    size: 26
+                                )
+                                VStack(alignment: .leading, spacing: density.spacing(4)) {
+                                    Text(letter.title)
+                                        .font(AppTypography.rowTitle())
+                                        .foregroundStyle(Color.ink)
+                                    Text(letter.body)
+                                        .font(AppTypography.secondary())
+                                        .foregroundStyle(Color.secondaryInk)
+                                        .lineLimit(2)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    Text(letter.evidence)
+                                        .font(AppTypography.metadata())
+                                        .foregroundStyle(Color.tertiaryInk)
+                                }
+                                Spacer(minLength: 0)
+                                Text(letter.month)
+                                    .font(AppTypography.numeric())
+                                    .foregroundStyle(Color.tertiaryInk)
+                            }
+                            .padding(.vertical, density.spacing(10))
+                            .contentShape(Rectangle())
+                            .onTapGesture { onInspectReflection(letter) }
+                            .overlay(alignment: .bottom) {
+                                if index < filteredReflections.count - 1 { RiverRowDivider(inset: 0) }
+                            }
+                        }
+                    }
+                }
             }
         }
-        .padding(.vertical, 5)
-        .padding(.horizontal, 4)
-        .background(isHovering ? Color.primary.opacity(0.03) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
-        .animation(.easeOut(duration: 0.12), value: isHovering)
-        .onHover { isHovering = $0 }
     }
-}
 
-private struct ProjectRowView: View {
-    let project: ProjectRow
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(project.name)
-                .font(.system(size: 14, weight: .medium))
-            Text("\(project.dayCount) 天 · 最近 \(project.latestDate)")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+    private var archiveSection: some View {
+        VStack(alignment: .leading, spacing: density.spacing(10)) {
+            RiverSectionHeading(title: "日期档案", detail: "按天浏览原始日记和快记")
+            if filteredArchiveDays.isEmpty {
+                RiverPanel { RiverInsetPanel(symbol: "calendar", title: scope == .favorites ? "还没有收藏的日期" : "没有匹配的日期", message: memoryNeedle.isEmpty ? "写下日记或快记后，这里会保留每天的原始记录。" : "换个关键词试试看。") }
+            } else {
+                RiverPanel {
+                    VStack(spacing: 0) {
+                        ForEach(Array(filteredArchiveDays.enumerated()), id: \.element.id) { index, day in
+                            Button { onInspectArchive(day) } label: {
+                                HStack(spacing: density.spacing(AppSpacing.md)) {
+                                    Text(day.entry.shortDate)
+                                        .font(AppTypography.numeric())
+                                        .foregroundStyle(Color.secondaryInk)
+                                        .frame(width: 58, alignment: .leading)
+                                    Text(day.preview)
+                                        .font(AppTypography.secondary())
+                                        .foregroundStyle(Color.ink)
+                                        .lineLimit(1)
+                                    Spacer(minLength: density.spacing(AppSpacing.sm))
+                                    if favoriteDates.contains(day.id) {
+                                        Image(systemName: "star.fill")
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(AppTheme.warning)
+                                    }
+                                    Text(day.hasWriting ? "日记" : "快记")
+                                        .font(AppTypography.metadata())
+                                        .foregroundStyle(Color.tertiaryInk)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundStyle(Color.tertiaryInk)
+                                }
+                                .padding(.vertical, density.spacing(8))
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .overlay(alignment: .bottom) {
+                                if index < filteredArchiveDays.count - 1 { RiverRowDivider(inset: 0) }
+                            }
+                        }
+                    }
+                }
+            }
         }
-        .padding(.vertical, 4)
     }
 }

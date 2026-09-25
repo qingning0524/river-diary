@@ -2,6 +2,14 @@ import AppKit
 import CryptoKit
 import Foundation
 
+enum RetentionPolicy {
+    static func requiresConfirmation(currentDays: Int, requestedDays: Int) -> Bool {
+        let current = max(0, min(3650, currentDays))
+        let requested = max(0, min(3650, requestedDays))
+        return requested > 0 && (current == 0 || requested < current)
+    }
+}
+
 // MARK: - Store
 
 @MainActor
@@ -80,6 +88,7 @@ final class DataIngestionStore: ObservableObject {
 
     private var checkTimer: Timer?
     private var ingestTask: Task<Void, Never>?
+    private lazy var v2Store = V2Store()
     private let fileManager = FileManager.default
 
     private static let defaultSource = FileManager.default.homeDirectoryForCurrentUser
@@ -416,7 +425,11 @@ final class DataIngestionStore: ObservableObject {
 
             // 8. Persist encrypted and save the raw records into the database
             try persist(record)
-            saveToDatabase(record)
+            persistV2Snapshot(record, sourceHash: currentHash)
+            if !saveToDatabase(record) {
+                throw NSError(domain: "RiverDiaryMac.ingestion", code: 21,
+                              userInfo: [NSLocalizedDescriptionKey: "今日数据未能写入数据库，请稍后重试。原始记录已保留在本机。".trimmingCharacters(in: .whitespaces)])
+            }
             pruneRetention()
 
             // 9. Update state
@@ -447,7 +460,7 @@ final class DataIngestionStore: ObservableObject {
             lastError = nil
             lastStatus = "采集已取消。"
         } catch {
-            lastError = error.localizedDescription
+            lastError = UserFacingError.message(for: error)
             lastStatus = "采集失败"
         }
     }
@@ -461,6 +474,25 @@ final class DataIngestionStore: ObservableObject {
         encoder.dateEncodingStrategy = .iso8601
         let plaintext = try encoder.encode(record)
         try StateEncryption.encrypt(plaintext).write(to: url, options: .atomic)
+    }
+
+    private func persistV2Snapshot(_ record: DailyCaptureRecord, sourceHash: String) {
+        let event = RawEvent(
+            timestamp: record.capturedAt,
+            source: .ingestion,
+            kind: .ingestionSnapshot,
+            payload: RawEventPayload(
+                metrics: RawEventMetrics(
+                    steps: record.exerciseSteps,
+                    distanceKm: record.exerciseDistanceKM,
+                    activeEnergyKcal: record.exerciseEnergyKcal,
+                    sleepHours: record.sleepHours,
+                    screenMinutes: record.screenTimeMinutes
+                )
+            ),
+            sourceHash: sourceHash
+        )
+        _ = v2Store.insertRawEvent(event)
     }
 
     private func loadPersistedRecord() {
@@ -497,9 +529,17 @@ final class DataIngestionStore: ObservableObject {
         }
     }
 
-    private func saveToDatabase(_ record: DailyCaptureRecord) {
+    @discardableResult
+    private func saveToDatabase(_ record: DailyCaptureRecord) -> Bool {
         let sessions = targetActivity?.liveSessions(for: Date()) ?? []
-        AppDatabase.shared.saveDailyCapture(record, sessions: sessions)
+        return AppDatabase.shared.saveDailyCapture(
+            record,
+            sessions: sessions,
+            collectedChrome: collectsChrome,
+            collectedNotes: collectsNotes,
+            collectedHealth: collectsHealth,
+            collectedScreenTime: collectsScreenTime
+        )
     }
 
     private func applyToStore() {

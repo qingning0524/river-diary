@@ -1,5 +1,5 @@
 import Foundation
-import SQLite3
+import SQLCipher
 
 // MARK: - Historical iOS Import
 
@@ -77,7 +77,22 @@ extension AppDatabase {
                     screenTopApps: [],
                     mixedOverview: "历史 iOS 数据已导入。"
                 )
-                guard bindDailyRecord(record, sessionCount: 0, database: database) else { return false }
+                // Merge into the existing summary row, preserving any macOS-sourced
+                // values (session count, chrome/notes counts, screen time) so a
+                // re-import of the iOS history does not reset them to zero.
+                let existing = existingDailyRecord(date: date, database: database)
+                guard upsertDailyRecord(
+                    record,
+                    moodScore: mood,
+                    sleepHours: sleep?.totalHours,
+                    exerciseSteps: exercise?.steps,
+                    screenTimeMinutes: existing?.screenTimeMinutes,
+                    chromeCount: existing?.chromeVisitCount ?? 0,
+                    notesCount: existing?.notesCount ?? 0,
+                    sessionCount: existing?.sessionCount ?? 0,
+                    quickCaptureCount: captures.count,
+                    database: database
+                ) else { return false }
             }
 
             return true

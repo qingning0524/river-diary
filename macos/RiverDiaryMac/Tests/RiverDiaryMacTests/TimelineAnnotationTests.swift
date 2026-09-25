@@ -56,6 +56,40 @@ final class TimelineAnnotationTests: XCTestCase {
         XCTAssertEqual(values["test"]?.isFavorite, true)
     }
 
+    func testManualPlaceAndActivityLabelsAreTrimmedAndRetained() {
+        let annotation = TimelineAnnotation(
+            placeName: "  图书馆  ",
+            activityLabel: " 学习 ",
+            isReviewed: true
+        )
+        let values = TimelineAnnotation.updating([:], key: "test", with: annotation)
+
+        XCTAssertEqual(values["test"]?.placeName, "图书馆")
+        XCTAssertEqual(values["test"]?.activityLabel, "学习")
+        XCTAssertTrue(values["test"]?.isReviewed == true)
+    }
+
+    func testLegacyAnnotationDecodesWithoutManualCorrectionFields() throws {
+        let decoder = JSONDecoder()
+        let legacy = Data(#"{"title":"旧标题","note":"旧备注","isFavorite":true,"isReviewed":false}"#.utf8)
+        let annotation = try decoder.decode(TimelineAnnotation.self, from: legacy)
+
+        XCTAssertEqual(annotation.title, "旧标题")
+        XCTAssertEqual(annotation.note, "旧备注")
+        XCTAssertEqual(annotation.placeName, "")
+        XCTAssertEqual(annotation.activityLabel, "")
+        XCTAssertTrue(annotation.isFavorite)
+    }
+
+    func testReviewedAnnotationIsRetainedWithoutTitleOrNote() {
+        let reviewed = TimelineAnnotation(isReviewed: true, reviewedAt: day)
+        let values = TimelineAnnotation.updating([:], key: "test", with: reviewed)
+
+        XCTAssertEqual(values["test"]?.isReviewed, true)
+        XCTAssertEqual(values["test"]?.reviewedAt, day)
+        XCTAssertFalse(values["test"]?.isEmpty ?? true)
+    }
+
     func testStateAndBackupRoundTripAndLegacyCompatibility() throws {
         let annotation = TimelineAnnotation(title: "完成一段写作", note: "很安静", isFavorite: true, updatedAt: day)
         let encoder = JSONEncoder()

@@ -28,9 +28,20 @@ final class V2StoreTests: XCTestCase {
         XCTAssertTrue(indices.contains("idx_episodes_times"))
     }
 
+    func testDatabaseAndParentDirectoryAreRestrictedToCurrentAccount() throws {
+        let (store, databaseURL) = try makeStore()
+
+        XCTAssertEqual(
+            try LocalStorageProtection.permissions(at: databaseURL.deletingLastPathComponent()) ?? 0,
+            0o700
+        )
+        XCTAssertEqual(try LocalStorageProtection.permissions(at: databaseURL) ?? 0, 0o600)
+        XCTAssertEqual(store.countRows(in: .rawEvents), 0)
+    }
+
     func testRawEventRoundTripAndEmptyState() throws {
         let (store, _) = try makeStore()
-        XCTAssertEqual(store.countRows(in: "raw_events"), 0)
+        XCTAssertEqual(store.countRows(in: .rawEvents), 0)
 
         let event = RawEvent(
             timestamp: Date(timeIntervalSince1970: 5_000),
@@ -49,6 +60,27 @@ final class V2StoreTests: XCTestCase {
         let fetched = store.rawEvents(ids: [event.id])
         XCTAssertEqual(fetched.count, 1)
         XCTAssertEqual(fetched[0].id, event.id)
+    }
+
+    func testLatestLocationEventRestoresCoordinateEvidence() throws {
+        let (store, _) = try makeStore()
+        let event = RawEvent(
+            timestamp: Date(timeIntervalSince1970: 9_000),
+            source: .location,
+            kind: .locationUpdate,
+            payload: RawEventPayload(
+                latitude: 31.2304,
+                longitude: 121.4737,
+                horizontalAccuracy: 80,
+                locationName: "图书馆"
+            )
+        )
+        XCTAssertTrue(store.insertRawEvent(event))
+
+        let latest = store.latestRawEvent(source: .location, kind: .locationUpdate)
+        XCTAssertEqual(latest?.payload.latitude, 31.2304)
+        XCTAssertEqual(latest?.payload.longitude, 121.4737)
+        XCTAssertEqual(latest?.payload.locationName, "图书馆")
     }
 
     func testEpisodeRoundTripPreservesProvenance() throws {
@@ -115,6 +147,33 @@ final class V2StoreTests: XCTestCase {
         XCTAssertEqual(runs.first?.model, "test-model")
     }
 
+    func testMemoryConfirmationRoundTripUpdatesEffectiveMemoryState() throws {
+        let (store, _) = try makeStore()
+        let memory = Memory(title: "确认测试")
+        XCTAssertTrue(store.insertMemory(memory))
+        XCTAssertTrue(store.setMemoryConfirmation(memory.id, confirmed: false, note: "需要修正"))
+        XCTAssertEqual(store.memoryConfirmation(for: memory.id)?.confirmed, false)
+        XCTAssertEqual(store.memoryConfirmation(for: memory.id)?.note, "需要修正")
+        XCTAssertEqual(store.memories().first?.isUserConfirmed, false)
+        XCTAssertNotNil(store.memories().first?.lastConfirmedAt)
+        XCTAssertTrue(store.setMemoryConfirmation(memory.id, confirmed: true))
+        XCTAssertEqual(store.memoryConfirmation(for: memory.id)?.confirmed, true)
+        XCTAssertEqual(store.memories().first?.isUserConfirmed, true)
+    }
+
+    func testContextSnapshotCanBackAnalysisRunReference() throws {
+        let (store, _) = try makeStore()
+        let snapshotID = UUID()
+        XCTAssertTrue(store.insertContextSnapshot(id: snapshotID, payloadJSON: #"{"query":"这周"}"#, model: "test-model"))
+        XCTAssertTrue(store.contextSnapshotExists(snapshotID))
+        XCTAssertEqual(store.contextSnapshot(id: snapshotID)?.payloadJSON, #"{"query":"这周"}"#)
+        let run = AnalysisRun(task: .memorySearch, inputContextReference: snapshotID, outputText: "结果")
+        XCTAssertTrue(store.insertAnalysisRun(run))
+        let loaded = try XCTUnwrap(store.analysisRuns().first)
+        XCTAssertEqual(loaded.inputContextReference, snapshotID)
+        XCTAssertNotNil(loaded.inputContextReference.flatMap(store.contextSnapshot(id:)))
+    }
+
     func testClearDerivedKeepsEvidence() throws {
         let (store, _) = try makeStore()
         let raw = RawEvent(source: .manual, kind: .quickCapture, payload: RawEventPayload(text: "留着"))
@@ -125,10 +184,10 @@ final class V2StoreTests: XCTestCase {
 
         store.clearDerivedData()
 
-        XCTAssertEqual(store.countRows(in: "raw_events"), 1)
-        XCTAssertEqual(store.countRows(in: "episodes"), 0)
-        XCTAssertEqual(store.countRows(in: "memories"), 0)
-        XCTAssertEqual(store.countRows(in: "analysis_runs"), 0)
+        XCTAssertEqual(store.countRows(in: .rawEvents), 1)
+        XCTAssertEqual(store.countRows(in: .episodes), 0)
+        XCTAssertEqual(store.countRows(in: .memories), 0)
+        XCTAssertEqual(store.countRows(in: .analysisRuns), 0)
     }
 
     func testUserPrefsPersist() throws {

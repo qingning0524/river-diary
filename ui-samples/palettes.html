@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>河流日记 · 配色方案对比</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  background:#101114; color:#EDEBE6; padding:36px 40px 60px;
+  -webkit-font-smoothing: antialiased;
+}
+h1 { font-size:21px; font-weight:700; }
+.sub { color:#9B9B96; font-size:13px; margin:6px 0 8px; }
+.tip { color:#7C7C76; font-size:12px; margin-bottom:28px; }
+.tip b { color:#B9B9B3; font-weight:600; }
+.grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; max-width:1600px; }
+.cell { min-width:0; }
+.cell .head { display:flex; align-items:baseline; gap:9px; margin-bottom:8px; }
+.cell .name { font-size:15px; font-weight:700; }
+.cell .tag { font-size:11px; color:#8F8F89; background:#1C1D21; border:1px solid #2A2B30; padding:2px 9px; border-radius:99px; }
+.cell .desc { color:#A5A5A0; font-size:12.5px; line-height:1.6; margin-bottom:12px; min-height:40px; }
+.shot {
+  position:relative; height:400px; border-radius:14px; overflow:hidden;
+  border:1px solid #2A2B30; background:#fff;
+}
+.shot iframe {
+  width:1520px; height:952px; border:0;
+  transform: scale(0.42); transform-origin: 0 0;
+  pointer-events:none;
+}
+.shot .open {
+  position:absolute; right:12px; bottom:12px; font-size:12px; font-weight:600;
+  color:#101114; background:#EDEBE6; padding:7px 14px; border-radius:99px;
+  text-decoration:none; box-shadow:0 6px 20px rgba(0,0,0,.4);
+}
+.shot .open:hover { background:#fff; }
+.links { margin-top:10px; display:flex; gap:14px; font-size:12px; }
+.links a { color:#8FB5E8; text-decoration:none; }
+.links a:hover { text-decoration:underline; }
+.swatches { display:flex; gap:6px; margin-left:auto; }
+.swatches i { width:14px; height:14px; border-radius:5px; display:block; }
+</style>
+</head>
+<body>
+<h1>河流日记 · 六种配色方案</h1>
+<div class="sub">全部基于你选定的 B · 柔和景深 版式 · 同一内容，只有色彩不同 · 每套含浅色与深色</div>
+<div class="tip">点击 <b>打开完整预览</b> 后可用页面底部工具条随时切换配色与浅色/深色。选定后我会把对应色板写进应用的 Theme.swift。</div>
+
+<div class="grid">
+  <div class="cell">
+    <div class="head"><span class="name">1 · 海雾蓝</span><span class="tag">现行默认</span>
+      <span class="swatches"><i style="background:#3E74DC"></i><i style="background:#E8EFFD"></i><i style="background:#EDF1F6"></i></span></div>
+    <div class="desc">冷静、可信、工具感。标准的「清晨海面」蓝，最不挑场合，也是当前应用已上线的配色。</div>
+    <div class="shot"><iframe src="sample.html?style=b&mode=light" loading="lazy"></iframe><a class="open" href="sample.html?style=b&mode=light" target="_blank">打开完整预览</a></div>
+    <div class="links"><a href="sample.html?style=b&mode=light" target="_blank">浅色</a><a href="sample.html?style=b&mode=dark" target="_blank">深色</a></div>
+  </div>
+
+  <div class="cell">
+    <div class="head"><span class="name">2 · 青瓷</span><span class="tag">自然 · 推荐</span>
+      <span class="swatches"><i style="background:#23A183"></i><i style="background:#DFF3ED"></i><i style="background:#EDF3F0"></i></span></div>
+    <div class="desc">河流与草木的气息。青瓷绿安静治愈，和「河流日记」的名字最贴，长时间盯着的舒适度最好。</div>
+    <div class="shot"><iframe src="sample.html?style=b&palette=celadon&mode=light" loading="lazy"></iframe><a class="open" href="sample.html?style=b&palette=celadon&mode=light" target="_blank">打开完整预览</a></div>
+    <div class="links"><a href="sample.html?style=b&palette=celadon&mode=light" target="_blank">浅色</a><a href="sample.html?style=b&palette=celadon&mode=dark" target="_blank">深色</a></div>
+  </div>
+
+  <div class="cell">
+    <div class="head"><span class="name">3 · 暖阳</span><span class="tag">温暖</span>
+      <span class="swatches"><i style="background:#D0701F"></i><i style="background:#FAE8D6"></i><i style="background:#F6F1EA"></i></span></div>
+    <div class="desc">暖纸底 + 日出橙。像清晨的第一杯茶，有活力但不刺激；写日记的私人感最强。</div>
+    <div class="shot"><iframe src="sample.html?style=b&palette=sunrise&mode=light" loading="lazy"></iframe><a class="open" href="sample.html?style=b&palette=sunrise&mode=light" target="_blank">打开完整预览</a></div>
+    <div class="links"><a href="sample.html?style=b&palette=sunrise&mode=light" target="_blank">浅色</a><a href="sample.html?style=b&palette=sunrise&mode=dark" target="_blank">深色</a></div>
+  </div>
+
+  <div class="cell">
+    <div class="head"><span class="name">4 · 堇紫</span><span class="tag">现代</span>
+      <span class="swatches"><i style="background:#6F63E6"></i><i style="background:#EAE8FC"></i><i style="background:#F0EFF7"></i></span></div>
+    <div class="desc">薰衣草灰画布 + 堇紫强调。现代创意工具的常见气质（类 Linear/Notion 紫），柔和而有想象力。</div>
+    <div class="shot"><iframe src="sample.html?style=b&palette=iris&mode=light" loading="lazy"></iframe><a class="open" href="sample.html?style=b&palette=iris&mode=light" target="_blank">打开完整预览</a></div>
+    <div class="links"><a href="sample.html?style=b&palette=iris&mode=light" target="_blank">浅色</a><a href="sample.html?style=b&palette=iris&mode=dark" target="_blank">深色</a></div>
+  </div>
+
+  <div class="cell">
+    <div class="head"><span class="name">5 · 莓红</span><span class="tag">私密</span>
+      <span class="swatches"><i style="background:#D5537B"></i><i style="background:#FBE3EB"></i><i style="background:#F7F1F3"></i></span></div>
+    <div class="desc">腮红灰画布 + 莓果色。私密温柔，像纸页间的一点胭脂；日记本的个人气息最浓。</div>
+    <div class="shot"><iframe src="sample.html?style=b&palette=berry&mode=light" loading="lazy"></iframe><a class="open" href="sample.html?style=b&palette=berry&mode=light" target="_blank">打开完整预览</a></div>
+    <div class="links"><a href="sample.html?style=b&palette=berry&mode=light" target="_blank">浅色</a><a href="sample.html?style=b&palette=berry&mode=dark" target="_blank">深色</a></div>
+  </div>
+
+  <div class="cell">
+    <div class="head"><span class="name">6 · 墨青</span><span class="tag">仪器感</span>
+      <span class="swatches"><i style="background:#47618B"></i><i style="background:#E4EAF2"></i><i style="background:#EDF0F4"></i></span></div>
+    <div class="desc">低饱和钢青，最接近最初「证据台」的沉稳。对比最克制，仪器感与专业感最强。</div>
+    <div class="shot"><iframe src="sample.html?style=b&palette=moke&mode=light" loading="lazy"></iframe><a class="open" href="sample.html?style=b&palette=moke&mode=light" target="_blank">打开完整预览</a></div>
+    <div class="links"><a href="sample.html?style=b&palette=moke&mode=light" target="_blank">浅色</a><a href="sample.html?style=b&palette=moke&mode=dark" target="_blank">深色</a></div>
+  </div>
+</div>
+</body>
+</html>

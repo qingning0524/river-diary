@@ -9,7 +9,7 @@ enum JournalSaveState: Equatable {
 }
 
 struct LocalBackupPayload: Codable {
-    var version = 3
+    var version = 5
     var exportedAt: Date
     var sourcePath: String?
     var data: DiaryData?
@@ -22,6 +22,42 @@ struct LocalBackupPayload: Codable {
     var monthlyLetters: [String: MonthlyLetter]?
     var savedQueries: [SavedQuery]? = nil
     var timelineAnnotations: [String: TimelineAnnotation]? = nil
+    var dailyGoals: [String: DailyGoal]? = nil
+    var journalDrafts: [String: JournalDraftRecord]? = nil
+    var legacyDatabaseSnapshot: Data? = nil
+    var v2DatabaseSnapshot: Data? = nil
+}
+
+private struct BackupRestoreFileCheckpoint {
+    let url: URL?
+    let existed: Bool
+    let data: Data?
+}
+
+private struct DiaryStoreRestoreCheckpoint {
+    let data: DiaryData?
+    let baseData: DiaryData?
+    let overrides: [String: EntryOverride]
+    let quickCaptures: [String: [QuickCapture]]
+    let dailyGoals: [String: DailyGoal]
+    let journalDrafts: [String: JournalDraftRecord]
+    let monthlyLetters: [String: MonthlyLetter]
+    let savedQueries: [SavedQuery]
+    let timelineAnnotations: [String: TimelineAnnotation]
+    let dismissedDrafts: Set<String>
+    let careAcknowledgments: Set<String>
+    let autoDraftPaused: Bool
+    let hasLocalChanges: Bool
+    let externalSourceURL: URL?
+    let externalSourceError: String?
+    let externalSourceModifiedAt: Date?
+    let localStateReadFailed: Bool
+    let isEncrypted: Bool
+    let loadError: String?
+    let saveState: JournalSaveState
+    let stateFile: BackupRestoreFileCheckpoint
+    let restoredDataFile: BackupRestoreFileCheckpoint
+    let externalSourceDefault: String?
 }
 
 @MainActor
@@ -35,6 +71,8 @@ final class DiaryStore: ObservableObject {
     @Published private(set) var monthlyLetters: [String: MonthlyLetter] = [:]
     @Published private(set) var savedQueries: [SavedQuery] = []
     @Published private(set) var timelineAnnotations: [String: TimelineAnnotation] = [:]
+    @Published private(set) var dailyGoals: [String: DailyGoal] = [:]
+    @Published private(set) var journalDrafts: [String: JournalDraftRecord] = [:]
     @Published private(set) var dismissedDrafts: Set<String> = []
     @Published private(set) var careAcknowledgments: Set<String> = []
     @Published private(set) var autoDraftPaused = false
@@ -49,12 +87,34 @@ final class DiaryStore: ObservableObject {
     private var ingestedHealth: [String: IOSHealthSummary] = [:]
     private var ingestedScores: [String: Int] = [:]
     private let fileManager = FileManager.default
+    private let configuredSupportDirectory: URL?
+
+    private var hasPersistentLocalEdits: Bool {
+        !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty
+            || !savedQueries.isEmpty || !timelineAnnotations.isEmpty || !dailyGoals.isEmpty || !journalDrafts.isEmpty
+    }
 
     private lazy var supportDirectory: URL? = {
+        if let configuredSupportDirectory {
+            do {
+                try LocalStorageProtection.ensurePrivateDirectory(at: configuredSupportDirectory)
+                return configuredSupportDirectory
+            } catch {
+                localStateReadFailed = true
+                loadError = "本地状态目录权限设置失败：\(error.localizedDescription)"
+                return nil
+            }
+        }
         guard let directory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
         let target = directory.appendingPathComponent("RiverDiaryMac", isDirectory: true)
-        try? fileManager.createDirectory(at: target, withIntermediateDirectories: true)
-        return target
+        do {
+            try LocalStorageProtection.ensurePrivateDirectory(at: target)
+            return target
+        } catch {
+            localStateReadFailed = true
+            loadError = "本地状态目录权限设置失败：\(error.localizedDescription)"
+            return nil
+        }
     }()
 
     private var stateURL: URL? {
@@ -69,7 +129,8 @@ final class DiaryStore: ObservableObject {
     private var sourceObserver: DispatchSourceFileSystemObject?
     private var observerFileDescriptor: Int32 = -1
 
-    init() {
+    init(supportDirectory: URL? = nil) {
+        configuredSupportDirectory = supportDirectory
         if let path = UserDefaults.standard.string(forKey: externalSourceKey) {
             externalSourceURL = URL(fileURLWithPath: path)
         }
@@ -99,7 +160,7 @@ final class DiaryStore: ObservableObject {
             hasLocalChanges = true
             saveState = .saved(Date())
         } catch {
-            saveState = .failed(error.localizedDescription)
+            saveState = .failed(UserFacingError.message(for: error))
             throw error
         }
     }
@@ -112,10 +173,10 @@ final class DiaryStore: ObservableObject {
         do {
             try persist(timelineAnnotations: updated)
             timelineAnnotations = updated
-            hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !updated.isEmpty
+            hasLocalChanges = hasPersistentLocalEdits
             saveState = .saved(Date())
         } catch {
-            saveState = .failed(error.localizedDescription)
+            saveState = .failed(UserFacingError.message(for: error))
             throw error
         }
     }
@@ -143,14 +204,14 @@ final class DiaryStore: ObservableObject {
         do {
             try persist(savedQueries: savedQueries)
         } catch {
-            saveState = .failed(error.localizedDescription)
+            saveState = .failed(UserFacingError.message(for: error))
         }
     }
 
     func removeSavedQuery(_ query: SavedQuery) {
         savedQueries.removeAll { $0.id == query.id }
-        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
-        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+        hasLocalChanges = hasPersistentLocalEdits
+        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
     }
 
     var poem: String {
@@ -196,13 +257,63 @@ final class DiaryStore: ObservableObject {
         QuickCapture.sortedForDisplay(quickCaptures[entry.date] ?? [])
     }
 
-    func addQuickCapture(_ text: String, tag: String? = nil, for date: Date = Date()) {
+    func dailyGoal(for date: Date) -> DailyGoal? {
+        dailyGoals[DiaryEntry.dateFormatter.string(from: date)]
+    }
+
+    func saveDailyGoal(_ goal: DailyGoal?, for date: Date) throws {
+        guard !localStateReadFailed else {
+            throw NSError(domain: "RiverDiaryMac", code: 43, userInfo: [NSLocalizedDescriptionKey: "本地状态尚未成功读取，暂时不能保存目标。"])
+        }
+        let key = DiaryEntry.dateFormatter.string(from: date)
+        var updated = dailyGoals
+        if let goal {
+            let title = goal.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !title.isEmpty else { return }
+            updated[key] = DailyGoal(title: title, isCompleted: goal.isCompleted, updatedAt: Date())
+        } else {
+            updated.removeValue(forKey: key)
+        }
+
+        try persist(dailyGoals: updated)
+        dailyGoals = updated
+        hasLocalChanges = hasPersistentLocalEdits
+        saveState = .saved(Date())
+    }
+
+    func saveJournalDraft(_ draft: JournalDraftRecord, for date: String) throws {
+        guard !localStateReadFailed else {
+            throw NSError(domain: "RiverDiaryMac", code: 44, userInfo: [NSLocalizedDescriptionKey: "本地日记尚未成功读取，暂时不能保存草稿。"])
+        }
+        var updated = journalDrafts
+        updated[date] = draft
+        try persist(journalDrafts: updated)
+        journalDrafts = updated
+        hasLocalChanges = hasPersistentLocalEdits
+        saveState = .saved(Date())
+    }
+
+    func removeJournalDraft(for date: String) throws {
+        guard journalDrafts[date] != nil else { return }
+        guard !localStateReadFailed else {
+            throw NSError(domain: "RiverDiaryMac", code: 45, userInfo: [NSLocalizedDescriptionKey: "本地日记尚未成功读取，暂时不能删除草稿。"])
+        }
+        var updated = journalDrafts
+        updated[date] = nil
+        try persist(journalDrafts: updated)
+        journalDrafts = updated
+        hasLocalChanges = hasPersistentLocalEdits
+        saveState = .saved(Date())
+    }
+
+    @discardableResult
+    func addQuickCapture(_ text: String, tag: String? = nil, for date: Date = Date()) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty else { return false }
 
         guard !localStateReadFailed else {
             saveState = .failed("本地日记尚未成功读取，请重新打开应用后再保存。")
-            return
+            return false
         }
         let dateString = DiaryEntry.dateFormatter.string(from: date)
         let capture = QuickCapture(text: trimmed, createdAt: Date(), tag: tag?.isEmpty == false ? tag : nil)
@@ -214,10 +325,12 @@ final class DiaryStore: ObservableObject {
         do {
             try persist()
             saveState = .saved(Date())
+            return true
         } catch {
             quickCaptures[dateString] = previousCaptures
             hasLocalChanges = previouslyChanged
-            saveState = .failed(error.localizedDescription)
+            saveState = .failed(UserFacingError.message(for: error))
+            return false
         }
     }
 
@@ -226,15 +339,15 @@ final class DiaryStore: ObservableObject {
         if quickCaptures[entry.date]?.isEmpty == true {
             quickCaptures[entry.date] = nil
         }
-        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
-        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+        hasLocalChanges = hasPersistentLocalEdits
+        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
     }
 
     func setQuickCapturePinned(_ capture: QuickCapture, entry: DiaryEntry, pinned: Bool) {
         guard let index = quickCaptures[entry.date]?.firstIndex(where: { $0.id == capture.id }) else { return }
         quickCaptures[entry.date]?[index].isPinned = pinned
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
     }
 
     func draftDismissed(_ entry: DiaryEntry) -> Bool {
@@ -245,19 +358,19 @@ final class DiaryStore: ObservableObject {
         dismissedDrafts.insert(entry.id)
         careAcknowledgments.insert(entry.id)
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
     }
 
     func restoreDraft(for entry: DiaryEntry) {
         dismissedDrafts.remove(entry.id)
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
     }
 
     func acknowledgeCare(_ entry: DiaryEntry) {
         careAcknowledgments.insert(entry.id)
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
     }
 
     func careAcknowledged(_ entry: DiaryEntry) -> Bool {
@@ -268,7 +381,7 @@ final class DiaryStore: ObservableObject {
         autoDraftPaused = paused
         if paused { draftPausedUntil = nil }
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
     }
 
     var isAutoDraftTemporarilyPaused: Bool {
@@ -280,13 +393,13 @@ final class DiaryStore: ObservableObject {
         let dayCount = min(7, max(1, days))
         draftPausedUntil = Calendar.current.date(byAdding: .day, value: dayCount, to: Date())
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
     }
 
     func resumeAutoDraftPause() {
         draftPausedUntil = nil
         hasLocalChanges = true
-        do { try persist() } catch { saveState = .failed(error.localizedDescription) }
+        do { try persist() } catch { saveState = .failed(UserFacingError.message(for: error)) }
     }
 
     func overview(for entry: DiaryEntry) -> String {
@@ -329,14 +442,17 @@ final class DiaryStore: ObservableObject {
         }
         var updated = overrides
         updated[entry.id] = value
+        var updatedDrafts = journalDrafts
+        updatedDrafts[entry.date] = nil
         do {
-            try persist(overrides: updated)
+            try persist(overrides: updated, journalDrafts: updatedDrafts)
             overrides = updated
+            journalDrafts = updatedDrafts
             apply(entry: entry.id, override: value)
             hasLocalChanges = true
             saveState = .saved(Date())
         } catch {
-            saveState = .failed(error.localizedDescription)
+            saveState = .failed(UserFacingError.message(for: error))
             throw error
         }
     }
@@ -365,16 +481,21 @@ final class DiaryStore: ObservableObject {
             updatedAt: Date()
         )
 
-        overrides[entry.id] = override
-        hasLocalChanges = true
-        apply(entry: entry.id, override: override)
+        var updatedOverrides = overrides
+        updatedOverrides[entry.id] = override
+        var updatedDrafts = journalDrafts
+        updatedDrafts[entry.date] = nil
 
         saveState = .saving
         do {
-            try persist()
+            try persist(overrides: updatedOverrides, journalDrafts: updatedDrafts)
+            overrides = updatedOverrides
+            journalDrafts = updatedDrafts
+            hasLocalChanges = hasPersistentLocalEdits
+            apply(entry: entry.id, override: override)
             saveState = .saved(Date())
         } catch {
-            saveState = .failed(error.localizedDescription)
+            saveState = .failed(UserFacingError.message(for: error))
         }
     }
 
@@ -382,7 +503,7 @@ final class DiaryStore: ObservableObject {
         guard overrides[entry.id] != nil else { return }
 
         overrides[entry.id] = nil
-        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !timelineAnnotations.isEmpty
+        hasLocalChanges = hasPersistentLocalEdits
         saveState = .idle
 
         if entry.id.hasPrefix("local-") {
@@ -397,16 +518,18 @@ final class DiaryStore: ObservableObject {
             try persist()
             saveState = .saved(Date())
         } catch {
-            saveState = .failed(error.localizedDescription)
+            saveState = .failed(UserFacingError.message(for: error))
         }
     }
 
     func clearLocalJournal() {
         overrides = [:]
+        dailyGoals = [:]
+        journalDrafts = [:]
         dismissedDrafts = []
         careAcknowledgments = []
         savedQueries = []
-        hasLocalChanges = !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !timelineAnnotations.isEmpty
+        hasLocalChanges = hasPersistentLocalEdits
         saveState = .idle
 
         if let baseData {
@@ -422,13 +545,14 @@ final class DiaryStore: ObservableObject {
             if let legacyStateURL, fileManager.fileExists(atPath: legacyStateURL.path) {
                 try fileManager.removeItem(at: legacyStateURL)
             }
-            if !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !timelineAnnotations.isEmpty {
-                try persist()
-            } else {
-                isEncrypted = false
+        if !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty
+            || !timelineAnnotations.isEmpty || !dailyGoals.isEmpty {
+            try persist()
+        } else {
+            isEncrypted = false
             }
         } catch {
-            saveState = .failed(error.localizedDescription)
+            saveState = .failed(UserFacingError.message(for: error))
         }
     }
 
@@ -444,7 +568,7 @@ final class DiaryStore: ObservableObject {
             loadExternalOrBundledSnapshot()
             watchExternalSnapshot()
         } catch {
-            externalSourceError = "无法读取素材文件：\(error.localizedDescription)"
+            externalSourceError = UserFacingError.message(for: error)
         }
     }
 
@@ -489,7 +613,7 @@ final class DiaryStore: ObservableObject {
                 try persist()
                 saveState = .saved(Date())
             } catch {
-                saveState = .failed(error.localizedDescription)
+                saveState = .failed(UserFacingError.message(for: error))
             }
         }
     }
@@ -531,7 +655,7 @@ final class DiaryStore: ObservableObject {
             do {
                 try persist()
             } catch {
-                saveState = .failed(error.localizedDescription)
+                saveState = .failed(UserFacingError.message(for: error))
             }
         }
     }
@@ -579,8 +703,14 @@ final class DiaryStore: ObservableObject {
         }
     }
 
-    func exportFullBackup(to url: URL, activitySessions exportedActivity: [ActivitySession] = []) throws {
-        guard let data else {
+    func exportFullBackup(
+        to url: URL,
+        activitySessions exportedActivity: [ActivitySession] = [],
+        legacyDatabaseSnapshot: Data? = nil,
+        v2DatabaseSnapshot: Data? = nil
+    ) throws {
+        guard data != nil || hasPersistentLocalEdits || !exportedActivity.isEmpty
+                || legacyDatabaseSnapshot != nil || v2DatabaseSnapshot != nil else {
             throw NSError(domain: "RiverDiaryMac", code: 10, userInfo: [NSLocalizedDescriptionKey: "没有可备份的数据"])
         }
 
@@ -596,7 +726,11 @@ final class DiaryStore: ObservableObject {
             activitySessions: exportedActivity,
             monthlyLetters: monthlyLetters,
             savedQueries: savedQueries,
-            timelineAnnotations: timelineAnnotations
+            timelineAnnotations: timelineAnnotations,
+            dailyGoals: dailyGoals,
+            journalDrafts: journalDrafts,
+            legacyDatabaseSnapshot: legacyDatabaseSnapshot,
+            v2DatabaseSnapshot: v2DatabaseSnapshot
         )
 
         let encoder = JSONEncoder()
@@ -606,7 +740,14 @@ final class DiaryStore: ObservableObject {
         try encrypted.write(to: url, options: .atomic)
     }
 
-    func restoreFullBackup(from url: URL, restoreActivity: (([ActivitySession]) throws -> Void)? = nil) throws {
+    func restoreFullBackup(
+        from url: URL,
+        restoreActivity: (([ActivitySession]) throws -> Void)? = nil,
+        validateDatabaseSnapshots: ((Data?, Data?) throws -> Void)? = nil,
+        restoreDatabaseSnapshots: ((Data?, Data?) throws -> Void)? = nil,
+        rollbackExternalData: (() throws -> Void)? = nil,
+        recoverySnapshot: RestoreRecoverySnapshot? = nil
+    ) throws {
         let raw = try Data(contentsOf: url)
         guard let plaintext = try? StateEncryption.decrypt(raw) else {
             throw NSError(domain: "RiverDiaryMac", code: 11, userInfo: [NSLocalizedDescriptionKey: "备份文件无法解密，请确认这是本应用生成的完整备份"])
@@ -615,44 +756,150 @@ final class DiaryStore: ObservableObject {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let payload = try decoder.decode(LocalBackupPayload.self, from: plaintext)
+        try validateDatabaseSnapshots?(payload.legacyDatabaseSnapshot, payload.v2DatabaseSnapshot)
 
-        overrides = payload.overrides
-        quickCaptures = payload.quickCaptures
-        monthlyLetters = payload.monthlyLetters ?? [:]
-        savedQueries = payload.savedQueries ?? []
-        timelineAnnotations = payload.timelineAnnotations ?? [:]
-        dismissedDrafts = Set(payload.dismissedDrafts.keys)
-        careAcknowledgments = Set(payload.careAcknowledgments.keys)
-        autoDraftPaused = payload.autoDraftPaused ?? false
-        hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
+        guard (restoreActivity == nil && restoreDatabaseSnapshots == nil) || rollbackExternalData != nil else {
+            throw NSError(domain: "RiverDiaryMac", code: 12, userInfo: [NSLocalizedDescriptionKey: "备份恢复缺少外部数据回滚处理，已取消恢复。"])
+        }
+        if restoreActivity != nil && recoverySnapshot?.activitySessions == nil {
+            throw NSError(domain: "RiverDiaryMac", code: 14, userInfo: [NSLocalizedDescriptionKey: "备份恢复缺少实时足迹的持久恢复快照，已取消恢复。"])
+        }
+        if restoreDatabaseSnapshots != nil,
+           (recoverySnapshot?.legacyDatabaseSnapshot == nil || recoverySnapshot?.v2DatabaseSnapshot == nil) {
+            throw NSError(domain: "RiverDiaryMac", code: 15, userInfo: [NSLocalizedDescriptionKey: "备份恢复缺少两份数据库的持久恢复快照，已取消恢复。"])
+        }
 
-        if let restoredData = payload.data, let directory = supportDirectory {
-            let restoredURL = directory.appendingPathComponent("RestoredBackup.json", isDirectory: false)
+        let checkpoint = try makeRestoreCheckpoint()
+        guard let supportDirectory else {
+            throw NSError(domain: "RiverDiaryMac", code: 1, userInfo: [NSLocalizedDescriptionKey: "无法访问应用支持目录，已取消恢复。"])
+        }
+        let previousStores = recoverySnapshot ?? RestoreRecoverySnapshot(
+            activitySessions: nil,
+            legacyDatabaseSnapshot: nil,
+            v2DatabaseSnapshot: nil,
+            trackingEnabled: nil
+        )
+        let recoveryPayload = RestoreRecoveryPayload(
+            activitySessions: previousStores.activitySessions,
+            legacyDatabaseSnapshot: previousStores.legacyDatabaseSnapshot,
+            v2DatabaseSnapshot: previousStores.v2DatabaseSnapshot,
+            trackingEnabled: previousStores.trackingEnabled,
+            externalSourcePath: checkpoint.externalSourceDefault,
+            journalState: RestoreRecoveryFile(existed: checkpoint.stateFile.existed, contents: checkpoint.stateFile.data),
+            restoredData: RestoreRecoveryFile(existed: checkpoint.restoredDataFile.existed, contents: checkpoint.restoredDataFile.data)
+        )
+        try RestoreRecoveryJournal.write(recoveryPayload, in: supportDirectory)
+
+        let restoredDataURL = payload.data == nil ? nil : checkpoint.restoredDataFile.url
+        let restoredDataBytes: Data?
+        if let restoredData = payload.data, restoredDataURL != nil {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             encoder.dateEncodingStrategy = .iso8601
-            try encoder.encode(restoredData).write(to: restoredURL, options: .atomic)
-            externalSourceURL = restoredURL
-            UserDefaults.standard.set(restoredURL.path, forKey: externalSourceKey)
-        } else if let path = payload.sourcePath, FileManager.default.fileExists(atPath: path) {
-            externalSourceURL = URL(fileURLWithPath: path)
-            UserDefaults.standard.set(path, forKey: externalSourceKey)
+            restoredDataBytes = try encoder.encode(restoredData)
         } else {
-            externalSourceURL = nil
-            UserDefaults.standard.removeObject(forKey: externalSourceKey)
+            restoredDataBytes = nil
         }
 
-        if let restoredData = payload.data {
-            baseData = restoredData
-        }
+        var attemptedExternalRestore = false
+        var startedLocalCommit = false
+        do {
+            if let restoreActivity {
+                attemptedExternalRestore = true
+                try restoreActivity(payload.activitySessions ?? [])
+            }
+            if let restoreDatabaseSnapshots {
+                attemptedExternalRestore = true
+                try restoreDatabaseSnapshots(payload.legacyDatabaseSnapshot, payload.v2DatabaseSnapshot)
+            }
 
-        externalSourceError = nil
-        loadExternalOrBundledSnapshot()
-        try persist()
-        isEncrypted = true
-        try restoreActivity?(payload.activitySessions ?? [])
-        localStateReadFailed = false
-        saveState = .saved(Date())
+            if let restoredDataBytes, let restoredDataURL {
+                startedLocalCommit = true
+                try restoredDataBytes.write(to: restoredDataURL, options: .atomic)
+                try LocalStorageProtection.protectFile(at: restoredDataURL)
+                externalSourceURL = restoredDataURL
+                UserDefaults.standard.set(restoredDataURL.path, forKey: externalSourceKey)
+            } else if let path = payload.sourcePath, FileManager.default.fileExists(atPath: path) {
+                startedLocalCommit = true
+                externalSourceURL = URL(fileURLWithPath: path)
+                UserDefaults.standard.set(path, forKey: externalSourceKey)
+            } else {
+                startedLocalCommit = true
+                externalSourceURL = nil
+                UserDefaults.standard.removeObject(forKey: externalSourceKey)
+            }
+
+            overrides = payload.overrides
+            quickCaptures = payload.quickCaptures
+            dailyGoals = payload.dailyGoals ?? [:]
+            journalDrafts = payload.journalDrafts ?? [:]
+            monthlyLetters = payload.monthlyLetters ?? [:]
+            savedQueries = payload.savedQueries ?? []
+            timelineAnnotations = payload.timelineAnnotations ?? [:]
+            dismissedDrafts = Set(payload.dismissedDrafts.keys)
+            careAcknowledgments = Set(payload.careAcknowledgments.keys)
+            autoDraftPaused = payload.autoDraftPaused ?? false
+            if let restoredData = payload.data {
+                baseData = restoredData
+            }
+            externalSourceError = nil
+            hasLocalChanges = hasPersistentLocalEdits
+
+            let restoredState = UserState(
+                entries: payload.overrides,
+                quickCaptures: payload.quickCaptures,
+                dismissedDrafts: payload.dismissedDrafts,
+                careAcknowledgments: payload.careAcknowledgments,
+                autoDraftPaused: payload.autoDraftPaused ?? false,
+                draftPausedUntil: draftPausedUntil,
+                monthlyLetters: payload.monthlyLetters ?? [:],
+                savedQueries: payload.savedQueries ?? [],
+                timelineAnnotations: payload.timelineAnnotations ?? [:],
+                dailyGoals: payload.dailyGoals ?? [:],
+                journalDrafts: payload.journalDrafts ?? [:]
+            )
+            try persist(restoredState)
+
+            loadExternalOrBundledSnapshot()
+            watchExternalSnapshot()
+            isEncrypted = true
+            localStateReadFailed = false
+            saveState = .saved(Date())
+            try RestoreRecoveryJournal.synchronizeCommittedStores(in: supportDirectory)
+            try RestoreRecoveryJournal.clear(in: supportDirectory)
+        } catch {
+            var rollbackFailures: [String] = []
+            if attemptedExternalRestore, let rollbackExternalData {
+                do {
+                    try rollbackExternalData()
+                } catch {
+                    rollbackFailures.append("外部事实库：\(UserFacingError.message(for: error))")
+                }
+            }
+            if startedLocalCommit {
+                do {
+                    try restoreLocalCheckpoint(checkpoint)
+                } catch {
+                    rollbackFailures.append("本地日记状态：\(UserFacingError.message(for: error))")
+                }
+            }
+            if rollbackFailures.isEmpty {
+                do {
+                    try RestoreRecoveryJournal.synchronizeCommittedStores(in: supportDirectory)
+                    try RestoreRecoveryJournal.clear(in: supportDirectory)
+                } catch {
+                    rollbackFailures.append("持久恢复记录：\(UserFacingError.message(for: error))")
+                }
+            }
+            guard rollbackFailures.isEmpty else {
+                throw NSError(
+                    domain: "RiverDiaryMac",
+                    code: 13,
+                    userInfo: [NSLocalizedDescriptionKey: "备份恢复失败：\(UserFacingError.message(for: error))；\(rollbackFailures.joined(separator: "；"))。恢复记录已保留，下次启动会再次尝试回滚。"]
+                )
+            }
+            throw error
+        }
     }
 
     func exportCurrentData(to url: URL) throws {
@@ -667,12 +914,19 @@ final class DiaryStore: ObservableObject {
     }
 
     var localChangeCount: Int {
-        overrides.count
+        var dates = Set(dailyGoals.keys)
+        let entryDates = Dictionary(uniqueKeysWithValues: entries.map { ($0.id, $0.date) })
+        for id in overrides.keys {
+            if let date = entryDates[id] { dates.insert(date) }
+            else if id.hasPrefix("local-") { dates.insert(String(id.dropFirst("local-".count))) }
+            else { dates.insert(id) }
+        }
+        return dates.count
     }
 
     var stateFileSummary: String {
         if isEncrypted {
-            return "AES-GCM 加密 · 本机用户权限保护密钥"
+            return "AES-GCM 状态 · SQLCipher 事实库 · 本机密钥"
         }
         return hasLocalChanges ? "本地状态明文（旧版格式）" : "尚未写入修改"
     }
@@ -700,15 +954,17 @@ final class DiaryStore: ObservableObject {
                 monthlyLetters = state.monthlyLetters ?? [:]
                 savedQueries = state.savedQueries ?? []
                 timelineAnnotations = state.timelineAnnotations ?? [:]
+                journalDrafts = state.journalDrafts ?? [:]
                 dismissedDrafts = Set((state.dismissedDrafts ?? [:]).keys)
                 careAcknowledgments = Set((state.careAcknowledgments ?? [:]).keys)
                 autoDraftPaused = state.autoDraftPaused ?? false
                 draftPausedUntil = state.draftPausedUntil
-                hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
+                dailyGoals = state.dailyGoals ?? [:]
+                hasLocalChanges = hasPersistentLocalEdits
                 isEncrypted = true
             } catch {
                 localStateReadFailed = true
-                loadError = "本地日记无法读取：\(error.localizedDescription)"
+                loadError = UserFacingError.message(for: error)
             }
             return
         }
@@ -724,11 +980,13 @@ final class DiaryStore: ObservableObject {
                 monthlyLetters = state.monthlyLetters ?? [:]
                 savedQueries = state.savedQueries ?? []
                 timelineAnnotations = state.timelineAnnotations ?? [:]
+                journalDrafts = state.journalDrafts ?? [:]
                 dismissedDrafts = Set((state.dismissedDrafts ?? [:]).keys)
                 careAcknowledgments = Set((state.careAcknowledgments ?? [:]).keys)
                 autoDraftPaused = state.autoDraftPaused ?? false
                 draftPausedUntil = state.draftPausedUntil
-                hasLocalChanges = !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
+                dailyGoals = state.dailyGoals ?? [:]
+                hasLocalChanges = hasPersistentLocalEdits
                 try persist()
                 try? fileManager.removeItem(at: legacyStateURL)
                 isEncrypted = true
@@ -830,13 +1088,111 @@ final class DiaryStore: ObservableObject {
         try? fileManager.attributesOfItem(atPath: url.path)[.modificationDate] as? Date
     }
 
+    private func makeRestoreCheckpoint() throws -> DiaryStoreRestoreCheckpoint {
+        guard let stateURL, let supportDirectory else {
+            throw NSError(domain: "RiverDiaryMac", code: 1, userInfo: [NSLocalizedDescriptionKey: "无法访问应用支持目录"])
+        }
+        let restoredDataURL = supportDirectory.appendingPathComponent("RestoredBackup.json", isDirectory: false)
+        return DiaryStoreRestoreCheckpoint(
+            data: data,
+            baseData: baseData,
+            overrides: overrides,
+            quickCaptures: quickCaptures,
+            dailyGoals: dailyGoals,
+            journalDrafts: journalDrafts,
+            monthlyLetters: monthlyLetters,
+            savedQueries: savedQueries,
+            timelineAnnotations: timelineAnnotations,
+            dismissedDrafts: dismissedDrafts,
+            careAcknowledgments: careAcknowledgments,
+            autoDraftPaused: autoDraftPaused,
+            hasLocalChanges: hasLocalChanges,
+            externalSourceURL: externalSourceURL,
+            externalSourceError: externalSourceError,
+            externalSourceModifiedAt: externalSourceModifiedAt,
+            localStateReadFailed: localStateReadFailed,
+            isEncrypted: isEncrypted,
+            loadError: loadError,
+            saveState: saveState,
+            stateFile: try captureRestoreFile(at: stateURL),
+            restoredDataFile: try captureRestoreFile(at: restoredDataURL),
+            externalSourceDefault: UserDefaults.standard.string(forKey: externalSourceKey)
+        )
+    }
+
+    private func captureRestoreFile(at url: URL?) throws -> BackupRestoreFileCheckpoint {
+        guard let url else { return BackupRestoreFileCheckpoint(url: nil, existed: false, data: nil) }
+        let existed = fileManager.fileExists(atPath: url.path)
+        let bytes = existed ? try Data(contentsOf: url) : nil
+        return BackupRestoreFileCheckpoint(url: url, existed: existed, data: bytes)
+    }
+
+    private func restoreLocalCheckpoint(_ checkpoint: DiaryStoreRestoreCheckpoint) throws {
+        data = checkpoint.data
+        baseData = checkpoint.baseData
+        overrides = checkpoint.overrides
+        quickCaptures = checkpoint.quickCaptures
+        dailyGoals = checkpoint.dailyGoals
+        journalDrafts = checkpoint.journalDrafts
+        monthlyLetters = checkpoint.monthlyLetters
+        savedQueries = checkpoint.savedQueries
+        timelineAnnotations = checkpoint.timelineAnnotations
+        dismissedDrafts = checkpoint.dismissedDrafts
+        careAcknowledgments = checkpoint.careAcknowledgments
+        autoDraftPaused = checkpoint.autoDraftPaused
+        hasLocalChanges = checkpoint.hasLocalChanges
+        externalSourceURL = checkpoint.externalSourceURL
+        externalSourceError = checkpoint.externalSourceError
+        externalSourceModifiedAt = checkpoint.externalSourceModifiedAt
+        localStateReadFailed = checkpoint.localStateReadFailed
+        isEncrypted = checkpoint.isEncrypted
+        loadError = checkpoint.loadError
+        saveState = checkpoint.saveState
+        if let externalSourceDefault = checkpoint.externalSourceDefault {
+            UserDefaults.standard.set(externalSourceDefault, forKey: externalSourceKey)
+        } else {
+            UserDefaults.standard.removeObject(forKey: externalSourceKey)
+        }
+
+        var failures: [String] = []
+        for fileCheckpoint in [checkpoint.stateFile, checkpoint.restoredDataFile] {
+            do {
+                try restoreFileCheckpoint(fileCheckpoint)
+            } catch {
+                failures.append(UserFacingError.message(for: error))
+            }
+        }
+        guard failures.isEmpty else {
+            throw NSError(
+                domain: "RiverDiaryMac",
+                code: 14,
+                userInfo: [NSLocalizedDescriptionKey: failures.joined(separator: "；")]
+            )
+        }
+    }
+
+    private func restoreFileCheckpoint(_ checkpoint: BackupRestoreFileCheckpoint) throws {
+        guard let url = checkpoint.url else { return }
+        if checkpoint.existed {
+            guard let data = checkpoint.data else {
+                throw NSError(domain: "RiverDiaryMac", code: 15, userInfo: [NSLocalizedDescriptionKey: "恢复检查点缺少原文件内容。"])
+            }
+            try data.write(to: url, options: .atomic)
+            try LocalStorageProtection.protectFile(at: url)
+        } else if fileManager.fileExists(atPath: url.path) {
+            try fileManager.removeItem(at: url)
+        }
+    }
+
     private func persist(
         overrides replacementOverrides: [String: EntryOverride]? = nil,
         monthlyLetters replacementLetters: [String: MonthlyLetter]? = nil,
         savedQueries replacementQueries: [SavedQuery]? = nil,
-        timelineAnnotations replacementAnnotations: [String: TimelineAnnotation]? = nil
+        timelineAnnotations replacementAnnotations: [String: TimelineAnnotation]? = nil,
+        dailyGoals replacementDailyGoals: [String: DailyGoal]? = nil,
+        journalDrafts replacementJournalDrafts: [String: JournalDraftRecord]? = nil
     ) throws {
-        guard let stateURL, let supportDirectory else {
+        guard supportDirectory != nil else {
             throw NSError(domain: "RiverDiaryMac", code: 1, userInfo: [NSLocalizedDescriptionKey: "无法访问应用支持目录"])
         }
 
@@ -849,14 +1205,24 @@ final class DiaryStore: ObservableObject {
             draftPausedUntil: draftPausedUntil,
             monthlyLetters: replacementLetters ?? monthlyLetters,
             savedQueries: replacementQueries ?? savedQueries,
-            timelineAnnotations: replacementAnnotations ?? timelineAnnotations
+            timelineAnnotations: replacementAnnotations ?? timelineAnnotations,
+            dailyGoals: replacementDailyGoals ?? dailyGoals,
+            journalDrafts: replacementJournalDrafts ?? journalDrafts
         )
+        try persist(state)
+    }
+
+    private func persist(_ state: UserState) throws {
+        guard let stateURL, let supportDirectory else {
+            throw NSError(domain: "RiverDiaryMac", code: 1, userInfo: [NSLocalizedDescriptionKey: "无法访问应用支持目录"])
+        }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         let plaintext = try encoder.encode(state)
         let encrypted = try StateEncryption.encrypt(plaintext)
         try encrypted.write(to: stateURL, options: .atomic)
+        try LocalStorageProtection.protectFile(at: stateURL)
 
         if !fileManager.fileExists(atPath: supportDirectory.path) {
             try fileManager.createDirectory(at: supportDirectory, withIntermediateDirectories: true)

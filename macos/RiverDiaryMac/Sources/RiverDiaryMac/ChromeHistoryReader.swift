@@ -1,5 +1,5 @@
 import Foundation
-import SQLite3
+import SQLCipher
 
 enum ChromeHistoryReader {
     private static let chromeEpochOffset: Double = 11644473600 // seconds between 1601-01-01 and 1970-01-01

@@ -1,77 +1,117 @@
 import SwiftUI
 
-// MARK: - Quiet empty state
-// 用于有真实下一步的空态：解释现状 + 提供可执行动作。
+// MARK: - Empty state
+// Explains what is missing and offers the real next action. Chrome-less by
+// default so it can live inside a panel without drawing a box in a box.
 
 struct EmptyStateView: View {
+    @Environment(\.riverDensity) private var density
+
     let title: String
     let message: String
+    var symbol: String = "sparkles"
     var actionTitle: String?
     var action: (() -> Void)?
+    var secondaryTitle: String?
+    var secondaryAction: (() -> Void)?
+    /// Draw panel chrome for call sites that are not already inside a panel.
+    var showsChrome = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.ui(14, weight: .semibold))
-                .foregroundStyle(Color.ink)
-            Text(message)
-                .font(.ui(12))
-                .foregroundStyle(Color.secondaryInk)
-                .lineSpacing(4)
-            if let actionTitle, let action {
-                Button(actionTitle, action: action)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .padding(.top, 4)
+        content
+            .padding(showsChrome ? density.spacing(AppSpacing.panelPadding) : 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .modifier(OptionalPanelChrome(enabled: showsChrome))
+    }
+
+    private var content: some View {
+        VStack(alignment: .leading, spacing: density.spacing(10)) {
+            RiverIconWell(systemImage: symbol, tint: AppTheme.accent, size: 28)
+            VStack(alignment: .leading, spacing: density.spacing(3)) {
+                Text(title)
+                    .font(AppTypography.sectionTitle())
+                    .foregroundStyle(Color.ink)
+                Text(message)
+                    .font(AppTypography.secondary())
+                    .foregroundStyle(Color.secondaryInk)
+                    .lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if actionTitle != nil || secondaryTitle != nil {
+                HStack(spacing: density.spacing(AppSpacing.sm)) {
+                    if let actionTitle, let action {
+                        Button(actionTitle, action: action)
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                    }
+                    if let secondaryTitle, let secondaryAction {
+                        Button(secondaryTitle, action: secondaryAction)
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                    }
+                }
+                .padding(.top, density.spacing(2))
             }
         }
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
+private struct OptionalPanelChrome: ViewModifier {
+    let enabled: Bool
 
-// MARK: - Native page title
-// Small, toolbar-like page heading: one fact, once. Avoids oversized
-// consumer-app headlines and colored eyebrow labels.
+    func body(content: Content) -> some View {
+        if enabled {
+            content.riverPanelSurface(.inline)
+        } else {
+            content
+        }
+    }
+}
 
-struct PageTitle: View {
+// MARK: - Informational note block
+// A quiet inline explanation: icon, title, one sentence. Used when a surface
+// cannot show real data yet and needs to say why.
+
+struct RiverInsetPanel: View {
+    @Environment(\.riverDensity) private var density
+    let symbol: String
     let title: String
-    var subtitle: String?
+    let message: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(.primary)
-            if let subtitle {
-                Text(subtitle)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+        HStack(alignment: .top, spacing: density.spacing(10)) {
+            RiverIconWell(systemImage: symbol, tint: AppTheme.accent, size: 26)
+            VStack(alignment: .leading, spacing: density.spacing(3)) {
+                Text(title)
+                    .font(AppTypography.rowTitle())
+                    .foregroundStyle(Color.ink)
+                Text(message)
+                    .font(AppTypography.secondary())
+                    .foregroundStyle(Color.secondaryInk)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 0)
         }
-    }
-}
-
-// MARK: - Compact list row (dense, scannable)
-
-struct ListRowContainer<Content: View>: View {
-    @ViewBuilder let content: () -> Content
-    var isSelected = false
-
-    var body: some View {
-        content()
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .contentShape(Rectangle())
+        .padding(density.spacing(14))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            AppTheme.accent.opacity(0.05),
+            in: RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous)
+                .strokeBorder(AppTheme.accent.opacity(0.14), lineWidth: 1)
+        )
     }
 }
 
 // MARK: - Filter chip
+// The one selection control for scopes, categories and filters.
 
 struct FilterChip: View {
+    @Environment(\.riverDensity) private var density
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let title: String
     let isSelected: Bool
     let action: () -> Void
@@ -79,112 +119,84 @@ struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                .font(AppTypography.label().weight(isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? Color.ink : Color.secondaryInk)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 5)
-                .background(isSelected ? Color.accentColor.opacity(0.14) : Color.clear, in: Capsule())
+                .padding(.horizontal, density.spacing(10))
+                .padding(.vertical, density.spacing(5))
+                .background(
+                    isSelected ? AppTheme.accentSoft : Color.chip,
+                    in: Capsule()
+                )
                 .overlay(
                     Capsule().strokeBorder(
-                        isSelected ? Color.accentColor.opacity(0.35) : Color.separator.opacity(0.0),
+                        isSelected ? AppTheme.accent.opacity(0.32) : Color.border,
                         lineWidth: 1
                     )
                 )
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .animation(.easeOut(duration: 0.12), value: isSelected)
+        .animation(reduceMotion ? nil : .easeOut(duration: AppMotion.quick), value: isSelected)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
 
-// MARK: - Overview statistic
+// MARK: - Search field
+// One search control: memory, ask, and the command palette all use it.
 
-struct OverviewStat: View {
-    let icon: String
-    let value: String
-    let label: String
-    var accent = false
-    var action: (() -> Void)?
+struct RiverSearchField: View {
+    @Environment(\.riverDensity) private var density
+
+    var placeholder: String
+    @Binding var text: String
+    var symbol = "magnifyingglass"
+    var onSubmit: (() -> Void)?
+    var showsClearButton = true
+    var focus: FocusState<Bool>.Binding?
 
     var body: some View {
-        Button {
-            action?()
-        } label: {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Image(systemName: icon)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(accent ? Color.riverAmethyst : Color.secondaryInk)
-                    Text(value)
-                        .font(.system(size: 14, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(Color.ink)
+        HStack(spacing: density.spacing(AppSpacing.sm)) {
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.tertiaryInk)
+            field
+            if showsClearButton, !text.isEmpty {
+                Button {
+                    text = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.tertiaryInk)
                 }
-                Text(label)
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.secondaryInk)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Status pill / dot
-
-struct StatusDot: View {
-    enum Level {
-        case idle, running, ok, warning, error
-        var color: Color {
-            switch self {
-            case .idle: Color.secondaryInk.opacity(0.45)
-            case .running: Color.riverAmethyst
-            case .ok: Color(hex: "#2C8158")
-            case .warning: Color.orange
-            case .error: Color.red
+                .buttonStyle(.plain)
+                .help("清除")
             }
         }
+        .padding(.horizontal, density.spacing(11))
+        .padding(.vertical, density.spacing(7))
+        .background(Color.editor, in: RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                .strokeBorder(Color.border, lineWidth: 1)
+        )
     }
-    let level: Level
-    let label: String
-    var action: (() -> Void)?
 
-    var body: some View {
-        Button {
-            action?()
-        } label: {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(level.color)
-                    .frame(width: 6, height: 6)
-                Text(label)
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.secondaryInk)
+    @ViewBuilder
+    private var field: some View {
+        let base = TextField(placeholder, text: $text)
+            .textFieldStyle(.plain)
+            .font(AppTypography.secondary())
+
+        if let onSubmit {
+            if let focus {
+                base.focused(focus).onSubmit(onSubmit)
+            } else {
+                base.onSubmit(onSubmit)
             }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .help(label)
-    }
-}
-
-// MARK: - Section header
-
-struct QuietSectionHeader: View {
-    let title: String
-    var detail: String?
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(title.uppercased())
-                .font(.system(size: 9, weight: .medium, design: .monospaced))
-                .tracking(1.2)
-                .foregroundStyle(Color.secondaryInk.opacity(0.9))
-            if let detail {
-                Text(detail)
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.secondaryInk.opacity(0.6))
-            }
-            Spacer()
+        } else if let focus {
+            base.focused(focus)
+        } else {
+            base
         }
     }
 }

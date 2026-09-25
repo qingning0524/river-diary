@@ -76,18 +76,10 @@ enum ActivityClassifier {
         ["工作", "学习", "创作"].contains(category)
     }
 
+    /// Hex form of the category colour, kept for callers that need a string.
+    /// It must track `AppTheme.accent`; views should prefer `AppTheme.categoryTint`.
     static func color(for category: String) -> String {
-        switch category {
-        case "工作": "#7787FF"
-        case "学习": "#4FB6A9"
-        case "创作": "#F0A75C"
-        case "沟通": "#67A7F0"
-        case "娱乐": "#F2788D"
-        case "休息": "#59BF8A"
-        case "浏览": "#8F8CE8"
-        case "系统": "#A5AFC2"
-        default: "#B7AFC9"
-        }
+        ["系统", "未记录"].contains(category) ? "#94A0B0" : "#3E74DC"
     }
 
     static func symbol(for app: String) -> String {
@@ -108,7 +100,16 @@ enum ActivityClassifier {
 }
 
 enum ActivityFormatter {
+    static func timeRange(_ start: Date, _ end: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDate(start, equalTo: end, toGranularity: .minute) {
+            return "\(start.formatted(.dateTime.hour().minute().second()))–\(end.formatted(.dateTime.hour().minute().second()))"
+        }
+        return "\(start.formatted(date: .omitted, time: .shortened))–\(end.formatted(date: .omitted, time: .shortened))"
+    }
+
     static func time(_ interval: TimeInterval) -> String {
+        guard interval > 0 else { return "0 分钟" }
         let minutes = Int(interval / 60)
         if minutes >= 60 {
             let hours = minutes / 60

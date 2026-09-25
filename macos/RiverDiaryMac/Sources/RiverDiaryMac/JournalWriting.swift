@@ -7,9 +7,46 @@ struct JournalEditingBuffer: Equatable {
     var isDirty = false
 }
 
+struct JournalDraftRecord: Codable, Equatable {
+    let text: String
+    let mood: Int?
+    let updatedAt: Date
+}
+
 @MainActor
 final class JournalEditorStore: ObservableObject {
     @Published private(set) var buffers: [String: JournalEditingBuffer] = [:]
+    @Published private(set) var persistenceStatus: [String: String] = [:]
+    var hasUnsavedChanges: Bool { buffers.values.contains(where: \.isDirty) }
+
+    private weak var diaryStore: DiaryStore?
+    private var persistenceTasks: [String: Task<Void, Never>] = [:]
+    private var draftObserver: AnyCancellable?
+
+    func attach(to store: DiaryStore) {
+        guard diaryStore !== store else { return }
+        diaryStore = store
+        draftObserver = store.$journalDrafts.sink { [weak self] drafts in
+            self?.synchronizeDurableDrafts(drafts)
+        }
+    }
+
+    private func synchronizeDurableDrafts(_ drafts: [String: JournalDraftRecord]) {
+        for (date, draft) in drafts {
+            // Never replace newer text that is currently waiting for its debounce save.
+            guard persistenceTasks[date] == nil else { continue }
+            let restored = JournalEditingBuffer(text: draft.text, mood: draft.mood, isDirty: true)
+            if buffers[date] != restored {
+                buffers[date] = restored
+            }
+            persistenceStatus[date] = "草稿已加密保存在本机"
+        }
+
+        for date in Set(buffers.keys).subtracting(drafts.keys) where persistenceTasks[date] == nil {
+            buffers[date] = nil
+            persistenceStatus[date] = nil
+        }
+    }
 
     func buffer(for entry: DiaryEntry) -> JournalEditingBuffer {
         buffers[entry.date] ?? JournalEditingBuffer(text: entry.displayOverview)
@@ -20,8 +57,46 @@ final class JournalEditorStore: ObservableObject {
         if let mood { buffer.mood = mood }
         buffer.isDirty = true
         buffers[entry.date] = buffer
+        schedulePersistence(buffer, for: entry.date)
     }
-    func saved(_ date: String) { buffers[date] = nil }
+
+    func saved(_ date: String) {
+        persistenceTasks[date]?.cancel()
+        persistenceTasks[date] = nil
+        buffers[date] = nil
+        persistenceStatus[date] = nil
+    }
+
+    func discarded(_ date: String) {
+        persistenceTasks[date]?.cancel()
+        persistenceTasks[date] = nil
+        do {
+            try diaryStore?.removeJournalDraft(for: date)
+            buffers[date] = nil
+            persistenceStatus[date] = nil
+        } catch {
+            persistenceStatus[date] = "丢弃失败：\(UserFacingError.message(for: error))"
+        }
+    }
+
+    private func schedulePersistence(_ buffer: JournalEditingBuffer, for date: String) {
+        persistenceTasks[date]?.cancel()
+        persistenceStatus[date] = "正在加密保存草稿…"
+        persistenceTasks[date] = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, let self, let diaryStore = self.diaryStore else { return }
+            do {
+                try diaryStore.saveJournalDraft(
+                    JournalDraftRecord(text: buffer.text, mood: buffer.mood, updatedAt: Date()),
+                    for: date
+                )
+                self.persistenceStatus[date] = "草稿已加密保存在本机"
+            } catch {
+                self.persistenceStatus[date] = "草稿保存失败：\(UserFacingError.message(for: error))"
+            }
+            self.persistenceTasks[date] = nil
+        }
+    }
 }
 
 enum JournalWriting {

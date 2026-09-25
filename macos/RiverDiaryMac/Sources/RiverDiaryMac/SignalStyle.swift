@@ -9,21 +9,14 @@ struct AppIconBadge: View {
         let color = SignalStyle.color(for: app)
 
         return ZStack {
-            RoundedRectangle(cornerRadius: size * 0.30, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [color.opacity(0.94), color.opacity(0.58)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+            RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                .fill(color)
 
             Image(systemName: symbol)
                 .font(.system(size: size * 0.42, weight: .semibold))
                 .foregroundStyle(.white)
         }
         .frame(width: size, height: size)
-        .shadow(color: color.opacity(0.22), radius: 7, y: 4)
     }
 }
 
@@ -36,7 +29,7 @@ struct SiteIconBadge: View {
         let color = SignalStyle.siteColor(for: site)
 
         return ZStack {
-            RoundedRectangle(cornerRadius: size * 0.30, style: .continuous)
+            RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
                 .fill(color.opacity(0.14))
             Image(systemName: symbol)
                 .font(.system(size: size * 0.40, weight: .semibold))

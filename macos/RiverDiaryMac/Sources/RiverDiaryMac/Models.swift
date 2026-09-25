@@ -110,6 +110,12 @@ struct EntryOverride: Codable, Hashable {
     var writtenMood: Int? = nil
 }
 
+struct DailyGoal: Codable, Hashable {
+    var title: String
+    var isCompleted: Bool = false
+    var updatedAt: Date = Date()
+}
+
 struct QuickCapture: Codable, Hashable, Identifiable {
     var id: UUID = UUID()
     var text: String
@@ -129,7 +135,7 @@ struct QuickCapture: Codable, Hashable, Identifiable {
 }
 
 struct UserState: Codable {
-    var version = 3
+    var version = 4
     var entries: [String: EntryOverride] = [:]
     var quickCaptures: [String: [QuickCapture]]?
     var dismissedDrafts: [String: Date]?
@@ -139,6 +145,8 @@ struct UserState: Codable {
     var monthlyLetters: [String: MonthlyLetter]?
     var savedQueries: [SavedQuery]? = nil
     var timelineAnnotations: [String: TimelineAnnotation]? = nil
+    var dailyGoals: [String: DailyGoal]? = nil
+    var journalDrafts: [String: JournalDraftRecord]? = nil
 }
 
 struct SavedQuery: Codable, Hashable, Identifiable {

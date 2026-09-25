@@ -1,115 +1,90 @@
 import SwiftUI
 
 struct SettingsRedesignView: View {
+    @Environment(\.riverDensity) private var density
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore
     @ObservedObject var ingestion: DataIngestionStore
 
-    @State private var showsAI = false
+    @State private var settingsSection: SettingsCategory = .recording
+    @AppStorage("appearance.mode") private var appearanceModeRaw = RiverAppearance.system.rawValue
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                header
-                statusOverview
-                PrivacyView(
-                    store: store,
-                    activity: activity,
-                    ai: ai,
-                    ingestion: ingestion,
-                    showsHeader: false
-                )
-                .frame(maxWidth: 720, alignment: .leading)
+        VStack(spacing: 0) {
+            RiverHeaderBand(maxWidth: .infinity, spacing: AppSpacing.sm, showsRule: true) {
+                PageHeader("设置", context: settingsSection.detail)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 60)
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(alignment: .top, spacing: 0) {
+                settingsRail
+                    .frame(width: AppLayout.settingsRailWidth)
+                    .riverAppear(index: 0)
+                RiverRule()
+                    .frame(width: 1)
+                    .frame(maxHeight: .infinity)
+                settingsContent
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .riverAppear(index: 1)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .sheet(isPresented: $showsAI) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text("AI 连接")
-                        .font(.editorial(17, weight: .semibold))
-                    Spacer()
-                    Button("关闭") { showsAI = false }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.bottom, 8)
-                AIConnectionCard(ai: ai)
-            }
-            .padding(24)
-            .frame(width: 620)
-        }
+        .background(Color.workspace)
     }
 
-    private var header: some View {
-        HStack {
-            PageTitle(title: "Settings", subtitle: "每个记录都由你决定如何保存。")
-            Spacer()
+    private var settingsRail: some View {
+        VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xxs)) {
+            ForEach(SettingsCategory.allCases) { item in
+                settingsRailRow(item)
+            }
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, density.spacing(10))
+        .padding(.top, density.spacing(AppSpacing.lg))
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Color.sidebarSurface)
     }
 
-    private var statusOverview: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            QuietSectionHeader(title: "当前状态")
-
-            GroupBox {
-                VStack(alignment: .leading, spacing: 10) {
-                    StatusDot(
-                        level: activity.isTracking ? .ok : .idle,
-                        label: activity.isTracking ? "正在记录当前活动" : "记录已暂停"
-                    )
-
-                    HStack(spacing: 8) {
-                        ingestionDot
-                        Button {
-                            ingestion.captureNow()
-                        } label: {
-                            Label("立即采集", systemImage: "arrow.down.circle")
-                                .font(.system(size: 11))
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .disabled(ingestion.isRunning)
-                    }
-
-                    HStack(spacing: 8) {
-                        StatusDot(
-                            level: ai.hasVerifiedConnection ? .ok : .idle,
-                            label: ai.hasVerifiedConnection
-                                ? "已连接 \(ai.profileName)"
-                                : (ai.isConfigured ? "已配置，等待验证" : "未连接 AI（本地模式可用）")
-                        )
-                        Button {
-                            showsAI = true
-                        } label: {
-                            Label("配置 AI", systemImage: "slider.horizontal.3")
-                                .font(.system(size: 11))
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+    private func settingsRailRow(_ item: SettingsCategory) -> some View {
+        let isSelected = settingsSection == item
+        return Button {
+            settingsSection = item
+        } label: {
+            HStack(spacing: density.spacing(9)) {
+                Image(systemName: item.icon)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(isSelected ? AppTheme.accent : Color.secondaryInk)
+                    .frame(width: 16)
+                Text(item.rawValue)
+                    .font(AppTypography.rowTitle().weight(isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? Color.ink : Color.secondaryInk)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
             }
+            .padding(.horizontal, density.spacing(10))
+            .frame(height: density.spacing(30))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                isSelected ? AppTheme.accentSoft : Color.clear,
+                in: RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous))
         }
-        .frame(maxWidth: 720, alignment: .leading)
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     @ViewBuilder
-    private var ingestionDot: some View {
-        if let error = ingestion.lastError, !error.isEmpty {
-            StatusDot(level: .error, label: "采集有问题：\(error)")
-        } else if ingestion.isRunning {
-            StatusDot(level: .running, label: "正在采集数据源")
-        } else if ingestion.lastIngestedAt != nil {
-            StatusDot(level: .ok, label: "上次采集 \(ingestion.lastIngestedAt?.formatted(date: .abbreviated, time: .shortened) ?? "")")
-        } else {
-            StatusDot(level: .idle, label: "尚未采集")
+    private var settingsContent: some View {
+        switch settingsSection {
+        case .ai:
+            AISettingsView(store: store, activity: activity, ai: ai, ingestion: ingestion)
+        case .privacy:
+            PrivacyBackupSettingsView(store: store, activity: activity, ai: ai, ingestion: ingestion)
+        case .appearance:
+            AppearanceSettingsView(appearanceModeRaw: $appearanceModeRaw)
+        case .recording:
+            RecordingSettingsView(store: store, activity: activity, ai: ai, ingestion: ingestion)
         }
     }
 }

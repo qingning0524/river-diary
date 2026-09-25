@@ -49,6 +49,17 @@ enum StateEncryption {
         loadLocalKey() != nil
     }
 
+    static func derivedDatabaseKey(purpose: String) throws -> String {
+        let masterKey = try encryptionKey()
+        let derivedKey = HKDF<SHA256>.deriveKey(
+            inputKeyMaterial: masterKey,
+            salt: Data("RiverDiaryMac.SQLCipher.v1".utf8),
+            info: Data(purpose.utf8),
+            outputByteCount: 32
+        )
+        return derivedKey.withUnsafeBytes { Data($0).base64EncodedString() }
+    }
+
     private static func encryptionKey() throws -> SymmetricKey {
         if let localKey = loadLocalKey() {
             return localKey
@@ -102,13 +113,9 @@ enum StateEncryption {
         }
 
         let keyData = key.withUnsafeBytes { Data($0) }
-        try fileManager.createDirectory(
-            at: directory,
-            withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700]
-        )
+        try LocalStorageProtection.ensurePrivateDirectory(at: directory)
         try keyData.write(to: url, options: .atomic)
-        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        try LocalStorageProtection.protectFile(at: url)
     }
 
     private static var localKeyDirectory: URL? {

@@ -25,38 +25,90 @@ final class ActivityStore: ObservableObject {
     private var dayStatsCache: [String: CachedDayStats] = [:]
     private var observers: [NSObjectProtocol] = []
     private var pauseTimer: Timer?
+    private let preferences: UserDefaults
+    private let configuredActivityDirectory: URL?
+    private let providedV2Store: V2Store?
+    private lazy var v2Store: V2Store = providedV2Store ?? V2Store()
 
     private let workspaceCenter = NSWorkspace.shared.notificationCenter
     private let appCenter = NotificationCenter.default
     private let fileManager = FileManager.default
 
     private lazy var activityDirectory: URL? = {
-        guard let directory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
-        let target = directory
-            .appendingPathComponent("RiverDiaryMac", isDirectory: true)
-            .appendingPathComponent("Activity", isDirectory: true)
-        try? fileManager.createDirectory(at: target, withIntermediateDirectories: true)
+        let target: URL
+        if let configuredActivityDirectory {
+            target = configuredActivityDirectory
+        } else {
+            guard let directory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
+            target = directory
+                .appendingPathComponent("RiverDiaryMac", isDirectory: true)
+                .appendingPathComponent("Activity", isDirectory: true)
+        }
+        do {
+            let parent = target.deletingLastPathComponent()
+            try LocalStorageProtection.ensurePrivateDirectory(at: parent)
+            if !fileManager.fileExists(atPath: target.path) {
+                let interruptedRestores = try fileManager.contentsOfDirectory(
+                    at: parent,
+                    includingPropertiesForKeys: [.contentModificationDateKey, .isDirectoryKey]
+                ).filter { candidate in
+                    guard candidate.lastPathComponent.hasPrefix("Activity-previous-"),
+                          let values = try? candidate.resourceValues(forKeys: [.isDirectoryKey]) else { return false }
+                    return values.isDirectory == true
+                }
+                if let previous = interruptedRestores.max(by: { lhs, rhs in
+                    let leftDate = (try? lhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                    let rightDate = (try? rhs.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                    return leftDate < rightDate
+                }) {
+                    try fileManager.moveItem(at: previous, to: target)
+                }
+            }
+            try LocalStorageProtection.ensurePrivateDirectory(at: target)
+        } catch {
+            storageSummary = "实时足迹目录权限设置失败：\(error.localizedDescription)"
+            return nil
+        }
         return target
     }()
 
-    init() {
-        pauseScheduleEnabled = UserDefaults.standard.bool(forKey: "activity.pauseScheduleEnabled")
-        pauseStartMinutes = UserDefaults.standard.object(forKey: "activity.pauseStart") as? Int ?? 22 * 60
-        pauseEndMinutes = UserDefaults.standard.object(forKey: "activity.pauseEnd") as? Int ?? 7 * 60
-        capturesTitles = UserDefaults.standard.bool(forKey: "activity.capturesTitles")
+    init(
+        activityDirectory: URL? = nil,
+        userDefaults: UserDefaults = .standard,
+        v2Store: V2Store? = nil
+    ) {
+        configuredActivityDirectory = activityDirectory
+        preferences = userDefaults
+        providedV2Store = v2Store
+        pauseScheduleEnabled = userDefaults.bool(forKey: "activity.pauseScheduleEnabled")
+        pauseStartMinutes = userDefaults.object(forKey: "activity.pauseStart") as? Int ?? 22 * 60
+        pauseEndMinutes = userDefaults.object(forKey: "activity.pauseEnd") as? Int ?? 7 * 60
+        capturesTitles = userDefaults.bool(forKey: "activity.capturesTitles")
         accessibilityGranted = AXIsProcessTrusted()
         loadStoredSessions()
-        if UserDefaults.standard.bool(forKey: "activity.enabled") {
+        if userDefaults.bool(forKey: "activity.enabled") {
             startTracking(showPermissionPrompt: false)
         }
         refreshPauseState()
+    }
+
+    func encryptedV2Snapshot() throws -> Data {
+        try v2Store.encryptedSnapshot()
+    }
+
+    func validateV2Snapshot(_ snapshot: Data) throws {
+        try v2Store.validateEncryptedSnapshot(snapshot)
+    }
+
+    func restoreV2Snapshot(_ snapshot: Data) throws {
+        try v2Store.restoreEncryptedSnapshot(snapshot)
     }
 
     func startTracking(showPermissionPrompt: Bool = true) {
         guard !isTracking else { return }
 
         isTracking = true
-        UserDefaults.standard.set(true, forKey: "activity.enabled")
+        preferences.set(true, forKey: "activity.enabled")
 
         if showPermissionPrompt && capturesTitles && !accessibilityGranted {
             requestAccessibility()
@@ -79,7 +131,7 @@ final class ActivityStore: ObservableObject {
         removeObservers()
         isTracking = false
         activeSession = nil
-        UserDefaults.standard.set(false, forKey: "activity.enabled")
+        preferences.set(false, forKey: "activity.enabled")
         pauseTimer?.invalidate()
         pauseTimer = nil
         isCurrentlyPaused = false
@@ -89,7 +141,7 @@ final class ActivityStore: ObservableObject {
 
     func setPauseSchedule(enabled: Bool, startMinutes: Int? = nil, endMinutes: Int? = nil) {
         pauseScheduleEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: "activity.pauseScheduleEnabled")
+        preferences.set(enabled, forKey: "activity.pauseScheduleEnabled")
 
         if let startMinutes {
             pauseStartMinutes = max(0, min(24 * 60 - 1, startMinutes))
@@ -98,8 +150,8 @@ final class ActivityStore: ObservableObject {
             pauseEndMinutes = max(0, min(24 * 60 - 1, endMinutes))
         }
 
-        UserDefaults.standard.set(pauseStartMinutes, forKey: "activity.pauseStart")
-        UserDefaults.standard.set(pauseEndMinutes, forKey: "activity.pauseEnd")
+        preferences.set(pauseStartMinutes, forKey: "activity.pauseStart")
+        preferences.set(pauseEndMinutes, forKey: "activity.pauseEnd")
         refreshPauseState()
     }
 
@@ -133,7 +185,7 @@ final class ActivityStore: ObservableObject {
 
     func setCapturesTitles(_ enabled: Bool) {
         capturesTitles = enabled
-        UserDefaults.standard.set(enabled, forKey: "activity.capturesTitles")
+        preferences.set(enabled, forKey: "activity.capturesTitles")
         if !enabled {
             activeSession?.windowTitle = nil
         }
@@ -154,17 +206,55 @@ final class ActivityStore: ObservableObject {
     }
 
     func restoreBackup(_ restored: [ActivitySession]) throws {
-        stopTracking()
-        sessions = []
-        dayStatsCache = [:]
-        if let directory = activityDirectory {
-            let files = (try? fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-            for file in files where file.pathExtension == "activity" {
-                try fileManager.removeItem(at: file)
+        guard let directory = activityDirectory else {
+            throw NSError(domain: "RiverDiaryMac", code: 21, userInfo: [NSLocalizedDescriptionKey: "实时足迹目录不可用，无法恢复备份。"])
+        }
+
+        let orderedSessions = restored.sorted { $0.start < $1.start }
+        let parent = directory.deletingLastPathComponent()
+        let stagingDirectory = parent.appendingPathComponent("Activity-restore-\(UUID().uuidString)", isDirectory: true)
+        let previousDirectory = parent.appendingPathComponent("Activity-previous-\(UUID().uuidString)", isDirectory: true)
+        try LocalStorageProtection.ensurePrivateDirectory(at: stagingDirectory)
+        defer { try? fileManager.removeItem(at: stagingDirectory) }
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        let sessionsByDay = Dictionary(grouping: orderedSessions, by: \.dayKey)
+        for (dayKey, daySessions) in sessionsByDay.sorted(by: { $0.key < $1.key }) {
+            let file = stagingDirectory.appendingPathComponent("\(dayKey).activity")
+            let encrypted = try StateEncryption.encrypt(try encoder.encode(daySessions.sorted { $0.start < $1.start }))
+            try encrypted.write(to: file, options: .atomic)
+            try LocalStorageProtection.protectFile(at: file)
+        }
+
+        let shouldResumeTracking = isTracking
+        if shouldResumeTracking { stopTracking() }
+        defer {
+            if shouldResumeTracking && !isTracking {
+                startTracking(showPermissionPrompt: false)
             }
         }
-        sessions = restored.sorted { $0.start < $1.start }
-        for session in sessions { persist(session) }
+
+        let hasPreviousDirectory = fileManager.fileExists(atPath: directory.path)
+        if hasPreviousDirectory {
+            try fileManager.moveItem(at: directory, to: previousDirectory)
+        }
+        do {
+            try fileManager.moveItem(at: stagingDirectory, to: directory)
+        } catch {
+            if hasPreviousDirectory {
+                try? fileManager.moveItem(at: previousDirectory, to: directory)
+            }
+            throw error
+        }
+        if hasPreviousDirectory {
+            try? fileManager.removeItem(at: previousDirectory)
+        }
+
+        sessions = orderedSessions
+        dayStatsCache = [:]
+        for session in orderedSessions { persistV2Evidence(for: session) }
         storageSummary = "已恢复并加密保存 \(sessions.count) 段实时活动"
     }
 
@@ -474,6 +564,10 @@ final class ActivityStore: ObservableObject {
         sessions.sort { $0.start < $1.start }
 
         segments.forEach { persist($0) }
+        ActivityV2Projection.rebuildDay(
+            sessions.filter { $0.dayKey == original.dayKey },
+            into: v2Store
+        )
         lastSavedAt = Date()
         lastSavedApp = original.appName
         Set(segments.map(\.dayKey)).forEach { dayStatsCache.removeValue(forKey: $0) }
@@ -497,9 +591,30 @@ final class ActivityStore: ObservableObject {
             encoder.outputFormatting = [.sortedKeys]
             let encrypted = try StateEncryption.encrypt(try encoder.encode(daySessions))
             try encrypted.write(to: url, options: .atomic)
+            try LocalStorageProtection.protectFile(at: url)
+            persistV2Evidence(for: session)
         } catch {
             storageSummary = "实时足迹保存失败：\(error.localizedDescription)"
         }
+    }
+
+    /// Mirror collector evidence into the append-only V2 fact layer. The
+    /// encrypted activity files remain the current read path while the
+    /// Episode/Memory projections are introduced incrementally.
+    private func persistV2Evidence(for session: ActivitySession) {
+        let event = RawEvent(
+            id: session.id,
+            timestamp: session.start,
+            source: .systemApp,
+            kind: .appForeground,
+            payload: RawEventPayload(
+                appName: session.appName,
+                bundleID: session.bundleID,
+                windowTitle: capturesTitles ? session.windowTitle : nil
+            ),
+            sourceHash: "\(session.bundleID)|\(session.start.timeIntervalSince1970)|\(session.end.timeIntervalSince1970)"
+        )
+        _ = v2Store.insertRawEvent(event)
     }
 
     private func readSessions(from url: URL) -> [ActivitySession] {
@@ -541,6 +656,13 @@ final class ActivityStore: ObservableObject {
         }
 
         sessions = loaded.sorted { $0.start < $1.start }
+        for session in sessions {
+            persistV2Evidence(for: session)
+        }
+        let grouped = Dictionary(grouping: sessions, by: \.dayKey)
+        for daySessions in grouped.values {
+            ActivityV2Projection.rebuildDay(daySessions, into: v2Store)
+        }
         storageSummary = sessions.isEmpty
             ? "尚未开始 macOS 实时记录"
             : "已加密保存 \(sessions.count) 段实时活动（最近 365 天）"

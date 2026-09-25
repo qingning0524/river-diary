@@ -7,6 +7,17 @@ enum MemoryKind: String, Codable, Hashable, CaseIterable, Sendable {
     case interpersonal
     case journey
     case other
+
+    var displayName: String {
+        switch self {
+        case .longTermFact: "长期事实"
+        case .habit: "习惯"
+        case .projectTrajectory: "项目轨迹"
+        case .interpersonal: "关系"
+        case .journey: "旅程"
+        case .other: "其他"
+        }
+    }
 }
 
 /// A durable memory distilled from episodes. It never stores raw machine

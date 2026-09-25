@@ -6,6 +6,13 @@ enum RiverTaskKind: String, Codable, Hashable, CaseIterable, Sendable {
     case query
     case monthlyLetter
     case namingProposal
+    case dailyOverview
+    case footprintQuestion
+    case insightReading
+    case memorySearch
+    case riverReading
+    case noteThemes
+    case analysis
 }
 
 /// AI output, kept strictly outside the fact layer. An analysis run records
@@ -19,6 +26,23 @@ struct AnalysisRun: Identifiable, Codable, Hashable, Sendable {
     var evidenceIDs: [UUID]
     var model: String
     var createdAt: Date
+
+    var title: String {
+        switch task {
+        case .summarize: "总结"
+        case .weeklyReview: "周期回顾"
+        case .query: "记忆查询"
+        case .monthlyLetter: "河流信"
+        case .namingProposal: "命名建议"
+        case .dailyOverview: "本日整理"
+        case .footprintQuestion: "足迹问答"
+        case .insightReading: "状态洞察"
+        case .memorySearch: "AI 搜索"
+        case .riverReading: "情绪河流"
+        case .noteThemes: "快记主题"
+        case .analysis: "综合分析"
+        }
+    }
 
     init(
         id: UUID = UUID(),
@@ -37,4 +61,11 @@ struct AnalysisRun: Identifiable, Codable, Hashable, Sendable {
         self.model = model
         self.createdAt = createdAt
     }
+}
+
+struct ContextSnapshot: Identifiable, Codable, Hashable, Sendable {
+    var id: UUID
+    var createdAt: Date
+    var payloadJSON: String
+    var model: String
 }

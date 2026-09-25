@@ -40,6 +40,7 @@ final class AIAssistantStore: ObservableObject {
 
     private var memorySearchCache: [String: String] = [:]
     private var taskRequestIDs: [AITask: UUID] = [:]
+    private lazy var analysisStore = V2Store()
     private static let contextDateTimeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -245,6 +246,13 @@ final class AIAssistantStore: ObservableObject {
     }
 
     func restoreAnalysisResults(startDate: String, endDate: String) {
+        // Today can change its date context without recreating the AI store.
+        // Clear archived analysis from the previous date before restoring the
+        // requested range, otherwise a report can appear under the wrong day.
+        for task in AITask.analysisSuite where taskStates[task]?.isArchived == true {
+            taskStates[task] = nil
+        }
+
         let saved = AppDatabase.shared.queryAIResults(startDate: startDate, endDate: endDate)
         var seenTasks = Set<String>()
 
@@ -308,6 +316,19 @@ final class AIAssistantStore: ObservableObject {
         )
     }
 
+    private func riverTaskKind(for task: AITask) -> RiverTaskKind {
+        switch task {
+        case .dailyOverview: .dailyOverview
+        case .footprintQuestion: .footprintQuestion
+        case .insightReading: .insightReading
+        case .memorySearch: .memorySearch
+        case .riverReading: .riverReading
+        case .noteThemes: .noteThemes
+        case .analysisWeekly: .weeklyReview
+        case .analysisDaily, .analysisMood, .analysisFocus, .analysisHealth, .analysisAction: .analysis
+        }
+    }
+
     @discardableResult
     func runTask(
         _ task: AITask,
@@ -317,6 +338,8 @@ final class AIAssistantStore: ObservableObject {
         archiveStartDate: String? = nil,
         archiveEndDate: String? = nil,
         sourceSummary: String? = nil,
+        evidenceIDs: [UUID] = [],
+        contextSnapshotID: UUID? = nil,
         answerTransform: ((String) -> String)? = nil,
         maxTokens: Int? = nil
     ) async -> Bool {
@@ -369,6 +392,15 @@ final class AIAssistantStore: ObservableObject {
             if archiveStartDate != nil, archiveEndDate != nil {
                 archiveResult(result)
             }
+            let savedRun = analysisStore.insertAnalysisRun(AnalysisRun(
+                task: riverTaskKind(for: task),
+                inputContextReference: contextSnapshotID,
+                outputText: answer,
+                evidenceIDs: evidenceIDs,
+                model: requestModel,
+                createdAt: result.createdAt
+            ))
+            if savedRun { NotificationCenter.default.post(name: .riverAnalysisRunDidChange, object: nil) }
             setTask(
                 task,
                 answer: answer,
@@ -645,10 +677,18 @@ final class AIAssistantStore: ObservableObject {
         )
     }
 
-    func searchMemory(query: String, entries: [DiaryEntry], quickCaptures: [QuickCapture]) async {
+    func searchMemory(query: String, candidateSet: AskCandidateSet, sourceEpisodes: [String: [Episode]] = [:]) async {
         guard analysisReady else { return }
 
-        let cacheKey = memorySearchCacheKey(query: query, entries: entries, quickCaptures: quickCaptures)
+        let cacheKey = memorySearchCacheKey(
+            query: query,
+            entries: candidateSet.entries,
+            quickCaptures: candidateSet.captures,
+            memories: candidateSet.memories,
+            reflections: candidateSet.reflections,
+            manualNotes: candidateSet.manualNotes,
+            sourceEpisodes: sourceEpisodes
+        )
         if let cached = memorySearchCache[cacheKey] {
             setTask(
                 .memorySearch,
@@ -659,20 +699,10 @@ final class AIAssistantStore: ObservableObject {
             return
         }
 
-        let local = MemorySearchEngine.search(query, entries: entries, quickCaptures: quickCaptures)
-        var candidateEntries: [DiaryEntry] = []
-        var seenIDs = Set<String>()
-        for entry in local.entries.prefix(16) + entries.suffix(12) {
-            guard seenIDs.insert(entry.id).inserted else { continue }
-            candidateEntries.append(entry)
-        }
-        let candidates = candidateEntries.sorted { $0.date < $1.date }
-        let matchingCaptureIDs = Set(local.notes.map(\.id))
-        var candidateCaptures = quickCaptures.filter { matchingCaptureIDs.contains($0.id.uuidString) }
-        var seenCaptureIDs = Set(candidateCaptures.map(\.id))
-        for capture in quickCaptures.sorted(by: { $0.createdAt > $1.createdAt }).prefix(4) {
-            if seenCaptureIDs.insert(capture.id).inserted { candidateCaptures.append(capture) }
-        }
+        let candidatesForRequest = candidateSet
+        let candidates = candidatesForRequest.entries
+        let candidateCaptures = candidatesForRequest.captures
+        let candidateManualNotes = candidatesForRequest.manualNotes
         let prompt = """
         用户的问题：\(query)
 
@@ -683,22 +713,49 @@ final class AIAssistantStore: ObservableObject {
         **相关日期**
         最多列出 8 个相关日期，每行格式为“- YYYY-MM-DD：一句说明”。没有相关日期就写“- 无”。
         **证据**
-        列出 2-6 条证据，每行格式为“- YYYY-MM-DD · 来源：内容”。来源只能写日记、快记或活动。如果没有证据就写“- 无”。
+        列出 2-6 条证据，每行格式为“- YYYY-MM-DD · 来源：内容”。来源写日记、快记、活动、时间线标注或每日目标。如果没有证据就写“- 无”。
         **边界**
         用 1-2 句话说明搜索范围和缺失信息；必须说明相关性不代表因果关系，并以“如果你想，可以”结尾。
         不要输出 JSON、表格、标题前言、额外章节或 emoji。只使用给定候选内容，不编造日期和内容。使用简体中文。
 
         候选日记 JSON：
-        \(memorySearchDiaryContext(candidates, limit: 24))
+        \(memorySearchDiaryContext(candidates))
 
         候选快记：
-        \(memorySearchCaptureContext(candidateCaptures, limit: 12))
+        \(memorySearchCaptureContext(candidateCaptures))
+
+        候选长期记忆：
+        \(candidatesForRequest.memories.map { memory in
+            let episodes = sourceEpisodes[memory.id.uuidString] ?? []
+            let provenance = episodes.map { "\($0.title)：\($0.summary)" }.joined(separator: "；")
+            return "- \(memory.title)：\(memory.body)（置信度 \(memory.confidence)，来源：\(provenance.isEmpty ? "未展开" : provenance)）"
+        }.joined(separator: "\n"))
+
+        候选河流信：
+        \(candidatesForRequest.reflections.map { "- \($0.title)：\($0.body)（\($0.evidence)）" }.joined(separator: "\n"))
+
+        候选人工标注与每日目标：
+        \(AskCandidateContextFormatter.manualNotes(candidateManualNotes))
         """
+        let contextSnapshotID = UUID()
+        let contextPayload = contextSnapshotPayload(
+            query: query,
+            entries: candidates,
+            captures: candidateCaptures,
+            memories: candidatesForRequest.memories,
+            reflections: candidatesForRequest.reflections,
+            manualNotes: candidateManualNotes,
+            sourceEpisodes: sourceEpisodes
+        )
+        let savedContext = analysisStore.insertContextSnapshot(id: contextSnapshotID, payloadJSON: contextPayload, model: model)
+            && analysisStore.contextSnapshotExists(contextSnapshotID)
         await runTask(
             .memorySearch,
             system: "你是河流日记的 AI 搜索同伴。你的输出结构固定为结论、相关日期、证据、边界四段。只引用候选资料，保持温和、准确、可扫描，不把相关性说成因果关系。",
             prompt: prompt,
             temperature: 0.1,
+            evidenceIDs: candidatesForRequest.memories.flatMap(\.sourceEpisodeIDs),
+            contextSnapshotID: savedContext ? contextSnapshotID : nil,
             answerTransform: AISearchAnswerFormatter.normalize,
             maxTokens: 700
         )
@@ -711,8 +768,8 @@ final class AIAssistantStore: ObservableObject {
         }
     }
 
-    private func memorySearchDiaryContext(_ entries: [DiaryEntry], limit: Int) -> String {
-        entries.suffix(limit).map { entry in
+    private func memorySearchDiaryContext(_ entries: [DiaryEntry]) -> String {
+        entries.map { entry in
             let fragments = ([entry.displayOverview] + (entry.thoughts ?? []) + (entry.memos ?? []))
                 .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
             let detail = String(fragments.joined(separator: " / ").prefix(360))
@@ -720,8 +777,8 @@ final class AIAssistantStore: ObservableObject {
         }.joined(separator: "\n")
     }
 
-    private func memorySearchCaptureContext(_ captures: [QuickCapture], limit: Int) -> String {
-        captures.sorted { $0.createdAt > $1.createdAt }.prefix(limit).map { capture in
+    private func memorySearchCaptureContext(_ captures: [QuickCapture]) -> String {
+        captures.map { capture in
             let text = String(capture.text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(220))
             return "{date=\(DiaryEntry.dateFormatter.string(from: capture.createdAt)); text=\(text)}"
         }.joined(separator: "\n")
@@ -730,11 +787,43 @@ final class AIAssistantStore: ObservableObject {
     private func memorySearchCacheKey(
         query: String,
         entries: [DiaryEntry],
-        quickCaptures: [QuickCapture]
+        quickCaptures: [QuickCapture],
+        memories: [Memory],
+        reflections: [MonthlyLetter],
+        manualNotes: [MemoryNote],
+        sourceEpisodes: [String: [Episode]]
     ) -> String {
         let entryFingerprint = entries.map { "\($0.id):\($0.date):\($0.overall):\($0.displayOverview.hashValue)" }.joined(separator: "|")
         let captureFingerprint = quickCaptures.map { "\($0.id.uuidString):\($0.createdAt.timeIntervalSince1970):\($0.text.hashValue)" }.joined(separator: "|")
-        return SHA256Hex.hash(Data("\(query)|\(entryFingerprint)|\(captureFingerprint)".utf8))
+        let memoryFingerprint = memories.map { "\($0.id.uuidString):\($0.createdAt.timeIntervalSince1970):\($0.confidence):\($0.body.hashValue)" }.joined(separator: "|")
+        let reflectionFingerprint = reflections.map { "\($0.id):\($0.updatedAt.timeIntervalSince1970):\($0.body.hashValue)" }.joined(separator: "|")
+        let manualNoteFingerprint = manualNotes.map { "\($0.id):\($0.date):\($0.text.hashValue)" }.joined(separator: "|")
+        let episodeFingerprint = sourceEpisodes.values.flatMap { $0 }.map { "\($0.id.uuidString):\($0.startTime.timeIntervalSince1970):\($0.endTime.timeIntervalSince1970)" }.sorted().joined(separator: "|")
+        return SHA256Hex.hash(Data("\(query)|\(entryFingerprint)|\(captureFingerprint)|\(memoryFingerprint)|\(reflectionFingerprint)|\(manualNoteFingerprint)|\(episodeFingerprint)".utf8))
+    }
+
+    private func contextSnapshotPayload(
+        query: String,
+        entries: [DiaryEntry],
+        captures: [QuickCapture],
+        memories: [Memory],
+        reflections: [MonthlyLetter],
+        manualNotes: [MemoryNote],
+        sourceEpisodes: [String: [Episode]]
+    ) -> String {
+        let payload: [String: Any] = [
+            "query": query,
+            "diaryIDs": entries.map(\.id),
+            "captureIDs": captures.map { $0.id.uuidString },
+            "memoryIDs": memories.map { $0.id.uuidString },
+            "reflectionIDs": reflections.map(\.id),
+            "manualNotes": AskCandidateContextFormatter.manualNoteReferences(manualNotes),
+            "episodeIDs": memories.flatMap { sourceEpisodes[$0.id.uuidString, default: []].map { $0.id.uuidString } }
+        ]
+        guard JSONSerialization.isValidJSONObject(payload), let data = try? JSONSerialization.data(withJSONObject: payload), let value = String(data: data, encoding: .utf8) else {
+            return "{}"
+        }
+        return value
     }
 
     func analyzeInsight(entries: [DiaryEntry]) async {
@@ -923,6 +1012,15 @@ final class AIAssistantStore: ObservableObject {
                     isLocal: false
                 )
                 archiveResult(result)
+                let savedRun = analysisStore.insertAnalysisRun(AnalysisRun(
+                    task: riverTaskKind(for: task),
+                    inputContextReference: nil,
+                    outputText: answer,
+                    evidenceIDs: sessions.map(\.id),
+                    model: requestModel,
+                    createdAt: result.createdAt
+                ))
+                if savedRun { NotificationCenter.default.post(name: .riverAnalysisRunDidChange, object: nil) }
                 setTask(
                     task,
                     answer: answer,
@@ -979,6 +1077,7 @@ final class AIAssistantStore: ObservableObject {
             archiveStartDate: archiveStartDate,
             archiveEndDate: archiveEndDate,
             sourceSummary: sourceSummary,
+            evidenceIDs: sessions.map(\.id),
             answerTransform: AIAnalysisAnswerFormatter.normalize,
             maxTokens: 900
         )
@@ -1010,6 +1109,7 @@ final class AIAssistantStore: ObservableObject {
             archiveStartDate: archiveStartDate,
             archiveEndDate: archiveEndDate,
             sourceSummary: sourceSummary,
+            evidenceIDs: sessions.map(\.id),
             answerTransform: AIAnalysisAnswerFormatter.normalize,
             maxTokens: 900
         )
@@ -1104,6 +1204,7 @@ final class AIAssistantStore: ObservableObject {
             archiveStartDate: archiveStartDate,
             archiveEndDate: archiveEndDate,
             sourceSummary: sourceSummary,
+            evidenceIDs: sessions.map(\.id),
             answerTransform: AIAnalysisAnswerFormatter.normalize,
             maxTokens: 900
         )
