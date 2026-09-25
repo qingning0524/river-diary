@@ -25,6 +25,8 @@ struct RiverDayRibbon: View {
     /// Height of the day band. Exposed so layout tests can address the track
     /// without duplicating the number.
     static let trackHeight: CGFloat = 42
+    /// Height of the hour-label axis below the track. Fixed: see `hourAxis`.
+    static let axisHeight: CGFloat = 14
     /// Hour ticks every six hours: enough to place yourself, not a grid.
     private static let ticks = [0, 6, 12, 18, 24]
     /// VoiceOver summary runs per render; don't allocate a formatter each time.
@@ -149,6 +151,11 @@ struct RiverDayRibbon: View {
     }
 
     /// Fixed-width labels so the axis reads as a ruler rather than as floating text.
+    ///
+    /// 这里**必须**是固定高度而不是 `minHeight`：`GeometryReader` 在两个方向上都是
+    /// 贪心的，只给下限等于不设上限。这条带原本躺在会滚动的面板里，ScrollView 用
+    /// "理想高度"提案，贪心看不出来；钉进页头之后，窗口把真实高度（几百 pt）提案给
+    /// 页头，刻度区就把提案整个吃掉——页面从日带往下被推出去两百多 pt，只剩一片空白。
     private var hourAxis: some View {
         GeometryReader { proxy in
             ForEach(Self.ticks, id: \.self) { hour in
@@ -160,7 +167,7 @@ struct RiverDayRibbon: View {
                     .offset(x: min(max(x - 17, 0), max(proxy.size.width - 34, 0)))
             }
         }
-        .frame(minHeight: 12)
+        .frame(height: Self.axisHeight)
     }
 
     // MARK: Segments
