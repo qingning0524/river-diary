@@ -4,8 +4,11 @@ struct AppearanceSettingsView: View {
     @Binding var appearanceModeRaw: String
     @AppStorage("appearance.density") private var densityRaw = RiverDensity.standard.rawValue
     @StateObject private var paletteController = PaletteController.shared
+    @Environment(\.riverDensity) private var density
 
-    private let paletteColumns = [GridItem(.adaptive(minimum: 210), spacing: 10)]
+    private var paletteColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 210), spacing: density.spacing(10))]
+    }
 
     var body: some View {
         SettingsPage {
@@ -13,7 +16,7 @@ struct AppearanceSettingsView: View {
                 title: "配色方案",
                 detail: "八套主题色，浅色与深色各自调校；切换立即生效，选择会被记住。"
             ) {
-                LazyVGrid(columns: paletteColumns, spacing: 10) {
+                LazyVGrid(columns: paletteColumns, spacing: density.spacing(10)) {
                     ForEach(RiverPalette.allCases) { palette in
                         PaletteCard(
                             palette: palette,
@@ -68,6 +71,7 @@ struct AppearanceSettingsView: View {
 /// the name, and a checkmark when active.
 private struct PaletteCard: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.riverDensity) private var density
     let palette: RiverPalette
     let isSelected: Bool
     let action: () -> Void
@@ -75,13 +79,13 @@ private struct PaletteCard: View {
     var body: some View {
         Button(action: action) {
             let set = colorScheme == .dark ? palette.theme.dark : palette.theme.light
-            HStack(spacing: 10) {
+            HStack(spacing: density.spacing(10)) {
                 HStack(spacing: -5) {
                     swatch(Color(hex: set.canvas))
                     swatch(Color(hex: set.accent))
                     swatch(Color(hex: set.accentSoft))
                 }
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: density.spacing(1)) {
                     Text(palette.title)
                         .font(AppTypography.rowTitle().weight(isSelected ? .semibold : .medium))
                         .foregroundStyle(Color.ink)
@@ -90,15 +94,15 @@ private struct PaletteCard: View {
                         .foregroundStyle(Color.tertiaryInk)
                         .lineLimit(1)
                 }
-                Spacer(minLength: 4)
+                Spacer(minLength: density.spacing(AppSpacing.xs))
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14))
                         .foregroundStyle(AppTheme.accent)
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
+            .padding(.horizontal, density.spacing(AppSpacing.md))
+            .padding(.vertical, density.spacing(9))
             .background(
                 isSelected ? AppTheme.accentSoft : Color.surface,
                 in: RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous)

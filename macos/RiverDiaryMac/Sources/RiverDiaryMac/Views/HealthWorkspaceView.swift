@@ -134,27 +134,26 @@ struct HealthWorkspaceView: View {
                             : "\(moodDraft.value ?? Int(moodDraft.sliderValue)) 分")
 
                     HStack {
-                        Text("0 · 低").font(AppTypography.metadata()).foregroundStyle(.tertiary)
+                        Text("0 · 低").font(AppTypography.metadata()).foregroundStyle(Color.tertiaryInk)
                         Spacer()
-                        Text("100 · 高").font(AppTypography.metadata()).foregroundStyle(.tertiary)
+                        Text("100 · 高").font(AppTypography.metadata()).foregroundStyle(Color.tertiaryInk)
                     }
 
                     if moodDraft.isAwaitingSelection {
                         Text("默认位置仅供参考；调整或确认滑块后才能保存。")
                             .font(AppTypography.metadata())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondaryInk)
                     }
 
                     if moodDraft.isEditing {
                         HStack {
                             Button("取消") { resetMoodDraft() }
-                                .buttonStyle(.bordered)
-                                .controlSize(.small)
+                                .buttonStyle(.plain)
+                                .smallAction()
                                 .keyboardShortcut(.cancelAction)
                             Spacer()
                             Button("保存评分", action: saveMood)
-                                .buttonStyle(.borderedProminent)
-                                .controlSize(.small)
+                                .primaryCTA()
                                 .disabled(!moodDraft.canSave)
                         }
                     }

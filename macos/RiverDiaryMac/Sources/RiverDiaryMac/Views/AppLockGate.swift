@@ -19,7 +19,7 @@ struct AppLockGate: View {
                         .frame(width: 76, height: 76)
                     Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
                         .font(.system(size: 24, weight: .medium))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.ctaText)
                 }
 
                 VStack(spacing: AppSpacing.xs) {

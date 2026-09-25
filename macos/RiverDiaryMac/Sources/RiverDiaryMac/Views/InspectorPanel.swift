@@ -131,7 +131,7 @@ struct InspectorPanel: View {
                 }
 
                 section("依据") {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: density.spacing(6)) {
                         ForEach(item.sessions, id: \.id) { session in
                             EvidenceRow(session: session)
                         }
@@ -281,7 +281,7 @@ struct InspectorPanel: View {
     }
 
     private func editor(_ item: ActivityTimelineItem) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: density.spacing(10)) {
             TextField("标题", text: $editingTitle)
                 .textFieldStyle(.roundedBorder)
             TextField("地点，如图书馆", text: $editingPlaceName)
@@ -365,8 +365,8 @@ struct InspectorPanel: View {
                                     Text(item.kind.rawValue)
                                         .font(AppTypography.micro().weight(.semibold))
                                         .foregroundStyle(AppTheme.accent)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
+                                        .padding(.horizontal, density.spacing(6))
+                                        .padding(.vertical, density.spacing(AppSpacing.xxs))
                                         .background(AppTheme.accentSoft, in: Capsule())
                                     Text(item.title)
                                         .font(AppTypography.metadata().monospacedDigit())
@@ -396,9 +396,12 @@ struct InspectorPanel: View {
                         }
                     }
                     if items.isEmpty {
-                        Text("没有可展示的依据。")
-                            .font(AppTypography.secondary())
-                            .foregroundStyle(Color.secondaryInk)
+                        EmptyStateView(
+                            title: "没有可展示的依据。",
+                            message: "打开一段时间线节点后，它引用的原始记录会出现在这里。",
+                            symbol: "link",
+                            showsChrome: false
+                        )
                     }
                 }
             }
@@ -569,7 +572,7 @@ private struct EvidenceRow: View {
     let session: ActivitySession
 
     var body: some View {
-        VStack(alignment: .leading, spacing: density.spacing(2)) {
+        VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xxs)) {
             HStack(spacing: density.spacing(AppSpacing.sm)) {
                 Text(session.start.formatted(date: .omitted, time: .shortened))
                     .font(AppTypography.metadata().monospacedDigit())
@@ -583,7 +586,7 @@ private struct EvidenceRow: View {
                 Text(title)
                     .font(AppTypography.metadata())
                     .foregroundStyle(Color.secondaryInk)
-                    .padding(.leading, 54)
+                    .padding(.leading, TimelineRowMetrics.timeColumn)
                     .lineLimit(1)
             }
         }

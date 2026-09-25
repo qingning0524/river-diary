@@ -292,8 +292,7 @@ struct TodayDashboardView: View {
                     } label: {
                         Label(reportButtonTitle, systemImage: dailyReport == nil ? "sparkles" : "arrow.clockwise")
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .smallAction()
                     .disabled(dailyTaskState?.isLoading == true)
 
                     Button(isBriefExpanded ? "收起" : "展开完整摘要") {

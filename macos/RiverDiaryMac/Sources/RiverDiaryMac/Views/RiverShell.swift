@@ -681,9 +681,7 @@ struct QuickNoteSheet: View {
                 )
                 Spacer()
                 Button("关闭") { dismiss() }
-                    .buttonStyle(.plain)
-                    .font(AppTypography.secondary())
-                    .foregroundStyle(Color.secondaryInk)
+                    .linkAction()
             }
             TextEditor(text: $text)
                 .font(AppTypography.primary())
@@ -710,7 +708,7 @@ struct QuickNoteSheet: View {
                         feedbackCenter.show("保存失败：\(message)", kind: .error)
                     }
                 }
-                .buttonStyle(.borderedProminent)
+                .primaryCTA()
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }

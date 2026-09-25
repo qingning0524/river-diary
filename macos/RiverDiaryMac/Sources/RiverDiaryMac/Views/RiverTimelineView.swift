@@ -170,7 +170,7 @@ private struct TimelineRow: View {
                         .fill(AppTheme.accent)
                         .frame(width: 2.5)
                         .padding(.vertical, density.spacing(AppSpacing.md))
-                        .padding(.leading, 1)
+                        .padding(.leading, density.spacing(1))
                 }
             }
             .contentShape(Rectangle())

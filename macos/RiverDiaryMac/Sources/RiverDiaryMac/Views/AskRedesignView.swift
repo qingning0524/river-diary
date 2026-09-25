@@ -39,7 +39,7 @@ struct AskRedesignView: View {
     }
 
     var body: some View {
-        RiverPage(maxWidth: 760, topPadding: AppSpacing.sm) {
+        RiverPage(maxWidth: AppLayout.askMaxWidth, topPadding: AppSpacing.sm) {
             header
                 .riverAppear(index: 0)
             inputBar
@@ -193,19 +193,10 @@ struct AskRedesignView: View {
 
             ChipFlow(spacing: AppSpacing.sm) {
                 ForEach(Array(savedQueries.prefix(10)), id: \.id) { saved in
-                    Button {
+                    FilterChip(title: saved.name, isSelected: false) {
                         query = saved.query
                         run()
-                    } label: {
-                        Label(saved.name, systemImage: "bookmark")
-                            .font(AppTypography.metadata())
-                            .foregroundStyle(Color.secondaryInk)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.chip, in: Capsule())
-                            .overlay(Capsule().strokeBorder(Color.border, lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
                     .help(saved.rangeLabel)
                 }
             }
@@ -217,19 +208,10 @@ struct AskRedesignView: View {
             sectionLabel("最近提问")
             ChipFlow(spacing: AppSpacing.sm) {
                 ForEach(history.suffix(5).reversed(), id: \.id) { item in
-                    Button {
+                    FilterChip(title: item.query, isSelected: false) {
                         query = item.query
                         run()
-                    } label: {
-                        Text(item.query)
-                            .font(AppTypography.metadata())
-                            .foregroundStyle(Color.secondaryInk)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.chip, in: Capsule())
-                            .overlay(Capsule().strokeBorder(Color.border, lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -309,8 +291,7 @@ struct AskRedesignView: View {
                         Label(ai.state(for: .memorySearch)?.isLoading == true ? "整理中…" : "整理成 AI 回答", systemImage: "sparkles")
                             .font(AppTypography.metadata())
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .smallAction()
                     .disabled(ai.state(for: .memorySearch)?.isLoading == true)
                 }
                 Button {
@@ -319,8 +300,7 @@ struct AskRedesignView: View {
                     Label("保存查询", systemImage: "bookmark")
                         .font(AppTypography.metadata())
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .smallAction()
                 .disabled(savedQueries.contains { $0.query == answer.query })
                 Button {
                     answerReset()
@@ -328,8 +308,7 @@ struct AskRedesignView: View {
                         Label("重新查找", systemImage: "arrow.clockwise")
                         .font(AppTypography.metadata())
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .smallAction()
             }
 
             if !memory.usedFilters.isEmpty {
@@ -341,15 +320,15 @@ struct AskRedesignView: View {
                         Text(filter)
                             .font(AppTypography.metadata())
                             .foregroundStyle(AppTheme.accent)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
+                            .padding(.horizontal, density.spacing(AppSpacing.sm))
+                            .padding(.vertical, density.spacing(3))
                             .background(AppTheme.accentSoft, in: Capsule())
                     }
                 }
             }
 
             if !hasEvidence {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
                     EmptyStateView(
                         title: "没有找到相关记忆",
                         message: emptyAnswerIsLocationQuestion
@@ -361,9 +340,7 @@ struct AskRedesignView: View {
                     .font(AppTypography.secondary())
                     if emptyAnswerIsLocationQuestion {
                         Button("换一个问题", action: answerReset)
-                            .buttonStyle(.plain)
-                            .font(AppTypography.metadata())
-                            .foregroundStyle(AppTheme.accent)
+                            .linkAction()
                     }
                 }
             } else {
@@ -385,13 +362,13 @@ struct AskRedesignView: View {
                 Button {
                     onShowEvidence(answer.query, evidence)
                 } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: density.spacing(6)) {
                         Image(systemName: "doc.on.doc")
                         Text("基于 \(evidence.count) 个来源 · 查看依据")
                     }
                     .font(AppTypography.secondary())
                 }
-                .buttonStyle(.bordered)
+                .smallAction()
 
                 if !memory.entries.isEmpty {
                     evidenceBlock(title: "相关日记", symbol: "book.text") {

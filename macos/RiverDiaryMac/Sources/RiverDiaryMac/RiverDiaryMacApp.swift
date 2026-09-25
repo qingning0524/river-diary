@@ -98,6 +98,7 @@ struct RiverDiaryMacApp: App {
             } else {
                 VStack(spacing: 12) {
                     Text("本地恢复尚未完成")
+                    .font(AppTypography.secondary())
                     Button("重新尝试恢复") { restoreRecovery.retry() }
                 }
                 .padding()

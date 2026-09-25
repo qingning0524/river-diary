@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct DailyGoalControl: View {
+    @Environment(\.riverDensity) private var density
     @ObservedObject var store: DiaryStore
     let date: Date
 
@@ -16,8 +17,8 @@ struct DailyGoalControl: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(spacing: 7) {
+        VStack(alignment: .leading, spacing: density.spacing(7)) {
+            HStack(spacing: density.spacing(7)) {
                 Image(systemName: "target")
                     .foregroundStyle(AppTheme.accent)
                 Text("\(dateName)目标")
@@ -37,12 +38,11 @@ struct DailyGoalControl: View {
                     .onSubmit(save)
                 HStack {
                     Button("取消", action: cancelEditing)
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .buttonStyle(.plain)
+                        .smallAction()
                     Spacer()
                     Button("保存目标", action: save)
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
+                        .primaryCTA()
                         .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             } else if let goal {
@@ -51,19 +51,18 @@ struct DailyGoalControl: View {
                     .foregroundStyle(Color.ink)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
+                HStack(spacing: density.spacing(AppSpacing.sm)) {
                     Button(goal.isCompleted ? "恢复进行中" : "我已完成") {
                         updateCompletion(!goal.isCompleted)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    .primaryCTA()
                     Button("修改") {
                         draft = goal.title
                         errorMessage = nil
                         isEditing = true
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                    .buttonStyle(.plain)
+                    .smallAction()
                     Button("移除", role: .destructive) {
                         showRemoveConfirmation = true
                     }
@@ -72,7 +71,7 @@ struct DailyGoalControl: View {
                     Spacer()
                     Text("由你设定")
                         .font(AppTypography.metadata())
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(Color.tertiaryInk)
                 }
             } else {
                 HStack {

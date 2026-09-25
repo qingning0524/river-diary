@@ -21,8 +21,8 @@ enum SourceHealthState: Hashable {
         switch self {
         case .healthy: AppTheme.ok
         case .collecting: AppTheme.accent
-        case .missing: .secondary
-        case .paused: .secondary
+        case .missing: Color.tertiaryInk
+        case .paused: Color.tertiaryInk
         case .error: AppTheme.warning
         }
     }

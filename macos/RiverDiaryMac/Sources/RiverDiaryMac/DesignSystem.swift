@@ -66,6 +66,13 @@ enum AppLayout {
     static let contentMaxWidth: CGFloat = 920
     /// 今日 dashboard is wider than the default reading column (DESIGN.md allows this).
     static let todayMaxWidth: CGFloat = 1000
+    /// 时间线 keeps the wide reading column: the ribbon plus four fixed timeline
+    /// columns need the extra room.
+    static let timelineMaxWidth: CGFloat = 1040
+    /// 数据库 read-only preview column.
+    static let databaseMaxWidth: CGFloat = 820
+    /// 询问 page column.
+    static let askMaxWidth: CGFloat = 760
     /// Fixed width of the Today page's right-hand column (goal + facts).
     static let todayAsideWidth: CGFloat = 320
     static let outerPadding: CGFloat = 24

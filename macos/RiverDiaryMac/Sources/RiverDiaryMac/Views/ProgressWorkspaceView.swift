@@ -80,7 +80,7 @@ struct ProgressWorkspaceView: View {
                 Image(systemName: "arrow.left.arrow.right")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Color.tertiaryInk)
-                    .padding(.top, 18)
+                    .padding(.top, density.spacing(AppSpacing.panelPadding))
                 periodLabel("上一周期", window: previousWindow)
             }
         }
@@ -236,9 +236,9 @@ struct ProgressWorkspaceView: View {
         return RiverPanel(title: "所有指标对照", systemImage: "tablecells", accent: AppTheme.accent) {
             VStack(spacing: 0) {
                 HStack(spacing: density.spacing(AppSpacing.md)) {
-                    Text("指标").frame(width: 148, alignment: .leading)
-                    Text("本周期").frame(width: 108, alignment: .leading)
-                    Text("上一周期").frame(width: 108, alignment: .leading)
+                    Text("指标").frame(width: ProgressColumnMetrics.labelColumn, alignment: .leading)
+                    Text("本周期").frame(width: ProgressColumnMetrics.valueColumn, alignment: .leading)
+                    Text("上一周期").frame(width: ProgressColumnMetrics.valueColumn, alignment: .leading)
                     Text("变化").frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .font(AppTypography.kicker())
@@ -282,9 +282,12 @@ private struct ProgressFocusTrendChart: View {
         RiverPanel(title: "每日实时专注", systemImage: "chart.xyaxis.line", accent: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
                 if points.isEmpty {
-                    Text("这两个周期都没有足够的实时足迹绘制趋势。未记录的日期留空，不按零计算。")
-                        .font(AppTypography.secondary())
-                        .foregroundStyle(Color.secondaryInk)
+                    EmptyStateView(
+                        title: "这两个周期都没有足够的实时足迹绘制趋势。",
+                        message: "未记录的日期留空，不按零计算。",
+                        symbol: "chart.line.uptrend.xyaxis",
+                        showsChrome: false
+                    )
                 } else {
                     Chart(points) { point in
                         LineMark(
@@ -327,7 +330,7 @@ private struct ProgressFocusTrendChart: View {
                     .frame(height: 210)
                 }
 
-                HStack(spacing: 16) {
+                HStack(spacing: density.spacing(AppSpacing.lg)) {
                     legend("本周期", color: .riverBlue, coverage: currentCoverage)
                     legend("上一周期", color: .secondaryInk, coverage: previousCoverage)
                 }
@@ -341,7 +344,7 @@ private struct ProgressFocusTrendChart: View {
     }
 
     private func legend(_ title: String, color: Color, coverage: Int) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: density.spacing(6)) {
             Circle().fill(color).frame(width: 7, height: 7)
             Text("\(title) · 有实时足迹 \(coverage)/\(dayCount) 天")
         }
@@ -360,25 +363,26 @@ private struct ProgressMetricComparison: Identifiable {
 }
 
 private struct ProgressComparisonRow: View {
+    @Environment(\.riverDensity) private var density
     let row: ProgressMetricComparison
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
+        VStack(alignment: .leading, spacing: density.spacing(5)) {
+            HStack(alignment: .firstTextBaseline, spacing: density.spacing(AppSpacing.md)) {
                 Label(row.title, systemImage: row.symbol)
                     .font(AppTypography.secondary())
                     .foregroundStyle(Color.ink)
-                    .frame(width: 148, alignment: .leading)
+                    .frame(width: ProgressColumnMetrics.labelColumn, alignment: .leading)
                 Text(row.current)
                     .font(AppTypography.primary().weight(.semibold).monospacedDigit())
                     .foregroundStyle(Color.ink)
-                    .frame(width: 108, alignment: .leading)
+                    .frame(width: ProgressColumnMetrics.valueColumn, alignment: .leading)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Text(row.previous)
                     .font(AppTypography.secondary().monospacedDigit())
                     .foregroundStyle(Color.secondaryInk)
-                    .frame(width: 108, alignment: .leading)
+                    .frame(width: ProgressColumnMetrics.valueColumn, alignment: .leading)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Text(row.change)
@@ -390,10 +394,19 @@ private struct ProgressComparisonRow: View {
             Text(row.coverage)
                 .font(AppTypography.metadata())
                 .foregroundStyle(Color.secondaryInk)
-                .padding(.leading, 160)
+                .padding(.leading, ProgressColumnMetrics.leadingOffset)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, density.spacing(10))
         .accessibilityElement(children: .combine)
     }
+}
+
+/// Shared column grid of the comparison table. The header row and the data rows
+/// must agree on these widths, and the coverage line must indent to the first
+/// value column, so the numbers live here once instead of being repeated.
+private enum ProgressColumnMetrics {
+    static let labelColumn: CGFloat = 148
+    static let valueColumn: CGFloat = 108
+    static let leadingOffset: CGFloat = 160
 }

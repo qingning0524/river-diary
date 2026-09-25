@@ -125,7 +125,7 @@ struct ReviewContentView: View {
                                 .frame(minHeight: 14)
                             GeometryReader { proxy in
                                 RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
-                                    .fill(day.mood == nil ? Color.secondary.opacity(0.18) : AppTheme.accent)
+                                    .fill(day.mood == nil ? Color.tertiaryInk.opacity(0.25) : AppTheme.accent)
                                     .frame(height: max(8, proxy.size.height * min(1, day.duration / maxDuration)))
                                     .frame(maxHeight: .infinity, alignment: .bottom)
                             }
@@ -148,9 +148,12 @@ struct ReviewContentView: View {
         RiverPanel(title: "时间分布", systemImage: "chart.bar", accent: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(9)) {
                 if review.categories.isEmpty {
-                    Text("这段时间还没有足够的活动分类。")
-                        .font(AppTypography.secondary())
-                        .foregroundStyle(Color.secondaryInk)
+                    EmptyStateView(
+                        title: "这段时间还没有足够的活动分类。",
+                        message: "实时足迹和项目管道积累几天后，这里会给出分布。",
+                        symbol: "chart.bar",
+                        showsChrome: false
+                    )
                 } else {
                     let maxDuration = max(review.categories.first?.duration ?? 1, 1)
                     ForEach(Array(review.categories.prefix(6)), id: \.name) { category in
@@ -223,9 +226,12 @@ struct ReviewContentView: View {
                             .foregroundStyle(Color.secondaryInk)
                     }
                 } else {
-                    Text("本月还没有足够的日记、快记或足迹生成河流信。")
-                        .font(AppTypography.secondary())
-                        .foregroundStyle(Color.secondaryInk)
+                    EmptyStateView(
+                        title: "本月还没有足够的记录生成河流信。",
+                        message: "写日记、留快记或积累实时足迹后，这里会汇总成本月的河流信。",
+                        symbol: "envelope.open",
+                        showsChrome: false
+                    )
                 }
             }
         }
@@ -306,8 +312,7 @@ struct ReviewContentView: View {
                             library.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
                         }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    .primaryCTA()
                     .disabled(!ai.hasVerifiedConnection || ai.state(for: .analysisWeekly)?.isLoading == true)
                 }
                 if let state = ai.state(for: .analysisWeekly), let answer = state.answer {

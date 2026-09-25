@@ -20,9 +20,12 @@ struct WorkLearnWorkspaceView: View {
 
             RiverPanel(title: "时间分布", systemImage: "chart.bar", accent: AppTheme.accent, tint: AppTheme.accent) {
                 if stats.categoryUsage.isEmpty {
-                    Text("这一天还没有足够的分类证据。")
-                        .font(AppTypography.secondary())
-                        .foregroundStyle(Color.secondaryInk)
+                    EmptyStateView(
+                        title: "这一天还没有足够的分类证据。",
+                        message: "使用应用或浏览网页积累证据后，这里会给出时间分布。",
+                        symbol: "chart.bar",
+                        showsChrome: false
+                    )
                 } else {
                     VStack(spacing: 0) {
                         ForEach(Array(stats.categoryUsage.prefix(8).enumerated()), id: \.element.id) { index, item in

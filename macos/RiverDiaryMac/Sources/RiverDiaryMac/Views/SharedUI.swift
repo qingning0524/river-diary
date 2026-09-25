@@ -41,16 +41,16 @@ struct EmptyStateView: View {
                 HStack(spacing: density.spacing(AppSpacing.sm)) {
                     if let actionTitle, let action {
                         Button(actionTitle, action: action)
-                            .buttonStyle(.borderedProminent)
+                            .primaryCTA()
                             .controlSize(.small)
                     }
                     if let secondaryTitle, let secondaryAction {
                         Button(secondaryTitle, action: secondaryAction)
-                            .buttonStyle(.bordered)
+                            .secondaryCTA()
                             .controlSize(.small)
                     }
                 }
-                .padding(.top, density.spacing(2))
+                .padding(.top, density.spacing(AppSpacing.xxs))
             }
         }
     }
@@ -93,7 +93,7 @@ struct RiverInsetPanel: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(density.spacing(14))
+        .padding(density.spacing(AppSpacing.reading))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             AppTheme.accent.opacity(0.05),
@@ -170,6 +170,7 @@ struct RiverSearchField: View {
                 }
                 .buttonStyle(.plain)
                 .help("清除")
+                .accessibilityLabel("清除搜索词")
             }
         }
         .padding(.horizontal, density.spacing(11))

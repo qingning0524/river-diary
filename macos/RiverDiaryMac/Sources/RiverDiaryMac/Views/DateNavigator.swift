@@ -72,6 +72,7 @@ final class DateContextStore: ObservableObject {
 
 struct SidebarDateNavigator: View {
     @ObservedObject var context: DateContextStore
+    @Environment(\.riverDensity) private var density
     @State private var showsCalendar = false
 
     var body: some View {
@@ -79,9 +80,10 @@ struct SidebarDateNavigator: View {
             chevronButton("chevron.left", action: { context.moveDay(-1) })
                 .keyboardShortcut(.leftArrow, modifiers: .command)
                 .help("前一天 (⌘←)")
+                .accessibilityLabel("前一天")
 
             Button { showsCalendar.toggle() } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: density.spacing(6)) {
                     Text(context.selectedDate.formatted(.dateTime.month().day().weekday(.abbreviated)))
                         .font(AppTypography.rowTitle().weight(.semibold).monospacedDigit())
                         .foregroundStyle(Color.ink)
@@ -91,7 +93,7 @@ struct SidebarDateNavigator: View {
                         .foregroundStyle(Color.tertiaryInk)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
+                .padding(.vertical, density.spacing(AppSpacing.xs))
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -118,15 +120,10 @@ struct SidebarDateNavigator: View {
                 .keyboardShortcut(.rightArrow, modifiers: .command)
                 .disabled(!context.canMoveForward)
                 .help("下一天 (⌘→)")
+                .accessibilityLabel("下一天")
 
             if !context.isToday {
-                Button("今天") { context.goToday() }
-                    .buttonStyle(.plain)
-                    .font(AppTypography.micro().weight(.semibold))
-                    .foregroundStyle(AppTheme.accent)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(AppTheme.accentSoft, in: Capsule())
+                FilterChip(title: "今天", isSelected: false, action: { context.goToday() })
                     .help("回到今天")
             }
         }

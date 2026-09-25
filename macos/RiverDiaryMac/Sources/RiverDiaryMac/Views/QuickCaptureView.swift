@@ -1,23 +1,27 @@
 import SwiftUI
 
 struct QuickCaptureView: View {
+    @Environment(\.riverDensity) private var density
     @ObservedObject var store: DiaryStore
     @State private var text = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
+            HStack(spacing: density.spacing(AppSpacing.sm)) {
                 BrandMark(size: 22)
                 Text("River Diary 快记")
-                    .font(.headline)
+                    .font(AppTypography.rowTitle())
                 Spacer()
-                Circle().fill(store.autoDraftPaused ? Color.secondary : AppTheme.ok)
+                Circle().fill(store.autoDraftPaused ? Color.secondaryInk : AppTheme.ok)
                     .frame(width: 7, height: 7)
+                Text(store.autoDraftPaused ? "已暂停" : "记录中")
+                    .font(AppTypography.micro())
+                    .foregroundStyle(Color.secondaryInk)
             }
 
             Text("先保留一句话或链接，稍后可以放进当天日记。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(AppTypography.metadata())
+                .foregroundStyle(Color.secondaryInk)
 
             TextField("今天想到什么？", text: $text, axis: .vertical)
                 .textFieldStyle(.roundedBorder)

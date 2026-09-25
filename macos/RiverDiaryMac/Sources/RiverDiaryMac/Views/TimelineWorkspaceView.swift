@@ -47,7 +47,7 @@ struct TimelineWorkspaceView: View {
     var body: some View {
         let timeline = buildTimeline()
         let filteredItems = filteredTimelineItems(timeline)
-        return RiverPage(maxWidth: 1040) {
+        return RiverPage(maxWidth: AppLayout.timelineMaxWidth) {
             PageHeader("时间线", context: subheadline(timeline)) { quickNoteButton }
                 .riverAppear(index: 0)
             dayOverview(timeline)

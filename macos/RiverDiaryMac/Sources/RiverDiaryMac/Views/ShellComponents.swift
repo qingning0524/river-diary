@@ -128,8 +128,8 @@ struct PageHeader<Trailing: View>: View {
                         Text(badge)
                             .font(AppTypography.micro().weight(.semibold))
                             .foregroundStyle(AppTheme.accent)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
+                            .padding(.horizontal, density.spacing(AppSpacing.sm))
+                            .padding(.vertical, density.spacing(3))
                             .background(AppTheme.accentSoft, in: Capsule())
                     }
                 }
@@ -164,6 +164,7 @@ struct SidebarNavRow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.riverHighContrast) private var highContrast
+    @Environment(\.riverDensity) private var density
 
     let title: String
     let symbol: String
@@ -187,7 +188,7 @@ struct SidebarNavRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 9) {
+            HStack(spacing: density.spacing(9)) {
                 Image(systemName: symbol)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(isSelected ? AppTheme.accent : foreground)
@@ -196,7 +197,7 @@ struct SidebarNavRow: View {
                     .font(AppTypography.rowTitle().weight(isSelected ? .semibold : .regular))
                     .foregroundStyle(foreground)
                     .lineLimit(1)
-                Spacer(minLength: 4)
+                Spacer(minLength: density.spacing(AppSpacing.xs))
                 if let badge {
                     Text(badge)
                         .font(AppTypography.micro().weight(.medium))
@@ -208,8 +209,8 @@ struct SidebarNavRow: View {
                         .foregroundStyle(Color.tertiaryInk)
                 }
             }
-            .padding(.horizontal, 10)
-            .frame(height: 28)
+            .padding(.horizontal, density.spacing(10))
+            .frame(minHeight: 28)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(fill, in: RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous))
             .overlay(alignment: .leading) {
@@ -217,14 +218,14 @@ struct SidebarNavRow: View {
                     Capsule()
                         .fill(AppTheme.accent)
                         .frame(width: 2.5)
-                        .padding(.vertical, 6)
-                        .padding(.leading, 1)
+                        .padding(.vertical, density.spacing(6))
+                        .padding(.leading, density.spacing(1))
                 }
             }
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous))
         }
         .buttonStyle(.plain)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, density.spacing(AppSpacing.sm))
         .onHover { isHovered = $0 }
         .animation(reduceMotion ? nil : .easeOut(duration: AppMotion.quick), value: isHovered)
         .animation(reduceMotion ? nil : .easeOut(duration: AppMotion.standard), value: isSelected)
@@ -242,9 +243,9 @@ struct SidebarGroup<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: density.spacing(1)) {
             RiverGroupLabel(text: title)
-                .padding(.horizontal, 18)
+                .padding(.horizontal, density.spacing(AppSpacing.panelPadding))
                 .padding(.top, density.spacing(10))
-                .padding(.bottom, density.spacing(2))
+                .padding(.bottom, density.spacing(AppSpacing.xxs))
             content()
         }
     }
@@ -257,7 +258,7 @@ struct SidebarIdentity: View {
     var body: some View {
         HStack(spacing: density.spacing(9)) {
             BrandMark(size: 26)
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: density.spacing(1)) {
                 Text("河流日记")
                     .font(AppTypography.rowTitle().weight(.semibold))
                     .foregroundStyle(Color.ink)
@@ -267,8 +268,8 @@ struct SidebarIdentity: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, density.spacing(12))
+        .padding(.horizontal, density.spacing(AppSpacing.panelPadding))
+        .padding(.top, density.spacing(AppSpacing.md))
         .padding(.bottom, density.spacing(10))
     }
 }
@@ -289,7 +290,7 @@ struct SidebarFooter: View {
     var onOpenSettings: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: density.spacing(4)) {
+        VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
             ForEach(Array(statusLines.enumerated()), id: \.offset) { index, line in
                 HStack(spacing: density.spacing(5)) {
                     Circle()
@@ -300,7 +301,7 @@ struct SidebarFooter: View {
                         .foregroundStyle(Color.secondaryInk)
                         .lineLimit(1)
                         .truncationMode(.tail)
-                    Spacer(minLength: density.spacing(4))
+                    Spacer(minLength: density.spacing(AppSpacing.xs))
                     if index == statusLines.count - 1 {
                         Button("设置", action: onOpenSettings)
                             .buttonStyle(.plain)
@@ -310,7 +311,7 @@ struct SidebarFooter: View {
                 }
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, density.spacing(AppSpacing.reading))
         .padding(.vertical, density.spacing(9))
         .accessibilityElement(children: .contain)
     }
