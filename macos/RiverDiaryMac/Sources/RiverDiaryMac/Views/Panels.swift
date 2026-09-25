@@ -509,3 +509,55 @@ struct SettingsFootnote: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+/// 一条安静的说明：图标 + 一句话 +（可选）一个动作和一次关闭。
+///
+/// 用在"数据少了一块、而且是可修的"这种地方：窗口标题没采到、某个来源没在跑。
+/// 它不是警告条——底色是 `chip`、文字是次级墨色，只有图标带一点色；出错有
+/// `StatusBadge` 和证据控制台，这里要的是被读到，不是被吓一跳。
+struct RiverInlineNotice: View {
+    @Environment(\.riverDensity) private var density
+    let systemImage: String
+    let text: String
+    var tint: Color = AppTheme.neutral
+    var actionTitle: String?
+    var action: (() -> Void)?
+    var onDismiss: (() -> Void)?
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: density.spacing(AppSpacing.sm)) {
+            Image(systemName: systemImage)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(tint)
+                .accessibilityHidden(true)
+            Text(text)
+                .font(AppTypography.metadata())
+                .foregroundStyle(Color.secondaryInk)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: density.spacing(AppSpacing.sm))
+            if let actionTitle, let action {
+                Button(actionTitle, action: action)
+                    .buttonStyle(.plain)
+                    .smallAction(dark: true)
+            }
+            if let onDismiss {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .iconAction()
+                .accessibilityLabel("不再提示")
+                .help("不再提示")
+            }
+        }
+        .padding(.horizontal, density.spacing(AppSpacing.sm))
+        .padding(.vertical, density.spacing(6))
+        .background(Color.chip, in: RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                .strokeBorder(Color.border, lineWidth: 1)
+        )
+    }
+}

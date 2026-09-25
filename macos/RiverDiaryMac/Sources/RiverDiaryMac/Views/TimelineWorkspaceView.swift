@@ -2,9 +2,11 @@ import SwiftUI
 
 /// The timeline workspace: one day, in order, with the evidence behind every
 /// node. Its job is to answer "what happened today and when" in one scan, so the
-/// page leads with a whole-day overview and then the rows.
+/// page leads with the day's numbers, keeps the shape of the day pinned in the
+/// header, and then lays out the rows.
 struct TimelineWorkspaceView: View {
     @Environment(\.riverDensity) private var density
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ingestion: DataIngestionStore
@@ -27,6 +29,18 @@ struct TimelineWorkspaceView: View {
     @State private var journalError: String?
     @State private var showsDiscardConfirmation = false
     @State private var isJournalExpanded = false
+    /// 已展开的碎片带。折叠状态属于页面：切一天、换筛选都不该记住另一天的展开。
+    @State private var expandedRunIDs: Set<String> = []
+    /// 时间带拖到哪里，页面就滚到哪一行；`.row(nil)` 表示停下来。用 `Equatable`
+    /// 的枚举而不是一个可选 String，是为了让"再点同一条"也能再次触发滚动。
+    @State private var scrollTarget: ScrollTarget?
+    /// 标题权限的说明关掉之后不再出现（设置里的"问题"清单仍会一直列着它）。
+    @AppStorage("timeline.titleNoticeDismissed") private var titleCaptureNoticeDismissed = false
+
+    private enum ScrollTarget: Hashable {
+        case row(String)
+        case journal
+    }
 
     private var entry: DiaryEntry { store.entry(for: selectedDate) }
     private var captures: [QuickCapture] { store.captures(for: entry) }
@@ -46,18 +60,12 @@ struct TimelineWorkspaceView: View {
 
     var body: some View {
         let timeline = buildTimeline()
-        let filteredItems = filteredTimelineItems(timeline)
-        return RiverPage {
-            PageHeader("时间线", context: subheadline(timeline)) { quickNoteButton }
-                .riverAppear(index: 0)
-            dayOverview(timeline)
-                .riverAppear(index: 1)
-            journalCard
-                .riverAppear(index: 2)
-            timelineCard(timeline, filtered: filteredItems)
-                .frame(minHeight: 380)
-                .riverAppear(index: 3)
+        let displayed = displayedItems(timeline)
+        return VStack(spacing: 0) {
+            pinnedHeader(timeline, displayed: displayed)
+            pageBody(timeline, displayed: displayed)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { openRequestedJournalEditor() }
         .onChange(of: shouldExpandJournalEditor) { _, requested in
             if requested { openRequestedJournalEditor() }
@@ -65,6 +73,7 @@ struct TimelineWorkspaceView: View {
         .onChange(of: selectedDate) { _, _ in
             journalError = nil
             isJournalExpanded = editor.buffer(for: entry).isDirty
+            expandedRunIDs = []
         }
         .confirmationDialog(
             "丢弃未保存的日记？",
@@ -81,6 +90,52 @@ struct TimelineWorkspaceView: View {
         }
     }
 
+    // MARK: Scaffold
+
+    /// 页头钉住：标题 + 一天的时间带。
+    ///
+    /// 时间带本来躺在"今天"面板里，滚到第三行就看不见了——而它回答的正是
+    /// 列表回答不了的那个问题（"我现在看的这段在一天里的哪里"）。钉住之后它
+    /// 同时是一条定位尺：悬停读时刻，拖动跳到那一刻所在的行。
+    private func pinnedHeader(_ timeline: ActivityTimeline, displayed: [ActivityTimelineItem]) -> some View {
+        RiverHeaderBand {
+            PageHeader("时间线", context: subheadline(timeline)) { quickNoteButton }
+                .riverAppear(index: 0)
+            RiverDayRibbon(
+                date: selectedDate,
+                items: timeline.items,
+                now: isToday ? Date() : nil,
+                onScrub: { moment in scrub(to: moment, timeline: timeline, displayed: displayed, commit: false) },
+                onScrubCommit: { moment in scrub(to: moment, timeline: timeline, displayed: displayed, commit: true) }
+            )
+            .riverAppear(index: 1)
+        }
+    }
+
+    private func pageBody(_ timeline: ActivityTimeline, displayed: [ActivityTimelineItem]) -> some View {
+        RiverPageBody(lazy: false) {
+            ScrollViewReader { proxy in
+                VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
+                    dayOverview(timeline)
+                        .riverAppear(index: 0)
+                    journalCard
+                        .id(ScrollTarget.journal)
+                        .riverAppear(index: 1)
+                    timelineCard(timeline, displayed: displayed)
+                        .frame(minHeight: 380)
+                        .riverAppear(index: 2)
+                }
+                .onChange(of: scrollTarget) { _, target in
+                    guard let target else { return }
+                    withAnimation(reduceMotion ? nil : .easeOut(duration: AppMotion.calm)) {
+                        proxy.scrollTo(target, anchor: .center)
+                    }
+                    scrollTarget = nil
+                }
+            }
+        }
+    }
+
     // MARK: Day overview
 
     private func dayOverview(_ timeline: ActivityTimeline) -> some View {
@@ -91,6 +146,7 @@ struct TimelineWorkspaceView: View {
             hasWriting: !entry.displayOverview.isEmpty
         )
     }
+
     private var quickNoteButton: some View {
         Button(action: onShowCapture) {
             Label("写一句", systemImage: "square.and.pencil")
@@ -216,6 +272,8 @@ struct TimelineWorkspaceView: View {
         guard shouldExpandJournalEditor else { return }
         isJournalExpanded = true
         shouldExpandJournalEditor = false
+        // 编辑器在行列表上方，展开之后要能看见它：不滚过去等于什么都没发生。
+        scrollTarget = .journal
     }
 
     private func saveJournal() {
@@ -237,32 +295,66 @@ struct TimelineWorkspaceView: View {
 
     // MARK: Timeline
 
-    private func timelineCard(_ timeline: ActivityTimeline, filtered: [ActivityTimelineItem]) -> some View {
+    private func timelineCard(_ timeline: ActivityTimeline, displayed: [ActivityTimelineItem]) -> some View {
         RiverPanel(
             title: "时间线",
             systemImage: "list.bullet.indent",
             accent: AppTheme.accent,
-            trailingText: "\(filtered.count) 个节点",
+            trailingText: "\(timeline.recordedNodeCount) 个节点",
             padding: AppSpacing.sm
         ) {
             VStack(alignment: .leading, spacing: 0) {
                 timelineToolbar(timeline)
                 RiverRule()
-                if filtered.isEmpty {
+                if displayed.isEmpty {
                     noMatches(timeline)
                 } else {
+                    if let notice = titleCaptureNotice {
+                        RiverInlineNotice(
+                            systemImage: "text.magnifyingglass",
+                            text: notice,
+                            tint: AppTheme.warning,
+                            actionTitle: "打开权限",
+                            action: { activity.requestAccessibility() },
+                            onDismiss: { titleCaptureNoticeDismissed = true }
+                        )
+                        .padding(.top, density.spacing(AppSpacing.sm))
+                    }
                     RiverTimelineView(
-                        items: filtered,
+                        items: displayed,
                         nowSession: nowSession,
                         selectedItemID: selectedItemID,
                         onSelect: selectTimelineItem,
                         onWriteNote: onShowCapture,
                         inspectorSourceFocusID: $inspectorSourceFocusID,
-                        isScrollable: false
+                        isScrollable: false,
+                        expandedRunIDs: expandedRunIDs,
+                        onToggleRun: toggleRun
                     )
+                    if let foldingNote = foldingNote(timeline) {
+                        RiverRule()
+                        SettingsFootnote(text: foldingNote)
+                            .padding(.top, density.spacing(AppSpacing.sm))
+                    }
                 }
             }
         }
+    }
+
+    /// "行数比节点少"必须有个能读到的解释，否则折叠看起来像丢数据。
+    private func foldingNote(_ timeline: ActivityTimeline) -> String? {
+        let folded = timeline.fragmentNodeCount
+        guard folded > 0, !hasActiveFilter else { return nil }
+        let runs = timeline.foldedItems.filter(\.isFragmentRun).count
+        return "另有 \(folded) 段不足 3 分钟的碎片折进 \(runs) 条碎片带，逐条证据仍在导出、搜索和证据库里。"
+    }
+
+    /// 开了标题采集却没有辅助功能权限：证据只能到应用名，而"这一段时间在做什么"
+    /// 恰恰是标题回答的。这件事原来只写进设置里的"问题"清单——用户看不到后果，
+    /// 只看到一行行"没有记录的时间"。说一次，可以关掉；关掉之后它还留在设置里。
+    private var titleCaptureNotice: String? {
+        guard activity.capturesTitles, !activity.accessibilityGranted, !titleCaptureNoticeDismissed else { return nil }
+        return "窗口标题没有采集到：辅助功能权限未授予。这一天的证据只能记到应用名。"
     }
 
     private func selectTimelineItem(_ item: ActivityTimelineItem, focusID: String) {
@@ -270,21 +362,51 @@ struct TimelineWorkspaceView: View {
         onSelectTimelineItem(item, focusID)
     }
 
+    private func toggleRun(_ item: ActivityTimelineItem) {
+        if expandedRunIDs.contains(item.id) {
+            expandedRunIDs.remove(item.id)
+        } else {
+            expandedRunIDs.insert(item.id)
+        }
+    }
+
+    /// 把时间带上的一点翻译成页面上的一行。落在折叠的碎片带上时先展开它——
+    /// 拖到 14:20 却只看到"12 段碎片"，等于没告诉用户那一刻是什么。
+    private func scrub(
+        to moment: Date,
+        timeline: ActivityTimeline,
+        displayed: [ActivityTimelineItem],
+        commit: Bool
+    ) {
+        let rows = TimelineDisplayList.rows(
+            items: displayed,
+            expandedRunIDs: expandedRunIDs,
+            hasNowRow: nowSession != nil
+        )
+        guard let target = TimelineDisplayList.scrubTarget(for: moment, rows: rows) else { return }
+        if let runID = target.expandsRunID { expandedRunIDs.insert(runID) }
+        scrollTarget = .row(target.rowID)
+        if commit { selectTimelineItem(target.item, focusID: "timeline:\(target.item.id)") }
+    }
+
     private var hasActiveFilter: Bool {
         timelineCategory != nil || timelineFavoritesOnly || timelineNeedsReviewOnly
             || !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func filteredTimelineItems(_ timeline: ActivityTimeline) -> [ActivityTimelineItem] {
-        timeline.items.filter { item in
-            if timelineFavoritesOnly { return item.isFavorite && item.matches(query: query, category: nil) }
-            if timelineNeedsReviewOnly { return needsReview(item) && item.matches(query: query, category: nil) }
-            return item.matches(query: query, category: timelineCategory)
-        }
+    /// 列表默认读**折叠后**的展示列表；一旦有筛选就摊平。
+    ///
+    /// 一个查询不该命中一条"碎片带"却看不见命中的是哪一段：筛选与搜索永远
+    /// 作用在真实节点上，聚合只是无筛选时的阅读方式。
+    private func displayedItems(_ timeline: ActivityTimeline) -> [ActivityTimelineItem] {
+        guard hasActiveFilter else { return timeline.foldedItems }
+        return ActivityTimelineEngine.flattenFragments(timeline.foldedItems).filter(matches)
     }
 
-    private func needsReview(_ item: ActivityTimelineItem) -> Bool {
-        item.needsReview
+    private func matches(_ item: ActivityTimelineItem) -> Bool {
+        if timelineFavoritesOnly { return item.isFavorite && item.matches(query: query, category: nil) }
+        if timelineNeedsReviewOnly { return item.needsReview && item.matches(query: query, category: nil) }
+        return item.matches(query: query, category: timelineCategory)
     }
 
     private func timelineToolbar(_ timeline: ActivityTimeline) -> some View {
@@ -314,7 +436,7 @@ struct TimelineWorkspaceView: View {
                         timelineNeedsReviewOnly = false
                     }
                 }
-                if timeline.items.contains(where: needsReview) {
+                if timeline.items.contains(where: \.needsReview) {
                     FilterChip(title: "待确认", isSelected: timelineNeedsReviewOnly) {
                         timelineNeedsReviewOnly.toggle()
                         timelineCategory = nil
@@ -352,7 +474,7 @@ struct TimelineWorkspaceView: View {
             title: timeline.items.isEmpty ? "这一天还没有记录。" : "没有符合条件的节点。",
             message: timeline.items.isEmpty
                 ? "使用身边的应用后，带来源的事实会在这里出现。"
-                : "换一个关键词，或清除筛选查看全部 \(timeline.items.count) 个节点。",
+                : "换一个关键词，或清除筛选查看全部 \(timeline.recordedNodeCount) 个节点。",
             symbol: timeline.items.isEmpty ? "clock" : "line.3.horizontal.decrease.circle"
         )
         .padding(.vertical, density.spacing(AppSpacing.lg))
@@ -361,11 +483,11 @@ struct TimelineWorkspaceView: View {
 
 // MARK: - Day overview
 
-/// Four facts and the shape of the day.
+/// The day's numbers, in one compact strip.
 ///
-/// The ribbon is what makes the page readable without scrolling: a list of rows
-/// can say what happened, but only a laid-out day can show where the recorded
-/// evidence actually sits and how much of the day holds none.
+/// 这一块曾经同时装着四个大统计、一天的时间带和一段说明，光它自己就占掉一屏；
+/// 时间带搬到页头钉住之后，这里只留下数字本身。四个数字各回答一个问题：
+/// 记了多久、其中多少是专注、最长的一段有多长、有多少碎片被折起。
 struct TimelineDayOverview: View {
     @Environment(\.riverDensity) private var density
 
@@ -378,47 +500,51 @@ struct TimelineDayOverview: View {
         RiverPanel(
             title: isToday ? "今天" : date.formatted(.dateTime.month().day()),
             systemImage: "calendar.day.timeline.left",
-            detail: recordedSpan,
+            detail: panelDetail,
             accent: AppTheme.accent,
             tint: AppTheme.accent
         ) {
-            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
+            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
                 HStack(alignment: .top, spacing: 0) {
-                    RiverStat(
-                        title: "已记录",
-                        value: ActivityFormatter.time(timeline.totalDuration),
-                        detail: "macOS 实时片段"
+                    metric("已记录", ActivityFormatter.time(timeline.totalDuration), "macOS 实时片段")
+                    RiverStatDivider()
+                    metric("专注", ActivityFormatter.time(timeline.focusDuration), "工作 · 学习 · 创作")
+                    RiverStatDivider()
+                    metric(
+                        "最长专注",
+                        timeline.longestFocusSpan > 0 ? ActivityFormatter.time(timeline.longestFocusSpan) : "—",
+                        "单段最长的一次"
                     )
                     RiverStatDivider()
-                    RiverStat(
-                        title: "实时专注",
-                        value: ActivityFormatter.time(timeline.focusDuration),
-                        detail: "工作 · 学习 · 创作"
-                    )
-                    RiverStatDivider()
-                    RiverStat(
-                        title: "时间节点",
-                        value: "\(timeline.items.count)",
-                        detail: "含空档与快记"
-                    )
-                    RiverStatDivider()
-                    RiverStat(
-                        title: "日记",
-                        value: hasWriting ? "已写" : "—",
-                        detail: "本机加密保存"
+                    metric(
+                        "碎片",
+                        timeline.fragmentNodeCount > 0 ? "\(timeline.fragmentNodeCount) 段" : "—",
+                        "不足 3 分钟，已折进碎片带"
                     )
                 }
-
-                RiverRule()
-
-                RiverDayRibbon(date: date, items: timeline.items, now: isToday ? Date() : nil)
 
                 SettingsFootnote(text: coverageNote)
             }
         }
     }
 
-    /// Reads as the panel's trailing metadata: the recorded span, not the clock.
+    /// 一个数字，一行说明。统计的解释用 `help` 挂在悬停上，不再各占一行——
+    /// 四行小字叠起来正好把面板撑高一层，而它们只在第一次看的时候有用。
+    private func metric(_ title: String, _ value: String, _ detail: String) -> some View {
+        RiverStat(title: title, value: value, detail: nil, valueFont: AppTypography.metricSmall())
+            .help("\(title)：\(detail)")
+    }
+
+    /// Reads as the panel's trailing metadata: the recorded span, plus whether the
+    /// day has been written. 日记 曾经独占一个大统计位，而它只有一个比特的信息量。
+    private var panelDetail: String? {
+        var parts: [String] = []
+        if let span = recordedSpan { parts.append(span) }
+        parts.append(hasWriting ? "已写日记" : "未写日记")
+        return parts.joined(separator: " · ")
+    }
+
+    /// The recorded span, not the clock.
     private var recordedSpan: String? {
         let recorded = timeline.items.filter { $0.kind != .gap }
         guard let first = recorded.map(\.start).min(), let last = recorded.map(\.end).max() else { return nil }

@@ -80,6 +80,18 @@ struct InspectorPanel: View {
 
     // MARK: Episode
 
+    /// 碎片带不是一个可以整理的证据：它是展示层的聚合，只有它的成员各自有标注键。
+    /// 与其给一个按下去没有反应的"编辑"，不如说清它是什么、要去哪里看。
+    private func fragmentRunNote(_ item: ActivityTimelineItem) -> some View {
+        section("碎片带") {
+            Text("这里 \(item.fragments.count) 段记录都不到 3 分钟，在时间线里折成了一条。展开这一行可以逐条查看，每一段都能单独整理。")
+                .font(AppTypography.secondary())
+                .foregroundStyle(Color.secondaryInk)
+                .lineSpacing(5)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private func episodeInspector(_ item: ActivityTimelineItem) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
@@ -99,6 +111,9 @@ struct InspectorPanel: View {
                 if isEditing {
                     editor(item)
                 } else {
+                    if item.isFragmentRun {
+                        fragmentRunNote(item)
+                    }
                     section("摘要") {
                         Text(item.summary)
                             .font(AppTypography.secondary())
@@ -181,9 +196,13 @@ struct InspectorPanel: View {
                         Button("保存整理") { toggleEditing(item) }
                             .primaryCTA()
                     } else {
-                        Button("编辑") { toggleEditing(item) }
-                            .buttonStyle(.plain)
-                            .smallAction(dark: true)
+                        // 只有真实的活动块能整理。空档、快记、碎片带没有标注键，
+                        // 那个"编辑"按下去既不会保存也不会报错。
+                        if item.isAnnotatable {
+                            Button("编辑") { toggleEditing(item) }
+                                .buttonStyle(.plain)
+                                .smallAction(dark: true)
+                        }
                         if item.annotation != nil {
                             Button("清除整理") {
                                 if let key = item.annotationKey {

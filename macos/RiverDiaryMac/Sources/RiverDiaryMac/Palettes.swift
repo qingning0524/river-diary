@@ -4,6 +4,29 @@ import SwiftUI
 //
 // 八套完整主题（浅色 + 深色）。中性色画布随配色微调色相，状态色（正常/警示/错误）
 // 保持全局统一。用户在 设置 · 外观 里切换，选择立即生效并持久化。
+//
+// ## 景深色阶（2026-09-26 重算）
+//
+// 原表的柔和水洗色彼此只差 1.04–1.16 个对比度档：浅色下 seafoam 的面板描边
+// `#EAEFF4` 压在画布 `#F0F3F8` 上只有 1.04:1，深色下的行分隔线（白 4.5% 压进面板）
+// 只有 1.009:1——等于没画。整页因此显得平、像未完成，而不是"柔和"。
+//
+// 现在每个值都由下面的配方生成，八套配色 × 明暗同构（保留原本的色相与彩度比例，
+// 只把"明度台阶"拉到可感知区间）：
+//
+//   令牌              浅色（对白色/画布）      深色（对面板底）
+//   canvas            白 → 1.17                面板 → 1.10（更深）
+//   border            画布 → 1.26              白 10%（darkBorderAlpha）
+//   separator         白 → 1.20                白 8%（darkSeparatorAlpha）
+//   strongSeparator   画布 → 1.40              面板 → 1.30
+//   chip              白 → 1.15                面板 → 1.15
+//   editor            白 → 1.14                面板 → 1.07（更深）
+//   strongSurface     白                       面板 → 1.13
+//   sidebar           画布 → 1.07              画布 → 1.07
+//   ink3              白 → 3.25                原值（约 3.6）
+//
+// `PaletteDepthTests` 逐套配色把这张表钉住：任何一格掉回"看不见"都会失败。
+// 调整色值请连同 DESIGN.md 的色阶表和那条测试一起改。
 
 struct RiverPaletteColorSet {
     let canvas: String
@@ -73,17 +96,17 @@ enum RiverPalette: String, CaseIterable, Identifiable {
         case .seafoam:
             return RiverPaletteTheme(
                 light: .init(
-                    canvas: "#F0F3F8", sidebar: "#F7FAFD", surface: "#FFFFFF", strongSurface: "#FFFFFF",
-                    editor: "#F1F4F9", chip: "#F0F3F8",
-                    border: "#EAEFF4", separator: "#F1F4F8", strongSeparator: "#DDE4EC",
-                    ink: "#1B2330", ink2: "#5C6776", ink3: "#94A0B0",
+                    canvas: "#EAEDF2", sidebar: "#F7FAFD", surface: "#FFFFFF", strongSurface: "#FFFFFF",
+                    editor: "#E5E8ED", chip: "#ECEFF4",
+                    border: "#D0D5D9", separator: "#E8EBEE", strongSeparator: "#C4CBD2",
+                    ink: "#1B2330", ink2: "#5C6776", ink3: "#85909E",
                     accent: "#3E74DC", accentSoft: "#E8EFFD",
                     gradientStart: "#4C80E8", gradientEnd: "#3E9BD6"
                 ),
                 dark: .init(
-                    canvas: "#0D111C", sidebar: "#141A28", surface: "#151B2A", strongSurface: "#1C2436",
-                    editor: "#0F1420", chip: "#1B2336",
-                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#2A3346",
+                    canvas: "#0D111C", sidebar: "#131926", surface: "#151B2A", strongSurface: "#1D2538",
+                    editor: "#0F1420", chip: "#1E273B",
+                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#273042",
                     ink: "#E9EDF5", ink2: "#9AA6B8", ink3: "#67738A",
                     accent: "#6FA0FF", accentSoft: "#1C2A4A",
                     gradientStart: "#5D8BE8", gradientEnd: "#4E9EDD"
@@ -92,17 +115,17 @@ enum RiverPalette: String, CaseIterable, Identifiable {
         case .celadon:
             return RiverPaletteTheme(
                 light: .init(
-                    canvas: "#EDF3F0", sidebar: "#F4F9F6", surface: "#FFFFFF", strongSurface: "#FFFFFF",
-                    editor: "#E8F0EC", chip: "#E7EFEB",
-                    border: "#DFE9E4", separator: "#EAF0EC", strongSeparator: "#CFE0D8",
-                    ink: "#1A2622", ink2: "#576962", ink3: "#8C9C94",
+                    canvas: "#E9EFEC", sidebar: "#F4F9F6", surface: "#FFFFFF", strongSurface: "#FFFFFF",
+                    editor: "#E2EAE6", chip: "#E9F1ED",
+                    border: "#CED7D3", separator: "#E6ECE8", strongSeparator: "#BECEC7",
+                    ink: "#1A2622", ink2: "#576962", ink3: "#83928B",
                     accent: "#23A183", accentSoft: "#DFF3ED",
                     gradientStart: "#2BB893", gradientEnd: "#35C2AE"
                 ),
                 dark: .init(
-                    canvas: "#0B1210", sidebar: "#101917", surface: "#121A17", strongSurface: "#182320",
-                    editor: "#0E1513", chip: "#1A2521",
-                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#22332C",
+                    canvas: "#080E0C", sidebar: "#0F1715", surface: "#121A17", strongSurface: "#1A2622",
+                    editor: "#0C1210", chip: "#1C2723",
+                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#21312A",
                     ink: "#E7F0EC", ink2: "#97A8A0", ink3: "#66766F",
                     accent: "#4ECDAF", accentSoft: "#11302A",
                     gradientStart: "#3BBD9B", gradientEnd: "#3FC7B4"
@@ -111,17 +134,17 @@ enum RiverPalette: String, CaseIterable, Identifiable {
         case .sunrise:
             return RiverPaletteTheme(
                 light: .init(
-                    canvas: "#F6F1EA", sidebar: "#FAF6F0", surface: "#FFFFFF", strongSurface: "#FFFFFF",
-                    editor: "#F0E8DD", chip: "#F1E9DE",
-                    border: "#EAE1D4", separator: "#F2EBE1", strongSeparator: "#E0D4C2",
-                    ink: "#27201A", ink2: "#6E6357", ink3: "#A39688",
+                    canvas: "#F1ECE6", sidebar: "#FAF6F0", surface: "#FFFFFF", strongSurface: "#FFFFFF",
+                    editor: "#EFE7DC", chip: "#F6EEE3",
+                    border: "#DCD3C7", separator: "#F0E9E0", strongSeparator: "#D4C8B7",
+                    ink: "#27201A", ink2: "#6E6357", ink3: "#998D80",
                     accent: "#D0701F", accentSoft: "#FAE8D6",
                     gradientStart: "#E58B3F", gradientEnd: "#DE6440"
                 ),
                 dark: .init(
-                    canvas: "#141009", sidebar: "#1D1710", surface: "#1D1710", strongSurface: "#251D14",
-                    editor: "#171209", chip: "#262017",
-                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#332A1E",
+                    canvas: "#0F0C06", sidebar: "#1A140E", surface: "#1D1710", strongSurface: "#2A2218",
+                    editor: "#141007", chip: "#2A241A",
+                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#352C20",
                     ink: "#F2EBE2", ink2: "#AFA394", ink3: "#7B7164",
                     accent: "#F09A55", accentSoft: "#33230E",
                     gradientStart: "#E89A55", gradientEnd: "#E0714A"
@@ -130,17 +153,17 @@ enum RiverPalette: String, CaseIterable, Identifiable {
         case .iris:
             return RiverPaletteTheme(
                 light: .init(
-                    canvas: "#F0EFF7", sidebar: "#F5F4FA", surface: "#FFFFFF", strongSurface: "#FFFFFF",
-                    editor: "#EAE8F3", chip: "#EBE9F4",
-                    border: "#E3E1EF", separator: "#EEEDF5", strongSeparator: "#D9D6EA",
-                    ink: "#211F2E", ink2: "#635F78", ink3: "#9894AB",
+                    canvas: "#EDECF4", sidebar: "#F5F4FA", surface: "#FFFFFF", strongSurface: "#FFFFFF",
+                    editor: "#E9E7F2", chip: "#F0EEF9",
+                    border: "#D5D3E0", separator: "#EAE9F1", strongSeparator: "#CBC8DB",
+                    ink: "#211F2E", ink2: "#635F78", ink3: "#908CA2",
                     accent: "#6F63E6", accentSoft: "#EAE8FC",
                     gradientStart: "#8377EE", gradientEnd: "#6A60DF"
                 ),
                 dark: .init(
-                    canvas: "#0F0E16", sidebar: "#16151F", surface: "#16151F", strongSurface: "#1D1C28",
-                    editor: "#121118", chip: "#1D1C29",
-                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#2A2840",
+                    canvas: "#09080F", sidebar: "#13121B", surface: "#16151F", strongSurface: "#21202D",
+                    editor: "#0E0D13", chip: "#232130",
+                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#2C2A42",
                     ink: "#ECEAF5", ink2: "#A29EB5", ink3: "#6F6B84",
                     accent: "#9C92F2", accentSoft: "#25224A",
                     gradientStart: "#968CF2", gradientEnd: "#7E74E8"
@@ -149,17 +172,17 @@ enum RiverPalette: String, CaseIterable, Identifiable {
         case .berry:
             return RiverPaletteTheme(
                 light: .init(
-                    canvas: "#F7F1F3", sidebar: "#FAF5F6", surface: "#FFFFFF", strongSurface: "#FFFFFF",
-                    editor: "#F1E7EA", chip: "#F2E8EB",
-                    border: "#EFE1E5", separator: "#F4EAED", strongSeparator: "#E8D5DB",
-                    ink: "#2A1E23", ink2: "#6F5B62", ink3: "#A39198",
+                    canvas: "#F2ECEE", sidebar: "#FAF5F6", surface: "#FFFFFF", strongSurface: "#FFFFFF",
+                    editor: "#F0E6E9", chip: "#F7EDF0",
+                    border: "#DFD2D5", separator: "#F2E8EB", strongSeparator: "#D8C6CC",
+                    ink: "#2A1E23", ink2: "#6F5B62", ink3: "#9B8A91",
                     accent: "#D5537B", accentSoft: "#FBE3EB",
                     gradientStart: "#E3698D", gradientEnd: "#D84E77"
                 ),
                 dark: .init(
-                    canvas: "#150F11", sidebar: "#1D1517", surface: "#1D1517", strongSurface: "#251B1E",
-                    editor: "#181013", chip: "#271C1F",
-                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#38242B",
+                    canvas: "#0E090B", sidebar: "#191214", surface: "#1D1517", strongSurface: "#2A1F23",
+                    editor: "#140D10", chip: "#2D2124",
+                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#3C272E",
                     ink: "#F2E9EC", ink2: "#B09DA4", ink3: "#7E6C73",
                     accent: "#F2819F", accentSoft: "#3A1E28",
                     gradientStart: "#EE85A5", gradientEnd: "#DE6086"
@@ -168,16 +191,16 @@ enum RiverPalette: String, CaseIterable, Identifiable {
         case .moke:
             return RiverPaletteTheme(
                 light: .init(
-                    canvas: "#EDF0F4", sidebar: "#F4F7FA", surface: "#FFFFFF", strongSurface: "#FFFFFF",
-                    editor: "#E8ECF1", chip: "#E9EDF2",
-                    border: "#DFE5EC", separator: "#EBEFF4", strongSeparator: "#D4DCE5",
-                    ink: "#1D242D", ink2: "#5A6470", ink3: "#939CA8",
+                    canvas: "#EAEDF1", sidebar: "#F4F7FA", surface: "#FFFFFF", strongSurface: "#FFFFFF",
+                    editor: "#E4E8EE", chip: "#EBEFF5",
+                    border: "#CFD5DB", separator: "#E7EBF0", strongSeparator: "#C3CBD3",
+                    ink: "#1D242D", ink2: "#5A6470", ink3: "#878F9B",
                     accent: "#47618B", accentSoft: "#E4EAF2",
                     gradientStart: "#5D7FA9", gradientEnd: "#41608A"
                 ),
                 dark: .init(
-                    canvas: "#0D1013", sidebar: "#14181D", surface: "#14181D", strongSurface: "#1B2129",
-                    editor: "#0F1317", chip: "#1B2129",
+                    canvas: "#090C0F", sidebar: "#11151A", surface: "#14181D", strongSurface: "#1D232C",
+                    editor: "#0C1014", chip: "#1E252D",
                     border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#262E38",
                     ink: "#E9EDF2", ink2: "#9BA5B0", ink3: "#6B7580",
                     accent: "#7FA0C9", accentSoft: "#1F2C3D",
@@ -187,17 +210,17 @@ enum RiverPalette: String, CaseIterable, Identifiable {
         case .cocoa:
             return RiverPaletteTheme(
                 light: .init(
-                    canvas: "#F4F0EA", sidebar: "#F9F5EF", surface: "#FFFFFF", strongSurface: "#FFFFFF",
-                    editor: "#EFE9E0", chip: "#F0EAE1",
-                    border: "#E7DFD3", separator: "#F1EBE2", strongSeparator: "#DDD2C2",
-                    ink: "#26201A", ink2: "#6B6156", ink3: "#A29788",
+                    canvas: "#F1EDE7", sidebar: "#F9F5EF", surface: "#FFFFFF", strongSurface: "#FFFFFF",
+                    editor: "#EDE7DE", chip: "#F4EEE5",
+                    border: "#DCD4C9", separator: "#F0EAE1", strongSeparator: "#D4C9BA",
+                    ink: "#26201A", ink2: "#6B6156", ink3: "#988D7F",
                     accent: "#A9713C", accentSoft: "#F5E9DC",
                     gradientStart: "#C08552", gradientEnd: "#A96A38"
                 ),
                 dark: .init(
-                    canvas: "#131009", sidebar: "#1B1710", surface: "#1B1610", strongSurface: "#241D14",
-                    editor: "#171209", chip: "#262017",
-                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#352C1F",
+                    canvas: "#0D0A05", sidebar: "#17130D", surface: "#1B1610", strongSurface: "#292117",
+                    editor: "#120E07", chip: "#292319",
+                    border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#342B1F",
                     ink: "#F2ECE2", ink2: "#ACA196", ink3: "#7D7365",
                     accent: "#D89A5F", accentSoft: "#33240F",
                     gradientStart: "#CE9155", gradientEnd: "#B87B41"
@@ -206,16 +229,16 @@ enum RiverPalette: String, CaseIterable, Identifiable {
         case .blossom:
             return RiverPaletteTheme(
                 light: .init(
-                    canvas: "#F8F2F5", sidebar: "#FBF6F8", surface: "#FFFFFF", strongSurface: "#FFFFFF",
-                    editor: "#F4EAEE", chip: "#F4EBEF",
-                    border: "#F0E3E9", separator: "#F6EEF1", strongSeparator: "#EBD8E0",
-                    ink: "#2B2026", ink2: "#75606B", ink3: "#A895A0",
+                    canvas: "#F1ECEF", sidebar: "#FBF6F8", surface: "#FFFFFF", strongSurface: "#FFFFFF",
+                    editor: "#F0E5EA", chip: "#F6EDF1",
+                    border: "#DED2D7", separator: "#F0E8EB", strongSeparator: "#D7C6CD",
+                    ink: "#2B2026", ink2: "#75606B", ink3: "#9C8A94",
                     accent: "#DB6E9C", accentSoft: "#FBE7F0",
                     gradientStart: "#EE8CB4", gradientEnd: "#E0679E"
                 ),
                 dark: .init(
-                    canvas: "#150F13", sidebar: "#1D1519", surface: "#1D1519", strongSurface: "#251B20",
-                    editor: "#180F14", chip: "#271D22",
+                    canvas: "#0E0A0D", sidebar: "#1A1216", surface: "#1D1519", strongSurface: "#2A1F25",
+                    editor: "#150D11", chip: "#2C2126",
                     border: "#FFFFFF", separator: "#FFFFFF", strongSeparator: "#3A2833",
                     ink: "#F4EBEF", ink2: "#B39FAB", ink3: "#806E79",
                     accent: "#F191BB", accentSoft: "#3A2130",

@@ -46,6 +46,14 @@ func paletteRuleColor(_ keyPath: KeyPath<RiverPaletteColorSet, String>, darkAlph
     })
 }
 
+/// 发丝线在深色下的白透明度配方。
+///
+/// 原值 0.07 / 0.045 是"几乎看不见"的：白 4.5% 压在深色面板上只有 1.009:1，
+/// 行分隔线在深色下等于没有，深色界面因此格外平。深色的分层靠线条而不是面，
+/// 所以这两个值比浅色更需要"画得出来"。由 `PaletteDepthTests` 守卫。
+let darkBorderAlpha: CGFloat = 0.10
+let darkSeparatorAlpha: CGFloat = 0.08
+
 extension Color {
     init(hex: String) {
         let value = hex.replacingOccurrences(of: "#", with: "")
@@ -76,8 +84,8 @@ extension Color {
     static let editor = paletteColor(\.editor)
     /// 设置窗口左栏的底色。
     ///
-    /// 主题里 `sidebar` 与 `canvas` 只差几个色阶（浅色下 #F7FAFD vs #F0F3F8），
-    /// 直接铺 `sidebarSurface` 会让左栏和内容糊成一片。这里把 `ink` 按 7% 压进
+    /// 主题里 `sidebar` 与 `canvas` 只差几个色阶（浅色下 #F7FAFD vs #EAEDF2），
+    /// 直接铺 `sidebarSurface` 会让左栏和内容糊成一片。这里把 `ink` 按固定比例压进
     /// sidebar，得到"比内容明确低一档"的左栏底——配方固定，八套配色 × 明暗都自适应，
     /// 不需要为每套配色手写一个新的十六进制值。
     static let settingsRailSurface = Color(nsColor: railSurfaceNSColor)
@@ -85,11 +93,19 @@ extension Color {
 
     // MARK: Rules
     /// Panel outline. A hairline, never a heavy border.
-    static let border = paletteRuleColor(\.border, darkAlpha: 0.07)
+    static let border = paletteRuleColor(\.border, darkAlpha: darkBorderAlpha)
     /// Row divider inside a panel.
-    static let separator = paletteRuleColor(\.separator, darkAlpha: 0.045)
+    static let separator = paletteRuleColor(\.separator, darkAlpha: darkSeparatorAlpha)
     /// Stronger section rule, used only between page-level groups.
     static let strongSeparator = paletteColor(\.strongSeparator)
+
+    // MARK: Timeline spine
+    //
+    // 时间线的脊柱：一天里"有记录"的那根线。原来的 `accent@0.30` 只有 1.48:1
+    //（浅色）/ 1.75:1（深色），设计文档写了"连续脊柱"而像素里看不见；空档段用
+    // separator（1.10:1）更是完全断掉。现在浅色 0.72、深色 0.60，最低一套配色
+    //（blossom 浅色）也有 2.2:1：脊柱读得出来，且仍然明显轻于实心节点。
+    static let timelineSpine = Color(nsColor: timelineSpineNSColor)
 
     // MARK: Action
     static let ctaBackground = paletteColor(\.accent)
@@ -444,9 +460,28 @@ struct StatusBadge: View {
 
 /// `ink` 压进 `sidebar` 的比例。数值越大左栏越重。
 ///
-/// 这个常量由 `SettingsChromeTests` 守卫：太小则左栏与内容分不出来，
-/// 太大则左栏像一块压下来的重色。
-let settingsRailBlendAmount: CGFloat = 0.07
+/// 这个常量由 `SettingsChromeTests` 和 `SettingsRailContrastTests` 守卫：
+/// 太小则左栏与内容分不出来，太大则左栏像一块压下来的重色。
+///
+/// 2026-09-26：0.07 → 0.13。画布从 `#F0F3F8` 压到 `#EAEDF2`（拉开面板与页面的
+/// 台阶）之后，原来那档左栏正好落在画布上（只差 1–2 个色阶），两栏糊成一片。
+let settingsRailBlendAmount: CGFloat = 0.13
+
+/// 时间线脊柱的不透明度配方（accent 压进当前面板底色）。由 `PaletteDepthTests` 守卫：
+/// 浅色最低一套配色 2.2:1，深色约 3.2:1 起。
+let timelineSpineAlphaLight: CGFloat = 0.72
+let timelineSpineAlphaDark: CGFloat = 0.60
+
+/// 时间线脊柱色：随外观解析（和 `paletteColor` 同样的动态机制）。
+var timelineSpineNSColor: NSColor {
+    NSColor(name: nil) { appearance in
+        let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let accent = PaletteStore.resolvedColor(\.accent, dark: dark)
+        let surface = PaletteStore.resolvedColor(\.surface, dark: dark)
+        return blendHex(accent, overHex: surface, fraction: dark ? timelineSpineAlphaDark : timelineSpineAlphaLight)
+            ?? accent
+    }
+}
 
 /// 设置窗口左栏的底色，随外观解析（和 `paletteColor` 同样的动态机制）。
 var railSurfaceNSColor: NSColor {

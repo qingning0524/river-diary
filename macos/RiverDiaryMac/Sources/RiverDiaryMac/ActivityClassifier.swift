@@ -10,11 +10,18 @@ enum ActivityClassifier {
         let systemNames: Set<String> = ["loginwindow", "screensaverengine", "screensaver", "windowserver"]
         let systemBundles: Set<String> = ["com.apple.loginwindow", "com.apple.screensaver.engine", "com.apple.screensaver"]
         // 证据工具不记录自己：使用 River Diary 的时长属于"看仪表"，不是被观察的生活。
-        // 用名单判断而不是只比对 Bundle.main——打包运行时与测试环境的宿主不同。
-        let selfNames: Set<String> = ["riverdiary", "river diary", "河流日记"]
-        let selfBundles: Set<String> = ["studio.riverdiary.mac"]
+        //
+        // 用**前缀 + 包含**匹配，而不是精确名单。原先只列了 bundle
+        // `studio.riverdiary.mac` 与 "riverdiary"/"river diary"/"河流日记" 三个精确名字，
+        // 于是本机数据里仍然留下了 18 条 "Legacy River Diary"
+        // （`studio.riverdiary.legacy`）与 4 条 "River Timeline Preview"
+        // （`studio.riverdiary.timeline-preview`）——改名或换构建配置就会漏进来。
+        // 只比对 `Bundle.main` 也不够：打包运行与测试环境的宿主不同。
+        let selfBundlePrefix = "studio.riverdiary"
+        let selfNameFragments = ["riverdiary", "river diary", "河流日记"]
         return !systemNames.contains(name) && !systemBundles.contains(bundle)
-            && !selfNames.contains(name) && !selfBundles.contains(bundle)
+            && !bundle.hasPrefix(selfBundlePrefix)
+            && !selfNameFragments.contains(where: name.contains)
             && bundle != (Bundle.main.bundleIdentifier?.lowercased() ?? "")
     }
 

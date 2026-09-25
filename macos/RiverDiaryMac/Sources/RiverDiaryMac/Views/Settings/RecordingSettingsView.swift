@@ -55,7 +55,7 @@ struct RecordingSettingsView: View {
             RiverPanel {
                 RiverPanelRow(
                     title: "记录状态",
-                    detail: activity.isTracking ? "正在保存应用切换片段" : "实时记录已暂停",
+                    detail: activity.trackingSummary,
                     systemImage: "waveform.path.ecg"
                 ) {
                     StatusBadge(activity.isTracking ? "已开启" : "未开启", tone: activity.isTracking ? .positive : .neutral)
@@ -72,7 +72,12 @@ struct RecordingSettingsView: View {
                 }
 
                 if activity.capturesTitles {
-                    RiverPanelRow(title: "辅助功能权限", detail: activity.accessibilityGranted ? "已允许读取窗口标题。" : "读取窗口标题需要辅助功能权限。") {
+                    RiverPanelRow(
+                        title: "辅助功能权限",
+                        detail: activity.accessibilityGranted
+                            ? "已允许。标题会在片段进行中每 25 秒重新读一次。"
+                            : "未授予：标题一条也读不到，足迹只能记到应用名。"
+                    ) {
                         Button(activity.accessibilityGranted ? "刷新" : "打开权限") { activity.requestAccessibility() }
                             .buttonStyle(.plain)
                             .smallAction()

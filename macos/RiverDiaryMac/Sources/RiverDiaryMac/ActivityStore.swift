@@ -25,6 +25,10 @@ final class ActivityStore: ObservableObject {
     private var dayStatsCache: [String: CachedDayStats] = [:]
     private var observers: [NSObjectProtocol] = []
     private var pauseTimer: Timer?
+    /// 窗口标题的周期重采样。只在"开着标题采集 + 已授权"时才存在。
+    private var titleTimer: Timer?
+    /// 疑似换掉的标题。要连续两次采样都读到它才认账，见 `WindowTitleSampling`。
+    private var titleSamplePending: WindowTitleSampling.Pending?
     private let preferences: UserDefaults
     private let configuredActivityDirectory: URL?
     private let providedV2Store: V2Store?
@@ -122,6 +126,7 @@ final class ActivityStore: ObservableObject {
 
         storageSummary = "事件驱动记录已开启；片段会在应用切换或退出后保存。"
         startPauseTimer()
+        startTitleSampling()
         refreshPauseState()
     }
 
@@ -134,8 +139,19 @@ final class ActivityStore: ObservableObject {
         preferences.set(false, forKey: "activity.enabled")
         pauseTimer?.invalidate()
         pauseTimer = nil
+        stopTitleSampling()
         isCurrentlyPaused = false
         storageSummary = "已停止 macOS 实时记录。"
+    }
+
+    /// 记录状态的一句话。开关一开一关都能读到"标题到底有没有在采"，
+    /// 而不是只能去设置里翻权限。
+    var trackingSummary: String {
+        guard isTracking else { return "实时记录已暂停" }
+        if !capturesTitles { return "正在保存应用切换片段（未记录窗口标题）" }
+        return accessibilityGranted
+            ? "正在保存应用切换片段，标题每 25 秒刷新一次"
+            : "正在保存应用切换片段（辅助功能未授权，读不到标题）"
     }
 
 
@@ -186,18 +202,27 @@ final class ActivityStore: ObservableObject {
     func setCapturesTitles(_ enabled: Bool) {
         capturesTitles = enabled
         preferences.set(enabled, forKey: "activity.capturesTitles")
-        if !enabled {
+        if enabled {
+            startTitleSampling()
+        } else {
             activeSession?.windowTitle = nil
+            titleSamplePending = nil
+            stopTitleSampling()
         }
     }
 
     func requestAccessibility() {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         accessibilityGranted = AXIsProcessTrustedWithOptions(options)
+        startTitleSampling()
     }
 
     func refreshAccessibility() {
+        let wasGranted = accessibilityGranted
         accessibilityGranted = AXIsProcessTrusted()
+        startTitleSampling()
+        // 刚拿到权限：这一段还在前台，立刻补上标题，不用等下一次采样。
+        if accessibilityGranted, !wasGranted { sampleActiveWindowTitle() }
     }
 
     func closeForTermination() {
@@ -405,6 +430,16 @@ final class ActivityStore: ObservableObject {
         observers.append(ActivityLifecycle.observeTermination(center: appCenter) { [weak self] in
             self?.closeForTermination()
         })
+
+        // 用户很可能刚从"系统设置 > 隐私与安全性 > 辅助功能"里回来：一回到前台就
+        // 重新查一遍权限。让用户按"刷新"才知道自己已经授权过了，是没必要的作业。
+        observers.append(appCenter.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.refreshAccessibility() }
+        })
     }
 
     private func removeObservers() {
@@ -489,7 +524,79 @@ final class ActivityStore: ObservableObject {
 
     private func currentTitle(for app: NSRunningApplication) -> String? {
         guard capturesTitles, accessibilityGranted else { return nil }
-        let application = AXUIElementCreateApplication(app.processIdentifier)
+        return Self.readWindowTitleSync(processIdentifier: app.processIdentifier)
+    }
+
+    // MARK: 窗口标题重采样
+
+    /// 采样定时器。只在"记录中 + 开着标题采集 + 已授权"时存在：没有权限时每
+    /// 25 秒问一次辅助功能，除了耗电什么都得不到。
+    private func startTitleSampling() {
+        titleTimer?.invalidate()
+        titleTimer = nil
+        guard isTracking, capturesTitles, accessibilityGranted else { return }
+        titleTimer = Timer.scheduledTimer(withTimeInterval: WindowTitleSampling.interval, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.sampleActiveWindowTitle() }
+        }
+    }
+
+    private func stopTitleSampling() {
+        titleTimer?.invalidate()
+        titleTimer = nil
+    }
+
+    /// 每 25 秒再看一眼当前窗口标题。
+    ///
+    /// 读辅助功能放在主线程之外：那是一次带 0.25 秒超时的同步调用，目标应用卡住时
+    /// 会把主线程按住——一个每 25 秒卡半秒的采样器比不采样更糟。决策本身是纯的，
+    /// 在 `applySampledTitle` 里回到主线程做。
+    func sampleActiveWindowTitle() {
+        guard isTracking, !isCurrentlyPaused, capturesTitles, accessibilityGranted,
+              let session = activeSession,
+              let app = NSWorkspace.shared.frontmostApplication,
+              app.bundleIdentifier == session.bundleID else { return }
+        let pid = app.processIdentifier
+        Task { @MainActor [weak self] in
+            let title = await Self.readWindowTitle(processIdentifier: pid)
+            self?.applySampledTitle(title, now: Date())
+        }
+    }
+
+    private func applySampledTitle(_ title: String?, now: Date) {
+        guard let session = activeSession else { return }
+        let decision = WindowTitleSampling.decide(
+            currentTitle: session.windowTitle,
+            pending: titleSamplePending,
+            sampled: title,
+            now: now
+        )
+        titleSamplePending = decision.pending
+        switch decision.action {
+        case .ignore:
+            break
+        case .adopt(let adopted):
+            activeSession?.windowTitle = adopted
+        case .split(let moment, let title):
+            splitActiveSession(at: moment, windowTitle: title)
+        }
+    }
+
+    /// 同一个应用里换了标题：从第一次看到新标题的那一刻切开，而不是把标题盖掉。
+    /// 40 分钟的 Chrome 前半截是文档、后半截是视频，合并成一段时行上的标题
+    /// 对其中一半时间就是假的。
+    private func splitActiveSession(at moment: Date, windowTitle: String) {
+        guard let session = activeSession else { return }
+        let now = Date()
+        let (closed, next) = session.split(at: moment, now: now, windowTitle: windowTitle)
+        activeSession = nil
+        if closed.duration >= 1 { appendSegments(splitAtDayBoundary(closed)) }
+        activeSession = next
+        titleSamplePending = nil
+    }
+
+    /// 同步读标题，供应用切换的那一刻使用（那里拿不到 async）。
+    nonisolated private static func readWindowTitleSync(processIdentifier: pid_t) -> String? {
+        let application = AXUIElementCreateApplication(processIdentifier)
         AXUIElementSetMessagingTimeout(application, 0.25)
 
         var focusedWindow: CFTypeRef?
@@ -512,10 +619,17 @@ final class ActivityStore: ObservableObject {
         return title
     }
 
+    /// 读到主线程之外执行的那一份。`nonisolated async` 不继承调用方的 actor，
+    /// 所以这里的 AX 调用不会占住主线程。
+    nonisolated private static func readWindowTitle(processIdentifier: pid_t) async -> String? {
+        readWindowTitleSync(processIdentifier: processIdentifier)
+    }
+
     private func closeActiveSession() {
         guard var session = activeSession else { return }
         session.end = Date()
         activeSession = nil
+        titleSamplePending = nil
 
         // 过短的切换视为系统噪音，不进入统计。
         if session.duration >= 1 {

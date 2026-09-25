@@ -8,6 +8,9 @@ struct WorkLearnWorkspaceView: View {
     @FocusState.Binding var inspectorSourceFocusID: String?
     var onSelectTimelineItem: (ActivityTimelineItem, String) -> Void
 
+    /// 这一页只放最近 8 行证据，碎片带同样可以就地展开。
+    @State private var expandedRunIDs: Set<String> = []
+
     var body: some View {
         // 一帧只算一次：dayStats 与时间线引擎不便宜，别在多个面板里重复调用。
         let stats = activity.dayStats(entries: entries, date: selectedDate)
@@ -68,13 +71,21 @@ struct WorkLearnWorkspaceView: View {
 
             RiverPanel(title: "时间线证据", systemImage: "timeline.selection", accent: AppTheme.accent, padding: AppSpacing.sm) {
                 RiverTimelineView(
-                    items: Array(timeline.items.prefix(12)),
+                    items: Array(timeline.foldedItems.prefix(8)),
                     nowSession: Calendar.current.isDateInToday(selectedDate) ? activity.activeSession : nil,
                     selectedItemID: nil,
                     onSelect: onSelectTimelineItem,
                     onWriteNote: {},
                     inspectorSourceFocusID: $inspectorSourceFocusID,
-                    isScrollable: true
+                    isScrollable: true,
+                    expandedRunIDs: expandedRunIDs,
+                    onToggleRun: { item in
+                        if expandedRunIDs.contains(item.id) {
+                            expandedRunIDs.remove(item.id)
+                        } else {
+                            expandedRunIDs.insert(item.id)
+                        }
+                    }
                 )
                 .frame(height: 320)
             }

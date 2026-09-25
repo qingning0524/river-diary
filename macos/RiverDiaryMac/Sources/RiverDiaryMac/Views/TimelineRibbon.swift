@@ -8,16 +8,23 @@ import SwiftUI
 /// days are comparable, recorded segments in the one accent, and empty space
 /// where nothing was recorded. It is deliberately not a chart: no axis grid
 /// drama, no per-category rainbow, no decoration.
+///
+/// 时间线页把它钉在页头当作定位尺用：悬停出现十字与时刻，拖动直接跳到那一刻
+/// 所在的行（`onScrub`）。统计卡片里的那一份只读，不接手势。
 struct RiverDayRibbon: View {
     @Environment(\.riverDensity) private var density
     let date: Date
     let items: [ActivityTimelineItem]
     /// Pass the current moment only when the ribbon shows today; draws a "now" tick.
     var now: Date?
+    /// 拖动时间带：连续回调拖动到的时刻。为 nil 时整条带不接管手势。
+    var onScrub: ((Date) -> Void)?
+    /// 松手：这一次拖动最终落在的时刻。页面用它选中那一行。
+    var onScrubCommit: ((Date) -> Void)?
 
     /// Height of the day band. Exposed so layout tests can address the track
     /// without duplicating the number.
-    static let trackHeight: CGFloat = 38
+    static let trackHeight: CGFloat = 42
     /// Hour ticks every six hours: enough to place yourself, not a grid.
     private static let ticks = [0, 6, 12, 18, 24]
     /// VoiceOver summary runs per render; don't allocate a formatter each time.
@@ -26,6 +33,12 @@ struct RiverDayRibbon: View {
         formatter.dateFormat = "HH:mm"
         return formatter
     }()
+
+    /// 鼠标在带上的横向比例（0–1）。悬停与拖动共用一条十字线。
+    @State private var hoverFraction: CGFloat?
+    @State private var dragFraction: CGFloat?
+
+    private var activeFraction: CGFloat? { dragFraction ?? hoverFraction }
 
     var body: some View {
         VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
@@ -44,10 +57,11 @@ struct RiverDayRibbon: View {
                     }
 
                     if let nowX = nowOffset(in: proxy.size.width) {
-                        Rectangle()
-                            .fill(AppTheme.accent)
-                            .frame(width: 1.5)
-                            .offset(x: nowX, y: 0)
+                        nowMark(x: nowX)
+                    }
+
+                    if let fraction = activeFraction {
+                        crosshair(fraction: fraction, width: proxy.size.width)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
@@ -55,6 +69,16 @@ struct RiverDayRibbon: View {
                     RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
                         .strokeBorder(Color.border, lineWidth: 1)
                 )
+                .contentShape(Rectangle())
+                .onContinuousHover { phase in
+                    switch phase {
+                    case .active(let location):
+                        hoverFraction = clampFraction(location.x / max(proxy.size.width, 1))
+                    case .ended:
+                        hoverFraction = nil
+                    }
+                }
+                .gesture(scrubGesture(width: proxy.size.width), isEnabled: onScrub != nil)
             }
             .frame(height: Self.trackHeight)
             .accessibilityElement()
@@ -65,15 +89,62 @@ struct RiverDayRibbon: View {
         }
     }
 
+    // MARK: Interaction
+
+    private func scrubGesture(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                let fraction = clampFraction(value.location.x / max(width, 1))
+                dragFraction = fraction
+                onScrub?(moment(at: fraction))
+            }
+            .onEnded { value in
+                let fraction = clampFraction(value.location.x / max(width, 1))
+                dragFraction = nil
+                hoverFraction = fraction
+                onScrubCommit?(moment(at: fraction))
+            }
+    }
+
+    private func clampFraction(_ value: CGFloat) -> CGFloat {
+        min(max(value, 0), 1)
+    }
+
+    private func moment(at fraction: CGFloat) -> Date {
+        Calendar.current.startOfDay(for: date).addingTimeInterval(TimeInterval(fraction) * 86_400)
+    }
+
+    /// 悬停/拖动时的十字：一条竖线加一个时刻。没有它，这条带只是一张图；
+    /// 有了它，用户能读出"这一段是几点"。
+    private func crosshair(fraction: CGFloat, width: CGFloat) -> some View {
+        let x = width * fraction
+        return ZStack(alignment: .topLeading) {
+            Rectangle()
+                .fill(dragFraction == nil ? Color.secondaryInk.opacity(0.45) : AppTheme.accent)
+                .frame(width: dragFraction == nil ? 1 : 1.5, height: Self.trackHeight)
+                .offset(x: min(max(x, 0), max(width - 1.5, 0)))
+
+            Text(Self.accessibilityTimeFormatter.string(from: moment(at: fraction)))
+                .font(AppTypography.micro().monospacedDigit().weight(.medium))
+                .foregroundStyle(Color.ctaText)
+                .padding(.horizontal, density.spacing(5))
+                .padding(.vertical, density.spacing(2))
+                .background(Color.ink.opacity(0.82), in: Capsule())
+                .fixedSize()
+                .offset(x: min(max(x - 22, 2), max(width - 46, 0)), y: 3)
+        }
+        .allowsHitTesting(false)
+    }
+
     // MARK: Axis
 
     private func hourGuides(width: CGFloat) -> some View {
         ForEach(Self.ticks, id: \.self) { hour in
             let x = width * CGFloat(hour) / 24
             Rectangle()
-                .fill(Color.separator)
-                .frame(width: 1)
-                .offset(x: min(max(x, 0), width - 1))
+                .fill(Color.strongSeparator.opacity(0.7))
+                .frame(width: 1, height: Self.trackHeight)
+                .offset(x: min(max(x, 0), max(width - 1, 0)))
         }
     }
 
@@ -94,7 +165,7 @@ struct RiverDayRibbon: View {
 
     // MARK: Segments
 
-    private struct Segment {
+    private struct Segment: Identifiable {
         let id: String
         let x: CGFloat
         let width: CGFloat
@@ -112,6 +183,9 @@ struct RiverDayRibbon: View {
         return CGFloat(min(max(seconds / 86_400, 0), 1))
     }
 
+    /// 高度就是这件事的分量：一段实心专注占满，普通活动矮一档，来回切屏的
+    /// 碎片再矮一档（一大片矮块读作"这段时间一直在切"，而不是"这段时间在专注"），
+    /// 快记是一枚墨色标记。颜色分不开的东西，高度分得开。
     private func segments(in width: CGFloat) -> [Segment] {
         let calendar = Calendar.current
         var result: [Segment] = []
@@ -124,13 +198,12 @@ struct RiverDayRibbon: View {
             let rawWidth = width * (endFraction - startFraction)
             let isCapture = item.kind == .capture
             let segmentWidth = isCapture ? 3 : max(rawWidth, 2.5)
-            let clampedX = min(x, max(width - segmentWidth, 0))
-            let height: CGFloat = isCapture ? Self.trackHeight - 12 : Self.trackHeight - 20
+            let height = height(for: item)
 
             result.append(
                 Segment(
                     id: item.id,
-                    x: clampedX,
+                    x: min(x, max(width - segmentWidth, 0)),
                     width: segmentWidth,
                     height: height,
                     y: (Self.trackHeight - height) / 2,
@@ -141,14 +214,41 @@ struct RiverDayRibbon: View {
         return result
     }
 
+    private func height(for item: ActivityTimelineItem) -> CGFloat {
+        if item.kind == .capture { return Self.trackHeight - 10 }
+        if item.kind == .gap { return 0 }
+        if ActivityClassifier.isFocus(item.category) { return Self.trackHeight - 12 }
+        // 不到 3 分钟的切屏：矮一档，让"碎片"在整天的尺度上也读得出来。
+        return ActivityTimelineEngine.isFoldable(item) ? Self.trackHeight - 26 : Self.trackHeight - 19
+    }
+
     /// Focused work reads at full strength, everything else recedes, and a written
     /// note is ink rather than activity.
     private func fill(for item: ActivityTimelineItem) -> Color {
-        switch item.kind {
-        case .capture: Color.ink.opacity(0.55)
-        case .gap: .clear
-        case .activity: ActivityClassifier.isFocus(item.category) ? AppTheme.accent : AppTheme.accent.opacity(0.42)
+        if item.kind == .capture { return Color.ink.opacity(0.72) }
+        if item.kind == .gap { return Color.clear }
+        if ActivityClassifier.isFocus(item.category) { return AppTheme.accent }
+        return AppTheme.accent.opacity(ActivityTimelineEngine.isFoldable(item) ? 0.34 : 0.5)
+    }
+
+    /// 现在针带标签。一根没有说明的竖线只是一道划痕。
+    private func nowMark(x: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            Rectangle()
+                .fill(AppTheme.accent)
+                .frame(width: 1.5, height: Self.trackHeight)
+                .offset(x: x)
+
+            Text("现在")
+                .font(AppTypography.micro().weight(.semibold))
+                .foregroundStyle(Color.ctaText)
+                .padding(.horizontal, density.spacing(5))
+                .padding(.vertical, density.spacing(1))
+                .background(AppTheme.accent, in: Capsule())
+                .fixedSize()
+                .offset(x: x - 16, y: Self.trackHeight - 14)
         }
+        .allowsHitTesting(false)
     }
 
     private func nowOffset(in width: CGFloat) -> CGFloat? {

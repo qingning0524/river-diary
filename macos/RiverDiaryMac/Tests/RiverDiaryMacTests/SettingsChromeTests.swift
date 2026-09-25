@@ -75,8 +75,11 @@ extension SettingsChromeTests {
             settingsRailBlendAmount, 0.04,
             "压得太浅，左栏和内容区会糊成一片（这正是最初的毛病）"
         )
+        // 2026-09-26：上限 0.12 → 0.16。页面画布整体压深（#F0F3F8 → #EAEDF2）之后，
+        // 原来的 0.07 正好落在画布上，必须提到 0.13 才拉得开；上限跟着放宽一档，
+        // 真正的把关交给 SettingsRailContrastTests（逐套配色验证色阶差 ≥ 8）。
         XCTAssertLessThanOrEqual(
-            settingsRailBlendAmount, 0.12,
+            settingsRailBlendAmount, 0.16,
             "压得太重，左栏会像一块压下来的重色"
         )
     }

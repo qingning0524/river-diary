@@ -15,40 +15,79 @@ struct ActivityTimelineItem: Identifiable, Hashable {
 
     var isFavorite: Bool { annotation?.isFavorite == true }
 
-    /// 什么才值得请你确认：产品决策（2026-09-25）——一两分钟的切屏碎片
-    /// 不构成确认请求。快速切换时窗口标题本来就读不到，这类碎片注定
-    /// 没有标题；它们仍完整保留在时间线与证据库里，只是不再打扰你。
-    /// 只有达到 3 分钟的未知时间才进入待确认队列。
-    static let reviewMaterialityThreshold: TimeInterval = 180
+    /// 能不能人工整理这一条。**只有真实的活动块有标注键**：空档、快记和碎片带
+    /// 都是派生出来的行，给它们写标注会存进一个永远读不回来的键——检查器上的
+    /// "编辑"按下去没有任何反应，也不会报错。
+    var isAnnotatable: Bool { annotationKey != nil }
+
+    /// 一条节点单独占一行的分量。不到 3 分钟的切屏碎片不单独占一行，
+    /// 而是折进它所在的那条"碎片带"（见 `ActivityTimelineEngine.foldFragments`）。
+    static let fragmentFoldThreshold: TimeInterval = 180
+
+    /// 什么才值得请你确认：产品决策（2026-09-26 修订）。
+    ///
+    /// 原判据是"≥3 分钟且缺少窗口标题"，前提是窗口标题会被采集。实测本机
+    /// 2297 条片段里只有 1 条带标题（辅助功能未授权、且标题只在应用切换的瞬间读一次），
+    /// 于是"缺少标题"退化成恒真，判据实际只剩"≥3 分钟"：中位每天 9 条待确认，
+    /// 队列永远不空，正好违背这个功能立项时写下的那句话——"日常状态是空的"。
+    ///
+    /// 现在要求这条时间**长得足够难解释**（20 分钟，与证据控制台自己的说明
+    /// "系统无法解释的二十分钟"同一口径），**并且确实没有可说明的证据**
+    /// （没有窗口标题、没有人工标注）。有标题的长块自己讲得清楚，不进队列。
+    static let reviewMaterialityThreshold: TimeInterval = 20 * 60
 
     /// 主导证据引用：指向这一行/这一段的原始记录，供 AI 结论引用后点回原处。
     /// 活动段用它第一条原始片段的 id（`raw:` 命名空间），快记用 `capture:`。
     /// 空档没有原始记录，因此为 nil——"没有数据"本身不是一个可引用的证据。
+    /// 碎片带是聚合视图，展开后每个成员各自有引用，它自己没有。
     var evidenceRef: String? {
         switch kind {
-        case .activity: sessions.first.map { "raw:\($0.id.uuidString)" }
+        case .activity: isFragmentRun ? nil : sessions.first.map { "raw:\($0.id.uuidString)" }
         case .capture: capture.map { "capture:\($0.id.uuidString)" }
         case .gap: nil
         }
     }
 
+    /// 折叠后的碎片带成员：非空表示这一条是"碎片带"，而不是单个节点。
+    ///
+    /// 折叠只发生在展示层。`ActivityTimeline.items` 始终是逐条证据——导出、
+    /// 搜索、证据控制台、日复盘都读那一份——只有时间线列表读 `foldedItems`。
+    /// 这样"把一天读成十几行"不改变任何统计口径，也不会丢任何一条原始片段。
+    var fragments: [ActivityTimelineItem] = []
+
+    var isFragmentRun: Bool { !fragments.isEmpty }
+
+    /// 这一条在时间轴上占的跨度。
+    var span: TimeInterval { max(0, end.timeIntervalSince(start)) }
+
     /// 参与确认排序/阈值判断的时长：空档没有 duration，用跨度。
     var reviewSpan: TimeInterval {
-        max(duration, end.timeIntervalSince(start))
+        max(duration, span)
     }
 
-    /// 为什么这条节点待确认：够分量（≥3 分钟）且缺少窗口标题的活动片段。
+    /// 这一条是否自带说明：窗口标题，或人工写下的标注。
+    var hasDescribingEvidence: Bool {
+        if let annotation = annotation?.normalized,
+           !annotation.title.isEmpty || !annotation.note.isEmpty || !annotation.activityLabel.isEmpty {
+            return true
+        }
+        return sessions.contains {
+            !($0.windowTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
+    /// 为什么这条节点待确认：一段够长、又没有任何东西能解释它的时间。
+    ///
     /// 空档不进队列——睡眠、离开电脑是生活常态，日复盘已有"不按零计算"
     /// 的留白陈述，每天请人确认睡眠是把免责声明变成作业。
-    /// 三个展示位（时间线筛选、今日队列、控制台队列）共用这一个判定。
+    /// 碎片带也不进：它的每一个成员都不到 3 分钟。
+    /// 四个展示位（时间线筛选、今日队列、控制台队列、行内徽章）共用这一个判定。
     var needsReviewReason: String? {
         guard annotation?.isReviewed != true else { return nil }
-        guard kind != .gap else { return nil }
+        guard kind == .activity, !isFragmentRun else { return nil }
         guard reviewSpan >= Self.reviewMaterialityThreshold else { return nil }
-        if sessions.contains(where: {
-            ($0.windowTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }) { return "缺少窗口标题" }
-        return nil
+        guard !hasDescribingEvidence else { return nil }
+        return "\(Int(Self.reviewMaterialityThreshold / 60)) 分钟没有可说明的证据"
     }
 
     var needsReview: Bool { needsReviewReason != nil }
@@ -62,10 +101,53 @@ struct ActivityTimelineItem: Identifiable, Hashable {
     }
     var title: String {
         if let title = annotation?.normalized.title, !title.isEmpty { return title }
+        if isFragmentRun { return "\(fragments.count) 段碎片" }
         if let capture { return capture.text }
         if kind == .gap { return "没有记录的时间" }
         let names = apps.prefix(2).map(\.name).joined(separator: "、")
         return "\(names) · \(category)"
+    }
+
+    /// 行内第二行：这一条自己的证据。
+    ///
+    /// 窗口标题可用时就是标题；不可用时退回到**块内的应用构成**（谁、多久）与
+    /// **覆盖质地**（跨度里有多少时间真的在前台），而不是原始片段计数——
+    /// 计数是仪表的内部数字，不是发生过的事。真的没什么可说时返回空串：
+    /// 证据薄的行本来就该薄，不该用一句话把三行填满。
+    var evidenceLine: String {
+        let note = annotation?.normalized.note ?? ""
+        if !note.isEmpty { return note }
+
+        if let capture {
+            let tag = capture.tag?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return tag.isEmpty ? "手动记录" : tag
+        }
+        if isFragmentRun {
+            let spanText = "跨度 \(ActivityFormatter.time(span))"
+            return appComposition.isEmpty ? spanText : "\(appComposition) · \(spanText)"
+        }
+        if kind == .gap { return "这段时间没有实时足迹" }
+        if let windowTitle = sessions.compactMap(\.windowTitle).first(where: {
+            !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }) {
+            return windowTitle
+        }
+        // 跨度远大于实际前台时长：这段时间里有相当一部分没有前台记录，
+        // 那本身就是这一条最该说的事。
+        if span > 0, duration < span * 0.85 {
+            return "跨度 \(ActivityFormatter.time(span)) · 实际前台 \(ActivityFormatter.time(duration))"
+        }
+        return appComposition
+    }
+
+    /// 块内的应用构成："Chrome 4 分 · ZCode 3 分"。
+    ///
+    /// 只有一个应用时返回空串——标题已经说了应用名，再说一遍就是注水。
+    var appComposition: String {
+        guard apps.count > 1 else { return "" }
+        return apps.prefix(2)
+            .map { "\($0.name) \(ActivityFormatter.time($0.duration))" }
+            .joined(separator: " · ")
     }
     var summary: String {
         if let capture { return capture.tag ?? "留给这一天的一句话" }
@@ -83,6 +165,10 @@ struct ActivityTimelineItem: Identifiable, Hashable {
         return "使用 " + apps.prefix(2).map(\.name).joined(separator: "、")
     }
     func matches(query: String, category: String?) -> Bool {
+        // 碎片带按成员匹配：筛选与搜索永远作用在真实节点上，不作用在聚合上。
+        if isFragmentRun {
+            return fragments.contains { $0.matches(query: query, category: category) }
+        }
         if let category, self.category != category { return false }
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if needle.isEmpty { return true }
@@ -94,13 +180,28 @@ struct ActivityTimelineItem: Identifiable, Hashable {
 struct ActivityTimeline {
     var date: Date
     var sessions: [ActivitySession]
+    /// 逐条证据：活动块、快记、空档。统计、导出、搜索、复盘都读这一份。
     var items: [ActivityTimelineItem]
+    /// 展示列表：连续的微小节点被折成"碎片带"。
+    /// 只给时间线列表用，见 `ActivityTimelineItem.fragments`。
+    var foldedItems: [ActivityTimelineItem]
     /// Notes assigned to this diary day but written on another day have no known event time.
     var retrospectiveCaptures: [QuickCapture]
 
     var totalDuration: TimeInterval { sessions.reduce(0) { $0 + $1.duration } }
     var focusDuration: TimeInterval {
         sessions.filter { ActivityClassifier.isFocus($0.category) }.reduce(0) { $0 + $1.duration }
+    }
+    /// "节点"数：活动块 + 快记，不含空档，也不把一条碎片带算成一个。
+    var recordedNodeCount: Int { items.filter { $0.kind != .gap }.count }
+    /// 会被折进碎片带的节点数：页面用它解释"为什么行数比节点少"。
+    var fragmentNodeCount: Int {
+        items.filter(ActivityTimelineEngine.isFoldable).count
+    }
+    /// 最长的一段专注（工作/学习/创作）。比"日记已写"更值得占一个展示位。
+    var longestFocusSpan: TimeInterval {
+        items.filter { $0.kind == .activity && ActivityClassifier.isFocus($0.category) }
+            .map(\.span).max() ?? 0
     }
     var categories: [String] { Array(Set(items.filter { $0.kind != .gap }.map(\.category))).sorted() }
     var categoryUsage: [TimelineAppUsage] {
@@ -119,7 +220,9 @@ enum ActivityTimelineEngine {
         annotations: [String: TimelineAnnotation] = [:]
     ) -> ActivityTimeline {
         guard let day = calendar.dateInterval(of: .day, for: date) else {
-            return ActivityTimeline(date: date, sessions: [], items: [], retrospectiveCaptures: captures)
+            return ActivityTimeline(
+                date: date, sessions: [], items: [], foldedItems: [], retrospectiveCaptures: captures
+            )
         }
         let normalized = normalizedSessions(sessions, in: day)
         var blocks: [ActivityTimelineItem] = []
@@ -155,9 +258,85 @@ enum ActivityTimelineEngine {
         }
         items.sort { $0.start == $1.start ? $0.id < $1.id : $0.start < $1.start }
         return ActivityTimeline(
-            date: date, sessions: normalized, items: items,
+            date: date, sessions: normalized, items: items, foldedItems: foldFragments(items),
             retrospectiveCaptures: captures.filter { !sameDay.contains($0) }.sorted { $0.createdAt < $1.createdAt }
         )
+    }
+
+    // MARK: - 碎片带
+
+    /// 一条碎片带最多覆盖的跨度。超过就另起一条——"碎片带"描述的是一段
+    /// 来回切换的时间，一小时已经够长；这也让展开后的行数有上限。
+    static let fragmentRunMaxSpan: TimeInterval = 60 * 60
+    /// 一条碎片带最多容纳的节点数，同上。
+    static let fragmentRunMaxCount = 24
+
+    /// 可以折进碎片带的节点：跨度不到 3 分钟、没有人工标注。
+    ///
+    /// 用**跨度**而不是前台时长：一条 4 分钟里切了 7 次的记录，前台时长可能只有
+    /// 70 秒，但它占用的仍是这 4 分钟的注意力，就是要折的那种churn。
+    /// 反过来，一段实心的 4 分钟记录跨度也是 4 分钟，不会被折。
+    ///
+    /// 空档与快记会打断一条碎片带——它们本身就是有意义的边界：
+    /// 快记是当天真正发生的事件，空档是"这段时间没有记录"的陈述，
+    /// 把任何一个折进"碎片"都是把两种不同的事实混为一谈。
+    static func isFoldable(_ item: ActivityTimelineItem) -> Bool {
+        item.kind == .activity
+            && !item.isFragmentRun
+            && !item.isFavorite
+            && item.span < ActivityTimelineItem.fragmentFoldThreshold
+            && item.annotation?.isEmpty != false
+    }
+
+    /// 把连续的微小节点折成一条"碎片带"。
+    ///
+    /// 产品决策的另一半：不到 3 分钟的切屏不值得请你确认，那它也不该各自占一张卡。
+    /// 实测中位一天有 72% 的节点短于 3 分钟（最忙的一天 285 行、约 24 屏），
+    /// 折叠后同样的证据只要 1–3 屏，而且被折叠的每一段仍然可以展开逐条查看。
+    ///
+    /// 折叠是**展示层**的事：成员完整保留在 `items`、导出、搜索与证据库里，
+    /// 只是列表默认不逐条铺开。
+    static func foldFragments(_ items: [ActivityTimelineItem]) -> [ActivityTimelineItem] {
+        var result: [ActivityTimelineItem] = []
+        var pending: [ActivityTimelineItem] = []
+
+        func flush() {
+            defer { pending = [] }
+            guard let first = pending.first, let last = pending.last else { return }
+            guard pending.count > 1 else {
+                result.append(first)
+                return
+            }
+            result.append(ActivityTimelineItem(
+                id: "fragments-\(first.id)-\(last.id)",
+                kind: .activity,
+                start: first.start,
+                end: last.end,
+                sessions: pending.flatMap(\.sessions),
+                fragments: pending
+            ))
+        }
+
+        for item in items {
+            guard isFoldable(item) else {
+                flush()
+                result.append(item)
+                continue
+            }
+            if let first = pending.first,
+               item.end.timeIntervalSince(first.start) > fragmentRunMaxSpan || pending.count >= fragmentRunMaxCount {
+                flush()
+            }
+            pending.append(item)
+        }
+        flush()
+        return result
+    }
+
+    /// 把折叠后的展示列表摊平成逐条节点。筛选与搜索用它：
+    /// 一个查询不该命中一条"碎片带"却看不见命中的是哪一段。
+    static func flattenFragments(_ items: [ActivityTimelineItem]) -> [ActivityTimelineItem] {
+        items.flatMap { $0.isFragmentRun ? $0.fragments : [$0] }
     }
 
     /// Day clipping also handles DST and midnight. Overlapping imports cannot inflate screen time.

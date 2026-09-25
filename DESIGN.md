@@ -56,36 +56,48 @@ The selected date is owned by a Shell-level `DateContext`. Workspace changes pre
 
 ## Color tokens
 
-Every colour is defined once, in `Theme.swift`, as a dynamic light/dark pair. Views reference the semantic token, never a hex value and never a system colour like `.orange` or `Color.accentColor` — a system accent leak would break the single-accent rule the moment a user changes their accent colour.
+Every colour is defined once, in `Palettes.swift`, as a light/dark pair **per palette**. Views reference the semantic token through `AppTheme`, never a hex value and never a system colour like `.orange` or `Color.accentColor` — a system accent leak would break the single-accent rule the moment a user changes their accent colour.
+
+Eight palettes (海雾蓝 / 青瓷 / 暖阳 / 堇紫 / 莓红 / 墨青 / 可可棕 / 樱花粉) × two appearances, sixteen tokens each:
 
 ```text
-                                light      dark        role
---workspace                     #F1F0EB    #111210     page canvas behind panels
---sidebar-surface               #EDECE6    #171816     navigation rail / inspector drawer
---surface                       #FCFBF8    #1B1C1A     the fill of every panel
---strong-surface                #FFFFFF    #232421     floating surfaces: sheets, drawers, banner
---editor                        #F0EFE9    #131412     recessed wells: text editors, inputs
---chip                          #EFEEE9    #262724     small chips and raised rows
---border                        #DAD8D1    white 14%  the 1px panel outline
---separator                     #E4E2DC    white 9%   the 1px divider between rows
---strong-separator              #D3D1C9    #3A3B37    page-level section rule
-
---ink                           #232427    #F2F0EA    primary text
---secondary-ink                 #63656A    #B4B4AF    bodies, values, metadata
---tertiary-ink                  #8E9096    #8A8B87    hints and unrecorded values only
-
---accent                        #3F678F    #8AB4DD    selection, evidence, primary action
---accent-soft                   #E6EDF6    #23364C    selected row / chip background
---cta-background                #3F678F    #6F9AC7    filled primary button
---ok / --warning / --error      green      amber       red, each with a `-soft` tint pair
+canvas  sidebar  surface  strongSurface  editor  chip
+border  separator  strongSeparator
+ink  ink2  ink3
+accent  accentSoft  gradientStart  gradientEnd
 ```
+
+The tokens are not hand-picked hexes. Each set is generated from one recipe so that **the same lightness ladder holds in all sixteen combinations**; the recipe is documented in full at the top of `Palettes.swift`, and `PaletteDepthTests` enforces the bands below for every palette.
+
+```text
+token              target                       guarded band
+canvas             white → 1.17                 canvas darker than surface, 1.08–1.30
+chip               white → 1.15                 ≥ 1.10 vs surface
+editor             white → 1.22                 darker than surface; ≥ 6 channel steps from chip
+border             canvas → 1.26                1.18–1.60 vs canvas (white 10% in dark)
+separator          white → 1.20                 ≥ 1.14 vs surface (white 8% in dark)
+strongSeparator    canvas → 1.40                 ≥ 1.32 vs canvas
+sidebar            canvas → 1.07                 rail must stay distinguishable from the canvas
+ink2                white → 4.5+                 body text stays readable
+ink3               white → 3.25                 ≥ 3.0, and always lighter than ink2
+timelineSpine      accent 72% / 60% over surface  ≥ 2.2 vs surface, and lighter than accent
+```
+
+Why a ratio table instead of a list of hexes: the first palette set was a set of "柔和水洗色" whose neighbours differed by 1.04–1.16. The light panel outline on the canvas measured **1.040:1**, the dark row divider **1.009:1**, and the timeline spine (`accent` at 30%) **1.48:1**. That is why the app read as flat and unfinished — not a matter of taste, a matter of contrast. Every step now sits in a band that can be seen without becoming a hard line.
+
+Three numbers live outside the ladder:
+
+- `darkBorderAlpha` (0.10) / `darkSeparatorAlpha` (0.08) — white hairlines over a dark panel. They must differ: a panel outline is a stronger statement than a row divider.
+- `settingsRailBlendAmount` (0.13) — how far `ink` is pressed into `sidebar`. After the light canvas was deepened, the previous 0.07 left the rail within 1–2 channel steps of the canvas and the two columns smeared together. `SettingsRailContrastTests` guards all sixteen combinations.
+- `timelineSpineAlphaLight` (0.72) / `timelineSpineAlphaDark` (0.60) — the connector's opacity over the current panel fill.
 
 Rules that follow from this table:
 
 - One accent, used for selection, evidence, links and the primary action. `AppTheme.accent`.
 - Status colour is always paired with a word. `StatusBadge("待确认", tone: .neutral)` carries meaning in the text; the tint is a second channel, never the only one.
-- The three surface levels are distinct in both appearances: canvas < panel < floating. A panel must never be the same colour as the surface it sits on.
+- The four surface levels are distinct in both appearances: canvas < panel < floating, and a **raised** chip must never be the same colour as a **recessed** well. Light mode `chip` and `editor` had collapsed to the same grey (channel delta 0–2) before this ladder existed: a raised button and a sunken input field were literally one colour.
 - `--tertiary-ink` is for hints and unrecorded values. Essential state never uses it.
+- Change a colour, change this table, and let `PaletteDepthTests` move with it. A hex edited in `Palettes.swift` without the table is drift.
 
 ## Typography
 
@@ -187,31 +199,51 @@ The 时间线 page leads with the day, then the ordered rows:
 
 ```text
 TimelineWorkspaceView          the 时间线 destination
-  TimelineDayOverview          panel: four stats, a RiverRule, the day ribbon, a coverage footnote
+  pinned header                PageHeader + RiverDayRibbon (the whole day, always visible)
+  day overview panel           four compact stats, a RiverRule, a coverage footnote
   journal panel                the day's writing, collapsed to a summary until edited
-  timeline panel               filter bar, RiverRule, RiverTimelineView
+  timeline panel               filter bar, RiverRule, RiverTimelineView, folding footnote
 ```
 
-`RiverDayRibbon` is the one-glance component: a fixed 00:00–24:00 band, 6-hour guides, one segment per recorded item, and a "now" tick on today. It exists because a row list can say what happened but only a laid-out day shows *where* the recorded evidence sits and how much of the day holds none. It is deliberately not a chart — no per-category rainbow, no axis drama.
+`RiverDayRibbon` is the one-glance component: a fixed 00:00–24:00 band, 6-hour guides, one segment per recorded item, and a "现在" tick on today. It is pinned in the header rather than repeated in the body, because it answers a question about the whole day and the row list scrolls away. It exists because a row list can say what happened but only a laid-out day shows *where* the recorded evidence sits and how much of the day holds none. It is deliberately not a chart — no per-category rainbow, no axis drama.
 
-Row anatomy (`RiverTimelineView`), all four columns fixed so the eye can scan one column at a time:
+The ribbon is also the page's **scrubber**. Hovering draws a crosshair with the time under the pointer; pressing and dragging walks the day and scrolls the list to the row at that moment; releasing selects it. Dragging onto a folded 碎片带 expands it first — landing on "12 段碎片" without showing which fragment was meant is not an answer. The translation from a moment to a row lives in `TimelineDisplayList.scrubTarget(for:rows:)`, the same code the list renders from, so the two cannot drift.
+
+Row anatomy (`RiverTimelineView`), all five columns fixed so the eye can scan one column at a time:
 
 ```text
-time column     54pt   start over end, monospaced digits, trailing-aligned
-spine column    26pt   the node, and the connector drawn behind it
-content                title, category chip, favourite and 待确认 badges, summary, source
-duration column 78pt   duration, right-aligned, then a disclosure chevron
+time column      54pt   start over end, monospaced digits, trailing-aligned
+spine column     26pt   the node, and the connector drawn behind it
+content                 title line, then one evidence line; badges ride the title line
+duration column  78pt   duration, right-aligned
+control column   22pt   the row's own affordance: run disclosure, or detail chevron
 ```
 
-Three rules keep the rows honest and aligned:
+**Two lines per row, not three.** A row says *when* and *what happened*; the second line is the evidence — note → capture tag → 碎片带 (composition + span) → gap → window title → span vs foreground cover → app composition — plus where the row came from, with any part the title already stated removed. There used to be a third line for the source, and a trailing "· N 个原始片段" counter: two lines said the same thing, and the counter is an instrument's internal number, not something that happened. Both now live in the inspector and the context menu.
 
-- **The connector is continuous.** Rows carry no vertical padding of their own — the padding lives inside each column, and the content column supplies the row's height — so a background connector meets the next row's. It is trimmed at the first and last row so the series has two clear ends.
+Six rules keep the rows honest, aligned and quiet:
+
+- **The connector is continuous.** Rows carry no vertical padding of their own — the padding lives inside each column, and the content column supplies the row's height — so a background connector meets the next row's. It is trimmed at the first and last row so the series has two clear ends, and **the trim is computed after expansion**: expanding a 碎片带 inserts child rows, so the run itself is no longer last and its lower half must keep drawing.
+- **The connector is visible.** `Color.timelineSpine` (`accent` blended into the current surface) reads at ≥ 2.2:1 in every palette, and stays lighter than a solid node so a node still reads as a node. A gap's connector uses the neutral `strongSeparator`, and a 碎片带 draws its connector dashed — the same line, saying "this stretch is made of many small pieces".
 - **Alignment is structural, not arithmetic.** The connector repeats the row's own column grid inside its background and is centred in the same spine column that centres the node. Never position it with a computed `offset(x:)`: that drifts from the rendered layout the moment a column width or an inner padding changes.
-- **Meaning never rests on colour alone.** A recorded activity is a solid round accent node, a gap is a hollow neutral ring, and a written note is a square. An empty list explains itself: "没有符合条件的节点" is not the same message as "这一天还没有记录".
+- **Meaning never rests on colour alone.** An activity is a solid round accent node with a surface rim; a gap is a hollow neutral ring; a written note is a square; a 碎片带 is a ring with a solid core; a fragment inside an expanded run is a smaller dot, indented. An empty list explains itself: "没有符合条件的节点" is not the same message as "这一天还没有记录".
+- **Hover is not selection.** Hover is a neutral wash (`ink` at 5%) with the detail chevron fading in; selection is `accentSoft` with a 2.5pt accent capsule as its leading rule and `AppRadius.row`. The two must be one glance apart, because a hover state you mistake for a selection makes the list feel broken. (The raised `chip` fill cannot serve as the hover wash: in light mode `accentSoft` and `chip` are within 1.001:1 of each other.)
+- **Affordances earn their ink.** The trailing detail chevron appears only on the hovered or selected row — a permanent column of chevrons is noise on a list where every row is already clickable. The exception is a 碎片带, whose disclosure is always drawn: it is a container, and its collapsed state has to be visible without hovering.
+
+A category chip is drawn only for the two categories a reader cannot infer from the node and the app names (`系统`, `快记`). Rows for 工作 / 浏览 / 娱乐 used to carry one each, restating what the node colour and the statistics already said.
+
+**碎片带 (fragment runs).** Measured on a real machine, 72% of a day's nodes are shorter than three minutes — one-minute app switches that no one needs to confirm. They are folded at the display layer: `ActivityTimeline.items` always holds every node (export, search, the evidence console and the daily review all read that), while the list reads `foldedItems`. Folding never changes a statistic and never drops a source record. The fold is visible and reversible: the day overview's 碎片 metric counts the folded nodes, an expanded run lists its members inline, and the panel footnote says where they went. `TimelineDisplayList` is the single owner of the folded row list, `ActivityTimelineEngine.foldFragments` of the folding itself.
+
+A 碎片带 is not an annotatable evidence item: it is a view-level aggregate, so it has no annotation key and the inspector offers an explanation instead of an 编辑 button that would save nothing (see `ActivityTimelineItem.isAnnotatable`).
 
 A selected row uses `AppTheme.accentSoft` with a 2.5pt accent capsule as its leading rule and `AppRadius.row`. A reviewed row uses a text label such as `已确认`, never colour.
 
 `ActivityClassifier.color(for:)` and `AppTheme.categoryTint(_:)` return one accent for every category, with only system noise and unrecorded time stepping down to the neutral tone. There is intentionally no per-category colour palette: that would turn the evidence report into a productivity chart. Both must track the `--accent` and `--tertiary-ink` tokens.
+
+**Where the evidence comes from.** The row's second line is only as good as the data behind it, so the collector is part of this component:
+
+- Window titles are sampled **every 25 seconds while a session is open**, not once at the moment of the app switch. Sampling at the switch alone loses almost everything: the target app frequently has no window yet at that instant (2,297 recorded fragments on the author's machine contained exactly one title), and a missing title is one of the inputs to "needs review". `WindowTitleSampling` decides what a reading means — a failed read never erases a title, a session with no title adopts the first one it gets, and a title that changes for two consecutive samples (50s) splits the session at the first sighting, with unread badges like "(3)" ignored so a notification does not cut a block in half.
+- The sampling timer only exists while titles are enabled **and** accessibility is granted. When the permission is missing the timeline says so above the rows, with an action, once — dismissible, and permanently visible in Settings › 记录. Silently showing a day of "没有记录的时间" while the real cause is a missing permission is the failure mode this notice exists to prevent.
 
 The 今日 page must not repeat the timeline. It shows the report header, the day brief, entry cards, compact facts and the review queue (`evidenceInbox`), and reaches the timeline through an action — a second copy of the timeline on 今日 was removed for exactly this reason.
 
@@ -220,7 +252,7 @@ The 今日 page must not repeat the timeline. It shows the report header, the da
 The console has two states sharing one right-hand column:
 
 - **Resting (`EvidenceConsoleView`)** — three always-true questions, each a `RiverPanel` at `.inline`: 正在记录 (live capture status: frontmost app, today's total, last save — or an off-state with an explicit start action), 需要你确认 (the day's material unexplained time, see below), 信任 (encryption badge, last capture, V2 evidence scale, session count). Everything is data the app already owns; no decorative widgets.
-- **What earns a confirmation** — the review queue is a triage list, not a to-do list. A node enters it only when it is an **activity** (never a gap — sleep and being away are life, and the daily review already speaks for them), **≥ 3 minutes** (`reviewMaterialityThreshold` — one-minute app switches never had a window title to lose), and **unannotated**. Items are ordered by unexplained duration, longest first, capped at four. Each row offers 写一句 (inline one-line annotation, saved as the node's title and marked reviewed — the timeline renames itself immediately) and 不用管 (mark reviewed silently); tapping the row opens the full evidence detail. The queue's everyday state is empty — it exists for the moments when the system cannot explain twenty minutes of your day.
+- **What earns a confirmation** — the review queue is a triage list, not a to-do list. A node enters it only when it is an **activity** (never a gap — sleep and being away are life, and the daily review already speaks for them, never a 碎片带 whose members are all under three minutes), **at least 20 minutes** (`reviewMaterialityThreshold` — the same unit the console's own copy uses: "系统无法解释的二十分钟"), **and has nothing that explains it**: no window title, no annotation. The first criterion used to be "≥ 3 minutes and missing a window title", which silently degraded into "≥ 3 minutes" once titles were not being captured — the queue was never empty, which is the opposite of what it was built for ("日常状态是空的"). A long block with a title explains itself and does not need confirming. Items are ordered by unexplained duration, longest first, capped at four. Each row offers 写一句 (inline one-line annotation, saved as the node's title and marked reviewed — the timeline renames itself immediately) and 不用管 (mark reviewed silently); tapping the row opens the full evidence detail.
 - **The instrument does not record itself** — `ActivityClassifier.isRecordable` excludes River Diary (by bundle id and name). Time spent looking at the gauge is not observed life; it is excluded from new sessions and from aggregates.
 - **Detail (`InspectorPanel`)** — the selected fact or inference, source records, time range, coverage, confidence, correction controls, and replay entry. It must distinguish facts from explanations without relying on color alone.
 
@@ -255,7 +287,7 @@ Every empty state explains what is missing, why it matters, and the next action.
 - Keyboard: previous/next date, Today, range menu, workspace shortcuts, focus evidence, confirm/correct/undo.
 - VoiceOver: announce workspace, selected date/range, card title, observed value, coverage, confidence, and state.
 - Focus order: date block → workspace navigation → Day Brief → core actions → cards → timeline → evidence console.
-- Do not rely on hover. Use visible affordances and native button/list behavior.
+- Do not rely on hover. Use visible affordances and native button/list behavior. Hover is an enhancement, selection is state: hover may add a neutral wash or fade in an affordance, but the selected state is always the stronger one and every hover-only affordance has a keyboard path.
 - Respect reduced motion. State changes must remain understandable without animation.
 - Contrast must meet macOS accessibility expectations; color is never the only encoding.
 
@@ -299,7 +331,9 @@ Use factual, non-moralizing language: “31 minutes of video unrelated to the se
 5. **Position** — is this the last row in its panel? Then it must pass `showsDivider: false`.
 6. **Elevation** — is `.raised` or `.floating` justified? Inside a scrolling page, `.inline` is correct.
 7. **Cross-element alignment** — does anything line up across rows or across panels (a connector, a column, a rule)? Then it must share the same column grid rather than a computed offset. Reach for `TimelineRowMetrics`-style shared constants, and put the element inside a `background`/`overlay` that repeats the grid.
-8. **Does it render?** — a view-hierarchy check cannot see a broken connector, an off-centre node, or a filled ribbon. `Tests/RiverDiaryMacTests/TimelineRenderingTests.swift` renders components offscreen with `ImageRenderer` and asserts on the pixels; extend it when a change alters geometry, and never re-derive the numbers the view uses — measure the node out of the bitmap.
+8. **Does it render?** — a view-hierarchy check cannot see a broken connector, an off-centre node, or a filled ribbon. `Tests/RiverDiaryMacTests/TimelineRenderingTests.swift` renders components offscreen with `ImageRenderer` and asserts on the pixels; extend it when a change alters geometry, and never re-derive the numbers the view uses — measure the node out of the bitmap. `TimelineRowAnatomyTests.swift` is the same instrument for the row's *appearance*: it measures the spine's contrast at the node axis, the selected row's fill, and counts the dark pixels in the trailing control column to prove the chevron only appears when it should.
+9. **Is the colour ladder intact?** — a hex edited in `Palettes.swift` is a claim about contrast. `PaletteDepthTests` recomputes WCAG contrast for every token in all eight palettes × both appearances; if a token was lightened or darkened, update the table in *Color tokens* and the test's band together, and say why in the comment.
+10. **Does the change shuffle evidence or copy?** — the timeline reads `foldedItems`, everything else reads `items`. A change that moves a statistic onto the folded list, or makes the fold drop a node, is a data change wearing a display change's clothes.
 
 Run the whole suite before packaging:
 
