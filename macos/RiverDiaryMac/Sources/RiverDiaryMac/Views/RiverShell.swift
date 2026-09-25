@@ -171,7 +171,25 @@ struct RiverShellView: View {
                     .id(paletteController.palette.rawValue)
                     .navigationSplitViewColumnWidth(min: 208, ideal: AppLayout.sidebarWidth, max: 280)
             } detail: {
-                content
+                HStack(spacing: 0) {
+                    content
+                    // 右栏静息态：宽窗且没有选中任何节点时，证据控制台占住右列；
+                    // 选中节点后同一列交给 InspectorPanel（见下方 .inspector）。
+                    if usesSideInspector && inspectorContent == nil {
+                        EvidenceConsoleView(
+                            store: store,
+                            activity: activity,
+                            ingestion: ingestion,
+                            v2Store: v2Store,
+                            selectedDate: dateContext.selectedDate,
+                            onSelectTimelineItem: { item, focusID in
+                                presentEpisode(item, returningFocusTo: focusID)
+                            },
+                            onStartTracking: { activity.startTracking() }
+                        )
+                        .frame(width: AppLayout.consoleWidth)
+                    }
+                }
                     .background(Color.workspace)
                     .environmentObject(feedback)
                     .environment(\.riverDensity, density)

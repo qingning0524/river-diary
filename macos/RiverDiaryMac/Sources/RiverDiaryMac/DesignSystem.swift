@@ -67,6 +67,8 @@ enum AppLayout {
     static let contentMaxWidth: CGFloat = 920
     /// Fixed width of the Today page's right-hand column (goal + facts).
     static let todayAsideWidth: CGFloat = 320
+    /// 常驻证据控制台（右栏静息态）的列宽；与侧栏 Inspector 详情共用右列位置。
+    static let consoleWidth: CGFloat = 300
     static let outerPadding: CGFloat = 24
     static let inspectorWidth: CGFloat = 348
     static let settingsRailWidth: CGFloat = 186

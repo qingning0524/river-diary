@@ -217,9 +217,12 @@ The 今日 page must not repeat the timeline. It shows the report header, the da
 
 ### Evidence console
 
-The secondary context surface shows the selected fact or inference, source records, time range, coverage, confidence, correction controls, and replay entry. It must distinguish facts from explanations without relying on color alone.
+The console has two states sharing one right-hand column:
 
-Each evidence item is a `RiverPanel` at `.inline`, with a tinted `kind` chip, the source metadata in monospaced digits, and a short “why this judgment” explanation. When the console is closed, the same content opens as the native Inspector without changing the main report layout.
+- **Resting (`EvidenceConsoleView`)** — three always-true questions, each a `RiverPanel` at `.inline`: 正在记录 (live capture status: frontmost app, today's total, last save — or an off-state with an explicit start action), 需要你确认 (up to four review-queue items for the selected date, tappable into the detail state), 信任 (encryption badge, last capture, V2 evidence scale, session count). Everything is data the app already owns; no decorative widgets.
+- **Detail (`InspectorPanel`)** — the selected fact or inference, source records, time range, coverage, confidence, correction controls, and replay entry. It must distinguish facts from explanations without relying on color alone.
+
+Each evidence item is a `RiverPanel` at `.inline`, with a tinted `kind` chip, the source metadata in monospaced digits, and a short “why this judgment” explanation. Below 1320pt the column collapses and the detail state opens as the floating Inspector instead.
 
 ### Buttons
 
@@ -252,8 +255,8 @@ Every empty state explains what is missing, why it matters, and the next action.
 
 ## Mac window layouts
 
-- **Wide:** sidebar + main Today workspace + persistent evidence console.
-- **Standard:** sidebar + main workspace; evidence console opens as a drawer/Inspector.
+- **Wide (≥1320pt):** sidebar + main workspace + the right column is never empty. With no node selected, `EvidenceConsoleView` occupies it as the console's resting state (正在记录 / 需要你确认 / 信任). When a timeline node is selected, the same column is taken over by `InspectorPanel` — resting and detail states share one slot, so the rail never competes with the inspector.
+- **Standard:** sidebar + main workspace; evidence detail opens as a drawer/Inspector; the console is hidden.
 - **Narrow:** sidebar remains navigable; prominent cards become compact rows; evidence and replay open as a sheet or Inspector; never require horizontal scrolling for core actions.
 - The minimum window size preserves date navigation, primary action, Day Brief, and the current evidence state.
 
