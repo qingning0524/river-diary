@@ -9,7 +9,13 @@ enum ActivityClassifier {
         let bundle = bundleID.lowercased()
         let systemNames: Set<String> = ["loginwindow", "screensaverengine", "screensaver", "windowserver"]
         let systemBundles: Set<String> = ["com.apple.loginwindow", "com.apple.screensaver.engine", "com.apple.screensaver"]
+        // 证据工具不记录自己：使用 River Diary 的时长属于"看仪表"，不是被观察的生活。
+        // 用名单判断而不是只比对 Bundle.main——打包运行时与测试环境的宿主不同。
+        let selfNames: Set<String> = ["riverdiary", "river diary", "河流日记"]
+        let selfBundles: Set<String> = ["studio.riverdiary.mac"]
         return !systemNames.contains(name) && !systemBundles.contains(bundle)
+            && !selfNames.contains(name) && !selfBundles.contains(bundle)
+            && bundle != (Bundle.main.bundleIdentifier?.lowercased() ?? "")
     }
 
     static func identity(appName: String, bundleID: String? = nil) -> String {

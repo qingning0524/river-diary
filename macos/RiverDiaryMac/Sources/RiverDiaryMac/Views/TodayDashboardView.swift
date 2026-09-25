@@ -425,7 +425,10 @@ struct TodayDashboardView: View {
     // MARK: Review queue
 
     private func evidenceInbox(_ s: Snapshot) -> some View {
-        let items = Array(s.timeline.items.filter(\.needsReview).prefix(4))
+        let items = Array(s.timeline.items
+            .filter(\.needsReview)
+            .sorted { $0.reviewSpan > $1.reviewSpan }
+            .prefix(4))
 
         return RiverPanel(
             title: "需要你确认",

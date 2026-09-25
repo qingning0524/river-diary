@@ -11,6 +11,10 @@ import SwiftUI
 struct EvidenceConsoleView: View {
     @Environment(\.riverDensity) private var density
     @EnvironmentObject private var feedbackCenter: FeedbackCenter
+    /// 行内快速标注：展开输入框的那条队列行（nil = 无）。
+    @State private var annotatingItemID: String?
+    @State private var annotationDraft = ""
+    @FocusState private var annotationFieldFocused: Bool
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ingestion: DataIngestionStore
@@ -123,7 +127,10 @@ struct EvidenceConsoleView: View {
 
     private var reviewQueueCard: some View {
         let timeline = buildTimeline()
-        let items = Array(timeline.items.filter(\.needsReview).prefix(4))
+        let items = Array(timeline.items
+            .filter(\.needsReview)
+            .sorted { $0.reviewSpan > $1.reviewSpan }
+            .prefix(4))
 
         return RiverPanel(
             title: "需要你确认",
@@ -148,7 +155,7 @@ struct EvidenceConsoleView: View {
                         if index < items.count - 1 { RiverRowDivider(inset: density.spacing(AppSpacing.sm)) }
                     }
                 }
-                Text("点 ✓ 直接确认；要看证据或补充说明就打开详情。")
+                Text("写一句补全说明，或标记不用管；点行打开证据详情。")
                     .font(AppTypography.metadata())
                     .foregroundStyle(Color.tertiaryInk)
                     .fixedSize(horizontal: false, vertical: true)
@@ -159,66 +166,118 @@ struct EvidenceConsoleView: View {
 
     /// 一条待确认证据：是什么（标题）、为什么待确认（原因 + 时间范围）、
     /// 多长（时长），以及不打开详情就能完成的"确认"动作。
+    /// 一条待确认证据：是什么、为什么待确认（原因 + 时间范围）、多长，
+    /// 以及两个动作——"写一句"补全说明（主），"不用管"标记已知（次）。
+    /// 点行本身仍打开完整证据详情。
     private func consoleReviewRow(_ item: ActivityTimelineItem) -> some View {
         let spanText = item.duration >= 60
             ? ActivityFormatter.time(item.duration)
             : "不到 1 分钟"
-        return HStack(alignment: .top, spacing: density.spacing(AppSpacing.sm)) {
-            VStack(alignment: .leading, spacing: density.spacing(2)) {
-                Text(item.title)
-                    .font(AppTypography.rowTitle())
-                    .foregroundStyle(Color.ink)
-                    .lineLimit(1)
-                Text(consoleRowReasonLine(item))
-                    .font(AppTypography.metadata())
-                    .foregroundStyle(Color.tertiaryInk)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-            }
-            Spacer(minLength: 0)
-            VStack(alignment: .trailing, spacing: density.spacing(2)) {
+        let isAnnotating = annotatingItemID == item.id
+        return VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
+            HStack(alignment: .top, spacing: density.spacing(AppSpacing.sm)) {
+                VStack(alignment: .leading, spacing: density.spacing(2)) {
+                    Text(item.title)
+                        .font(AppTypography.rowTitle())
+                        .foregroundStyle(Color.ink)
+                        .lineLimit(1)
+                    Text("\(item.needsReviewReason ?? "待确认") · \(item.start.formatted(date: .omitted, time: .shortened))–\(item.end.formatted(date: .omitted, time: .shortened))")
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(Color.tertiaryInk)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                }
+                Spacer(minLength: 0)
                 Text(spanText)
                     .font(AppTypography.numeric())
                     .foregroundStyle(Color.secondaryInk)
-                if item.annotationKey != nil {
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { openDetail(item) }
+
+            if isAnnotating {
+                HStack(spacing: density.spacing(AppSpacing.xs)) {
+                    TextField("写一句说明，比如：备课时间", text: $annotationDraft)
+                        .textFieldStyle(.plain)
+                        .font(AppTypography.secondary())
+                        .focused($annotationFieldFocused)
+                        .onSubmit { saveQuickAnnotation(item) }
+                        .padding(density.spacing(AppSpacing.xs))
+                        .background(Color.editor, in: RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
+                                .strokeBorder(Color.border, lineWidth: 1)
+                        )
+                    Button("保存") { saveQuickAnnotation(item) }
+                        .primaryCTA()
+                    Button("取消") { closeAnnotating() }
+                        .linkAction()
+                }
+            } else {
+                HStack(spacing: density.spacing(AppSpacing.md)) {
                     Button {
-                        confirm(item)
+                        annotatingItemID = item.id
+                        annotationDraft = ""
+                        annotationFieldFocused = true
                     } label: {
-                        Label("确认", systemImage: "checkmark")
-                            .labelStyle(.titleAndIcon)
+                        Label("写一句", systemImage: "square.and.pencil")
                             .font(AppTypography.metadata())
                     }
-                    .buttonStyle(.plain)
-                    .smallAction()
-                    .accessibilityLabel("确认这条证据：\(item.title)")
+                    .linkAction()
+                    .accessibilityLabel("为 \(item.title) 补充一句说明")
+                    Button("不用管") { dismiss(item) }
+                        .linkAction()
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(Color.tertiaryInk)
+                        .accessibilityLabel("不用管：\(item.title) 标记为已确认")
                 }
             }
         }
         .padding(.vertical, density.spacing(6))
-        .contentShape(Rectangle())
-        .onTapGesture { onSelectTimelineItem(item, "console-review:\(item.id)") }
         .accessibilityElement(children: .contain)
-        .accessibilityHint("双击查看详情，或用确认按钮直接标记已确认")
+        .accessibilityHint("点行查看详情；写一句补全说明，或不用管")
     }
 
-    /// 原因行的紧凑时间范围：HH:mm 起–止（.formatted 在中文环境输出 "0:01"），
-    /// 不用 ActivityFormatter.timeRange——它的全秒格式（00:01:09）在这一行太重。
-    private func consoleRowReasonLine(_ item: ActivityTimelineItem) -> String {
-        let start = item.start.formatted(date: .omitted, time: .shortened)
-        let end = item.end.formatted(date: .omitted, time: .shortened)
-        return "\(item.needsReviewReason ?? "待确认") · \(start)–\(end)"
+    private func openDetail(_ item: ActivityTimelineItem) {
+        closeAnnotating()
+        onSelectTimelineItem(item, "console-review:\(item.id)")
     }
 
-    private func confirm(_ item: ActivityTimelineItem) {
+    private func closeAnnotating() {
+        annotatingItemID = nil
+        annotationDraft = ""
+    }
+
+    /// "写一句"：把这句话存成该节点的整理标题并视为已确认。
+    /// 时间线上的节点会随之改名——补充立刻可见。
+    private func saveQuickAnnotation(_ item: ActivityTimelineItem) {
+        guard let key = item.annotationKey else { return }
+        let trimmed = annotationDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        var annotation = store.timelineAnnotations[key] ?? TimelineAnnotation()
+        annotation.title = trimmed
+        annotation.isReviewed = true
+        annotation.reviewedAt = Date()
+        do {
+            try store.saveTimelineAnnotation(annotation, for: key)
+            feedbackCenter.show("已补充：\(trimmed)", kind: .success)
+            closeAnnotating()
+        } catch {
+            feedbackCenter.show("保存失败：\(UserFacingError.message(for: error))", kind: .error)
+        }
+    }
+
+    /// "不用管"：我知道这段时间是什么，不需要说明。
+    private func dismiss(_ item: ActivityTimelineItem) {
         guard let key = item.annotationKey else { return }
         var annotation = store.timelineAnnotations[key] ?? TimelineAnnotation()
         annotation.isReviewed = true
         annotation.reviewedAt = Date()
         do {
             try store.saveTimelineAnnotation(annotation, for: key)
-            feedbackCenter.show("已确认这条证据", kind: .success)
+            feedbackCenter.show("已标记不用管", kind: .success)
         } catch {
-            feedbackCenter.show("确认失败：\(UserFacingError.message(for: error))", kind: .error)
+            feedbackCenter.show("保存失败：\(UserFacingError.message(for: error))", kind: .error)
         }
     }
 

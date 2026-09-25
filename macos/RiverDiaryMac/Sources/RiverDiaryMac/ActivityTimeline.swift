@@ -15,11 +15,25 @@ struct ActivityTimelineItem: Identifiable, Hashable {
 
     var isFavorite: Bool { annotation?.isFavorite == true }
 
-    /// 为什么这条节点待确认：时间空档，或实时片段缺少窗口标题。
+    /// 什么才值得请你确认：产品决策（2026-09-25）——一两分钟的切屏碎片
+    /// 不构成确认请求。快速切换时窗口标题本来就读不到，这类碎片注定
+    /// 没有标题；它们仍完整保留在时间线与证据库里，只是不再打扰你。
+    /// 只有达到 3 分钟的未知时间才进入待确认队列。
+    static let reviewMaterialityThreshold: TimeInterval = 180
+
+    /// 参与确认排序/阈值判断的时长：空档没有 duration，用跨度。
+    var reviewSpan: TimeInterval {
+        max(duration, end.timeIntervalSince(start))
+    }
+
+    /// 为什么这条节点待确认：够分量（≥3 分钟）且缺少窗口标题的活动片段。
+    /// 空档不进队列——睡眠、离开电脑是生活常态，日复盘已有"不按零计算"
+    /// 的留白陈述，每天请人确认睡眠是把免责声明变成作业。
     /// 三个展示位（时间线筛选、今日队列、控制台队列）共用这一个判定。
     var needsReviewReason: String? {
         guard annotation?.isReviewed != true else { return nil }
-        if kind == .gap { return "这段时间没有记录" }
+        guard kind != .gap else { return nil }
+        guard reviewSpan >= Self.reviewMaterialityThreshold else { return nil }
         if sessions.contains(where: {
             ($0.windowTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }) { return "缺少窗口标题" }
