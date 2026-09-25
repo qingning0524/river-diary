@@ -242,8 +242,14 @@ final class TimelineRenderingTests: XCTestCase {
         let drawn = spineRows(image, around: centreX)
         guard let last = drawn.lastIndex(of: true) else { return XCTFail("no spine pixels") }
         // Below the final node the connector must stop, leaving clear canvas.
-        let trailing = (last + 8)..<min(last + 40, image.height)
-        XCTAssertFalse(trailing.contains { drawn[$0] }, "the spine runs on past the last node")
+        // 断言区间必须先保证 lowerBound <= upperBound：旧的 `(last + 8)..<min(...)`
+        // 在脊柱一直画到画布底部时会构造失败并触发
+        // `Fatal error: Range requires lowerBound <= upperBound`，直接打崩测试进程，
+        // 导致后面的用例一个都跑不到（症状是只跑了 141 项就 signal 5 退出）。
+        let trailingStart = min(last + 8, image.height)
+        let trailingEnd = min(last + 40, image.height)
+        guard trailingStart < trailingEnd else { return }
+        XCTAssertFalse((trailingStart..<trailingEnd).contains { drawn[$0] }, "the spine runs on past the last node")
     }
 }
 

@@ -74,6 +74,9 @@ struct RiverScrollIndicatorModifier: ViewModifier {
     @State private var trackHeight: CGFloat = 0
     @State private var opacity: Double = 0
     @State private var fadeTask: Task<Void, Never>?
+    /// 首次几何回调发生在布局阶段，不是用户在滚动。那时如果也 reveal，
+    /// 每个页面一打开就会闪出一条滚动条并一直挂着（只有滚动相位变化才会排淡出）。
+    @State private var hasAppeared = false
 
     func body(content: Content) -> some View {
         if Self.isTesting {
@@ -106,7 +109,15 @@ struct RiverScrollIndicatorModifier: ViewModifier {
                     let maxScroll = state.contentHeight - state.containerHeight
                     let offset = min(max(state.offset, 0), maxScroll)
                     thumbOffsetY = maxScroll > 0 ? (offset / maxScroll) * (state.containerHeight - thumbHeight) : 0
+                    // 首次只是布局：记下几何但不显示，避免打开页面时闪一条滚动条。
+                    guard hasAppeared else {
+                        hasAppeared = true
+                        return
+                    }
                     reveal()
+                    // 每次几何变化都重排淡出：连续滚动时它一直在（每次被取消重排），
+                    // 停手 0.7 秒后淡出。这样不必依赖滚动相位回调也能收敛。
+                    scheduleFade()
                 }
                 .onScrollPhaseChange { _, newPhase in
                     if newPhase == .idle {

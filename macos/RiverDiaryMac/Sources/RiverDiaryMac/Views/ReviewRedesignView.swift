@@ -9,10 +9,19 @@ struct ReviewRedesignView: View {
     @ObservedObject var ai: AIAssistantStore
     @ObservedObject var library: MemoryLibraryStore
     let selectedDate: Date
+    /// 把 AI 结论里的证据引用交给 Shell 打开 Inspector。
+    var onRevealEvidence: (String, [AskEvidence]) -> Void = { _, _ in }
 
     var body: some View {
         RiverPage {
-            ReviewContentView(store: store, activity: activity, ai: ai, library: library, selectedDate: selectedDate)
+            ReviewContentView(
+                store: store,
+                activity: activity,
+                ai: ai,
+                library: library,
+                selectedDate: selectedDate,
+                onRevealEvidence: onRevealEvidence
+            )
         }
     }
 }
@@ -32,6 +41,7 @@ struct ReviewContentView: View {
     @State private var letterDrafts: [String: MonthlyLetter] = [:]
     @State private var letterMessage: String?
     var showsHeader = true
+    var onRevealEvidence: (String, [AskEvidence]) -> Void = { _, _ in }
     @EnvironmentObject private var feedbackCenter: FeedbackCenter
 
     private var endDate: Date { ProgressAnchor.completedEndDate(selectedDate: selectedDate) }
@@ -312,7 +322,7 @@ struct ReviewContentView: View {
                         Task {
                             await ai.runAnalysisWeekly(
                                 entries: store.entries,
-                                sessions: activity.sessions(from: startDate, to: endDate.addingTimeInterval(24 * 60 * 60)),
+                                sessions: reviewSessions,
                                 archiveStartDate: ActivitySession.dayKey(for: startDate),
                                 archiveEndDate: ActivitySession.dayKey(for: endDate),
                                 sourceSummary: "本机回顾 · \(dayRange) 天 · 日记 \(review.writingDays) 天 · 足迹 \(ActivityFormatter.time(review.duration))"
@@ -323,6 +333,8 @@ struct ReviewContentView: View {
                     .primaryCTA()
                     .disabled(!ai.hasVerifiedConnection || ai.state(for: .analysisWeekly)?.isLoading == true)
                 }
+                payloadPreviewRow
+                evidenceChipsRow(for: .analysisWeekly)
                 if let state = ai.state(for: .analysisWeekly), let answer = state.answer {
                     Text(answer)
                         .font(AppTypography.primary())
@@ -337,6 +349,79 @@ struct ReviewContentView: View {
                 }
             }
         }
+    }
+
+    /// 请求前把"将要发送什么"摆在按钮下面：日记正文与窗口标题的敏感级别不同，
+    /// 用户有权在按下生成之前看到数量，并单独决定是否附带窗口标题。
+    private var payloadPreviewRow: some View {
+        let preview = AIAssistantStore.preview(
+            entries: store.entries,
+            captures: store.quickCaptures.values.flatMap(\.self),
+            sessions: reviewSessions,
+            startDate: ActivitySession.dayKey(for: startDate),
+            endDate: ActivitySession.dayKey(for: endDate),
+            includesTitles: ai.includeTitles
+        )
+        return VStack(alignment: .leading, spacing: density.spacing(6)) {
+            HStack(spacing: density.spacing(AppSpacing.sm)) {
+                Image(systemName: "paperplane")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.tertiaryInk)
+                    .accessibilityHidden(true)
+                Text("将发送：\(preview.summary)")
+                    .font(AppTypography.metadata())
+                    .foregroundStyle(Color.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Toggle("附带窗口标题（更具体，也更敏感）", isOn: $ai.includeTitles)
+                .toggleStyle(.switch)
+                .tint(AppTheme.accent)
+                .font(AppTypography.metadata())
+        }
+        .padding(.top, density.spacing(2))
+    }
+
+    /// AI 结论里写下的证据引用（`<!-- evidence: … -->` 或正文里的 `raw:`/`diary:` 形式）
+    /// 渲染成可点的 chip：点一下就把这些记录送进 Inspector 核对。
+    /// 这是"结论可追溯"从口号变成手感的那一步。
+    @ViewBuilder
+    private func evidenceChipsRow(for task: AITask) -> some View {
+        let refs = EvidenceReference.extract(from: ai.state(for: task)?.answer ?? "")
+        if !refs.isEmpty {
+            let items = refs.prefix(8).map { ref -> AskEvidence in
+                let parsed = EvidenceReference.parse(ref)
+                let kind: AskEvidence.Kind = switch parsed?.kind {
+                case .raw, .episode: .timeline
+                case .capture: .capture
+                case .health: .diary
+                case .diary, .none: .diary
+                }
+                return AskEvidence(
+                    id: ref,
+                    kind: kind,
+                    title: parsed.map { "\($0.kind.label) · \($0.value.prefix(8))" } ?? ref,
+                    detail: ref,
+                    date: parsed.flatMap { DiaryEntry.dateFormatter.date(from: $0.value) },
+                    episodes: []
+                )
+            }
+            VStack(alignment: .leading, spacing: density.spacing(6)) {
+                Text("结论引用了 \(refs.count) 条本机记录")
+                    .font(AppTypography.metadata())
+                    .foregroundStyle(Color.tertiaryInk)
+                ChipFlow(spacing: AppSpacing.sm) {
+                    ForEach(items) { item in
+                        FilterChip(title: item.title, isSelected: false) {
+                            onRevealEvidence("AI 结论依据", Array(items))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var reviewSessions: [ActivitySession] {
+        activity.sessions(from: startDate, to: endDate.addingTimeInterval(24 * 60 * 60))
     }
 
     private func copyMarkdown() {

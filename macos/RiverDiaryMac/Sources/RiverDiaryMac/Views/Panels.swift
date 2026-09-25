@@ -188,9 +188,17 @@ struct RiverPanel<Header: View, Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header()
-            content()
-                .padding(.horizontal, density.spacing(padding ?? AppSpacing.panelPadding))
-                .padding(.vertical, density.spacing(padding ?? AppSpacing.panelPadding))
+            // 必须把内容先收进一个自己的 VStack 再加内边距。
+            // 直接写 `content().padding(...)` 时，`content` 是 ViewBuilder 产出的多元组，
+            // SwiftUI 会把 padding **分给每一个子视图**，于是每行都多出上下各 18pt：
+            // 行距从 47pt 变成 83pt（像素实测：面板分隔线正好相距 83pt），
+            // 整个应用的面板都异常松散。收进 VStack 后 padding 只作用一次，回到设计意图。
+            VStack(alignment: .leading, spacing: 0) {
+                content()
+            }
+            .padding(.horizontal, density.spacing(padding ?? AppSpacing.panelPadding))
+            .padding(.vertical, density.spacing(padding ?? AppSpacing.panelPadding))
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .riverPanelSurface(level, tint: tint)
@@ -450,7 +458,8 @@ struct RiverStatDivider: View {
 /// The scroll column used by every settings section.
 struct SettingsPage<Content: View>: View {
     @Environment(\.riverDensity) private var density
-    var maxWidth: CGFloat = 720
+    /// 版心宽度按设置窗口的内容列定：窗口 760 − 左栏 168 − 1pt 发丝线。
+    var maxWidth: CGFloat = AppLayout.settingsColumnMaxWidth
     @ViewBuilder var content: () -> Content
 
     var body: some View {
@@ -458,10 +467,12 @@ struct SettingsPage<Content: View>: View {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sectionGap)) {
                 content()
             }
+            // 与页面标题共用版心上限和左内边距（`AppSpacing.page`），并且**左对齐**：
+            // 标题贴在左边缘、面板却居中缩在中间，是设置页看起来"散"的主因。
             .frame(maxWidth: maxWidth, alignment: .topLeading)
             .padding(.horizontal, density.spacing(AppSpacing.page))
             .padding(.top, density.spacing(AppSpacing.xl))
-            .padding(.bottom, density.spacing(48))
+            .padding(.bottom, density.spacing(AppSpacing.xxl))
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .riverScrollIndicators()

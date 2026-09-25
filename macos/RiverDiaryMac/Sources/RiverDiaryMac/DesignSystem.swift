@@ -29,6 +29,22 @@ extension EnvironmentValues {
         get { self[RiverHighContrastKey.self] }
         set { self[RiverHighContrastKey.self] = newValue }
     }
+
+    /// 当前配色的身份。
+    ///
+    /// 注意：不要再用 `.id(palette)` 去"重建子树"来让新配色生效——
+    /// `.id` 改变会销毁并重建整棵子树，`@State`（当前选中的设置分类、滚动位置、
+    /// 输入框内容）全部丢失，表现就是"每次切换配色页面都会跳转"。
+    /// 配色切换由 `PaletteStore.invalidateResolvedColors()` + `PaletteController`
+    /// 的强制重绘负责，视图只需要能读到新的身份值。
+    var riverPalette: RiverPalette {
+        get { self[RiverPaletteKey.self] }
+        set { self[RiverPaletteKey.self] = newValue }
+    }
+}
+
+private struct RiverPaletteKey: EnvironmentKey {
+    static let defaultValue = RiverPalette.seafoam
 }
 
 enum RiverAppearance: String, CaseIterable, Identifiable {
@@ -60,6 +76,12 @@ enum RiverAppearance: String, CaseIterable, Identifiable {
 // their own widths, paddings and gaps.
 
 enum AppLayout {
+    /// 侧栏 Inspector 与外挂内容并排所需的最小窗口宽度。
+    ///
+    /// 必须 ≤ 默认窗口宽度（1280），否则"开箱即用"看到的永远不是设计基准里的
+    /// 宽窗主形态，而是窄窗浮层这一降级形态。这里按
+    /// 侧栏 236 + 内容 720 + Inspector 348 = 1304 取整并留一点余量。
+    static let sideInspectorBreakpoint: CGFloat = 1180
     static let sidebarWidth: CGFloat = 236
     static let sidebarMinWidth: CGFloat = 216
     static let sidebarMaxWidth: CGFloat = 288
@@ -71,7 +93,19 @@ enum AppLayout {
     static let consoleWidth: CGFloat = 300
     static let outerPadding: CGFloat = 24
     static let inspectorWidth: CGFloat = 348
-    static let settingsRailWidth: CGFloat = 186
+    /// 设置窗口左栏宽度（与侧栏同一 anatomy，但更紧凑）。
+    static let settingsRailWidth: CGFloat = 168
+    /// 设置窗口内容列的版心上限。窗口 880 − 左栏 168 − 1pt 发丝线 = 711，
+    /// 减去两侧各 `AppSpacing.page`(26) 的内边距 = 659，所以取 652：
+    /// 默认尺寸下内容基本铺满版心（右侧只留几 pt 余量），拉宽窗口时也能保持可读行宽。
+    static let settingsColumnMaxWidth: CGFloat = 652
+    /// 设置窗口的尺寸下限：再窄内容列就不够用了。
+    static let settingsWindowMinWidth: CGFloat = 760
+    static let settingsWindowMinHeight: CGFloat = 540
+    /// 设置窗口的默认尺寸。设置页是"左栏 + 内容"的整页布局：
+    /// 760 宽时左栏占 168、内容列只剩 540，面板和说明文字会被挤到换行，故取 880。
+    static let settingsWindowWidth: CGFloat = 880
+    static let settingsWindowHeight: CGFloat = 620
 }
 
 // MARK: - Radius
@@ -253,4 +287,48 @@ enum AppSurfaceLevel {
     case raised
     /// Sheets, popovers, drawers, the lock gate.
     case overlay
+}
+
+// MARK: - App-wide environment
+
+/// 主窗口与原生设置窗口必须看到同一套外观与配色环境。
+///
+/// 抽出这个修饰符是因为设置页现在有两条入口（⌘, 的原生窗口、侧栏按钮），
+/// 而它依赖 `riverDensity`、`riverHighContrast`、tint 与配色身份重建。
+/// 只给其中一个窗口注入，另一个窗口就会用错密度、用系统蓝、或在换配色后
+/// 留下旧颜色的缓存图层。
+struct RiverAppEnvironment: ViewModifier {
+    var density: RiverDensity
+    var prefersHighContrast: Bool
+    var palette: RiverPalette
+    var colorScheme: ColorScheme?
+
+    func body(content: Content) -> some View {
+        content
+            .environment(\.riverDensity, density)
+            .environment(\.riverHighContrast, prefersHighContrast)
+            .tint(Color.riverBlue)
+            // 只注入环境值，**不在这里放 `.id()`**：这个修饰符由窗口控制器包在视图外面，
+            // 放在这里会连视图自身的 `@State` 一起重建（设置页会跳回第一个分类）。
+            // 配色刷新所需的 `.id()` 放在各窗口根视图的 body 内部，
+            // 见 `SettingsRedesignView.body` 与 `RiverShellView.body`。
+            .environment(\.riverPalette, palette)
+            .preferredColorScheme(colorScheme)
+    }
+}
+
+extension View {
+    func riverAppEnvironment(
+        density: RiverDensity,
+        prefersHighContrast: Bool,
+        palette: RiverPalette,
+        colorScheme: ColorScheme?
+    ) -> some View {
+        modifier(RiverAppEnvironment(
+            density: density,
+            prefersHighContrast: prefersHighContrast,
+            palette: palette,
+            colorScheme: colorScheme
+        ))
+    }
 }

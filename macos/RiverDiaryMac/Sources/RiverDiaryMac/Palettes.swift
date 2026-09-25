@@ -293,12 +293,11 @@ final class PaletteController: ObservableObject {
         PaletteStore.invalidateResolvedColors()
         UserDefaults.standard.set(palette.rawValue, forKey: PaletteStore.defaultsKey)
         self.palette = palette
-        // 双保险：Shell 以配色为身份重建整棵子树；这里再请 AppKit 对所有可见
-        // 窗口强制重绘一次，确保任何被 SwiftUI 跳过 body 的视图也立即重解析。
-        DispatchQueue.main.async {
-            for window in NSApp.windows where window.isVisible {
-                window.contentView?.needsDisplay = true
-            }
-        }
+        // 这里刻意**不做**强制重绘：实测 `needsDisplay`、`layer.setNeedsDisplay`、
+        // `displayIfNeeded` 都不会让 SwiftUI 重新解析调色板颜色 —— SwiftUI 把已解析的
+        // 颜色缓存住了，只有改变视图身份（`.id`）才会重新解析。
+        // 因此两个窗口的根视图 body 都带 `.id(palette)`，而上面这行 `@Published`
+        // 负责触发那次 body 重算。画在窗口上的 AppKit 静态色（窗口底色）由持有它的
+        // 视图在 `updateNSView` 里同步。
     }
 }

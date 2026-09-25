@@ -21,6 +21,17 @@ struct ActivityTimelineItem: Identifiable, Hashable {
     /// 只有达到 3 分钟的未知时间才进入待确认队列。
     static let reviewMaterialityThreshold: TimeInterval = 180
 
+    /// 主导证据引用：指向这一行/这一段的原始记录，供 AI 结论引用后点回原处。
+    /// 活动段用它第一条原始片段的 id（`raw:` 命名空间），快记用 `capture:`。
+    /// 空档没有原始记录，因此为 nil——"没有数据"本身不是一个可引用的证据。
+    var evidenceRef: String? {
+        switch kind {
+        case .activity: sessions.first.map { "raw:\($0.id.uuidString)" }
+        case .capture: capture.map { "capture:\($0.id.uuidString)" }
+        case .gap: nil
+        }
+    }
+
     /// 参与确认排序/阈值判断的时长：空档没有 duration，用跨度。
     var reviewSpan: TimeInterval {
         max(duration, end.timeIntervalSince(start))

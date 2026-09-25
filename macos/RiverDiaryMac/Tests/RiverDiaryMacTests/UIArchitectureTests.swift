@@ -3,9 +3,16 @@ import XCTest
 
 final class UIArchitectureTests: XCTestCase {
     func testNavigationHasStableWorkspaceDestinations() {
+        // `settings` 不再是工作区目的地：设置只有原生设置窗口这一种形态
+        // （⌘,、侧栏入口、菜单项、命令面板都打开同一个窗口），
+        // 避免"两处入口、一个视图、两种行为"。
         XCTAssertEqual(
             RiverDestination.allCases.map(\.rawValue),
-            ["today", "timeline", "dailyReview", "health", "footprints", "workLearn", "memory", "ask", "progress", "database", "sources", "settings"]
+            ["today", "timeline", "dailyReview", "health", "footprints", "workLearn", "memory", "ask", "progress", "database", "sources"]
+        )
+        XCTAssertFalse(
+            RiverDestination.allCases.contains { $0.rawValue == "settings" },
+            "设置不应再作为可切换的工作区页面存在"
         )
     }
 
@@ -13,7 +20,7 @@ final class UIArchitectureTests: XCTestCase {
         let shortcuts = RiverDestination.allCases.map(\.navigationShortcut.label)
         XCTAssertEqual(
             shortcuts,
-            ["⌘1", "⌘4", "⌘5", "⌘6", "⌘7", "⌘8", "⌘2", "⌘3", "⌘9", "⌘0", "⌘⇧D", "⌘,"]
+            ["⌘1", "⌘4", "⌘5", "⌘6", "⌘7", "⌘8", "⌘2", "⌘3", "⌘9", "⌘0", "⌘⇧D"]
         )
         XCTAssertEqual(Set(shortcuts).count, RiverDestination.allCases.count)
     }

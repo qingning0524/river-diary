@@ -74,6 +74,13 @@ extension Color {
     static let strongSurface = paletteColor(\.strongSurface)
     /// Wells: text editors and inputs that read as recessed.
     static let editor = paletteColor(\.editor)
+    /// 设置窗口左栏的底色。
+    ///
+    /// 主题里 `sidebar` 与 `canvas` 只差几个色阶（浅色下 #F7FAFD vs #F0F3F8），
+    /// 直接铺 `sidebarSurface` 会让左栏和内容糊成一片。这里把 `ink` 按 7% 压进
+    /// sidebar，得到"比内容明确低一档"的左栏底——配方固定，八套配色 × 明暗都自适应，
+    /// 不需要为每套配色手写一个新的十六进制值。
+    static let settingsRailSurface = Color(nsColor: railSurfaceNSColor)
     static let chip = paletteColor(\.chip)
 
     // MARK: Rules
@@ -430,4 +437,39 @@ struct StatusBadge: View {
             Capsule().strokeBorder(highContrast ? Color.ink.opacity(0.55) : .clear, lineWidth: 1)
         )
     }
+}
+
+
+// MARK: - 左栏底色
+
+/// `ink` 压进 `sidebar` 的比例。数值越大左栏越重。
+///
+/// 这个常量由 `SettingsChromeTests` 守卫：太小则左栏与内容分不出来，
+/// 太大则左栏像一块压下来的重色。
+let settingsRailBlendAmount: CGFloat = 0.07
+
+/// 设置窗口左栏的底色，随外观解析（和 `paletteColor` 同样的动态机制）。
+var railSurfaceNSColor: NSColor {
+    NSColor(name: nil) { appearance in
+        let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let sidebar = PaletteStore.resolvedColor(\.sidebar, dark: dark)
+        let ink = PaletteStore.resolvedColor(\.ink, dark: dark)
+        return blendHex(ink, overHex: sidebar, fraction: settingsRailBlendAmount) ?? sidebar
+    }
+}
+
+/// 把 `top` 以 `fraction` 的比例压到 `base` 上。两者都是不带 alpha 的十六进制色。
+func blendHex(_ top: NSColor, overHex base: NSColor, fraction: CGFloat) -> NSColor? {
+    guard let f = top.usingColorSpace(.sRGB),
+          let b = base.usingColorSpace(.sRGB) else { return nil }
+    let f0 = max(0, min(1, fraction))
+    func channel(_ k: KeyPath<NSColor, CGFloat>) -> CGFloat {
+        f[keyPath: k] * f0 + b[keyPath: k] * (1 - f0)
+    }
+    return NSColor(
+        srgbRed: channel(\.redComponent),
+        green: channel(\.greenComponent),
+        blue: channel(\.blueComponent),
+        alpha: 1
+    )
 }

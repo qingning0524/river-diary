@@ -42,6 +42,9 @@ struct RiverDiaryMacApp: App {
     @StateObject private var ai: AIAssistantStore
     @StateObject private var dateContext: DateContextStore
     @StateObject private var location: LocationSourceStore
+    /// 主窗口与原生设置窗口共用同一个反馈中心，设置页的保存/失败提示
+    /// 才会走到用户看得见的地方。
+    @StateObject private var feedback = FeedbackCenter()
     /// 全进程共享一条 V2 事实库连接：否则每个 store 各开一次 SQLCipher
     /// 并在主线程重复建表 DDL；恢复快照时也只需重开这一条连接。
     private let v2Store: V2Store
@@ -56,6 +59,15 @@ struct RiverDiaryMacApp: App {
         _ai = StateObject(wrappedValue: AIAssistantStore(v2Store: sharedV2))
         _dateContext = StateObject(wrappedValue: DateContextStore())
         _location = StateObject(wrappedValue: LocationSourceStore(v2Store: sharedV2))
+    }
+
+    @AppStorage("appearance.mode") private var settingsAppearanceRaw = RiverAppearance.system.rawValue
+    /// 必须用 @AppStorage 观察：直接用 UserDefaults 读取的话，用户在设置里改密度时
+    /// 这个 scene 不会重算，密度要等下次启动才生效。
+    @AppStorage("appearance.density") private var settingsDensityRaw = RiverDensity.standard.rawValue
+
+    private var appearanceModeForSettings: RiverAppearance {
+        RiverAppearance(rawValue: settingsAppearanceRaw) ?? .system
     }
 
     var body: some Scene {
@@ -75,6 +87,7 @@ struct RiverDiaryMacApp: App {
                         location: location,
                         v2Store: v2Store
                     )
+                    .environmentObject(feedback)
                 }
             }
             .frame(minWidth: 960, minHeight: 640)
@@ -84,13 +97,23 @@ struct RiverDiaryMacApp: App {
         .windowToolbarStyle(.unified(showsTitle: false))
         .commands {
             if restoreRecovery.error == nil {
-                AppCommands(ingestion: ingestion)
+                AppCommands(
+                    ingestion: ingestion,
+                    store: store,
+                    activity: activity,
+                    ai: ai,
+                    feedback: feedback
+                )
             } else {
                 CommandMenu("恢复") {
                     Button("重新尝试恢复") { restoreRecovery.retry() }
                 }
             }
         }
+
+        // 设置窗口不用 SwiftUI 的 `Settings` 场景：那个场景会在窗口里额外保留
+        // 28pt 标题栏空间（实测内容 620 → 窗口 648），删不掉。
+        // 改由 `SettingsWindowController` 自建无边框窗口，标题栏高度为 0。
 
         MenuBarExtra("River 快记", systemImage: "leaf.fill") {
             if restoreRecovery.error == nil {
@@ -112,10 +135,39 @@ struct RiverDiaryMacApp: App {
 @MainActor
 struct AppCommands: Commands {
     var ingestion: DataIngestionStore
+    var store: DiaryStore
+    var activity: ActivityStore
+    var ai: AIAssistantStore
+    var feedback: FeedbackCenter
+
+    /// 打开应用自建的设置窗口。
+    ///
+    /// 这里必须能拿到各个 store —— 设置页要读写它们，而窗口是 AppKit 侧新建的，
+    /// 不会自动继承主窗口的 environment。
+    private func openSettings() {
+        SettingsWindowController.shared.show(
+            store: store,
+            activity: activity,
+            ai: ai,
+            ingestion: ingestion,
+            feedback: feedback,
+            density: RiverDensity(
+                rawValue: UserDefaults.standard.string(forKey: "appearance.density") ?? ""
+            ) ?? .standard,
+            prefersHighContrast: NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast,
+            palette: PaletteController.shared.palette,
+            colorScheme: RiverAppearance(
+                rawValue: UserDefaults.standard.string(forKey: "appearance.mode") ?? ""
+            )?.colorScheme
+        )
+    }
 
     var body: some Commands {
+        // 已经没有 Settings 场景了，所以 ⌘, 这条菜单项由应用自己提供。
+        // 注意用真正的 SwiftUI action（而不是之前那个 NSApp.sendAction 的 selector 方案，
+        // 那个在纯 SwiftUI 应用里根本触发不了）。
         CommandGroup(replacing: .appSettings) {
-            Button("设置…") { postCommand(.riverCommand, "openSettings") }
+            Button("设置…") { openSettings() }
                 .keyboardShortcut(",", modifiers: .command)
         }
         CommandGroup(replacing: .newItem) {

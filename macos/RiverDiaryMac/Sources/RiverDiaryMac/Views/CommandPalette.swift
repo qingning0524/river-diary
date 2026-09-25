@@ -64,7 +64,6 @@ struct CommandPaletteView: View {
             .init(id: "progress", title: "查看进展", symbol: "chart.line.uptrend.xyaxis", keywords: "progress 进展 对比 趋势", shortcutText: RiverDestination.progress.navigationShortcut.label) { onNavigate(.progress) },
             .init(id: "database", title: "打开数据库", symbol: "cylinder.split.1x2", keywords: "database 数据库 原始数据 证据", shortcutText: RiverDestination.database.navigationShortcut.label) { onNavigate(.database) },
             .init(id: "sources", title: "查看数据源", symbol: "antenna.radiowaves.left.and.right", keywords: "sources 数据源 权限 采集", shortcutText: RiverDestination.sources.navigationShortcut.label) { onNavigate(.sources) },
-            .init(id: "settings", title: "打开设置", symbol: "gearshape", keywords: "settings 设置", shortcutText: "⌘,") { onNavigate(.settings) },
             .init(id: "note", title: "写一句快记", symbol: "square.and.pencil", keywords: "note 快记 写", shortcutText: "⌘N") { onWriteNote() },
             .init(id: "refresh", title: "立即采集", symbol: "arrow.clockwise", keywords: "refresh 采集 刷新", shortcutText: nil) { onRefresh() },
             .init(id: "source", title: "打开数据源…", symbol: "folder", keywords: "source 数据 导入", shortcutText: nil) { onOpenSource() },

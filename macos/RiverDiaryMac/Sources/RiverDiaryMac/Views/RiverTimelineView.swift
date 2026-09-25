@@ -19,14 +19,18 @@ struct RiverTimelineView: View {
     var isScrollable: Bool = true
 
     var body: some View {
+        // `riverScrollIndicators()` 会插入一层 `.background(NativeScrollbarSuppressor())`
+        // 用来关掉祖先 NSScrollView 的原生滚动条。非滚动分支（被外层 ScrollView
+        // 托管的嵌入场景，以及像素级渲染测试）自己没有滚动容器，套上去只会多出
+        // 一层寄生背景并改变布局，因此只在真正的滚动分支上应用。
         Group {
             if isScrollable {
                 ScrollView { timelineContent }
+                    .riverScrollIndicators()
             } else {
                 timelineContent
             }
         }
-        .riverScrollIndicators()
     }
 
     @ViewBuilder
@@ -129,7 +133,12 @@ private struct TimelineRow: View {
         if let place = item.annotation?.normalized.placeName, !place.isEmpty { return "地点 · \(place)" }
         if let activity = item.annotation?.normalized.activityLabel, !activity.isEmpty { return "活动 · \(activity)" }
         if item.kind == .capture { return "手动记录" }
-        if isGap { return "原始时间空档" }
+        if isGap {
+            // 设计规范要求"未知数据绝不显示为 0"。同样是灰色空档，
+            // "这段时间没有采集到任何前台片段"和"有片段但被记录规则排除"
+            // 是两件事：前者是真的没数据，后者是数据存在却没进统计。
+            return item.sessions.isEmpty ? "未记录 · 无采集数据" : "未纳入统计 · 有片段被排除"
+        }
         if item.sessions.count == 1 { return item.sessions[0].appName }
         return "\(item.sessions.count) 个原始片段"
     }
@@ -190,6 +199,14 @@ private struct TimelineRow: View {
                 Button("复制证据摘要") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(item.summary, forType: .string)
+                }
+            }
+            // 证据锚点：这一行的原始记录引用。AI 结论里的依据引用的就是同一个
+            // 命名空间，复制出来即可与结论里的 `<!-- evidence: … -->` 对上。
+            if let ref = item.evidenceRef {
+                Button("复制证据引用") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(ref, forType: .string)
                 }
             }
         }

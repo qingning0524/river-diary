@@ -25,7 +25,6 @@ enum RiverDestination: String, Hashable, CaseIterable, Identifiable {
     case progress
     case database
     case sources
-    case settings
 
     var id: String { rawValue }
 
@@ -42,7 +41,6 @@ enum RiverDestination: String, Hashable, CaseIterable, Identifiable {
         case .progress: "进展"
         case .database: "数据库"
         case .sources: "数据源"
-        case .settings: "设置"
         }
     }
 
@@ -59,7 +57,6 @@ enum RiverDestination: String, Hashable, CaseIterable, Identifiable {
         case .progress: RiverNavigationShortcut(key: "9", modifiers: .command, label: "⌘9")
         case .database: RiverNavigationShortcut(key: "0", modifiers: .command, label: "⌘0")
         case .sources: RiverNavigationShortcut(key: "d", modifiers: [.command, .shift], label: "⌘⇧D")
-        case .settings: RiverNavigationShortcut(key: ",", modifiers: .command, label: "⌘,")
         }
     }
 
@@ -76,7 +73,6 @@ enum RiverDestination: String, Hashable, CaseIterable, Identifiable {
         case .progress: "chart.line.uptrend.xyaxis"
         case .database: "cylinder.split.1x2"
         case .sources: "antenna.radiowaves.left.and.right"
-        case .settings: "gearshape"
         }
     }
 }
@@ -111,6 +107,24 @@ enum InspectorContent: Identifiable {
 
 struct RiverShellView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 打开应用自建的设置窗口。
+    ///
+    /// 不再用 SwiftUI 的 `Settings` 场景 + `@Environment(\.openSettings)`：
+    /// 那个场景会在窗口里额外保留 28pt 标题栏空间（实测内容 620 → 窗口 648），
+    /// 顶部那条空白栏删不掉。现在统一走 `SettingsWindowController`。
+    private func openSettings() {
+        SettingsWindowController.shared.show(
+            store: store,
+            activity: activity,
+            ai: ai,
+            ingestion: ingestion,
+            feedback: feedback,
+            density: density,
+            prefersHighContrast: prefersHighContrast,
+            palette: paletteController.palette,
+            colorScheme: appearanceMode.colorScheme
+        )
+    }
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore
@@ -138,7 +152,7 @@ struct RiverShellView: View {
     @State private var isLocked = false
     @StateObject private var memoryLibrary: MemoryLibraryStore
     @StateObject private var journalEditor = JournalEditorStore()
-    @StateObject private var feedback = FeedbackCenter()
+    @EnvironmentObject private var feedback: FeedbackCenter
 
     init(
         store: DiaryStore,
@@ -162,13 +176,10 @@ struct RiverShellView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let usesSideInspector = geometry.size.width >= 1320
+            let usesSideInspector = geometry.size.width >= AppLayout.sideInspectorBreakpoint
 
             NavigationSplitView {
                 sidebar
-                    .environment(\.riverDensity, density)
-                    .environment(\.riverHighContrast, prefersHighContrast)
-                    .id(paletteController.palette.rawValue)
                     .navigationSplitViewColumnWidth(min: 208, ideal: AppLayout.sidebarWidth, max: 280)
             } detail: {
                 HStack(spacing: 0) {
@@ -192,11 +203,6 @@ struct RiverShellView: View {
                 }
                     .background(Color.workspace)
                     .environmentObject(feedback)
-                    .environment(\.riverDensity, density)
-                    .environment(\.riverHighContrast, prefersHighContrast)
-                    // 配色即身份：切换配色时整棵子树以新配色重建，
-                    // 不给任何缓存图层留下旧颜色的机会。
-                    .id(paletteController.palette.rawValue)
                     .inspector(isPresented: inspectorBinding(usesSideInspector: usesSideInspector)) {
                         InspectorPanel(content: inspectorContent, onClose: closeInspector, store: store, library: memoryLibrary)
                             .frame(minWidth: 300, idealWidth: AppLayout.inspectorWidth, maxWidth: 400)
@@ -229,28 +235,20 @@ struct RiverShellView: View {
                     }
                     .onKeyPress(.return) { activateFocusedTimelineItem() }
                     .onKeyPress(.space) { activateFocusedTimelineItem() }
-                    .toolbar {
-                        ToolbarItemGroup(placement: .primaryAction) {
-                            Button {
-                                showsCommandPalette = true
-                            } label: {
-                                Label("命令", systemImage: "command")
-                            }
-                            .help("命令面板 (⌘K)")
-
-                            Button {
-                                showsCapture = true
-                            } label: {
-                                Label("写一句", systemImage: "square.and.pencil")
-                            }
-                            .keyboardShortcut("n", modifiers: .command)
-                            .help("写下一句快记 (⌘N)")
-                        }
-                    }
+                    // 这里原本挂着一个 `.toolbar { ToolbarItemGroup(placement: .primaryAction) }`。
+                    // 窗口是隐藏标题栏的，那个 item group 会在详情列顶上撑出一条约 52pt 的空带，
+                    // 两个小图标孤零零贴在左侧（像素验证：图标在 y≈25pt，标题被压到 y≈83pt），
+                    // 而且"写一句"与今日页头部的按钮重复。
+                    // 两个动作都已在菜单里（⌘K / ⌘N）与侧栏里（命令面板 / 写一句），
+                    // 所以整条工具栏直接去掉，把顶部空间还给页面标题。
             }
-            .preferredColorScheme(appearanceMode.colorScheme)
-            // 原生控件（bordered 按钮、开关、选择器）跟随当前配色而不是系统蓝。
-            .tint(Color.riverBlue)
+            // 主窗口与原生设置窗口共用同一套外观环境（密度/高对比/配色身份/tint）。
+            .riverAppEnvironment(
+                density: density,
+                prefersHighContrast: prefersHighContrast,
+                palette: paletteController.palette,
+                colorScheme: appearanceMode.colorScheme
+            )
             .overlay {
                 if appLockEnabled && isLocked {
                     AppLockGate(isLocked: isLocked, message: "River 已锁定。") {
@@ -265,6 +263,13 @@ struct RiverShellView: View {
                         .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: message.id)
                 }
             }
+            // 换配色要重建这层颜色子树：SwiftUI 会缓存已解析的调色板颜色，
+            // 只重绘或只注入环境值都不会重新解析（实测）。
+            // 位置很关键 —— 必须放在 `.onAppear` **之前**：
+            // 视图自身的 `@State`（当前页面、Inspector、编辑器草稿等）保存在父级身份上，
+            // 不会因为这次重建丢失；而 `.onAppear` / `.onReceive` 留在外面，
+            // 实测不会重新触发，所以不会重复启动采集、也不会把已解锁的应用重新锁上。
+            .id(paletteController.palette.rawValue)
             .onAppear {
                 migrateAppearancePreferenceIfNeeded()
                 journalEditor.attach(to: store)
@@ -277,7 +282,10 @@ struct RiverShellView: View {
                 ingestion.start()
                 if appLockEnabled { isLocked = true }
             }
-            .onDisappear {
+            // 关闭窗口只是隐藏（`WindowClosePolicy` 让窗口 orderOut），应用仍在
+            // 菜单栏常驻记录。此前在 `onDisappear` 里停掉定时采集，等于"关窗即停止
+            // 采集"，与常驻意图相反。改为只在真正退出时停止。
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                 ingestion.stop()
             }
             .onChange(of: destination) { oldValue, newValue in
@@ -314,7 +322,7 @@ struct RiverShellView: View {
 
     @ViewBuilder
     private func compactInspectorOverlay(windowWidth: CGFloat) -> some View {
-        if windowWidth < 1320, let inspectorContent {
+        if windowWidth < AppLayout.sideInspectorBreakpoint, let inspectorContent {
             InspectorPanel(content: inspectorContent, onClose: closeInspector, store: store, library: memoryLibrary)
                 .frame(width: min(AppLayout.inspectorWidth, max(280, windowWidth - AppLayout.sidebarWidth - 24)))
                 .frame(maxHeight: .infinity)
@@ -354,7 +362,8 @@ struct RiverShellView: View {
                let selectedDestination = RiverDestination(rawValue: rawDestination) {
                 destination = selectedDestination
             }
-        case "openSettings": destination = .settings
+        case "openSettings":
+            openSettings()
         case "goToday": destination = .today
         case "goDate":
             if let rawDate = userInfo?["date"] as? String, let date = DiaryEntry.dateFormatter.date(from: rawDate) {
@@ -473,7 +482,44 @@ struct RiverShellView: View {
                     sidebarSection("一天", items: [.today, .timeline, .dailyReview])
                     sidebarSection("生活", items: [.health, .footprints, .workLearn])
                     sidebarSection("记忆", items: [.memory, .ask, .progress])
-                    sidebarSection("系统", items: [.database, .sources, .settings])
+                    sidebarSection("系统", items: [.database, .sources])
+                    // 顶部工具栏去掉后，这两个全局动作在这里保留可发现的入口
+                    // （菜单里的 ⌘K / ⌘N 仍然有效）。
+                    SidebarGroup(title: "快捷") {
+                        SidebarNavRow(
+                            title: "命令面板",
+                            symbol: "command",
+                            shortcut: "⌘K",
+                            badge: nil,
+                            isSelected: false
+                        ) {
+                            showsCommandPalette = true
+                        }
+                        SidebarNavRow(
+                            title: "写一句",
+                            symbol: "square.and.pencil",
+                            shortcut: "⌘N",
+                            badge: nil,
+                            isSelected: false
+                        ) {
+                            showsCapture = true
+                        }
+                    }
+                    SidebarGroup(title: "设置") {
+                        // 走和其它侧栏行**完全相同**的 Button 路径，只把 action 换成
+                        // `openSettings()`。之前用 SettingsLink 包住这个内含 Button 的
+                        // 组件，形成按钮嵌套：内层空 action 的 Button 吃掉点击，
+                        // SettingsLink 从不触发——这就是"点了没反应"。
+                        SidebarNavRow(
+                            title: "设置",
+                            symbol: "gearshape",
+                            shortcut: "⌘,",
+                            badge: nil,
+                            isSelected: false
+                        ) {
+                            openSettings()
+                        }
+                    }
                 }
                 .padding(.bottom, 10)
             }
@@ -483,7 +529,7 @@ struct RiverShellView: View {
             RiverRule()
             SidebarFooter(
                 statusLines: sidebarStatusLines,
-                onOpenSettings: { destination = .settings }
+                onOpenSettings: { openSettings() }
             )
         }
         .frame(minWidth: AppLayout.sidebarMinWidth)
@@ -566,7 +612,7 @@ struct RiverShellView: View {
                 onShowCapture: { showsCapture = true },
                 onOpenAsk: openAsk,
                 onOpenFootprints: { destination = .footprints },
-                onOpenSettings: { destination = .settings }
+                onOpenSettings: { openSettings() }
             )
         case .timeline:
             TimelineWorkspaceView(
@@ -583,10 +629,19 @@ struct RiverShellView: View {
                 onSelectTimelineItem: { item, focusID in presentEpisode(item, returningFocusTo: focusID) },
                 onShowCapture: { showsCapture = true },
                 onOpenAsk: openAsk,
-                onOpenSettings: { destination = .settings }
+                onOpenSettings: { openSettings() }
             )
         case .dailyReview:
-            ReviewRedesignView(store: store, activity: activity, ai: ai, library: memoryLibrary, selectedDate: dateContext.selectedDate)
+            ReviewRedesignView(
+                store: store,
+                activity: activity,
+                ai: ai,
+                library: memoryLibrary,
+                selectedDate: dateContext.selectedDate,
+                onRevealEvidence: { title, items in
+                    inspectorContent = .evidence(title: title, items: items)
+                }
+            )
         case .database:
             DatabaseOverviewView(
                 store: v2Store,
@@ -599,7 +654,7 @@ struct RiverShellView: View {
                 ingestion: ingestion,
                 location: location,
                 entry: store.entry(for: dateContext.selectedDate),
-                onOpenSettings: { destination = .settings }
+                onOpenSettings: { openSettings() }
             )
         case .health:
             HealthWorkspaceView(
@@ -661,13 +716,6 @@ struct RiverShellView: View {
                 onShowEvidence: { title, items in
                     inspectorContent = .evidence(title: title, items: items)
                 }
-            )
-        case .settings:
-            SettingsRedesignView(
-                store: store,
-                activity: activity,
-                ai: ai,
-                ingestion: ingestion
             )
         }
     }
