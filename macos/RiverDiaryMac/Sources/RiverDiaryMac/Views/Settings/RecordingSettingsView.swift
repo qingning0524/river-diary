@@ -16,6 +16,7 @@ struct RecordingSettingsView: View {
     var body: some View {
         SettingsPage {
             autoRecordSection
+            appCategorySection
             dailyCaptureSection
             footprintSection
             baselineSection
@@ -45,6 +46,55 @@ struct RecordingSettingsView: View {
             if let days = pendingRetentionDays {
                 Text("这会立即且不可撤销地删除每日混合采集兼容库中早于最近 \(days) 天的日记录、健康数据、浏览记录、采集活动片段、快记和 AI 结果。V2 原始事实与分析存档、macOS 实时足迹文件不受此期限控制。")
             }
+        }
+    }
+
+    // MARK: 应用类别
+
+    /// 应用 → 类别 的人工映射。关键词分类器认不出的应用由用户指认一次；
+    /// 映射是读时推导，全部历史立即生效，原始文件不动、随时可撤销。
+    private var appCategorySection: some View {
+        SettingsGroup(title: "应用类别", detail: "关键词认不出的应用由你指认一次；统计与时间线会立即按新类别重算全部历史。") {
+            RiverPanel {
+                let apps = activity.categoryAppOptions()
+                if apps.isEmpty {
+                    EmptyStateView(
+                        title: "还没有实时足迹。",
+                        message: "开始记录后，用过的应用会按使用时长出现在这里。",
+                        symbol: "app.dashed",
+                        showsChrome: false
+                    )
+                } else {
+                    ForEach(Array(apps.enumerated()), id: \.element.bundleID) { index, app in
+                        categoryRow(app, showsDivider: index < apps.count - 1)
+                    }
+                    SettingsFootnote(text: "只改解释，不改原始记录：映射随时可改回「自动」。")
+                }
+            }
+        }
+    }
+
+    private func categoryRow(
+        _ app: (bundleID: String, appName: String, duration: TimeInterval),
+        showsDivider: Bool
+    ) -> some View {
+        RiverPanelRow(
+            title: app.appName,
+            detail: "已记录 \(ActivityFormatter.time(app.duration))",
+            showsDivider: showsDivider
+        ) {
+            Picker("类别", selection: Binding(
+                get: { activity.categoryOverride(forBundleID: app.bundleID) ?? "" },
+                set: { activity.setCategoryOverride($0.isEmpty ? nil : $0, forBundleID: app.bundleID) }
+            )) {
+                Text("自动").tag("")
+                ForEach(ActivityClassifier.categoryOptions, id: \.self) { category in
+                    Text(category).tag(category)
+                }
+            }
+            .pickerStyle(.menu)
+            .frame(width: 132)
+            .accessibilityLabel("\(app.appName) 的类别")
         }
     }
 

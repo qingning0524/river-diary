@@ -89,6 +89,10 @@ enum ActivityClassifier {
         ["工作", "学习", "创作"].contains(category)
     }
 
+    /// 全部可指认的类别，映射设置用。"未记录"不在其中：那是"没有证据"的陈述，
+    /// 不是用户可以指认的判断。
+    static let categoryOptions = ["工作", "学习", "创作", "沟通", "浏览", "娱乐", "系统", "其他"]
+
     /// Hex form of the category colour, kept for callers that need a string.
     /// It must track `AppTheme.accent`; views should prefer `AppTheme.categoryTint`.
     static func color(for category: String) -> String {

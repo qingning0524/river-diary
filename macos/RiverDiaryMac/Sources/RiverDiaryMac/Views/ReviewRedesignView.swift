@@ -161,38 +161,43 @@ struct ReviewContentView: View {
     /// 本机分布里每日短切换 p50 = 37、p90 = 121，所以门槛取 100——
     /// 大约只有最忙的一成天数会开口。措辞是模式描述，不是评价：
     /// 组合工作是常态，"分散"也只是说结构，不评判。
+    ///
+    /// 性能门槛：碎片段数 ≤ 段数（块由段合并而来），所以**段数不足 100 的天
+    /// 不可能达到门槛**，直接跳过——30 天范围通常只构建一两天的时间线，
+    /// 而不是 30 次。
     private func switchSummary() -> String? {
         let sessions = activity.sessions(from: startDate, to: endDate.addingTimeInterval(24 * 60 * 60))
         guard !sessions.isEmpty else { return nil }
-        let calendar = Calendar.current
-        var cursor = calendar.startOfDay(for: startDate)
-        let lastDay = calendar.startOfDay(for: endDate)
-        var busiest: (date: Date, fragments: Int, composedRuns: Int, hasWandering: Bool, totalRuns: Int)?
+        let rangeStart = Calendar.current.startOfDay(for: startDate)
+        let rangeEnd = Calendar.current.startOfDay(for: endDate)
 
-        while cursor <= lastDay {
-            let daySessions = sessions.filter { calendar.isDate($0.start, inSameDayAs: cursor) }
-            if !daySessions.isEmpty {
-                let timeline = ActivityTimelineEngine.build(for: cursor, sessions: daySessions, captures: [])
-                let runs = timeline.foldedItems.filter(\.isFragmentRun)
-                let shapes = runs.map(FragmentRunShape.classify)
-                let fragments = timeline.fragmentNodeCount
-                if fragments > (busiest?.fragments ?? 0) {
-                    busiest = (
-                        cursor,
-                        fragments,
-                        shapes.filter(\.isComposedWork).count,
-                        shapes.contains(where: \.isWandering),
-                        runs.count
-                    )
-                }
+        var busiest: (date: Date, fragments: Int, composedRuns: Int, hasWandering: Bool, totalRuns: Int)?
+        for (dayKey, daySessions) in Dictionary(grouping: sessions, by: \.dayKey)
+        where daySessions.count >= 100 {
+            guard let day = DiaryEntry.dateFormatter.date(from: dayKey) else { continue }
+            let dayStart = Calendar.current.startOfDay(for: day)
+            guard dayStart >= rangeStart, dayStart <= rangeEnd else { continue }
+            let timeline = ActivityTimelineEngine.build(for: day, sessions: daySessions, captures: [])
+            let fragments = timeline.fragmentNodeCount
+            guard fragments >= 100 else { continue }
+            let runs = timeline.foldedItems.filter(\.isFragmentRun)
+            let shapes = runs.map(FragmentRunShape.classify)
+            if fragments > (busiest?.fragments ?? 0) {
+                busiest = (
+                    dayStart,
+                    fragments,
+                    shapes.filter(\.isComposedWork).count,
+                    shapes.contains(where: \.isWandering),
+                    runs.count
+                )
             }
-            cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? lastDay.addingTimeInterval(24 * 60 * 60)
         }
 
-        guard let busiest, busiest.fragments >= 100 else { return nil }
+        guard let busiest else { return nil }
         let dateText = busiest.date.formatted(.dateTime.month().day())
         let head = "近 \(dayRange) 天里，\(dateText) 的短切换最多（\(busiest.fragments) 段）"
-        if busiest.composedRuns * 2 >= max(busiest.totalRuns, 1) {
+        // "多为"必须真的过半：恰好一半也说"多为"是不诚实的措辞。
+        if busiest.composedRuns * 2 > busiest.totalRuns {
             return head + "，多为多工具之间的组合工作。"
         }
         if busiest.hasWandering {

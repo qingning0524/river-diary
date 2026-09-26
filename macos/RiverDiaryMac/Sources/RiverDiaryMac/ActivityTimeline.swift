@@ -476,10 +476,16 @@ enum FragmentRunShape: Equatable {
 
 enum ActivityTimelineExport {
     static func markdown(_ timeline: ActivityTimeline) -> String {
+        // 隐私边界：这是唯一会带窗口标题的导出（目前没有 UI 入口，仅测试引用）。
+        // 标题一旦存在，文件头部必须声明——分享这个文件的人应当知道里面有什么。
+        let hasTitles = timeline.sessions.contains { !($0.windowTitle ?? "").isEmpty }
         var lines = [
             "# 河流时间线 · \(timeline.date.formatted(.dateTime.year().month().day()))", "",
             "已记录 \(ActivityFormatter.time(timeline.totalDuration)) · 专注类应用 \(ActivityFormatter.time(timeline.focusDuration))", "",
-            "依据本机应用片段与快记整理；空档表示未记录。", ""
+            hasTitles
+                ? "依据本机应用片段与快记整理；空档表示未记录。**本文件包含窗口标题（敏感）**，分享前请检查。"
+                : "依据本机应用片段与快记整理；空档表示未记录。",
+            ""
         ]
         for item in timeline.items {
             let clock = item.start.formatted(date: .omitted, time: .shortened)

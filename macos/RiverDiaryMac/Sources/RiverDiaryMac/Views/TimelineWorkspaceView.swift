@@ -550,14 +550,14 @@ struct TimelineDayOverview: View {
         timeline.fragmentNodeCount > 0 ? "\(timeline.fragmentNodeCount) 段" : "—"
     }
 
-    /// 悬停说明：先说折叠这件事；当天多数带有明确形态时顺带说一句。
-    /// 形态是本机数据定名的——40% 的带是多工具组合工作，是这里的常态。
+    /// 悬停说明：先说折叠这件事；当天组合工作**严格过半**时才说"多为"——
+    /// 恰好一半也说"多为"是不诚实的措辞。
     private var switchMetricDetail: String {
         guard timeline.fragmentNodeCount > 0 else { return "不足 3 分钟的切屏折进碎片带；这一天没有" }
         let runs = timeline.foldedItems.filter(\.isFragmentRun)
         let base = "不足 3 分钟，折进 \(runs.count) 条碎片带"
         let shapes = runs.map(FragmentRunShape.classify)
-        if shapes.filter(\.isComposedWork).count * 2 >= runs.count {
+        if shapes.filter(\.isComposedWork).count * 2 > runs.count {
             return base + "，多为多工具组合工作"
         }
         if shapes.contains(where: \.isWandering) {

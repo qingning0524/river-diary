@@ -9,6 +9,12 @@ import Foundation
 final class ActivityStore: ObservableObject {
     static let schemaVersion = 4
 
+    /// 应用 → 类别 的人工映射（小写 bundleID → 类别），存在 UserDefaults。
+    /// 关键词分类器认不出的应用（本机 17 天里专注类前台合计只有 4 分钟）由
+    /// 用户指认一次，**读时推导**让全部历史即时生效：原始日文件与 V2 证据
+    /// 都不回写，删掉映射会干净地回到自动分类。
+    private static let categoryOverridesKey = "activity.categoryOverrides"
+
     @Published private(set) var sessions: [ActivitySession] = []
     @Published private(set) var isTracking = false
     @Published private(set) var activeSession: ActivitySession?
@@ -29,6 +35,8 @@ final class ActivityStore: ObservableObject {
     private var titleTimer: Timer?
     /// 疑似换掉的标题。要连续两次采样都读到它才认账，见 `WindowTitleSampling`。
     private var titleSamplePending: WindowTitleSampling.Pending?
+    /// 应用 → 类别 的人工映射（小写 bundleID → 类别）。
+    private var categoryOverrides: [String: String] = [:]
     private let preferences: UserDefaults
     private let configuredActivityDirectory: URL?
     private let providedV2Store: V2Store?
@@ -89,6 +97,7 @@ final class ActivityStore: ObservableObject {
         pauseEndMinutes = userDefaults.object(forKey: "activity.pauseEnd") as? Int ?? 7 * 60
         capturesTitles = userDefaults.bool(forKey: "activity.capturesTitles")
         accessibilityGranted = AXIsProcessTrusted()
+        loadCategoryOverrides()
         loadStoredSessions()
         if userDefaults.bool(forKey: "activity.enabled") {
             startTracking(showPermissionPrompt: false)
@@ -225,6 +234,64 @@ final class ActivityStore: ObservableObject {
         if accessibilityGranted, !wasGranted { sampleActiveWindowTitle() }
     }
 
+    // MARK: 应用 → 类别 映射
+
+    private func loadCategoryOverrides() {
+        guard let raw = preferences.dictionary(forKey: Self.categoryOverridesKey) as? [String: String] else { return }
+        categoryOverrides = raw
+    }
+
+    /// 当前某应用的人工类别（nil = 跟随自动分类）。
+    func categoryOverride(forBundleID bundleID: String) -> String? {
+        categoryOverrides[bundleID.lowercased()]
+    }
+
+    /// 指认一个应用的类别；传 nil 表示撤销、回到自动。
+    /// 映射是**读时推导**：原始文件与 V2 证据不回写，这里只重算内存里的会话，
+    /// 全部历史（时间线、统计、复盘、导出）立即生效。
+    func setCategoryOverride(_ category: String?, forBundleID bundleID: String) {
+        let key = bundleID.lowercased()
+        if let category, !category.isEmpty {
+            categoryOverrides[key] = category
+        } else {
+            categoryOverrides.removeValue(forKey: key)
+        }
+        preferences.set(categoryOverrides, forKey: Self.categoryOverridesKey)
+        dayStatsCache = [:]
+        sessions = sessions.map(effectiveSession)
+        if let activeSession { self.activeSession = effectiveSession(activeSession) }
+    }
+
+    /// 生效类别：人工映射优先；没有映射就按 应用名+标题 重新推导。重推导而不是
+    /// 沿用文件里存的类别，是为了让两件事都成立——删掉映射能回到自动分类，
+    /// 分类器词表改进也对历史生效（类别本来就是可以从已存的字段里重算出来的）。
+    private func effectiveSession(_ session: ActivitySession) -> ActivitySession {
+        var session = session
+        if let override = categoryOverrides[session.bundleID.lowercased()] {
+            session.category = override
+        } else {
+            session.category = ActivityClassifier.category(appName: session.appName, title: session.windowTitle)
+        }
+        return session
+    }
+
+    /// 设置页的应用清单：按已记录时长排序、按 bundleID 去重（同一应用换过名字
+    /// 显示最常用的一次）。只列真实用过的应用——让用户从自己的使用里指认，
+    /// 而不是对着一张空表。
+    func categoryAppOptions(limit: Int = 12) -> [(bundleID: String, appName: String, duration: TimeInterval)] {
+        var durations: [String: TimeInterval] = [:]
+        var names: [String: String] = [:]
+        for session in sessions {
+            let key = session.bundleID.lowercased()
+            durations[key, default: 0] += session.duration
+            names[key, default: session.appName] = session.appName
+        }
+        return durations
+            .sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+            .prefix(limit)
+            .map { (bundleID: $0.key, appName: names[$0.key] ?? $0.key, duration: $0.value) }
+    }
+
     func closeForTermination() {
         closeActiveSession()
         removeObservers()
@@ -271,8 +338,9 @@ final class ActivityStore: ObservableObject {
         }
 
         sessions = orderedSessions
-        dayStatsCache = [:]
         for session in orderedSessions { persistV2Evidence(for: session) }
+        sessions = sessions.map(effectiveSession)
+        dayStatsCache = [:]
         storageSummary = "已恢复并加密保存 \(sessions.count) 段实时活动"
     }
 
@@ -512,14 +580,14 @@ final class ActivityStore: ObservableObject {
         let appName = app.localizedName ?? "未知应用"
         guard ActivityClassifier.isRecordable(appName: appName, bundleID: app.bundleIdentifier ?? "") else { return nil }
         let title = currentTitle(for: app)
-        return ActivitySession(
+        return effectiveSession(ActivitySession(
             appName: appName,
             bundleID: app.bundleIdentifier ?? appName,
             windowTitle: capturesTitles ? title : nil,
             category: ActivityClassifier.category(appName: appName, title: title),
             start: Date(),
             end: Date()
-        )
+        ))
     }
 
     private func currentTitle(for app: NSRunningApplication) -> String? {
@@ -590,7 +658,7 @@ final class ActivityStore: ObservableObject {
         let (closed, next) = session.split(at: moment, now: now, windowTitle: windowTitle)
         activeSession = nil
         if closed.duration >= 1 { appendSegments(splitAtDayBoundary(closed)) }
-        activeSession = next
+        activeSession = effectiveSession(next)
         titleSamplePending = nil
     }
 
@@ -822,6 +890,9 @@ final class ActivityStore: ObservableObject {
         for session in sessions {
             persistV2Evidence(for: session)
         }
+        // V2 投影走**原始**类别（证据不掺解释）；人工映射只作用在内存里的
+        // 这一份，供时间线、统计、复盘、导出读取。
+        sessions = sessions.map(effectiveSession)
         let grouped = Dictionary(grouping: sessions, by: \.dayKey)
         var projectionFailedDays = 0
         for daySessions in grouped.values {
