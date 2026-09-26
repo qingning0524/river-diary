@@ -81,10 +81,20 @@ struct InspectorPanel: View {
     // MARK: Episode
 
     /// 碎片带不是一个可以整理的证据：它是展示层的聚合，只有它的成员各自有标注键。
-    /// 与其给一个按下去没有反应的"编辑"，不如说清它是什么、要去哪里看。
+    /// 与其给一个按下去没有反应的"编辑"，不如说清它是什么、节奏如何、要去哪里看。
     private func fragmentRunNote(_ item: ActivityTimelineItem) -> some View {
-        section("碎片带") {
-            Text("这里 \(item.fragments.count) 段记录都不到 3 分钟，在时间线里折成了一条。展开这一行可以逐条查看，每一段都能单独整理。")
+        let spans = item.fragments.map(\.span)
+        let average = spans.isEmpty ? 0 : spans.reduce(0, +) / Double(spans.count)
+        let shortest = spans.min() ?? 0
+        let shape = FragmentRunShape.classify(item)
+        var lines: [String] = ["这 \(item.fragments.count) 段记录都不到 3 分钟，在时间线里折成了一条。"]
+        if let phrase = shape.phrase { lines.append("\(phrase)。") }
+        if average > 0 {
+            lines.append("平均每段 \(ActivityFormatter.time(average))，最短 \(ActivityFormatter.time(shortest))。")
+        }
+        lines.append("展开这一行可以逐条查看，每一段都能单独整理。")
+        return section("碎片带") {
+            Text(lines.joined())
                 .font(AppTypography.secondary())
                 .foregroundStyle(Color.secondaryInk)
                 .lineSpacing(5)

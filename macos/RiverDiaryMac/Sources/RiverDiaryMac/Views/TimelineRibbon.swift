@@ -21,6 +21,12 @@ struct RiverDayRibbon: View {
     var onScrub: ((Date) -> Void)?
     /// 松手：这一次拖动最终落在的时刻。页面用它选中那一行。
     var onScrubCommit: ((Date) -> Void)?
+    /// 被判定为"多工具组合工作"的碎片带成员（`FragmentRunShape`）。
+    /// 这些短切换画成普通活动的权重：它们是矮块，但它们是工作，
+    /// 不该和真正的噪音（无主基地的乱切）画成同一档。
+    /// 阈值本机数据定过（主导占比 ≥0.6 且回归 ≥2 次）；这里**不**看类别——
+    /// 本机 17 天的组合带主导类别里工作/学习/创作是 0，按类别分档永远不会命中。
+    var composedWorkItemIDs: Set<String> = []
 
     /// Height of the day band. Exposed so layout tests can address the track
     /// without duplicating the number.
@@ -224,6 +230,7 @@ struct RiverDayRibbon: View {
     private func height(for item: ActivityTimelineItem) -> CGFloat {
         if item.kind == .capture { return Self.trackHeight - 10 }
         if item.kind == .gap { return 0 }
+        if isComposedWorkMember(item) { return Self.trackHeight - 19 }
         if ActivityClassifier.isFocus(item.category) { return Self.trackHeight - 12 }
         // 不到 3 分钟的切屏：矮一档，让"碎片"在整天的尺度上也读得出来。
         return ActivityTimelineEngine.isFoldable(item) ? Self.trackHeight - 26 : Self.trackHeight - 19
@@ -234,8 +241,13 @@ struct RiverDayRibbon: View {
     private func fill(for item: ActivityTimelineItem) -> Color {
         if item.kind == .capture { return Color.ink.opacity(0.72) }
         if item.kind == .gap { return Color.clear }
+        if isComposedWorkMember(item) { return AppTheme.accent.opacity(0.5) }
         if ActivityClassifier.isFocus(item.category) { return AppTheme.accent }
         return AppTheme.accent.opacity(ActivityTimelineEngine.isFoldable(item) ? 0.34 : 0.5)
+    }
+
+    private func isComposedWorkMember(_ item: ActivityTimelineItem) -> Bool {
+        composedWorkItemIDs.contains(item.id)
     }
 
     /// 现在针带标签。一根没有说明的竖线只是一道划痕。

@@ -106,10 +106,23 @@ struct TimelineWorkspaceView: View {
                 items: timeline.items,
                 now: isToday ? Date() : nil,
                 onScrub: { moment in scrub(to: moment, timeline: timeline, displayed: displayed, commit: false) },
-                onScrubCommit: { moment in scrub(to: moment, timeline: timeline, displayed: displayed, commit: true) }
+                onScrubCommit: { moment in scrub(to: moment, timeline: timeline, displayed: displayed, commit: true) },
+                composedWorkItemIDs: composedWorkItemIDs(timeline)
             )
             .riverAppear(index: 1)
         }
+    }
+
+    /// 组合工作带的成员 id：日带把它们画成普通活动的高度与浓度。
+    /// 碎片带的成员与 `timeline.items` 是同一批节点（折叠只发生在展示层），id 直接对得上。
+    private func composedWorkItemIDs(_ timeline: ActivityTimeline) -> Set<String> {
+        var ids: Set<String> = []
+        for run in timeline.foldedItems where run.isFragmentRun {
+            if FragmentRunShape.classify(run).isComposedWork {
+                ids.formUnion(run.fragments.map(\.id))
+            }
+        }
+        return ids
     }
 
     private func pageBody(_ timeline: ActivityTimeline, displayed: [ActivityTimelineItem]) -> some View {
@@ -516,11 +529,7 @@ struct TimelineDayOverview: View {
                         "单段最长的一次"
                     )
                     RiverStatDivider()
-                    metric(
-                        "碎片",
-                        timeline.fragmentNodeCount > 0 ? "\(timeline.fragmentNodeCount) 段" : "—",
-                        "不足 3 分钟，已折进碎片带"
-                    )
+                    metric("短切换", switchMetricValue, switchMetricDetail)
                 }
 
                 SettingsFootnote(text: coverageNote)
@@ -533,6 +542,28 @@ struct TimelineDayOverview: View {
     private func metric(_ title: String, _ value: String, _ detail: String) -> some View {
         RiverStat(title: title, value: value, detail: nil, valueFont: AppTypography.metricSmall())
             .help("\(title)：\(detail)")
+    }
+
+    /// "短切换"而不是"碎片"：切屏是中性的，多数短切换是多工具组合工作。
+    /// 只有真散的才叫碎片（见 `FragmentRunShape`）。
+    private var switchMetricValue: String {
+        timeline.fragmentNodeCount > 0 ? "\(timeline.fragmentNodeCount) 段" : "—"
+    }
+
+    /// 悬停说明：先说折叠这件事；当天多数带有明确形态时顺带说一句。
+    /// 形态是本机数据定名的——40% 的带是多工具组合工作，是这里的常态。
+    private var switchMetricDetail: String {
+        guard timeline.fragmentNodeCount > 0 else { return "不足 3 分钟的切屏折进碎片带；这一天没有" }
+        let runs = timeline.foldedItems.filter(\.isFragmentRun)
+        let base = "不足 3 分钟，折进 \(runs.count) 条碎片带"
+        let shapes = runs.map(FragmentRunShape.classify)
+        if shapes.filter(\.isComposedWork).count * 2 >= runs.count {
+            return base + "，多为多工具组合工作"
+        }
+        if shapes.contains(where: \.isWandering) {
+            return base + "，部分分散在多个应用之间"
+        }
+        return base
     }
 
     /// Reads as the panel's trailing metadata: the recorded span, plus whether the

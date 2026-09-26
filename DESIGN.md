@@ -232,7 +232,24 @@ Six rules keep the rows honest, aligned and quiet:
 
 A category chip is drawn only for the two categories a reader cannot infer from the node and the app names (`系统`, `快记`). Rows for 工作 / 浏览 / 娱乐 used to carry one each, restating what the node colour and the statistics already said.
 
-**碎片带 (fragment runs).** Measured on a real machine, 72% of a day's nodes are shorter than three minutes — one-minute app switches that no one needs to confirm. They are folded at the display layer: `ActivityTimeline.items` always holds every node (export, search, the evidence console and the daily review all read that), while the list reads `foldedItems`. Folding never changes a statistic and never drops a source record. The fold is visible and reversible: the day overview's 碎片 metric counts the folded nodes, an expanded run lists its members inline, and the panel footnote says where they went. `TimelineDisplayList` is the single owner of the folded row list, `ActivityTimelineEngine.foldFragments` of the folding itself.
+**碎片带 (fragment runs).** Measured on a real machine, 72% of a day's nodes are shorter than three minutes — one-minute app switches that no one needs to confirm. They are folded at the display layer: `ActivityTimeline.items` always holds every node (export, search, the evidence console and the daily review all read that), while the list reads `foldedItems`. Folding never changes a statistic and never drops a source record. The fold is visible and reversible: the day overview's 短切换 metric counts the folded nodes, an expanded run lists its members inline, and the panel footnote says where they went. `TimelineDisplayList` is the single owner of the folded row list, `ActivityTimelineEngine.foldFragments` of the folding itself.
+
+**Switching is neutral.** App switching does not imply a loss of focus — most of it is multi-tool composition, which *is* work. So a run's name is decided by its **structure**, not by its switch count, and every phrase is a pattern description: "组合工作", "短切换", "分散在 N 个应用之间" — never "分心". `FragmentRunShape` classifies each run from app structure alone:
+
+```text
+intraApp       every member is the same app        "Chrome 里的 8 段短切换"（换窗口/换页面）
+composedWork   dominant app ≥ 60% of foreground    "组合工作 · N 段"，第二行 "在 Xcode 与 终端 之间来回 3 次"
+               AND the run returns to it ≥ 2 times
+wandering      ≥ 3 apps, none above 40%            "N 段碎片"，第二行 "分散在 N 个应用之间"
+mixed          everything else                     "N 段碎片"，第二行退回应用构成
+```
+
+The thresholds come from a measured distribution (2026-09-26, 17 days / 2,378 sessions / 133 runs on the author's machine): dominant-app share p50 = 0.74, so composition is the *typical* shape; the composed rule captures 40% of runs; wandering runs measured **zero** — that tier stays as a deliberate silence. Retune thresholds by re-running the distribution, never by eye. Two consequences worth keeping:
+
+- **Structure beats category.** The composed runs' dominant categories on real data were 浏览/其他/沟通 — work-category runs measured zero, so any "is it work?" category condition would never fire. The ribbon draws composed runs' members at ordinary weight for structural reasons only.
+- **The 专注 metric reads ≈ 0 on this data** because the keyword classifier maps the user's actual apps to 浏览/其他. That is a classifier-vocabulary gap, not a folding bug — and it will partly self-heal now that window titles are sampled every 25 s (the classifier reads the title too). Do not "fix" it by redefining 专注.
+
+The review page may add **one sentence** under 时间分布, only when the range's busiest day reached 100 短切换 (p90 of the measured daily distribution is 121): "近 7 天里，9 月 25 日 的短切换最多（248 段），多为多工具之间的组合工作。" Default state is silence.
 
 A 碎片带 is not an annotatable evidence item: it is a view-level aggregate, so it has no annotation key and the inspector offers an explanation instead of an 编辑 button that would save nothing (see `ActivityTimelineItem.isAnnotatable`).
 

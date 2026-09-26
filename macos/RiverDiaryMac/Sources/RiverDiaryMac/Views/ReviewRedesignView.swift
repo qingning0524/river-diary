@@ -63,6 +63,7 @@ struct ReviewContentView: View {
 
     var body: some View {
         let review = makeReview()
+        let switching = switchSummary()
         return VStack(alignment: .leading, spacing: density.spacing(16)) {
                 if showsHeader {
                     PageHeader("回顾", context: "从几天的记录里，看见自己的节奏。", emphasis: true) {
@@ -80,7 +81,7 @@ struct ReviewContentView: View {
 
                 summary(review).riverAppear(index: 1)
                 rhythm(review).riverAppear(index: 2)
-                distribution(review).riverAppear(index: 3)
+                distribution(review, switching: switching).riverAppear(index: 3)
                 monthlyLetter.riverAppear(index: 4)
                 aiReview(review).riverAppear(index: 5)
                 actionRow.riverAppear(index: 6)
@@ -154,7 +155,53 @@ struct ReviewContentView: View {
         }
     }
 
-    private func distribution(_ review: LocalReview) -> some View {
+    /// 一句话的切换叙述，只在"最忙的一天短切换显著"时说。
+    ///
+    /// 复盘是解读的家，时间线的行里永远不放这种句子。默认沉默是原则：
+    /// 本机分布里每日短切换 p50 = 37、p90 = 121，所以门槛取 100——
+    /// 大约只有最忙的一成天数会开口。措辞是模式描述，不是评价：
+    /// 组合工作是常态，"分散"也只是说结构，不评判。
+    private func switchSummary() -> String? {
+        let sessions = activity.sessions(from: startDate, to: endDate.addingTimeInterval(24 * 60 * 60))
+        guard !sessions.isEmpty else { return nil }
+        let calendar = Calendar.current
+        var cursor = calendar.startOfDay(for: startDate)
+        let lastDay = calendar.startOfDay(for: endDate)
+        var busiest: (date: Date, fragments: Int, composedRuns: Int, hasWandering: Bool, totalRuns: Int)?
+
+        while cursor <= lastDay {
+            let daySessions = sessions.filter { calendar.isDate($0.start, inSameDayAs: cursor) }
+            if !daySessions.isEmpty {
+                let timeline = ActivityTimelineEngine.build(for: cursor, sessions: daySessions, captures: [])
+                let runs = timeline.foldedItems.filter(\.isFragmentRun)
+                let shapes = runs.map(FragmentRunShape.classify)
+                let fragments = timeline.fragmentNodeCount
+                if fragments > (busiest?.fragments ?? 0) {
+                    busiest = (
+                        cursor,
+                        fragments,
+                        shapes.filter(\.isComposedWork).count,
+                        shapes.contains(where: \.isWandering),
+                        runs.count
+                    )
+                }
+            }
+            cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? lastDay.addingTimeInterval(24 * 60 * 60)
+        }
+
+        guard let busiest, busiest.fragments >= 100 else { return nil }
+        let dateText = busiest.date.formatted(.dateTime.month().day())
+        let head = "近 \(dayRange) 天里，\(dateText) 的短切换最多（\(busiest.fragments) 段）"
+        if busiest.composedRuns * 2 >= max(busiest.totalRuns, 1) {
+            return head + "，多为多工具之间的组合工作。"
+        }
+        if busiest.hasWandering {
+            return head + "，部分时段分散在多个应用之间。"
+        }
+        return head + "。"
+    }
+
+    private func distribution(_ review: LocalReview, switching: String?) -> some View {
         RiverPanel(title: "时间分布", systemImage: "chart.bar", accent: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(9)) {
                 if review.categories.isEmpty {
@@ -191,6 +238,9 @@ struct ReviewContentView: View {
                                 .frame(width: 88, alignment: .trailing)
                         }
                     }
+                }
+                if let switching {
+                    SettingsFootnote(text: switching)
                 }
             }
         }

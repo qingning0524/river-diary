@@ -101,7 +101,10 @@ struct ActivityTimelineItem: Identifiable, Hashable {
     }
     var title: String {
         if let title = annotation?.normalized.title, !title.isEmpty { return title }
-        if isFragmentRun { return "\(fragments.count) 段碎片" }
+        if isFragmentRun {
+            // 形态决定名字：多数短切换是多工具组合工作，只有真散的才叫"碎片"。
+            return FragmentRunShape.classify(self).rowTitle(fallbackCount: fragments.count)
+        }
         if let capture { return capture.text }
         if kind == .gap { return "没有记录的时间" }
         let names = apps.prefix(2).map(\.name).joined(separator: "、")
@@ -356,6 +359,118 @@ enum ActivityTimelineEngine {
             coveredUntil = session.end
         }
         return result
+    }
+}
+
+/// 一条碎片带的形态。**切屏是中性的**：多数短切换是多工具组合工作的常态，
+/// 只有结构指向"没有主基地"时才换词。判定只用应用结构，不下结论——
+/// "组合工作""短切换"是模式描述，"分心"这个词永远不该出现在这个文件里。
+///
+/// 阈值来自本机真实数据的分布（2026-09-26，17 天 / 2378 段 / 133 条带）：
+/// 主导应用占比 p50 = 0.74、p25 = 0.58；「占比 ≥ 0.6 且回到主导应用 ≥ 2 次」
+/// 捕获 40% 的带；「应用数 ≥ 3 且占比 < 0.4」的游移带为 **0** 条——这一档是
+/// 留给未来数据的，当下默认沉默。改阈值前先重新跑一遍分布。
+enum FragmentRunShape: Equatable {
+    /// 同一个应用里的连续短会话：换窗口、换标签页。标题重采样（每 25 秒）
+    /// 把长会话按标题切开之后，这会是最常见的形态。
+    case intraApp(app: String, count: Int)
+    /// 组合工作：反复回到主导应用（主基地），其余工具是短插针。
+    case composedWork(dominant: String, second: String, returns: Int)
+    /// 没有主基地：好几个应用，谁都不占多数。
+    case wandering(appCount: Int)
+    /// 其余：两次切换、均匀混用等，用中性的默认措辞，不硬编形态。
+    case mixed
+
+    static let composedMinMembers = 3
+    static let composedShareThreshold = 0.6
+    static let composedReturnsThreshold = 2
+    static let wanderingAppThreshold = 3
+    static let wanderingShareThreshold = 0.4
+
+    var isComposedWork: Bool {
+        if case .composedWork = self { return true }
+        return false
+    }
+
+    var isWandering: Bool {
+        if case .wandering = self { return true }
+        return false
+    }
+
+    /// 行的第二行 / 检查器用的形态短语。`mixed` 返回 nil：没有可说的结构，
+    /// 就退回应用构成，别硬编一句话。
+    var phrase: String? {
+        switch self {
+        case .intraApp(let app, let count): "\(app) 里的 \(count) 段短切换"
+        case .composedWork(let dominant, let second, let returns): "在 \(dominant) 与 \(second) 之间来回 \(returns) 次"
+        case .wandering(let appCount): "分散在 \(appCount) 个应用之间"
+        case .mixed: nil
+        }
+    }
+
+    /// 行标题。组合工作与同应用切换值得一个具体的名字；真散的才叫"碎片"。
+    func rowTitle(fallbackCount: Int) -> String {
+        switch self {
+        case .composedWork: "组合工作 · \(fallbackCount) 段"
+        case .intraApp: phrase ?? "\(fallbackCount) 段碎片"
+        case .wandering, .mixed: "\(fallbackCount) 段碎片"
+        }
+    }
+
+    /// 只读结构，不读标注：形态是给"没有人工解释的切换"自动起名用的，
+    /// 人工写过的标题在 `ActivityTimelineItem.title` 里本来就优先。
+    static func classify(_ run: ActivityTimelineItem) -> FragmentRunShape {
+        let members = run.fragments
+        guard !members.isEmpty else { return .mixed }
+
+        var durations: [String: TimeInterval] = [:]
+        var bundles: [String: String] = [:]
+        for member in members {
+            for session in member.sessions {
+                durations[session.appName, default: 0] += max(session.duration, 0)
+                bundles[session.appName] = session.bundleID
+            }
+        }
+        // 没有任何前台时长（理论上不该发生）就按段数计权，保证判定仍可进行。
+        if durations.values.allSatisfy({ $0 <= 0 }) {
+            for member in members {
+                for session in member.sessions {
+                    durations[session.appName, default: 0] += 1
+                }
+            }
+        }
+
+        // 同一个应用：换窗口/换标签，不是跨应用切换。
+        if Set(bundles.values).count <= 1, let app = durations.keys.sorted().first {
+            return .intraApp(app: app, count: members.count)
+        }
+
+        let ranked = durations.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+        guard let dominant = ranked.first?.key else { return .mixed }
+        let total = durations.values.reduce(0, +)
+        let share = total > 0 ? (ranked.first?.value ?? 0) / total : 0
+
+        if ranked.count >= wanderingAppThreshold, share < wanderingShareThreshold {
+            return .wandering(appCount: ranked.count)
+        }
+
+        // 主基地：主导应用在成员序列里反复出现，隔了别的工具再回来也算一次。
+        var returns = 0
+        var previousWasDominant = false
+        for member in members {
+            let isDominant = member.sessions.contains { $0.appName == dominant }
+            if isDominant, !previousWasDominant { returns += 1 }
+            previousWasDominant = isDominant
+        }
+
+        if members.count >= composedMinMembers,
+           share >= composedShareThreshold,
+           returns >= composedReturnsThreshold {
+            let second = ranked.dropFirst().first?.key ?? dominant
+            return .composedWork(dominant: dominant, second: second, returns: returns)
+        }
+
+        return .mixed
     }
 }
 

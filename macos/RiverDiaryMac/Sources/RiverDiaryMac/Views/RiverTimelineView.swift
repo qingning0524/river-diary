@@ -245,8 +245,10 @@ private struct TimelineRow: View {
     /// 而且原始片段计数（仪表的内部数字）退到检查器和右键菜单里。
     private var detailLine: String {
         var parts: [String] = []
-        if isRun || isChild {
-            // 碎片带：整体跨度已经在右侧时长列里，这里说清"谁在里面"。
+        // 碎片带：整体跨度已经在右侧时长列里，这里说清"这一段切换是什么形态"。
+        // 切屏是中性的：说得出形态（在谁与谁之间来回 / 都在同应用里）就说形态，
+        // 说不出再报应用构成。成员行没有形态，直接报应用名。
+        func appendComposition() {
             let composition = item.appComposition
             if composition.isEmpty {
                 let names = item.apps.prefix(3).map(\.name)
@@ -256,6 +258,15 @@ private struct TimelineRow: View {
             } else {
                 parts.append(composition)
             }
+        }
+        if isRun {
+            if let phrase = FragmentRunShape.classify(item).phrase {
+                parts.append(phrase)
+            } else {
+                appendComposition()
+            }
+        } else if isChild {
+            appendComposition()
         } else {
             parts.append(item.evidenceLine.trimmingCharacters(in: .whitespacesAndNewlines))
         }

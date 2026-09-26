@@ -43,7 +43,9 @@ final class TimelineFragmentTests: XCTestCase {
         let runs = model.foldedItems.filter(\.isFragmentRun)
         XCTAssertEqual(runs.count, 2)
         XCTAssertEqual(runs[0].fragments.count, 3)
-        XCTAssertEqual(runs[0].title, "3 段碎片")
+        // 三段都在同一个应用里：形态判定为"同应用内的短切换"（换窗口/换页面），
+        // 标题说具体的应用，不再笼统地叫"碎片"。
+        XCTAssertEqual(runs[0].title, "Xcode 里的 3 段短切换")
         XCTAssertEqual(runs[0].start, at(600))
         XCTAssertEqual(runs[0].end, at(609))
         XCTAssertEqual(runs[0].sessions.count, 3)
