@@ -420,8 +420,9 @@ final class TimelineDisplayListTests: XCTestCase {
     func testScrubOnAFoldedRunAsksForItToBeExpanded() {
         let (run, tail) = runAndTail()
         let rows = TimelineDisplayList.rows(items: [run, tail], expandedRunIDs: [], hasNowRow: false)
-        let target = TimelineDisplayList.scrubTarget(for: day(12, 4), rows: rows)
-        XCTAssertEqual(target?.rowID, run.id)
+        let target = TimelineDisplayList.scrubTarget(for: day(12, 3), rows: rows)
+        XCTAssertEqual(target?.rowID, "fragment-f1")
+        XCTAssertEqual(target?.item.id, "f1")
         XCTAssertEqual(target?.expandsRunID, run.id, "落在碎片带上时必须先展开它")
 
         let onTail = TimelineDisplayList.scrubTarget(for: day(13, 40), rows: rows)
@@ -429,22 +430,46 @@ final class TimelineDisplayListTests: XCTestCase {
         XCTAssertNil(onTail?.expandsRunID, "普通行不需要展开")
     }
 
-    /// 一天里最早和最晚的空白处：拖着时间带走，总得落在某条证据上，
-    /// "这里什么都没有"不是一个可定位的位置。
-    func testScrubFallsBackToTheNearestRow() {
+    /// 没有证据覆盖的时刻不会跳到邻近行，以免让用户误以为该时刻有记录。
+    func testScrubDoesNotSelectANeighborForUnrecordedTime() {
         let rows = TimelineDisplayList.rows(
             items: [activity("a", 9, 0, 30), activity("b", 11, 0, 30)],
             expandedRunIDs: [],
             hasNowRow: false
         )
-        XCTAssertEqual(TimelineDisplayList.scrubTarget(for: day(0, 30), rows: rows)?.rowID, "a")
-        XCTAssertEqual(TimelineDisplayList.scrubTarget(for: day(23, 0), rows: rows)?.rowID, "b")
-        // 两行之间的小缝：取更近的那一条。
-        XCTAssertEqual(TimelineDisplayList.scrubTarget(for: day(10, 44), rows: rows)?.rowID, "b")
-        XCTAssertEqual(TimelineDisplayList.scrubTarget(for: day(9, 46), rows: rows)?.rowID, "a")
+        XCTAssertNil(TimelineDisplayList.scrubTarget(for: day(0, 30), rows: rows))
+        XCTAssertNil(TimelineDisplayList.scrubTarget(for: day(23, 0), rows: rows))
+        XCTAssertNil(TimelineDisplayList.scrubTarget(for: day(10, 44), rows: rows))
+        XCTAssertNil(TimelineDisplayList.scrubTarget(for: day(9, 46), rows: rows))
+    }
+
+    func testScrubInsideFragmentRunTargetsTheMemberAtThatMoment() {
+        let (run, _) = runAndTail()
+        let rows = TimelineDisplayList.rows(items: [run], expandedRunIDs: [], hasNowRow: false)
+
+        let target = TimelineDisplayList.scrubTarget(for: day(12, 3), rows: rows)
+        XCTAssertEqual(target?.item.id, "f1")
+        XCTAssertEqual(target?.rowID, "fragment-f1")
+        XCTAssertEqual(target?.expandsRunID, run.id)
+        XCTAssertNil(TimelineDisplayList.scrubTarget(for: day(12, 2), rows: rows), "碎片带成员之间的留白不能跳到邻近片段")
     }
 
     func testScrubOnAnEmptyDayDoesNothing() {
         XCTAssertNil(TimelineDisplayList.scrubTarget(for: day(12, 0), rows: []))
+    }
+
+    func testScrubCanSelectAQuickCaptureMarkerWithoutClaimingNearbyBlankTime() {
+        let time = day(12, 0)
+        let capture = ActivityTimelineItem(
+            id: "note",
+            kind: .capture,
+            start: time,
+            end: time,
+            capture: QuickCapture(text: "今天记下的一句话", createdAt: time)
+        )
+        let rows = TimelineDisplayList.rows(items: [capture], expandedRunIDs: [], hasNowRow: false)
+
+        XCTAssertEqual(TimelineDisplayList.scrubTarget(for: day(12, 4), rows: rows)?.item.id, "note")
+        XCTAssertNil(TimelineDisplayList.scrubTarget(for: day(12, 10), rows: rows))
     }
 }

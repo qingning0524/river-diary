@@ -22,7 +22,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
         switch self {
         case .recording: "自动记录、采集来源与实时足迹"
         case .ai: "模型连接是可选项，未连接也能使用全部本地记录"
-        case .privacy: "存储状态、加密备份与应用锁"
+        case .privacy: "信任状态、数据范围、加密备份与应用锁"
         case .appearance: "显示模式与内容密度"
         }
     }

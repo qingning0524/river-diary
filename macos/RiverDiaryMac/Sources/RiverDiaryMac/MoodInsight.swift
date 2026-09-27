@@ -13,6 +13,16 @@ struct MoodReading: Hashable {
     let score: Int
 }
 
+/// 单字关键词（累/困/倦）的子串计数会被常见复合词误触发：
+/// 「积累了不少经验」「遇到了一点困难」都会被判成疲惫。计数/检索前剥掉
+/// 这批高频复合词，单字关键词本身保留（"今天很累"是合法信号）。
+/// MoodAnalyzer 与 CareAdvisor 共用。
+private func textWithoutFalsePositiveCompounds(_ text: String) -> String {
+    ["积累", "累计", "累加", "困难", "困局"].reduce(text) { result, compound in
+        result.replacingOccurrences(of: compound, with: " ")
+    }
+}
+
 enum MoodAnalyzer {
     private static let lexicon: [String: [String]] = [
         "平静": ["平静", "坦然", "稳定", "放松", "舒缓", "治愈", "安心", "慢慢"],
@@ -24,9 +34,10 @@ enum MoodAnalyzer {
 
     static func reading(for text: String) -> MoodReading {
         var counts: [String: Int] = [:]
+        let cleaned = textWithoutFalsePositiveCompounds(text)
         for (label, words) in lexicon {
             counts[label] = words.reduce(0) { total, word in
-                total + text.components(separatedBy: word).count - 1
+                total + cleaned.components(separatedBy: word).count - 1
             }
         }
 
@@ -92,14 +103,19 @@ enum MoodAnalyzer {
 
 enum CareAdvisor {
     static func level(entry: DiaryEntry?, previous: DiaryEntry?, quickText: String) -> CareLevel {
-        let text = (entry?.displayOverview ?? "") + " " + quickText
+        let text = textWithoutFalsePositiveCompounds((entry?.displayOverview ?? "") + " " + quickText)
         let hardWords = ["撑不住", "崩溃", "没有意义", "活不下去", "害怕", "绝望", "失眠", "熬夜"]
         let softWords = ["疲惫", "累", "无力", "低落", "难受", "焦虑", "崩溃"]
 
         if hardWords.contains(where: text.contains) { return .support }
 
-        let lowToday = (entry?.mood ?? 100) <= 38
-        let lowYesterday = (previous?.mood ?? 100) <= 38
+        // 缺分数 ≠ 低分：entry 存在但 mood/score 都为 nil 时，旧写法
+        // `?? 100` 兜不住（mood 计算属性内部已经 `?? 0`），连续两天没打分
+        // 会触发"建议专业支持"。只有真实打了低分才算低。
+        let todayScore = entry.flatMap { $0.metrics?.mood ?? $0.score }
+        let yesterdayScore = previous.flatMap { $0.metrics?.mood ?? $0.score }
+        let lowToday = (todayScore.map { $0 <= 38 }) == true
+        let lowYesterday = (yesterdayScore.map { $0 <= 38 }) == true
         if lowToday && lowYesterday { return .support }
         if lowToday || softWords.contains(where: text.contains) { return .gentle }
         return .none

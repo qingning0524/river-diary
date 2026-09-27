@@ -41,12 +41,23 @@ struct RiverDayRibbon: View {
         formatter.dateFormat = "HH:mm"
         return formatter
     }()
+    private static let transitionTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm zzz"
+        return formatter
+    }()
 
     /// 鼠标在带上的横向比例（0–1）。悬停与拖动共用一条十字线。
     @State private var hoverFraction: CGFloat?
     @State private var dragFraction: CGFloat?
 
     private var activeFraction: CGFloat? { dragFraction ?? hoverFraction }
+
+    private var interval: DateInterval {
+        Calendar.current.dateInterval(of: .day, for: date)
+            ?? DateInterval(start: Calendar.current.startOfDay(for: date), end: Calendar.current.startOfDay(for: date).addingTimeInterval(86_400))
+    }
+    private var isClockChangeDay: Bool { abs(interval.duration - 86_400) > 1 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
@@ -119,7 +130,7 @@ struct RiverDayRibbon: View {
     }
 
     private func moment(at fraction: CGFloat) -> Date {
-        Calendar.current.startOfDay(for: date).addingTimeInterval(TimeInterval(fraction) * 86_400)
+        interval.start.addingTimeInterval(TimeInterval(fraction) * interval.duration)
     }
 
     /// 悬停/拖动时的十字：一条竖线加一个时刻。没有它，这条带只是一张图；
@@ -132,7 +143,7 @@ struct RiverDayRibbon: View {
                 .frame(width: dragFraction == nil ? 1 : 1.5, height: Self.trackHeight)
                 .offset(x: min(max(x, 0), max(width - 1.5, 0)))
 
-            Text(Self.accessibilityTimeFormatter.string(from: moment(at: fraction)))
+            Text(crosshairLabel(at: moment(at: fraction), fraction: fraction))
                 .font(AppTypography.micro().monospacedDigit().weight(.medium))
                 .foregroundStyle(Color.ctaText)
                 .padding(.horizontal, density.spacing(5))
@@ -144,16 +155,36 @@ struct RiverDayRibbon: View {
         .allowsHitTesting(false)
     }
 
+    private func crosshairLabel(at moment: Date, fraction: CGFloat) -> String {
+        let formatter = isClockChangeDay ? Self.transitionTimeFormatter : Self.accessibilityTimeFormatter
+        let time = fraction >= 0.999_999 ? "24:00" : formatter.string(from: moment)
+        let hasEvidence = items.contains { item in
+            if item.kind == .capture {
+                return abs(item.start.timeIntervalSince(moment)) <= TimelineDisplayList.captureHitTolerance
+            }
+            return item.start <= moment && moment < item.end
+        }
+        return hasEvidence ? time : "\(time) · 未记录"
+    }
+
     // MARK: Axis
 
     private func hourGuides(width: CGFloat) -> some View {
         ForEach(Self.ticks, id: \.self) { hour in
-            let x = width * CGFloat(hour) / 24
+            let x = width * fraction(of: dayBoundary(hour))
             Rectangle()
                 .fill(Color.strongSeparator.opacity(0.7))
                 .frame(width: 1, height: Self.trackHeight)
                 .offset(x: min(max(x, 0), max(width - 1, 0)))
         }
+    }
+
+    private func dayBoundary(_ hour: Int) -> Date {
+        guard hour < 24 else { return interval.end }
+        let calendar = Calendar.current
+        let target = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: date)
+            ?? interval.start.addingTimeInterval(interval.duration * Double(hour) / 24)
+        return min(max(target, interval.start), interval.end)
     }
 
     /// Fixed-width labels so the axis reads as a ruler rather than as floating text.
@@ -163,17 +194,27 @@ struct RiverDayRibbon: View {
     /// "理想高度"提案，贪心看不出来；钉进页头之后，窗口把真实高度（几百 pt）提案给
     /// 页头，刻度区就把提案整个吃掉——页面从日带往下被推出去两百多 pt，只剩一片空白。
     private var hourAxis: some View {
-        GeometryReader { proxy in
-            ForEach(Self.ticks, id: \.self) { hour in
-                let x = proxy.size.width * CGFloat(hour) / 24
-                Text(hour == 24 ? "24" : String(format: "%02d", hour))
-                    .font(AppTypography.micro().monospacedDigit())
-                    .foregroundStyle(Color.tertiaryInk)
-                    .frame(width: 34, alignment: .center)
-                    .offset(x: min(max(x - 17, 0), max(proxy.size.width - 34, 0)))
+        VStack(alignment: .leading, spacing: 2) {
+            GeometryReader { proxy in
+                ForEach(Self.ticks, id: \.self) { hour in
+                    let x = proxy.size.width * fraction(of: dayBoundary(hour))
+                    Text(hour == 24 ? "24" : String(format: "%02d", hour))
+                        .font(AppTypography.micro().monospacedDigit())
+                        .foregroundStyle(Color.tertiaryInk)
+                        .frame(width: 34, alignment: .center)
+                        .offset(x: min(max(x - 17, 0), max(proxy.size.width - 34, 0)))
+                }
+            }
+            .frame(height: Self.axisHeight)
+
+            if isClockChangeDay {
+                Text("本地时钟调整日 · 实际 \(Int(interval.duration / 3_600)) 小时")
+                    .font(AppTypography.micro())
+                    .foregroundStyle(Color.secondaryInk)
+                    .fixedSize()
             }
         }
-        .frame(height: Self.axisHeight)
+        .frame(height: Self.axisHeight + (isClockChangeDay ? 12 : 0))
     }
 
     // MARK: Segments
@@ -187,26 +228,21 @@ struct RiverDayRibbon: View {
         let fill: Color
     }
 
-    private func dayStart(_ calendar: Calendar) -> Date {
-        calendar.startOfDay(for: date)
-    }
-
-    private func fraction(of moment: Date, calendar: Calendar) -> CGFloat {
-        let seconds = moment.timeIntervalSince(dayStart(calendar))
-        return CGFloat(min(max(seconds / 86_400, 0), 1))
+    private func fraction(of moment: Date) -> CGFloat {
+        let seconds = moment.timeIntervalSince(interval.start)
+        return CGFloat(min(max(seconds / max(interval.duration, 1), 0), 1))
     }
 
     /// 高度就是这件事的分量：一段实心专注占满，普通活动矮一档，来回切屏的
     /// 碎片再矮一档（一大片矮块读作"这段时间一直在切"，而不是"这段时间在专注"），
     /// 快记是一枚墨色标记。颜色分不开的东西，高度分得开。
     private func segments(in width: CGFloat) -> [Segment] {
-        let calendar = Calendar.current
         var result: [Segment] = []
 
         for item in items where item.kind != .gap {
-            let startFraction = fraction(of: item.start, calendar: calendar)
+            let startFraction = fraction(of: item.start)
             // A capture has no duration; give it a tick wide enough to see.
-            let endFraction = max(fraction(of: item.end, calendar: calendar), startFraction)
+            let endFraction = max(fraction(of: item.end), startFraction)
             let x = width * startFraction
             let rawWidth = width * (endFraction - startFraction)
             let isCapture = item.kind == .capture
@@ -272,7 +308,7 @@ struct RiverDayRibbon: View {
 
     private func nowOffset(in width: CGFloat) -> CGFloat? {
         guard let now, Calendar.current.isDate(now, inSameDayAs: date) else { return nil }
-        return width * fraction(of: now, calendar: .current)
+        return width * fraction(of: now)
     }
 
     private var accessibilitySummary: String {
@@ -280,11 +316,13 @@ struct RiverDayRibbon: View {
         guard !recorded.isEmpty else { return "这一天还没有记录的时间带" }
         let first = recorded.map(\.start).min() ?? date
         let last = recorded.map(\.end).max() ?? date
-        let total = recorded.reduce(0.0) { $0 + max($1.end.timeIntervalSince($1.start), $1.duration) }
-        let focus = recorded.filter { ActivityClassifier.isFocus($0.category) }
-            .reduce(0.0) { $0 + max($1.end.timeIntervalSince($1.start), $1.duration) }
+        let activities = recorded.filter { $0.kind == .activity }
+        let total = activities.reduce(0.0) { $0 + $1.duration }
+        let focus = activities.filter { ActivityClassifier.isFocus($0.category) }
+            .reduce(0.0) { $0 + $1.duration }
         let formatter = Self.accessibilityTimeFormatter
         let focusText = focus > 0 ? "，其中专注 \(ActivityFormatter.time(focus))" : ""
-        return "\(formatter.string(from: first)) 到 \(formatter.string(from: last)) 之间共记录 \(ActivityFormatter.time(total))\(focusText)，其余时间没有记录"
+        let transition = isClockChangeDay ? "，这是实际 \(Int(interval.duration / 3_600)) 小时的本地时钟调整日" : ""
+        return "\(formatter.string(from: first)) 到 \(formatter.string(from: last)) 之间共记录 \(ActivityFormatter.time(total))\(focusText)，其余时间没有记录\(transition)"
     }
 }

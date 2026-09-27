@@ -308,23 +308,34 @@ final class DataIngestionStore: ObservableObject {
         }
         RunLoop.main.add(timer, forMode: .common)
         checkTimer = timer
-        lastStatus = "每日 \(captureTimeLabel()) 自动采集与 AI 分析已开启"
+        lastStatus = "每日 \(captureTimeLabel()) 自动采集与 AI 时间线整理已开启"
     }
 
     private func checkCaptureTime() {
-        let calendar = Calendar.current
         let now = Date()
-        let currentHour = calendar.component(.hour, from: now)
-        let currentMinute = calendar.component(.minute, from: now)
-
-        guard currentHour == captureHour, currentMinute == captureMinute else { return }
-
         let todayKey = DiaryEntry.dateFormatter.string(from: now)
+
+        // 宽限窗口：定时器在休眠时会挂起，醒来后精确分钟早已过去。
+        // 只要在"当天到达采集时刻之后、且今天还没采过"就补采（每天一次），
+        // 与 start() 的补采语义一致；宽限期 2 小时，防止深夜唤醒补采半夜数据。
+        let dueToday = isPastCaptureTime(now)
+        let withinGrace = now.timeIntervalSince(isCaptureTimeToday(now)) < 2 * 3_600
         if lastCaptureDate != todayKey {
+            guard dueToday, withinGrace else { return }
             captureNow(runsAIAnalysis: true)
-        } else if let record = dailyRecord {
+        } else if let record = dailyRecord, dueToday, withinGrace {
+            // 已采集但夜间 AI 没跑成（例如上一刻连接未验证）：同窗口内补跑一次。
             Task { await runAutomaticDailyAnalysis(for: record) }
         }
+    }
+
+    /// 今天的采集时刻（已过则返回今天该时刻，未到则返回今天该时刻本身）。
+    private func isCaptureTimeToday(_ date: Date) -> Date {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents([.year, .month, .day], from: date)
+        components.hour = captureHour
+        components.minute = captureMinute
+        return calendar.date(from: components) ?? date
     }
 
     private func isPastCaptureTime(_ date: Date) -> Bool {
@@ -370,12 +381,13 @@ final class DataIngestionStore: ObservableObject {
                               userInfo: [NSLocalizedDescriptionKey: "iOS 数据源必须是 JSON 对象。"])
             }
 
-            // 2. Check if today's iOS data exists
+            // 2. Check if today's iOS data exists.
+            //    没有 iOS 健康数据只是"健康管道今天没数据"，不应连坐 Mac 本地源
+            //    （Chrome/备忘录/屏幕时间是 today-scoped，错过即永久丢）和夜间 AI。
             let today = DiaryEntry.dateFormatter.string(from: Date())
-            guard Self.hasTodayData(payload, today: today) else {
-                lastError = nil
-                lastStatus = "今日 iOS 数据未同步（\(today)），跳过采集。"
-                return
+            let hasIOSData = Self.hasTodayData(payload, today: today)
+            if !hasIOSData {
+                lastStatus = "今日 iOS 数据未同步（\(today)）；继续采集 Mac 本地来源。"
             }
 
             // 3. Clean iOS data and keep earlier iOS days in the database
@@ -443,7 +455,10 @@ final class DataIngestionStore: ObservableObject {
             UserDefaults.standard.set(today, forKey: "ingestion.lastCaptureDate")
             UserDefaults.standard.set(currentHash, forKey: "ingestion.sourceHash")
             lastError = nil
-            lastStatus = "采集完成 · \(record.summary)"
+            // persistV2Snapshot 失败时已写 lastStatus；成功状态不得覆盖它。
+            if !lastStatus.contains("V2 事实库写入失败") {
+                lastStatus = "采集完成 · \(record.summary)"
+            }
 
             // 10. Export if configured
             if exportURL != nil {
@@ -553,10 +568,13 @@ final class DataIngestionStore: ObservableObject {
     }
 
     private func runAutomaticDailyAnalysis(for record: DailyCaptureRecord) async {
-        guard let ai = targetAI,
-              let store = targetStore,
-              ai.hasVerifiedConnection,
-              ai.needsAutomaticAnalysis(for: record.date) else { return }
+        guard let ai = targetAI, let store = targetStore else { return }
+        // 连接未验证时明确说明，不再静默返回——用户无从知道为什么没有夜间整理。
+        guard ai.hasVerifiedConnection else {
+            lastStatus = "定时 AI 分析未运行：模型连接未验证（设置 → AI 与模型 中测试一次即可）。"
+            return
+        }
+        guard ai.needsAutomaticAnalysis(for: record.date) else { return }
 
         guard let date = DiaryEntry.dateFormatter.date(from: record.date) else { return }
         let sessions = targetActivity?.liveSessions(for: date) ?? []
@@ -566,18 +584,42 @@ final class DataIngestionStore: ObservableObject {
             .sorted { $0.date < $1.date }
         let sourceSummary = "自动采集 · \(record.summary)"
 
-        let success = await ai.runAnalysisDaily(
+        let success = await ai.organizeTimeline(
+            day: date,
             entries: Array(entries.suffix(1)),
             sessions: sessions,
             captures: captures,
-            archiveStartDate: record.date,
-            archiveEndDate: record.date,
+            browserVisits: record.chromeVisits,
+            annotations: store.timelineAnnotations,
             sourceSummary: sourceSummary
         )
 
         if success {
+            let dailySummaryOK = await ai.runAnalysisDaily(
+                entries: Array(entries.suffix(1)),
+                sessions: sessions,
+                captures: captures,
+                browserVisits: record.chromeVisits,
+                annotations: store.timelineAnnotations,
+                archiveStartDate: record.date,
+                archiveEndDate: record.date,
+                sourceSummary: sourceSummary
+            )
+            guard dailySummaryOK else {
+                lastStatus = "采集完成 · 全天时间线已整理 · AI 当天理解失败，将在下次启动时重试"
+                return
+            }
+            // 结果链（C3）：整理完成后用同一天的已核事实提炼记忆候选。
+            // 候选一律以"待确认"进入记忆页，不自我确认。
+            let memoryOK = await ai.generateMemoryCandidates(
+                day: date,
+                entries: Array(entries.suffix(1)),
+                sessions: sessions,
+                captures: captures,
+                annotations: store.timelineAnnotations
+            )
             ai.markAutomaticAnalysisCompleted(for: record.date)
-            lastStatus = "采集完成 · \(record.summary) · 定时 AI 分析完成"
+            lastStatus = "采集完成 · \(record.summary) · AI 已理解当天活动\(memoryOK ? " · 记忆候选已更新" : "")"
         } else {
             lastStatus = "采集完成 · \(record.summary) · 定时 AI 分析失败，将在下次到达定时或启动时重试"
         }

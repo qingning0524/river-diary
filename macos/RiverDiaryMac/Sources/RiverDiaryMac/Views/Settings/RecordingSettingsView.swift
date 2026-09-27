@@ -194,7 +194,7 @@ struct RecordingSettingsView: View {
     // MARK: 每日混合采集
 
     private var dailyCaptureSection: some View {
-        SettingsGroup(title: "每日混合采集", detail: "到这个时间会采集当天数据；同一天仅自动生成一次总结。") {
+        SettingsGroup(title: "每日混合采集", detail: "到这个时间采集当天数据并整理时间线；记录变化后会合并更新。") {
             RiverPanel {
                 RiverPanelRow(
                     title: "采集状态",
@@ -398,7 +398,7 @@ struct RecordingSettingsView: View {
     }
 
     private var captureTimingDetail: String {
-        ingestion.enabled ? "已开启，每天 \(ingestion.captureTimeLabel())" : "已关闭，不会自动采集"
+        ingestion.enabled ? "已开启 · 每天 \(ingestion.captureTimeLabel()) 采集与 AI 整理" : "已关闭，不会自动采集或整理"
     }
 
     private var baselineDetail: String {

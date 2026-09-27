@@ -8,6 +8,16 @@ struct ChromeVisit: Codable, Hashable {
     var visitedAt: Date
     var visitCount: Int
     var domain: String
+
+    /// Stable local reference for AI citations; the raw URL is never embedded in
+    /// the citation itself and titles are only sent when the user opts in.
+    var evidenceID: UUID {
+        let digest = SHA256Hex.hash(Data("\(url)|\(visitedAt.timeIntervalSince1970)".utf8))
+        let hex = Array(digest.prefix(32))
+        guard hex.count == 32 else { return UUID() }
+        let value = "\(String(hex[0..<8]))-\(String(hex[8..<12]))-\(String(hex[12..<16]))-\(String(hex[16..<20]))-\(String(hex[20..<32]))"
+        return UUID(uuidString: value) ?? UUID()
+    }
 }
 
 // MARK: - Apple Notes

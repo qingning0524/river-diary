@@ -93,6 +93,8 @@ struct AskEvidence: Identifiable, Hashable {
     enum Kind: String, Hashable {
         case diary = "日记"
         case capture = "快记"
+        case browser = "浏览"
+        case location = "地点"
         case memory = "长期记忆"
         case reflection = "河流信"
         case timeline = "时间线"
@@ -543,7 +545,8 @@ enum MemorySearchEngine {
     private static func extractNumber(_ query: String, words: [String]) -> Int? {
         for word in words {
             if let range = query.range(of: word) {
-                let tail = query[range.upperBound...].prefix(4)
+                // "低于 3 分"：词和数字之间允许有空白。
+                let tail = query[range.upperBound...].drop { $0 == " " }.prefix(4)
                 let digits = tail.prefix { $0.isNumber }
                 if let number = Int(digits) { return number }
             }
@@ -560,4 +563,3 @@ enum AskQuestionIntent {
             || ["地点", "位置", "哪里", "去哪"].contains { query.localizedCaseInsensitiveContains($0) }
     }
 }
-

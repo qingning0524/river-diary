@@ -95,11 +95,4 @@ final class V2DomainTests: XCTestCase {
         XCTAssertNotNil(run.inputContextReference)
     }
 
-    func testEvidenceRefPointsToObject() {
-        let objectID = UUID()
-        let ref = EvidenceRef(kind: .episode, objectID: objectID, reason: "同一天连续出现")
-        XCTAssertEqual(ref.kind, .episode)
-        XCTAssertEqual(ref.objectID, objectID)
-        XCTAssertFalse(ref.reason.isEmpty)
-    }
 }

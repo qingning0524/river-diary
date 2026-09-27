@@ -71,6 +71,25 @@ final class EvidenceReferenceTests: XCTestCase {
         )
     }
 
+    func testVerifiedAnswerKeepsOnlyReferencesFromTheRequest() {
+        let fabricated = "raw:\(UUID().uuidString)"
+        let answer = "完成了任务（raw:\(sessionID.uuidString)）。另一个说法（\(fabricated)）。"
+
+        let verified = EvidenceReference.verifyAnswer(answer, allowed: allowed)
+
+        XCTAssertEqual(verified.references, ["raw:\(sessionID.uuidString)"])
+        XCTAssertEqual(verified.rejectedCount, 1)
+        XCTAssertTrue(verified.visibleText.contains("<!-- evidence: raw:\(sessionID.uuidString) -->"))
+        XCTAssertFalse(EvidenceReference.displayText(from: verified.visibleText).contains("<!-- evidence:"))
+        XCTAssertFalse(verified.visibleText.contains(fabricated))
+    }
+
+    func testVerifiedAnswerHasNoConclusionWhenThereAreNoCitations() {
+        let verified = EvidenceReference.verifyAnswer("一段没有引用的结论。", allowed: allowed)
+        XCTAssertTrue(verified.references.isEmpty)
+        XCTAssertTrue(verified.visibleText.isEmpty)
+    }
+
     func testStableDigestIsProcessStable() {
         // String.hashValue 每进程随机；缓存键必须用稳定摘要。
         XCTAssertEqual(

@@ -68,7 +68,7 @@ struct ActivityTimelineItem: Identifiable, Hashable {
     /// 这一条是否自带说明：窗口标题，或人工写下的标注。
     var hasDescribingEvidence: Bool {
         if let annotation = annotation?.normalized,
-           !annotation.title.isEmpty || !annotation.note.isEmpty || !annotation.activityLabel.isEmpty {
+           !annotation.title.isEmpty || !annotation.note.isEmpty || !annotation.placeName.isEmpty || !annotation.activityLabel.isEmpty {
             return true
         }
         return sessions.contains {
@@ -101,6 +101,8 @@ struct ActivityTimelineItem: Identifiable, Hashable {
     }
     var title: String {
         if let title = annotation?.normalized.title, !title.isEmpty { return title }
+        if let label = annotation?.normalized.activityLabel, !label.isEmpty { return label }
+        if let place = annotation?.normalized.placeName, !place.isEmpty { return place }
         if isFragmentRun {
             // 形态决定名字：多数短切换是多工具组合工作，只有真散的才叫"碎片"。
             return FragmentRunShape.classify(self).rowTitle(fallbackCount: fragments.count)
@@ -161,6 +163,8 @@ struct ActivityTimelineItem: Identifiable, Hashable {
     }
     var narrativeTitle: String {
         if let title = annotation?.normalized.title, !title.isEmpty { return title }
+        if let label = annotation?.normalized.activityLabel, !label.isEmpty { return label }
+        if let place = annotation?.normalized.placeName, !place.isEmpty { return place }
         if kind != .activity { return title }
         if let title = sessions.compactMap(\.windowTitle).first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
             return title
@@ -182,6 +186,8 @@ struct ActivityTimelineItem: Identifiable, Hashable {
 
 struct ActivityTimeline {
     var date: Date
+    /// The actual local-day interval (23/24/25 hours where the calendar requires it).
+    var dayInterval: DateInterval
     var sessions: [ActivitySession]
     /// 逐条证据：活动块、快记、空档。统计、导出、搜索、复盘都读这一份。
     var items: [ActivityTimelineItem]
@@ -204,7 +210,7 @@ struct ActivityTimeline {
     /// 最长的一段专注（工作/学习/创作）。比"日记已写"更值得占一个展示位。
     var longestFocusSpan: TimeInterval {
         items.filter { $0.kind == .activity && ActivityClassifier.isFocus($0.category) }
-            .map(\.span).max() ?? 0
+            .map(\.duration).max() ?? 0
     }
     var categories: [String] { Array(Set(items.filter { $0.kind != .gap }.map(\.category))).sorted() }
     var categoryUsage: [TimelineAppUsage] {
@@ -224,7 +230,9 @@ enum ActivityTimelineEngine {
     ) -> ActivityTimeline {
         guard let day = calendar.dateInterval(of: .day, for: date) else {
             return ActivityTimeline(
-                date: date, sessions: [], items: [], foldedItems: [], retrospectiveCaptures: captures
+                date: date,
+                dayInterval: DateInterval(start: date, end: date),
+                sessions: [], items: [], foldedItems: [], retrospectiveCaptures: captures
             )
         }
         let normalized = normalizedSessions(sessions, in: day)
@@ -261,7 +269,7 @@ enum ActivityTimelineEngine {
         }
         items.sort { $0.start == $1.start ? $0.id < $1.id : $0.start < $1.start }
         return ActivityTimeline(
-            date: date, sessions: normalized, items: items, foldedItems: foldFragments(items),
+            date: date, dayInterval: day, sessions: normalized, items: items, foldedItems: foldFragments(items),
             retrospectiveCaptures: captures.filter { !sameDay.contains($0) }.sorted { $0.createdAt < $1.createdAt }
         )
     }

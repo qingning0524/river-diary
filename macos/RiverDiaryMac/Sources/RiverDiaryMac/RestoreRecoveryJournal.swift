@@ -101,12 +101,15 @@ enum RestoreRecoveryJournal {
         }
 
         // Validate all encrypted database snapshots before replacing any store.
+        var replacedLegacyDatabase = false
+        var replacedV2Database = false
         if let snapshot = payload.legacyDatabaseSnapshot {
             try DatabaseCipher.replaceEncryptedDatabase(
                 at: legacyURL,
                 with: snapshot,
                 purpose: "legacy-records-v1"
             )
+            replacedLegacyDatabase = true
         }
         if let snapshot = payload.v2DatabaseSnapshot {
             try DatabaseCipher.replaceEncryptedDatabase(
@@ -114,6 +117,7 @@ enum RestoreRecoveryJournal {
                 with: snapshot,
                 purpose: "v2-facts-v1"
             )
+            replacedV2Database = true
         }
         if let sessions = payload.activitySessions {
             try restoreActivitySessions(sessions, at: activityDirectory ?? support.appendingPathComponent("Activity", isDirectory: true))
@@ -136,6 +140,15 @@ enum RestoreRecoveryJournal {
             activityDirectory: activityDirectory,
             userDefaults: userDefaults
         )
+        // 文件已被 POSIX rename 换掉：持有被换文件的那个连接必须重开到新
+        // 文件，否则读旧 inode、写入丢失。只重开 URL 匹配的连接——共享
+        // 单例指向默认路径，测试环境里的临时库连接各自匹配各自的 URL。
+        if replacedV2Database {
+            V2Store.reopenConnectionsAfterFileReplacement(at: factsURL)
+        }
+        if replacedLegacyDatabase {
+            AppDatabase.shared.reopenAfterFileReplacementIfNecessary(url: legacyURL)
+        }
         try clear(in: support)
         return true
     }

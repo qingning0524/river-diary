@@ -2,6 +2,7 @@ import SwiftUI
 
 struct WorkLearnWorkspaceView: View {
     @Environment(\.riverDensity) private var density
+    @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     let entries: [DiaryEntry]
     let selectedDate: Date
@@ -14,7 +15,11 @@ struct WorkLearnWorkspaceView: View {
     var body: some View {
         // 一帧只算一次：dayStats 与时间线引擎不便宜，别在多个面板里重复调用。
         let stats = activity.dayStats(entries: entries, date: selectedDate)
-        let timeline = ActivityTimelineEngine.build(for: selectedDate, sessions: activity.liveSessions(for: selectedDate))
+        let timeline = ActivityTimelineEngine.build(
+            for: selectedDate,
+            sessions: activity.liveSessions(for: selectedDate),
+            annotations: store.timelineAnnotations
+        )
         return RiverPage {
             PageHeader("学习与工作", context: selectedDate.formatted(.dateTime.year().month().day())) {
                 StatusBadge("事实优先", tone: .neutral)
@@ -55,6 +60,13 @@ struct WorkLearnWorkspaceView: View {
                                 if index < min(stats.categoryUsage.count, 8) - 1 { RiverRowDivider(inset: 0) }
                             }
                         }
+                    }
+                    if !stats.conflicts.isEmpty {
+                        Text(stats.conflicts.joined(separator: " "))
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.secondaryInk)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, density.spacing(AppSpacing.sm))
                     }
                 }
             }

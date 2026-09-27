@@ -185,7 +185,8 @@ final class ActivityStore: ObservableObject {
     }
 
     private var isWithinPauseWindow: Bool {
-        let minute = Calendar.current.component(.minute, from: Date()) + Calendar.current.component(.hour, from: Date()) * 60
+        let now = Date()
+        let minute = Calendar.current.component(.minute, from: now) + Calendar.current.component(.hour, from: now) * 60
         if pauseStartMinutes == pauseEndMinutes { return false }
         if pauseStartMinutes < pauseEndMinutes {
             return minute >= pauseStartMinutes && minute < pauseEndMinutes
@@ -201,10 +202,16 @@ final class ActivityStore: ObservableObject {
     }
 
     func refreshPauseState() {
+        let wasPaused = isCurrentlyPaused
         let paused = isTracking && pauseScheduleEnabled && isWithinPauseWindow
         isCurrentlyPaused = paused
         if paused, activeSession != nil {
             closeActiveSession()
+        }
+        // 暂停窗口结束时立即恢复记录：依赖下一次应用切换会让
+        // "暂停期间一直停留在同一个应用"的用户静默丢失整段时间。
+        if wasPaused, !paused, isTracking, activeSession == nil {
+            startSessionAfterWake()
         }
     }
 
@@ -344,6 +351,25 @@ final class ActivityStore: ObservableObject {
         storageSummary = "已恢复并加密保存 \(sessions.count) 段实时活动"
     }
 
+    /// 恢复备份后把 V2 的活动证据与恢复后的实时层对齐：清掉实时活动证据，
+    /// 再按当前会话重建投影。带 V2 快照的备份会整体换文件（此调用等价于
+    /// 幂等重建）；不带 V2 快照的 legacy 备份此前会把恢复前的旧证据
+    /// 留在 V2 里，与实时层悄悄分叉。
+    func rebuildV2EvidenceAfterRestore() {
+        guard v2Store.clearActivityEvidence() else {
+            storageSummary = "V2 证据重建失败：\(v2Store.lastError ?? "未知错误")"
+            return
+        }
+        var byDay: [String: [ActivitySession]] = [:]
+        for session in sessions { byDay[session.dayKey, default: []].append(session) }
+        for dayKey in byDay.keys.sorted() {
+            if !ActivityV2Projection.rebuildDay(byDay[dayKey] ?? [], into: v2Store) {
+                storageSummary = "V2 证据重建失败：\(v2Store.lastError ?? "未知错误")"
+                return
+            }
+        }
+    }
+
     func clearActivity() {
         stopTracking()
         sessions = []
@@ -351,7 +377,13 @@ final class ActivityStore: ObservableObject {
         if let directory = activityDirectory {
             try? fileManager.removeItem(at: directory)
         }
-        storageSummary = "已清除 macOS 实时足迹。"
+        // 事实层里同一内容的副本必须一起清掉，否则用户以为足迹已删除，
+        // V2 数据库里却留有完整副本（隐私承诺与行为一致）。
+        if v2Store.clearActivityEvidence() {
+            storageSummary = "已清除 macOS 实时足迹。"
+        } else {
+            storageSummary = "本地足迹已清除；V2 事实库清理失败：\(v2Store.lastError ?? "未知错误")"
+        }
     }
 
     func liveSessions(for date: Date) -> [ActivitySession] {
@@ -361,15 +393,30 @@ final class ActivityStore: ObservableObject {
     func sessions(from start: Date, to end: Date) -> [ActivitySession] {
         guard end > start else { return [] }
 
-        var result = sessions.filter { $0.start < end && $0.end > start }
+        var result = sessions.compactMap { session -> ActivitySession? in
+            // 边界会话必须裁剪到窗口内：习惯候选、周期复盘都直接累加这里的
+            // 时长，不裁剪会让窗口左缘的会话整段多算。
+            guard session.start < end, session.end > start else { return nil }
+            var clipped = session
+            clipped.start = max(session.start, start)
+            clipped.end = min(session.end, end)
+            return clipped.end > clipped.start ? clipped : nil
+        }
         if let activeSession, activeSession.start < end {
             var snapshot = activeSession
             snapshot.end = max(snapshot.end, Date())
-            if snapshot.end > start {
+            snapshot.start = max(snapshot.start, start)
+            if snapshot.end > snapshot.start {
                 result.append(snapshot)
             }
         }
         return result.filter { ActivityClassifier.isRecordable(appName: $0.appName, bundleID: $0.bundleID) }.sorted { $0.start < $1.start }
+    }
+
+    /// 审计回归测试专用：直接替换内存会话（不经持久化、不写 V2）。
+    func injectSessionsForAudit(_ newSessions: [ActivitySession]) {
+        sessions = newSessions
+        dayStatsCache = [:]
     }
 
     func allSessionsIncludingActive() -> [ActivitySession] {
@@ -632,6 +679,13 @@ final class ActivityStore: ObservableObject {
 
     private func applySampledTitle(_ title: String?, now: Date) {
         guard let session = activeSession else { return }
+        // 采样跨越了 ~0.5s 的 AX 调用，期间用户可能已经切走应用。
+        // 不再校验 frontmost 就会把上一个应用的标题 adopt 到当前会话，
+        // 并随会话持久化、永久带偏类别与"需要确认"判据。
+        if let app = NSWorkspace.shared.frontmostApplication,
+           app.bundleIdentifier != session.bundleID {
+            return
+        }
         let decision = WindowTitleSampling.decide(
             currentTitle: session.windowTitle,
             pending: titleSamplePending,
@@ -744,10 +798,18 @@ final class ActivityStore: ObservableObject {
                 failureSummary = storageSummary
             }
         }
-        if !ActivityV2Projection.rebuildDay(
-            sessions.filter { $0.dayKey == original.dayKey },
-            into: v2Store
-        ) {
+        // 跨午夜切分会产出两个本地日的段：每个受影响的日子都要重建投影，
+        // 否则后一天的 V2 行要等到下次启动 loadStoredSessions 才补齐。
+        var rebuildFailed = false
+        for dayKey in Set(segments.map(\.dayKey)).sorted() {
+            if !ActivityV2Projection.rebuildDay(
+                sessions.filter { $0.dayKey == dayKey },
+                into: v2Store
+            ) {
+                rebuildFailed = true
+            }
+        }
+        if rebuildFailed {
             failureSummary = "V2 事实库投影写入失败：\(v2Store.lastError ?? "未知错误")"
         }
         lastSavedAt = Date()

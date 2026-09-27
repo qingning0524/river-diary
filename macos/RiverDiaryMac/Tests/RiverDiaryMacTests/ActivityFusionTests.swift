@@ -6,15 +6,17 @@ final class ActivityFusionTests: XCTestCase {
         app: String,
         bundle: String = "com.example.\(UUID().uuidString)",
         minutes: TimeInterval,
-        start: Date = Date()
+        start: Date? = nil
     ) -> ActivitySession {
-        ActivitySession(
+        let referenceDay = DiaryEntry.dateFormatter.date(from: "2026-09-04")!
+        let sessionStart = start ?? Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: referenceDay)!
+        return ActivitySession(
             appName: app,
             bundleID: bundle,
             windowTitle: nil,
             category: ActivityClassifier.category(appName: app, title: nil),
-            start: start,
-            end: start.addingTimeInterval(minutes * 60)
+            start: sessionStart,
+            end: sessionStart.addingTimeInterval(minutes * 60)
         )
     }
 
@@ -102,6 +104,37 @@ final class ActivityFusionTests: XCTestCase {
         XCTAssertEqual(stats.appUsage.first?.duration ?? 0, 7200, accuracy: 1)
         XCTAssertEqual(stats.appUsage.reduce(0) { $0 + $1.duration }, 7200, accuracy: 1)
         XCTAssertEqual(stats.appUsage.first?.source, ActivitySourceKind.fused)
+    }
+
+    func testLiveStatsAndTimelineUseTheSameOverlapDeduplication() {
+        let date = DiaryEntry.dateFormatter.date(from: "2026-09-04")!
+        let start = Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: date)!
+        let first = session(app: "Xcode", minutes: 60, start: start)
+        let overlap = session(app: "Safari", minutes: 60, start: start.addingTimeInterval(30 * 60))
+        let stats = ActivityFusionEngine.dayStats(
+            dateKey: "2026-09-04",
+            entry: nil,
+            liveSessions: [first, overlap]
+        )
+        let timeline = ActivityTimelineEngine.build(for: date, sessions: [first, overlap])
+
+        XCTAssertEqual(stats.liveTotal, 90 * 60)
+        XCTAssertEqual(stats.liveTotal, timeline.totalDuration)
+    }
+
+    func testHourlyStatsSplitASessionAtTheLocalHourBoundary() {
+        let date = DiaryEntry.dateFormatter.date(from: "2026-09-04")!
+        let start = Calendar.current.date(bySettingHour: 4, minute: 30, second: 0, of: date)!
+        let live = session(app: "Xcode", minutes: 60, start: start)
+        let stats = ActivityFusionEngine.dayStats(
+            dateKey: "2026-09-04",
+            entry: nil,
+            liveSessions: [live]
+        )
+        let buckets = Dictionary(uniqueKeysWithValues: stats.timeline.map { ($0.hour, $0.duration) })
+
+        XCTAssertEqual(buckets[4] ?? 0, 30 * 60, accuracy: 1)
+        XCTAssertEqual(buckets[5] ?? 0, 30 * 60, accuracy: 1)
     }
 
     func testUnmatchedLiveFillsUnattributedPipelineTimeWithoutExceedingTotal() {

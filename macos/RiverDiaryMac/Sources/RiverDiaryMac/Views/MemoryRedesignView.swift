@@ -76,7 +76,7 @@ struct MemoryRedesignView: View {
             UserDefaults.standard.set(query, forKey: Self.persistedQueryKey)
         }
         .onChange(of: store.entries.count) { _, _ in refreshLibrary() }
-        .onChange(of: store.quickCaptures.count) { _, _ in refreshLibrary() }
+        .onChange(of: store.quickCaptures.values.reduce(0) { $0 + $1.count }) { _, _ in refreshLibrary() }
         .onChange(of: store.monthlyLetters.count) { _, _ in refreshLibrary() }
     }
 

@@ -12,7 +12,14 @@ final class AppDatabase {
 
     var db: OpaquePointer?
     let queue = DispatchQueue(label: "studio.riverdiary.database", qos: .utility)
-    private(set) var lastError: String?
+    /// lastError 会从 DB 串行队列（transaction 内部）和调用方线程（open/restore
+    /// 路径）同时读写，String 的并发写不是原子的；用锁隔离，读写点无需改动。
+    private let lastErrorLock = NSLock()
+    private var lastErrorStorage: String?
+    private(set) var lastError: String? {
+        get { lastErrorLock.lock(); defer { lastErrorLock.unlock() }; return lastErrorStorage }
+        set { lastErrorLock.lock(); defer { lastErrorLock.unlock() }; lastErrorStorage = newValue }
+    }
     private let configuredDatabaseURL: URL?
 
     private var databasePath: URL? {
@@ -56,6 +63,23 @@ final class AppDatabase {
         guard let db else { return }
         sqlite3_close(db)
         self.db = nil
+    }
+
+    /// 启动期崩溃恢复在文件层面替换了数据库；持有该文件的连接必须重开到
+    /// 新文件，否则读到旧数据、写入落在已解绑的 inode 上静默丢失。
+    /// 只在 URL 匹配时重开（测试环境共享单例指向真实用户库，不匹配就不动）。
+    /// 在串行队列上执行，避免与进行中的读写竞争。
+    func reopenAfterFileReplacementIfNecessary(url: URL) {
+        let needsReopen: Bool = queue.sync { [self] in
+            databasePath == url
+        }
+        guard needsReopen else { return }
+        queue.sync { [self] in
+            close()
+            open()
+            createTables()
+            migrateTables()
+        }
     }
 
     func encryptedSnapshot() throws -> Data {
@@ -347,15 +371,16 @@ final class AppDatabase {
             var screenMinutes = record.screenTimeMinutes
 
             if let existing = existingDailyRecord(date: record.date, database: database) {
-                if !collectedChrome { chromeCount = existing.chromeVisitCount }
-                if !collectedNotes { notesCount = existing.notesCount }
-                if !collectedHealth {
-                    moodScore = existing.moodScore ?? moodScore
-                    sleepHours = existing.sleepHours ?? sleepHours
-                    exerciseSteps = existing.exerciseSteps ?? exerciseSteps
-                    quickCaptureCount = existing.quickCaptureCount
-                }
-                if !collectedScreenTime { screenMinutes = existing.screenTimeMinutes ?? screenMinutes }
+                // 两类都要保留：采集器没跑（开关关闭/权限失败），以及跑了但
+                // 本次 payload 里没有当天数据（如一天内第二次同步缺健康值）——
+                // 后者此前会把 summary 列抹成 NULL，而明细表还留着旧值。
+                if !collectedChrome || (collectedChrome && record.chromeVisits.isEmpty) { chromeCount = collectedChrome ? max(existing.chromeVisitCount, chromeCount) : existing.chromeVisitCount }
+                if !collectedNotes || (collectedNotes && record.notesModified.isEmpty) { notesCount = collectedNotes ? max(existing.notesCount, notesCount) : existing.notesCount }
+                if !collectedHealth || record.moodScore == nil { moodScore = existing.moodScore ?? moodScore }
+                if !collectedHealth || record.sleepHours == nil { sleepHours = existing.sleepHours ?? sleepHours }
+                if !collectedHealth || record.exerciseSteps == nil { exerciseSteps = existing.exerciseSteps ?? exerciseSteps }
+                if !collectedHealth || record.quickNotes.isEmpty { quickCaptureCount = max(existing.quickCaptureCount, quickCaptureCount) }
+                if !collectedScreenTime || record.screenTimeMinutes == nil { screenMinutes = existing.screenTimeMinutes ?? screenMinutes }
             }
 
             guard upsertDailyRecord(
@@ -553,6 +578,35 @@ final class AppDatabase {
                     sqlite3_bind_int(statement, 9, isLocal ? 1 : 0)
                 },
                 database: database
+            )
+        }
+    }
+
+    /// Read the locally collected Chrome page titles for one day. Callers decide
+    /// separately whether this more sensitive context may be sent to an AI model.
+    func chromeVisits(for dayKey: String) -> [ChromeVisit] {
+        query(
+            "SELECT url, title, visited_at, visit_count, domain FROM chrome_visits WHERE date = ? ORDER BY visited_at",
+            bindings: bindText(dayKey)
+        ) { statement in
+            ChromeVisit(
+                url: text(statement, 0),
+                title: text(statement, 1),
+                visitedAt: DatabaseTime.isoFormatter.date(from: text(statement, 2)) ?? Date(timeIntervalSince1970: 0),
+                visitCount: Int(sqlite3_column_int(statement, 3)),
+                domain: text(statement, 4)
+            )
+        }
+    }
+
+    func dailyNotes(for dayKey: String) -> [DailyNoteEntry] {
+        query(
+            "SELECT title, modified_at FROM daily_notes WHERE date = ? ORDER BY modified_at",
+            bindings: bindText(dayKey)
+        ) { statement in
+            DailyNoteEntry(
+                title: text(statement, 0),
+                modifiedAt: DatabaseTime.isoFormatter.date(from: text(statement, 1)) ?? Date(timeIntervalSince1970: 0)
             )
         }
     }

@@ -70,7 +70,10 @@ enum ActivityClassifier {
         if ["xcode", "vs code", "visual studio", "terminal", "iterm", "warp", "github", "gitlab", "swift", "python", "docker", "postman", "proxyman", "codex", "developer"].contains(where: text.contains) {
             return "工作"
         }
-        if ["notion", "obsidian", " bear", "word", "pages", "books", "图书", "记忆", "学习", "anki", "zotero", "course", " lecture", "docs"].contains(where: text.contains) {
+        // "bear" 用词级匹配：裸子串会把 "beard" 之类误判，前导空格版又
+        // 永远匹配不到应用名本身（text 以应用名开头时没有前导空格）。
+        let hasBear = text.split(separator: " ").contains { $0 == "bear" }
+        if hasBear || ["notion", "obsidian", "word", "pages", "books", "图书", "记忆", "学习", "anki", "zotero", "course", "lecture", "docs"].contains(where: text.contains) {
             return "学习"
         }
         if ["music", "netease", "spotify", "bilibili", "youtube", "netflix", "iqiyi", "爱奇艺", "抖音", "tiktok", "game", "steam"].contains(where: text.contains) {
@@ -79,7 +82,9 @@ enum ActivityClassifier {
         if ["finder", "settings", "设置", "activity monitor", "活动监视器", "console", "preview", "calculator", "访达", "systempreferences"].contains(where: text.contains) {
             return "系统"
         }
-        if ["safari", "chrome", "arc", "edge", "firefox", "浏览器"].contains(where: text.contains) {
+        // "arc" 作为裸子串会误吃 search/March/research；要求它独立成词。
+        let hasArc = text.split(separator: " ").contains { $0 == "arc" }
+        if hasArc || ["safari", "chrome", "edge", "firefox", "浏览器"].contains(where: text.contains) {
             return "浏览"
         }
         return "其他"

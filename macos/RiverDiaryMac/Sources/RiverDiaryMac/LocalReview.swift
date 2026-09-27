@@ -31,9 +31,16 @@ struct LocalReview {
         while cursor <= upper {
             let timeline = ActivityTimelineEngine.build(for: cursor, sessions: sessions, calendar: calendar)
             let key = ActivitySession.dayKey(for: cursor)
+            let stats = ActivityFusionEngine.dayStats(
+                dateKey: key,
+                entry: byDate[key],
+                liveSessions: sessions,
+                calendar: calendar
+            )
+            let analysis = TimelineAnalysisSnapshot.make(timeline: timeline, stats: stats, calendar: calendar)
             let mood = byDate[key]?.metrics?.mood ?? byDate[key]?.score
-            days.append(Day(id: key, duration: timeline.totalDuration, mood: mood.flatMap { $0.isFinite && (0...100).contains($0) ? $0 : nil }))
-            for usage in timeline.categoryUsage { categories[usage.name, default: 0] += usage.duration }
+            days.append(Day(id: key, duration: analysis.recordedDuration, mood: mood.flatMap { $0.isFinite && (0...100).contains($0) ? $0 : nil }))
+            for usage in analysis.categoryUsage { categories[usage.name, default: 0] += usage.duration }
             guard let next = calendar.date(byAdding: .day, value: 1, to: cursor), next > cursor else { break }
             cursor = next
         }

@@ -17,26 +17,64 @@ struct RiverPageBody<Content: View>: View {
     var showsIndicators = false
     /// Use a lazy stack when the page can hold a long, unbounded row list.
     var lazy = false
-    @ViewBuilder var content: () -> Content
+    private let scrollContent: (ScrollViewProxy) -> Content
+
+    init(
+        maxWidth: CGFloat = AppLayout.contentMaxWidth,
+        spacing: CGFloat = AppSpacing.panelGap,
+        topPadding: CGFloat = 0,
+        bottomPadding: CGFloat = 40,
+        showsIndicators: Bool = false,
+        lazy: Bool = false,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.maxWidth = maxWidth
+        self.spacing = spacing
+        self.topPadding = topPadding
+        self.bottomPadding = bottomPadding
+        self.showsIndicators = showsIndicators
+        self.lazy = lazy
+        self.scrollContent = { _ in content() }
+    }
+
+    init(
+        maxWidth: CGFloat = AppLayout.contentMaxWidth,
+        spacing: CGFloat = AppSpacing.panelGap,
+        topPadding: CGFloat = 0,
+        bottomPadding: CGFloat = 40,
+        showsIndicators: Bool = false,
+        lazy: Bool = false,
+        @ViewBuilder scrollContent: @escaping (ScrollViewProxy) -> Content
+    ) {
+        self.maxWidth = maxWidth
+        self.spacing = spacing
+        self.topPadding = topPadding
+        self.bottomPadding = bottomPadding
+        self.showsIndicators = showsIndicators
+        self.lazy = lazy
+        self.scrollContent = scrollContent
+    }
 
     var body: some View {
-        ScrollView {
-            Group {
-                if lazy {
-                    LazyVStack(alignment: .leading, spacing: density.spacing(spacing)) { content() }
-                } else {
-                    VStack(alignment: .leading, spacing: density.spacing(spacing)) { content() }
+        ScrollViewReader { proxy in
+            ScrollView {
+                Group {
+                    if lazy {
+                        LazyVStack(alignment: .leading, spacing: density.spacing(spacing)) { scrollContent(proxy) }
+                    } else {
+                        VStack(alignment: .leading, spacing: density.spacing(spacing)) { scrollContent(proxy) }
+                    }
                 }
+                .frame(maxWidth: maxWidth, alignment: .topLeading)
+                .padding(.top, density.spacing(topPadding))
+                .padding(.horizontal, density.spacing(AppSpacing.page))
+                .padding(.bottom, density.spacing(bottomPadding))
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .frame(maxWidth: maxWidth, alignment: .topLeading)
-            .padding(.top, density.spacing(topPadding))
-            .padding(.horizontal, density.spacing(AppSpacing.page))
-            .padding(.bottom, density.spacing(bottomPadding))
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .riverScrollIndicators()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(Color.workspace)
         }
-        .riverScrollIndicators()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color.workspace)
     }
 }
 
@@ -170,6 +208,9 @@ struct SidebarNavRow: View {
     let symbol: String
     var shortcut: String?
     var badge: String?
+    /// 数字徽标用强调色胶囊（如习惯回顾的待确认题数）；
+    /// 默认文字徽标保持警示色（如"未保存"）。
+    var badgeIsCount = false
     let isSelected: Bool
     let action: () -> Void
 
@@ -199,9 +240,19 @@ struct SidebarNavRow: View {
                     .lineLimit(1)
                 Spacer(minLength: density.spacing(AppSpacing.xs))
                 if let badge {
-                    Text(badge)
-                        .font(AppTypography.micro().weight(.medium))
-                        .foregroundStyle(AppTheme.warning)
+                    if badgeIsCount {
+                        Text(badge)
+                            .font(AppTypography.micro().weight(.bold))
+                            .foregroundStyle(Color.white)
+                            .padding(.horizontal, density.spacing(6))
+                            .padding(.vertical, density.spacing(2))
+                            .background(AppTheme.accent, in: Capsule())
+                            .accessibilityHidden(true)
+                    } else {
+                        Text(badge)
+                            .font(AppTypography.micro().weight(.medium))
+                            .foregroundStyle(AppTheme.warning)
+                    }
                 }
                 if let shortcut, isSelected {
                     Text(shortcut)

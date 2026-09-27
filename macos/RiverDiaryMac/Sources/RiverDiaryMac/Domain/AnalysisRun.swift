@@ -2,6 +2,7 @@ import Foundation
 
 enum RiverTaskKind: String, Codable, Hashable, CaseIterable, Sendable {
     case summarize
+    case memoryCandidate
     case weeklyReview
     case query
     case monthlyLetter
@@ -12,6 +13,8 @@ enum RiverTaskKind: String, Codable, Hashable, CaseIterable, Sendable {
     case memorySearch
     case riverReading
     case noteThemes
+    case timelineDigest
+    case habitReview
     case analysis
 }
 
@@ -30,6 +33,7 @@ struct AnalysisRun: Identifiable, Codable, Hashable, Sendable {
     var title: String {
         switch task {
         case .summarize: "总结"
+        case .memoryCandidate: "记忆候选"
         case .weeklyReview: "周期回顾"
         case .query: "记忆查询"
         case .monthlyLetter: "河流信"
@@ -40,6 +44,8 @@ struct AnalysisRun: Identifiable, Codable, Hashable, Sendable {
         case .memorySearch: "AI 搜索"
         case .riverReading: "情绪河流"
         case .noteThemes: "快记主题"
+        case .timelineDigest: "时间线整理"
+        case .habitReview: "习惯回顾交流"
         case .analysis: "综合分析"
         }
     }

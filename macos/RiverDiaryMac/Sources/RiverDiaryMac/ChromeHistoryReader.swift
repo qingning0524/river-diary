@@ -32,8 +32,11 @@ enum ChromeHistoryReader {
         let startOfToday = calendar.startOfDay(for: Date())
         let chromeTimeStart = Int64((startOfToday.timeIntervalSince1970 + chromeEpochOffset) * 1_000_000)
 
+        // Chrome 的 History schema 里 visit_count 在 urls 表（该 URL 的终身
+        // 访问总数），visits 表没有这一列——旧查询 prepare 失败静默返回空，
+        // 整条 Chrome 摄取一直是死的。每次 visits 行本身就是一次访问，计数为 1。
         let query = """
-            SELECT urls.url, urls.title, visits.visit_time, visits.visit_count
+            SELECT urls.url, urls.title, visits.visit_time, 1
             FROM visits
             JOIN urls ON urls.id = visits.url
             WHERE visits.visit_time >= \(chromeTimeStart)
@@ -76,9 +79,14 @@ enum ChromeHistoryReader {
 
     static func extractDomain(from urlString: String) -> String {
         guard let url = URL(string: urlString), let host = url.host else { return "" }
-        return host
-            .replacingOccurrences(of: "www.", with: "")
-            .lowercased()
+        // 只剥前导 www 标签：全串替换会把 "awww.example.com" 改成
+        // "aexample.com"、"www.www.com" 改成 "com"。
+        var lowered = host.lowercased()
+        for prefix in ["www.", "www2.", "www3."] where lowered.hasPrefix(prefix) {
+            lowered.removeFirst(prefix.count)
+            break
+        }
+        return lowered
     }
 
     static func topDomains(from visits: [ChromeVisit], limit: Int = 5) -> [String] {

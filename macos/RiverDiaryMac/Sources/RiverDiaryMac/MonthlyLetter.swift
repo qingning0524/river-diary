@@ -26,7 +26,8 @@ struct MonthlyLetter: Codable, Identifiable, Equatable {
         captures: [String: [QuickCapture]],
         sessions: [ActivitySession],
         now: Date = Date(),
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        aiWeeklySummary: String? = nil
     ) -> MonthlyLetter? {
         guard let interval = calendar.dateInterval(of: .month, for: date), interval.start <= now else { return nil }
         let key = monthKey(for: date, calendar: calendar)
@@ -74,6 +75,11 @@ struct MonthlyLetter: Codable, Identifiable, Equatable {
         if !clipped.isEmpty {
             let minutes = Int(clipped.reduce(0) { $0 + $1.duration } / 60)
             paragraphs.append("Mac 实时足迹覆盖约 \(minutes) 分钟。这只是已采集的片段，没有与项目管道的屏幕总量相加。")
+        }
+        // 结果链（B2）：本周 AI 周报的结论作为参考段进入信件；
+        // 它只是"已保存的 AI 阅读"，不与本地统计混算，也不改变信件的可编辑性。
+        if let aiWeeklySummary, !aiWeeklySummary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            paragraphs.append("AI 周读的一个观察：\(aiWeeklySummary.trimmingCharacters(in: .whitespacesAndNewlines))。它只基于已核对的记录，供你参考。")
         }
         paragraphs.append("如果你想，可以补上一个希望记住的瞬间；也可以让这封信先静静留在这里。")
         return MonthlyLetter(

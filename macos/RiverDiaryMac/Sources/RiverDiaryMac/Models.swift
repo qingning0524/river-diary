@@ -147,6 +147,9 @@ struct UserState: Codable {
     var timelineAnnotations: [String: TimelineAnnotation]? = nil
     var dailyGoals: [String: DailyGoal]? = nil
     var journalDrafts: [String: JournalDraftRecord]? = nil
+    /// 未保存的河流信草稿（按月键）。此前草稿只活在视图 @State 里，
+    /// 收起复盘卡片即被销毁，用户输入无提示丢失。
+    var letterDrafts: [String: String]? = nil
 }
 
 struct SavedQuery: Codable, Hashable, Identifiable {

@@ -19,6 +19,9 @@ struct RiverTimelineView: View {
     @FocusState.Binding var inspectorSourceFocusID: String?
     var focusScope = "timeline"
     var isScrollable: Bool = true
+    /// Materialize all rows temporarily when an off-screen insight is being
+    /// revealed. Normal browsing stays lazy.
+    var materializeAllRows: Bool = false
     /// 已经展开的碎片带 id。默认空集：嵌入场景（工作 · 学习预览）不展开。
     var expandedRunIDs: Set<String> = []
     var onToggleRun: (ActivityTimelineItem) -> Void = { _ in }
@@ -53,44 +56,53 @@ struct RiverTimelineView: View {
 
     @ViewBuilder
     private var timelineContent: some View {
-        // 懒加载：一天可能有数百个融合节点，非懒容器会把整天的行一次性物化。
-        LazyVStack(alignment: .leading, spacing: 0) {
-            if items.isEmpty && nowSession == nil {
-                EmptyStateView(
-                    title: "这一天还没有记录。",
-                    message: "使用身边的应用后，带来源的事实会在这里出现。",
-                    symbol: "clock"
-                )
-                .padding(.vertical, density.spacing(AppSpacing.lg))
+        Group {
+            if materializeAllRows {
+                VStack(alignment: .leading, spacing: 0) { timelineRows }
             } else {
-                ForEach(displayRows) { row in
-                    let focusID = "\(focusScope):\(row.item.id)"
-                    TimelineRow(
-                        item: row.item,
-                        isSelected: selectedItemID == row.item.id,
-                        isChild: row.isChild,
-                        isFirst: row.isFirst,
-                        isLast: row.isLast,
-                        isExpandedRun: row.isExpandedRun,
-                        focusID: focusID,
-                        inspectorSourceFocusID: $inspectorSourceFocusID,
-                        onSelect: {
-                            inspectorSourceFocusID = focusID
-                            onSelect(row.item, focusID)
-                        },
-                        onToggleRun: { onToggleRun(row.item) },
-                        onWriteNote: onWriteNote
-                    )
-                    .id(row.id)
-                }
-            }
-
-            if let nowSession {
-                TimelineNowRow(session: nowSession)
+                // Normal browsing stays lazy; only a deliberate jump from an
+                // insight expands the whole list long enough to materialize its target.
+                LazyVStack(alignment: .leading, spacing: 0) { timelineRows }
             }
         }
         .padding(.bottom, density.spacing(AppSpacing.md))
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var timelineRows: some View {
+        if items.isEmpty && nowSession == nil {
+            EmptyStateView(
+                title: "这一天还没有记录。",
+                message: "使用身边的应用后，带来源的事实会在这里出现。",
+                symbol: "clock"
+            )
+            .padding(.vertical, density.spacing(AppSpacing.lg))
+        } else {
+            ForEach(displayRows) { row in
+                let focusID = "\(focusScope):\(row.item.id)"
+                TimelineRow(
+                    item: row.item,
+                    isSelected: selectedItemID == row.item.id,
+                    isChild: row.isChild,
+                    isFirst: row.isFirst,
+                    isLast: row.isLast,
+                    isExpandedRun: row.isExpandedRun,
+                    focusID: focusID,
+                    inspectorSourceFocusID: $inspectorSourceFocusID,
+                    onSelect: {
+                        inspectorSourceFocusID = focusID
+                        onSelect(row.item, focusID)
+                    },
+                    onToggleRun: { onToggleRun(row.item) },
+                    onWriteNote: onWriteNote
+                )
+                .id(row.id)
+            }
+        }
+        if let nowSession {
+            TimelineNowRow(session: nowSession)
+        }
     }
 }
 
@@ -101,6 +113,10 @@ struct RiverTimelineView: View {
 /// 单独抽出来是因为有两处要用它：`RiverTimelineView` 渲染它，页面把
 /// "时间带拖到了哪里"翻译成"哪一行"也用它。两份实现迟早会漂移。
 enum TimelineDisplayList {
+    /// A quick-capture marker is only three points wide on the ribbon. Give its
+    /// visible tick a small temporal hit area so it remains selectable.
+    static let captureHitTolerance: TimeInterval = 6 * 60
+
     struct Row: Identifiable {
         let item: ActivityTimelineItem
         var isChild = false
@@ -145,31 +161,34 @@ enum TimelineDisplayList {
     struct ScrubTarget: Equatable {
         let rowID: String
         let item: ActivityTimelineItem
-
-        /// 落在折叠的碎片带上时先展开它——拖到 14:20 却只看到"12 段碎片"，
-        /// 等于没告诉用户那一刻是什么。
-        var expandsRunID: String? { item.isFragmentRun ? item.id : nil }
+        /// 落在折叠的碎片带上时先展开它，再定位实际成员。
+        var expandsRunID: String?
     }
 
-    /// 时间线上哪一行落在这一刻。没有任何一行覆盖它时取最近的一行：
-    /// 拖着时间带走，总得落在某条证据上，"这里什么都没有"不是一个可定位的位置。
+    /// 只把时间带定位到实际覆盖这一刻的证据。未被记录的时刻不会跳到邻近行，
+    /// 以免把空白误读成已观察到的活动。
     static func scrubTarget(for moment: Date, rows: [Row]) -> ScrubTarget? {
-        guard let row = nearestRow(to: moment, in: rows) else { return nil }
-        return ScrubTarget(rowID: row.id, item: row.item)
-    }
-
-    private static func nearestRow(to moment: Date, in rows: [Row]) -> Row? {
-        let covering = rows.filter { $0.item.start <= moment && moment <= $0.item.end }
-        if let tightest = covering.min(by: { $0.item.span < $1.item.span }) {
-            return tightest
+        let captureRows = rows.filter { $0.item.kind == .capture }
+        if let capture = captureRows.min(by: {
+            abs($0.item.start.timeIntervalSince(moment)) < abs($1.item.start.timeIntervalSince(moment))
+        }), abs(capture.item.start.timeIntervalSince(moment)) <= captureHitTolerance {
+            return ScrubTarget(rowID: capture.id, item: capture.item, expandsRunID: nil)
         }
-        return rows.min { distance(from: $0.item, to: moment) < distance(from: $1.item, to: moment) }
-    }
-
-    private static func distance(from item: ActivityTimelineItem, to moment: Date) -> TimeInterval {
-        if moment < item.start { return item.start.timeIntervalSince(moment) }
-        if moment > item.end { return moment.timeIntervalSince(item.end) }
-        return 0
+        let covering = rows.filter { row in
+            if row.item.kind == .capture { return false }
+            return row.item.start <= moment && moment < row.item.end
+        }
+        guard let row = covering.min(by: { $0.item.span < $1.item.span }) else { return nil }
+        if !row.isChild, row.item.isFragmentRun,
+           let fragment = row.item.fragments.first(where: { $0.start <= moment && moment < $0.end }) {
+            return ScrubTarget(
+                rowID: "fragment-\(fragment.id)",
+                item: fragment,
+                expandsRunID: row.item.id
+            )
+        }
+        if row.item.isFragmentRun { return nil }
+        return ScrubTarget(rowID: row.id, item: row.item, expandsRunID: nil)
     }
 }
 
@@ -396,6 +415,14 @@ private struct TimelineRow: View {
     private var nodeColumn: some View {
         node
             .frame(width: TimelineRowMetrics.spineColumn)
+            .background {
+                if isSelected {
+                    Circle()
+                        .fill(AppTheme.accent.opacity(0.14))
+                        .frame(width: 25, height: 25)
+                        .overlay(Circle().strokeBorder(AppTheme.accent.opacity(0.55), lineWidth: 1))
+                }
+            }
             .padding(.top, density.spacing(TimelineRowMetrics.topInset) - 1)
     }
 
@@ -456,30 +483,44 @@ private struct TimelineRow: View {
         if isGap {
             Circle()
                 .fill(Color.surface)
-                .frame(width: 9, height: 9)
+                .frame(width: 19, height: 19)
                 .overlay(Circle().strokeBorder(AppTheme.neutral.opacity(0.6), lineWidth: 1.2))
         } else if isChild {
             // 展开后的一条成员：更小、更淡，但仍然是"有记录"的实心点。
             Circle()
                 .fill(Color.timelineSpine)
-                .frame(width: 7, height: 7)
+                .frame(width: 8, height: 8)
         } else if isRun {
-            // 碎片带：环 + 芯，读作"一束"，和活动（实心）、空档（空心）、
-            // 快记（方块）都不一样——含义不能只靠颜色。
+            // 碎片带的双点表示多段收在一起；外环沿用整条时间线的标记尺寸。
             Circle()
                 .fill(Color.surface)
-                .frame(width: 9, height: 9)
-                .overlay(Circle().strokeBorder(AppTheme.accent.opacity(0.45), lineWidth: 1.4))
-                .overlay(Circle().fill(AppTheme.accent).frame(width: 3.5, height: 3.5))
+                .frame(width: 19, height: 19)
+                .overlay(Circle().strokeBorder(Color.timelineSpine, lineWidth: 1.3))
+                .overlay {
+                    HStack(spacing: 2) {
+                        Circle().fill(AppTheme.accent).frame(width: 4, height: 4)
+                        Circle().fill(AppTheme.accent).frame(width: 4, height: 4)
+                    }
+                }
         } else if item.kind == .capture {
             RoundedRectangle(cornerRadius: AppRadius.marker, style: .continuous)
-                .fill(nodeColor)
-                .frame(width: 9, height: 9)
+                .fill(Color.surface)
+                .frame(width: 18, height: 18)
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppRadius.marker, style: .continuous)
+                        .strokeBorder(AppTheme.warning.opacity(0.75), lineWidth: 1.2)
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(AppTheme.warning)
+                        .frame(width: 7, height: 7)
+                }
         } else {
             Circle()
-                .fill(nodeColor)
-                .frame(width: 9, height: 9)
-                .overlay(Circle().strokeBorder(Color.surface, lineWidth: 1.5))
+                .fill(Color.surface)
+                .frame(width: 19, height: 19)
+                .overlay(Circle().strokeBorder(Color.timelineSpine, lineWidth: 1.2))
+                .overlay(Circle().fill(nodeColor).frame(width: 10, height: 10))
         }
     }
 

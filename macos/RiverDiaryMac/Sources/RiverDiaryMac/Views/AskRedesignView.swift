@@ -23,7 +23,9 @@ struct AskRedesignView: View {
     @State private var aiEvidenceQuery = ""
 
     private struct AskedAnswer: Identifiable {
-        var id: String { "\(query)|\(Date().timeIntervalSince1970)" }
+        // id 必须是存储值：计算属性每次读都变，SwiftUI 每次渲染都把历史 chip
+    // 当成新视图，去重也无从谈起。
+    let id = UUID().uuidString
         let query: String
         let memory: MemoryAnswer
         let captures: [QuickCapture]
@@ -118,7 +120,8 @@ struct AskRedesignView: View {
     private func aiAnswerView(_ answer: String) -> some View {
         RiverPanel(title: "AI 整理", systemImage: "sparkles", accent: AppTheme.accent, tint: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
-                Text(answer)
+                // 与复盘页同口径：剥掉证据/摘要机器注释再展示。
+                Text(EvidenceReference.displayText(from: answer))
                     .font(AppTypography.secondary())
                     .foregroundStyle(Color.ink)
                     .lineSpacing(5)
@@ -254,6 +257,7 @@ struct AskRedesignView: View {
             guard !Task.isCancelled else { return }
             let result = AskedAnswer(query: trimmed, memory: memory, captures: captures)
             self.answer = result
+            self.history.removeAll { $0.query == result.query }
             self.history.append(result)
             if self.history.count > 12 { self.history.removeFirst(self.history.count - 12) }
             self.isSearching = false
@@ -269,9 +273,9 @@ struct AskRedesignView: View {
         let noteCount = memory.notes.count
         let durableCount = memory.memories.count
         let reflectionCount = memory.reflections.count
-        let captureCount = answer.captures.filter { capture in
-            memory.entries.contains { $0.date == DiaryEntry.dateFormatter.string(from: capture.createdAt) }
-        }.count
+        // 统计口径与证据面板/AI 候选一致：只数真正被查询匹配到的快记，
+        // 不再把"与匹配日记同一天的全部快记"算进来。
+        let captureCount = memory.matchedCaptures.count
         let evidence = evidenceItems(for: memory)
         let hasEvidence = !evidence.isEmpty
 

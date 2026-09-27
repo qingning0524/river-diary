@@ -32,6 +32,19 @@ final class ActivityTimelineTests: XCTestCase {
         XCTAssertEqual(model.sessions[1].start, at(630))
     }
 
+    func testDayIntervalUsesCalendarLengthAcrossDSTTransitions() {
+        var newYork = Calendar(identifier: .gregorian)
+        newYork.timeZone = TimeZone(identifier: "America/New_York")!
+        let springDay = newYork.date(from: DateComponents(year: 2026, month: 3, day: 8))!
+        let fallDay = newYork.date(from: DateComponents(year: 2026, month: 11, day: 1))!
+
+        let spring = ActivityTimelineEngine.build(for: springDay, sessions: [], calendar: newYork)
+        let fall = ActivityTimelineEngine.build(for: fallDay, sessions: [], calendar: newYork)
+
+        XCTAssertEqual(spring.dayInterval.duration, 23 * 3600)
+        XCTAssertEqual(fall.dayInterval.duration, 25 * 3600)
+    }
+
     func testGroupsNearbySameCategoryButPreservesRawEvidence() {
         let source = [session(600, 610), session(611, 630, app: "Terminal")]
         let model = build(source)
@@ -41,6 +54,15 @@ final class ActivityTimelineTests: XCTestCase {
         XCTAssertEqual(model.items.first?.end, at(630))
         XCTAssertEqual(build(source, grouped: false).items.count, 2)
         XCTAssertEqual(build(source.reversed()).items, model.items)
+    }
+
+    func testLongestFocusUsesRecordedDurationRatherThanGroupedSpan() {
+        let model = build([session(600, 610), session(612, 622)])
+
+        XCTAssertEqual(model.items.count, 1)
+        XCTAssertEqual(model.items[0].span, 22 * 60)
+        XCTAssertEqual(model.items[0].duration, 20 * 60)
+        XCTAssertEqual(model.longestFocusSpan, 20 * 60)
     }
 
     func testCategoryChangesLongGapsAndLongBlocksStaySeparate() {
@@ -70,6 +92,10 @@ final class ActivityTimelineTests: XCTestCase {
         XCTAssertTrue(model.items.isEmpty)
         XCTAssertEqual(model.retrospectiveCaptures, [note])
         XCTAssertTrue(ActivityTimelineExport.markdown(model).contains("补记昨天的散步"))
+
+        let stats = ActivityFusionEngine.dayStats(dateKey: "2026-09-15", entry: nil, liveSessions: [])
+        let analysis = TimelineAnalysisSnapshot.make(timeline: model, stats: stats, calendar: calendar)
+        XCTAssertTrue(analysis.insights.isEmpty, "补记没有发生时刻，不能被当作当日时间线事件")
     }
 
     func testSearchMatchesEveryWindowTitleAndCombinesWithCategory() {

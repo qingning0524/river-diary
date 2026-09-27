@@ -88,6 +88,27 @@ enum TimelinePeriod: String, CaseIterable, Identifiable {
         case .lateNight: [0...4, 23...23]
         }
     }
+
+    /// 某一时刻是否落在本时段当天的任一小时区间内。
+    /// 对不连续时段（深夜）这是唯一正确的归属方式：跨度判定会把
+    /// 05:00–23:00 空洞里的时刻也包进来。
+    func contains(moment: Date, on date: Date, calendar: Calendar = .current) -> Bool {
+        let day = calendar.startOfDay(for: date)
+        let hour = calendar.component(.hour, from: moment)
+        let minute = calendar.component(.minute, from: moment)
+        let minuteOfDay = hour * 60 + minute
+        for hourBlock in self.hours {
+            // hourBlock 是 ClosedRange<Int>；迭代它得到的是每个整点 Int。
+            for hour in hourBlock {
+                let startMinute = hour * 60
+                let endMinute = (hour + 1) * 60
+                if minuteOfDay >= startMinute, minuteOfDay < endMinute {
+                    return true
+                }
+            }
+        }
+        return false
+    }
 }
 
 enum TimelineSegmentEngine {
@@ -110,13 +131,16 @@ enum TimelineSegmentEngine {
             var matched: [ActivitySession] = []
 
             for session in sameDay {
-                guard let interval = overlap(session: session, date: date, period: period) else { continue }
-                let clipped = session.clipped(start: interval.lowerBound, end: interval.upperBound)
-                guard clipped.duration > 0 else { continue }
+                // 逐小时求交：像"深夜"（0–4 点 + 23 点）这样的不连续时段，
+                // 不能用 min/max 边界把中间空洞里的会话也吞进来。
+                for interval in overlaps(session: session, date: date, period: period) {
+                    let clipped = session.clipped(start: interval.lowerBound, end: interval.upperBound)
+                    guard clipped.duration > 0 else { continue }
 
-                matched.append(clipped)
-                if start == nil || clipped.start < start! { start = clipped.start }
-                if end == nil || clipped.end > end! { end = clipped.end }
+                    matched.append(clipped)
+                    if start == nil || clipped.start < start! { start = clipped.start }
+                    if end == nil || clipped.end > end! { end = clipped.end }
+                }
             }
 
             let duration = matched.reduce(0) { $0 + $1.duration }
@@ -130,8 +154,11 @@ enum TimelineSegmentEngine {
 
             let segmentStart = start ?? calendarStart(date: date, period: period)
             let segmentEnd = end ?? calendarEnd(date: date, period: period)
+            // 快记按"落在时段的任一小时区间内"归属，而不是按首末会话的跨度：
+            // 像"深夜"（0–4 点 + 23 点）这样的不连续时段，用跨度会把
+            // 05:00–23:00 空洞里的快记也吞进来。
             let segmentCaptures = sameDayCaptures.filter { capture in
-                capture.createdAt >= segmentStart && capture.createdAt < segmentEnd
+                period.contains(moment: capture.createdAt, on: date)
             }
 
             return TimelineSegment(
@@ -149,28 +176,26 @@ enum TimelineSegmentEngine {
         }
     }
 
-    private static func overlap(
+    private static func overlaps(
         session: ActivitySession,
         date: Date,
         period: TimelinePeriod
-    ) -> ClosedRange<Date>? {
+    ) -> [ClosedRange<Date>] {
         let calendar = Calendar.current
         let day = calendar.startOfDay(for: date)
 
-        var bounds: [Date] = []
+        var ranges: [ClosedRange<Date>] = []
         for hours in period.hours {
             for hour in hours {
-                guard let point = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: day) else { continue }
-                bounds.append(point)
-                bounds.append(point.addingTimeInterval(3600))
+                guard let hourStart = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: day) else { continue }
+                let hourEnd = hourStart.addingTimeInterval(3600)
+                let overlapStart = max(session.start, hourStart)
+                let overlapEnd = min(session.end, hourEnd)
+                guard overlapEnd > overlapStart else { continue }
+                ranges.append(overlapStart...overlapEnd)
             }
         }
-
-        guard let lowerBound = bounds.min(), let upperBound = bounds.max() else { return nil }
-        let overlapStart = max(session.start, lowerBound)
-        let overlapEnd = min(session.end, upperBound)
-        guard overlapEnd > overlapStart else { return nil }
-        return overlapStart...overlapEnd
+        return ranges.sorted { $0.lowerBound < $1.lowerBound }
     }
 
     private static func calendarStart(date: Date, period: TimelinePeriod) -> Date {

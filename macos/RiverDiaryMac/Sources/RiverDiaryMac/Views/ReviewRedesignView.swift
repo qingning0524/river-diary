@@ -38,8 +38,8 @@ struct ReviewContentView: View {
 
     @State private var dayRange = 7
     @State private var editingLetter: MonthlyLetter?
-    @State private var letterDrafts: [String: MonthlyLetter] = [:]
     @State private var letterMessage: String?
+    @State private var isWeeklyRestoreAttempted = false
     var showsHeader = true
     var onRevealEvidence: (String, [AskEvidence]) -> Void = { _, _ in }
     @EnvironmentObject private var feedbackCenter: FeedbackCenter
@@ -89,6 +89,14 @@ struct ReviewContentView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { loadMonthlyLetter() }
         .onChange(of: endDate) { _, _ in loadMonthlyLetter() }
+        // 打开复盘页时从结果层恢复本周期已保存的周报（结果层有值就不重算）。
+        .task(id: startDate) { restoreWeeklyIfNeeded() }
+        .onChange(of: startDate) { _, _ in
+            // 换范围后旧范围的"AI 周期阅读"不能再顶着新范围的标题显示；
+            // 已归档结果交给恢复路径按新范围重取。
+            isWeeklyRestoreAttempted = false
+            ai.discardTransientAnswer(for: .analysisWeekly)
+        }
     }
 
     private var rangePicker: some View {
@@ -313,24 +321,46 @@ struct ReviewContentView: View {
     private var activeLetter: MonthlyLetter? {
         let key = MonthlyLetter.monthKey(for: endDate)
         if let editingLetter, editingLetter.month == key { return editingLetter }
-        if let draft = letterDrafts[key] { return draft }
-        return store.monthlyLetters[key] ?? MonthlyLetter.make(
+        // 草稿由 DiaryStore 持久化：收起卡片/切月/切页都不再丢用户输入。
+        if let draftBody = store.letterDraft(for: key) {
+            var draft = baseLetter(for: key)
+            draft.body = draftBody
+            return draft
+        }
+        return store.monthlyLetters[key] ?? baseLetter(for: key)
+    }
+
+    private func baseLetter(for key: String) -> MonthlyLetter {
+        MonthlyLetter.make(
             for: endDate,
             entries: store.entries,
             captures: store.quickCaptures,
-            sessions: activity.allSessionsIncludingActive()
+            sessions: activity.allSessionsIncludingActive(),
+            aiWeeklySummary: latestWeeklySummary
+        ) ?? MonthlyLetter(month: key, title: "\(key) · 写给自己的河流信", body: "", evidence: "", createdAt: Date(), updatedAt: Date())
+    }
+
+    /// 本月范围内最新一次 AI 周报的 headline；没有连接或没有结果时为 nil。
+    private var latestWeeklySummary: String? {
+        let monthInterval = Calendar.current.dateInterval(of: .month, for: endDate)
+        guard let start = monthInterval?.start, let end = monthInterval?.end else { return nil }
+        return ai.latestConclusionHeadline(
+            task: .weeklyReview,
+            between: start,
+            end: min(end.addingTimeInterval(-1), Date())
         )
     }
 
     private func loadMonthlyLetter() {
-        if let editingLetter { letterDrafts[editingLetter.month] = editingLetter }
+        if let editingLetter {
+            store.saveLetterDraft(editingLetter.body, for: editingLetter.month)
+        }
         let key = MonthlyLetter.monthKey(for: endDate)
-        editingLetter = letterDrafts[key] ?? store.monthlyLetters[key] ?? MonthlyLetter.make(
-            for: endDate,
-            entries: store.entries,
-            captures: store.quickCaptures,
-            sessions: activity.allSessionsIncludingActive()
-        )
+        var seeded = store.monthlyLetters[key] ?? baseLetter(for: key)
+        if let draftBody = store.letterDraft(for: key) {
+            seeded.body = draftBody
+        }
+        editingLetter = seeded
         letterMessage = nil
     }
 
@@ -339,7 +369,7 @@ struct ReviewContentView: View {
         do {
             try store.saveMonthlyLetter(letter)
             editingLetter = letter
-            letterDrafts[letter.month] = nil
+            store.discardLetterDraft(for: letter.month)
             library.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
             letterMessage = "已保存到加密本地状态。"
             feedbackCenter.show("已保存河流信", kind: .success)
@@ -391,7 +421,7 @@ struct ReviewContentView: View {
                 payloadPreviewRow
                 evidenceChipsRow(for: .analysisWeekly)
                 if let state = ai.state(for: .analysisWeekly), let answer = state.answer {
-                    Text(answer)
+                    Text(EvidenceReference.displayText(from: answer))
                         .font(AppTypography.primary())
                         .foregroundStyle(Color.ink)
                         .lineSpacing(5)
@@ -441,13 +471,24 @@ struct ReviewContentView: View {
     /// 这是"结论可追溯"从口号变成手感的那一步。
     @ViewBuilder
     private func evidenceChipsRow(for task: AITask) -> some View {
-        let refs = EvidenceReference.extract(from: ai.state(for: task)?.answer ?? "")
+        // B4：证据引用已随结果存进 analysis_runs，优先读存储；
+        // 旧结果（无引用列）回退到从答案文本提取。
+        let storedRefs = ai.storedEvidenceRefs(
+            for: task,
+            startDate: ActivitySession.dayKey(for: startDate),
+            endDate: ActivitySession.dayKey(for: endDate)
+        )
+        let refs = storedRefs.isEmpty
+            ? EvidenceReference.extract(from: ai.state(for: task)?.answer ?? "")
+            : storedRefs
         if !refs.isEmpty {
             let items = refs.prefix(8).map { ref -> AskEvidence in
                 let parsed = EvidenceReference.parse(ref)
                 let kind: AskEvidence.Kind = switch parsed?.kind {
                 case .raw, .episode: .timeline
                 case .capture: .capture
+                case .browser: .browser
+                case .location: .location
                 case .health: .diary
                 case .diary, .none: .diary
                 }
@@ -477,6 +518,17 @@ struct ReviewContentView: View {
 
     private var reviewSessions: [ActivitySession] {
         activity.sessions(from: startDate, to: endDate.addingTimeInterval(24 * 60 * 60))
+    }
+
+    /// 打开复盘页时从结果层恢复本周期已保存的周报（结果层有值就不重算）。
+    private func restoreWeeklyIfNeeded() {
+        guard ai.state(for: .analysisWeekly)?.answer == nil,
+              !isWeeklyRestoreAttempted else { return }
+        isWeeklyRestoreAttempted = true
+        ai.restoreAnalysisResults(
+            startDate: ActivitySession.dayKey(for: startDate),
+            endDate: ActivitySession.dayKey(for: endDate)
+        )
     }
 
     private func copyMarkdown() {

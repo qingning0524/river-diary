@@ -11,6 +11,9 @@ enum V2Table: String, CaseIterable, Identifiable {
     case episodeAnnotations = "episode_annotations"
     case memoryConfirmations = "memory_confirmations"
     case userPrefs = "user_prefs"
+    case habitRules = "habit_rules"
+    case habitCards = "habit_cards"
+    case habitBatches = "habit_batches"
 
     var id: String { rawValue }
 
@@ -25,6 +28,9 @@ enum V2Table: String, CaseIterable, Identifiable {
         case .episodeAnnotations: "片段标注"
         case .memoryConfirmations: "记忆确认"
         case .userPrefs: "用户设置"
+        case .habitRules: "个人规则"
+        case .habitCards: "回顾问题"
+        case .habitBatches: "回顾批次"
         }
     }
 }
@@ -46,6 +52,9 @@ final class V2Store {
 
     private let databaseURL: URL?
 
+    /// 本实例打开的数据库文件（测试与恢复路径用于按 URL 匹配连接）。
+    var currentDatabaseURL: URL? { databaseURL }
+
     private static let transientDestructor = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
@@ -56,6 +65,18 @@ final class V2Store {
     /// where writes would silently vanish until app restart.
     @MainActor
     private static let liveInstances = NSHashTable<V2Store>.weakObjects()
+
+    /// 启动期崩溃恢复在文件层面替换了数据库（POSIX rename 绕过了
+    /// `restoreEncryptedSnapshot`），持有该文件的存活连接必须重开到新文件，
+    /// 否则读旧 inode、写全部丢失。只重开 URL 匹配的连接。
+    @MainActor
+    static func reopenConnectionsAfterFileReplacement(at url: URL) {
+        for instance in liveInstances.allObjects where instance.databaseURL == url {
+            instance.close()
+            instance.open()
+            instance.createSchema()
+        }
+    }
 
     // MARK: Location
 
@@ -135,8 +156,7 @@ final class V2Store {
         return ok
     }
 
-    private func createSchema() {
-        let tables = [
+    private func createSchema() {        let tables = [
             """
             CREATE TABLE IF NOT EXISTS raw_events (
                 id TEXT PRIMARY KEY,
@@ -225,8 +245,43 @@ final class V2Store {
                 value TEXT NOT NULL DEFAULT ''
             )
             """,
+            """
+            CREATE TABLE IF NOT EXISTS habit_rules (
+                id TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                payload_json TEXT NOT NULL DEFAULT '{}',
+                updated_at REAL NOT NULL
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS habit_cards (
+                id TEXT PRIMARY KEY,
+                batch_id TEXT,
+                dedup_key TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL,
+                payload_json TEXT NOT NULL DEFAULT '{}',
+                updated_at REAL NOT NULL
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS habit_batches (
+                id TEXT PRIMARY KEY,
+                period_key TEXT NOT NULL,
+                payload_json TEXT NOT NULL DEFAULT '{}',
+                created_at REAL NOT NULL,
+                shown_at REAL
+            )
+            """,
         ]
         for sql in tables { execute(sql) }
+
+        // 列级迁移：与 AppDatabase 的 addColumnIfMissing 同思路。analysis_runs 此前
+        // 是"无键追加"，结果互相不可寻址；这里补出去重键、字符串证据引用与结构化
+        // 摘要三列，让它变成"每个任务+范围一行、可被下游功能消费"的结果层。
+        addColumnIfMissing(table: "analysis_runs", column: "dedup_key", definition: "TEXT")
+        addColumnIfMissing(table: "analysis_runs", column: "range_key", definition: "TEXT")
+        addColumnIfMissing(table: "analysis_runs", column: "evidence_refs", definition: "TEXT NOT NULL DEFAULT '[]'")
+        addColumnIfMissing(table: "analysis_runs", column: "digest_json", definition: "TEXT")
 
         let indices = [
             "CREATE INDEX IF NOT EXISTS idx_raw_events_ts ON raw_events(timestamp)",
@@ -234,6 +289,9 @@ final class V2Store {
             "CREATE INDEX IF NOT EXISTS idx_episodes_times ON episodes(start_time, end_time)",
             "CREATE INDEX IF NOT EXISTS idx_memories_created ON memories(created_at)",
             "CREATE INDEX IF NOT EXISTS idx_analysis_created ON analysis_runs(created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_habit_cards_dedup ON habit_cards(dedup_key)",
+            "CREATE INDEX IF NOT EXISTS idx_habit_batches_period ON habit_batches(period_key)",
+            "CREATE INDEX IF NOT EXISTS idx_analysis_dedup ON analysis_runs(dedup_key)",
         ]
         for sql in indices { execute(sql) }
         if let databaseURL {
@@ -242,6 +300,26 @@ final class V2Store {
             } catch {
                 lastError = "V2 数据库权限设置失败：\(error.localizedDescription)"
             }
+        }
+    }
+
+    /// 表列存在性迁移：`ALTER TABLE ... ADD COLUMN`，已存在时静默跳过。
+    private func addColumnIfMissing(table: String, column: String, definition: String) {
+        guard let db else { return }
+        let sql = "PRAGMA table_info(\(table))"
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            lastError = Self.errorMessage(db, fallback: "prepare table_info")
+            return
+        }
+        var exists = false
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let name = text(statement, 1), name == column { exists = true }
+        }
+        guard !exists else { return }
+        if !execute("ALTER TABLE \(table) ADD COLUMN \(column) \(definition)") {
+            lastError = Self.errorMessage(db, fallback: "迁移 \(table).\(column) 失败")
         }
     }
 
@@ -669,76 +747,216 @@ final class V2Store {
         INSERT OR REPLACE INTO memory_confirmations(memory_id, confirmed_at, is_confirmed, note)
         VALUES (?, ?, ?, ?)
         """
-        let inserted = mutate(sql, binds: { statement in
-            bindText(statement, 1, memoryID.uuidString)
-            sqlite3_bind_double(statement, 2, confirmedAt.timeIntervalSince1970)
-            sqlite3_bind_int64(statement, 3, confirmed ? 1 : 0)
-            bindText(statement, 4, note)
-        })
-        guard inserted else { return false }
+        // 覆盖表与去规范化列必须同事务：两层不一致会让"已确认"状态永久分叉。
+        return transaction { [self] in
+            guard mutate(sql, binds: { statement in
+                bindText(statement, 1, memoryID.uuidString)
+                sqlite3_bind_double(statement, 2, confirmedAt.timeIntervalSince1970)
+                sqlite3_bind_int64(statement, 3, confirmed ? 1 : 0)
+                bindText(statement, 4, note)
+            }) else { return false }
 
-        // Keep the denormalized Memory fields in sync for legacy callers that
-        // read the memories table without going through the confirmation overlay.
-        let update = "UPDATE memories SET is_user_confirmed = ?, last_confirmed_at = ? WHERE id = ?"
-        return mutate(update) { statement in
-            sqlite3_bind_int64(statement, 1, confirmed ? 1 : 0)
-            sqlite3_bind_double(statement, 2, confirmedAt.timeIntervalSince1970)
-            bindText(statement, 3, memoryID.uuidString)
+            // Keep the denormalized Memory fields in sync for legacy callers that
+            // read the memories table without going through the confirmation overlay.
+            let update = "UPDATE memories SET is_user_confirmed = ?, last_confirmed_at = ? WHERE id = ?"
+            return mutate(update) { statement in
+                sqlite3_bind_int64(statement, 1, confirmed ? 1 : 0)
+                sqlite3_bind_double(statement, 2, confirmedAt.timeIntervalSince1970)
+                bindText(statement, 3, memoryID.uuidString)
+            }
         }
     }
 
     // MARK: Analysis runs
 
+    /// 一条可寻址的分析结果：在 `AnalysisRun` 之上补充去重键、范围键、
+    /// 字符串证据引用与结构化摘要，让结果能被下游功能（周报、询问、月信）按键读取。
+    struct AnalysisRunRecord {
+        var run: AnalysisRun
+        var dedupKey: String
+        var rangeKey: String
+        var evidenceRefs: [String]
+        var digestJSON: String?
+    }
+
     @discardableResult
     func insertAnalysisRun(_ run: AnalysisRun) -> Bool {
+        storeAnalysisRun(run, dedupKey: nil, rangeKey: nil, evidenceRefs: [], digestJSON: nil)
+    }
+
+    /// 无范围键的追加（如询问页按查询缓存的结果），但同样携带引用与摘要列。
+    @discardableResult
+    func insertAnalysisRun(_ run: AnalysisRun, evidenceRefs: [String], digestJSON: String?) -> Bool {
+        storeAnalysisRun(run, dedupKey: nil, rangeKey: nil, evidenceRefs: evidenceRefs, digestJSON: digestJSON)
+    }
+
+    /// 按去重键 upsert：同一 `dedupKey` 只保留最新一条（最后写入者获胜），
+    /// 防止 analysis_runs 随重复触发无限膨胀。`dedupKey` 为 nil 时退化为普通插入。
+    @discardableResult
+    func upsertAnalysisRun(
+        _ run: AnalysisRun,
+        dedupKey: String,
+        rangeKey: String,
+        evidenceRefs: [String],
+        digestJSON: String? = nil
+    ) -> Bool {
+        storeAnalysisRun(run, dedupKey: dedupKey, rangeKey: rangeKey, evidenceRefs: evidenceRefs, digestJSON: digestJSON)
+    }
+
+    private func storeAnalysisRun(
+        _ run: AnalysisRun,
+        dedupKey: String?,
+        rangeKey: String?,
+        evidenceRefs: [String],
+        digestJSON: String?
+    ) -> Bool {
+        guard let db else { return false }
+        let refs = Self.jsonStringArray(evidenceRefs)
+        if let dedupKey, !dedupKey.isEmpty {
+            // 删除与插入必须在同一事务里：中间失败要么整体成功要么整体回滚，
+            // 绝不能丢掉已保存的旧结果，也不能留下同键双行。
+            let inserted = transaction { [self] in
+                guard mutate("DELETE FROM analysis_runs WHERE dedup_key = ?", binds: { statement in
+                    bindText(statement, 1, dedupKey)
+                }) else { return false }
+                return insertRunStatement(run, rangeKey: rangeKey, evidenceRefsJSON: refs, digestJSON: digestJSON, dedupKey: dedupKey)
+            }
+            return inserted
+        }
+        return transaction { [self] in
+            insertRunStatement(run, rangeKey: rangeKey, evidenceRefsJSON: refs, digestJSON: digestJSON, dedupKey: dedupKey)
+        }
+    }
+
+    /// 事务内使用的单行插入（不自行开事务）。
+    private func insertRunStatement(
+        _ run: AnalysisRun,
+        rangeKey: String?,
+        evidenceRefsJSON: String,
+        digestJSON: String?,
+        dedupKey: String?
+    ) -> Bool {
         guard let db else { return false }
         let sql = """
-        INSERT OR REPLACE INTO analysis_runs(id, task, context_ref, output_text, evidence_ids, model, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO analysis_runs(id, task, context_ref, output_text, evidence_ids, model, created_at,
+                                            dedup_key, range_key, evidence_refs, digest_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        return mutate(sql) { statement in
+            bindText(statement, 1, run.id.uuidString)
+            bindText(statement, 2, run.task.rawValue)
+            if let ref = run.inputContextReference {
+                bindText(statement, 3, ref.uuidString)
+            } else {
+                sqlite3_bind_null(statement, 3)
+            }
+            bindText(statement, 4, run.outputText)
+            bindText(statement, 5, JSONEncoder.uuids(run.evidenceIDs))
+            bindText(statement, 6, run.model)
+            sqlite3_bind_double(statement, 7, run.createdAt.timeIntervalSince1970)
+            if let dedupKey {
+                bindText(statement, 8, dedupKey)
+            } else {
+                sqlite3_bind_null(statement, 8)
+            }
+            if let rangeKey {
+                bindText(statement, 9, rangeKey)
+            } else {
+                sqlite3_bind_null(statement, 9)
+            }
+            bindText(statement, 10, evidenceRefsJSON)
+            if let digestJSON {
+                bindText(statement, 11, digestJSON)
+            } else {
+                sqlite3_bind_null(statement, 11)
+            }
+        }
+    }
+
+    func latestAnalysisRun(dedupKey: String) -> AnalysisRunRecord? {
+        guard let db else { return nil }
+        let sql = """
+        SELECT id, task, context_ref, output_text, evidence_ids, model, created_at,
+               dedup_key, range_key, evidence_refs, digest_json
+        FROM analysis_runs WHERE dedup_key = ? ORDER BY created_at DESC LIMIT 1
         """
         var statement: OpaquePointer?
         defer { sqlite3_finalize(statement) }
-        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
-            lastError = Self.errorMessage(db, fallback: "prepare analysis insert")
-            return false
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
+        bindText(statement, 1, dedupKey)
+        guard sqlite3_step(statement) == SQLITE_ROW, let prepared = statement else { return nil }
+        return analysisRunRecord(prepared)
+    }
+
+    /// 某任务在某日期范围内的全部结果（按时间升序）。
+    func analysisRunRecords(task: RiverTaskKind, between start: Date, end: Date) -> [AnalysisRunRecord] {
+        guard let db else { return [] }
+        let sql = """
+        SELECT id, task, context_ref, output_text, evidence_ids, model, created_at,
+               dedup_key, range_key, evidence_refs, digest_json
+        FROM analysis_runs WHERE task = ? AND created_at >= ? AND created_at <= ? ORDER BY created_at
+        """
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        bindText(statement, 1, task.rawValue)
+        sqlite3_bind_double(statement, 2, start.timeIntervalSince1970)
+        sqlite3_bind_double(statement, 3, end.timeIntervalSince1970)
+        var result: [AnalysisRunRecord] = []
+        while sqlite3_step(statement) == SQLITE_ROW, let prepared = statement {
+            result.append(analysisRunRecord(prepared))
         }
-        bindText(statement, 1, run.id.uuidString)
-        bindText(statement, 2, run.task.rawValue)
-        if let ref = run.inputContextReference {
-            bindText(statement, 3, ref.uuidString)
-        } else {
-            sqlite3_bind_null(statement!, 3)
-        }
-        bindText(statement, 4, run.outputText)
-        bindText(statement, 5, JSONEncoder.uuids(run.evidenceIDs))
-        bindText(statement, 6, run.model)
-        sqlite3_bind_double(statement!, 7, run.createdAt.timeIntervalSince1970)
-        return stepDone(statement)
+        return result
+    }
+
+    private func analysisRunRecord(_ statement: OpaquePointer) -> AnalysisRunRecord {
+        let contextRef = sqlite3_column_type(statement, 2) == SQLITE_NULL
+            ? nil
+            : (text(statement, 2).flatMap(UUID.init(uuidString:)))
+        let run = AnalysisRun(
+            id: UUID(uuidString: text(statement, 0) ?? "") ?? UUID(),
+            task: RiverTaskKind(rawValue: text(statement, 1) ?? "") ?? .query,
+            inputContextReference: contextRef,
+            outputText: text(statement, 3) ?? "",
+            evidenceIDs: JSONDecoder.uuids(text(statement, 4)),
+            model: text(statement, 5) ?? "",
+            createdAt: Date(timeIntervalSince1970: sqlite3_column_double(statement, 6))
+        )
+        return AnalysisRunRecord(
+            run: run,
+            dedupKey: text(statement, 7) ?? "",
+            rangeKey: text(statement, 8) ?? "",
+            evidenceRefs: Self.parseJSONStringArray(text(statement, 9)),
+            digestJSON: sqlite3_column_type(statement, 10) == SQLITE_NULL ? nil : text(statement, 10)
+        )
     }
 
     func analysisRuns() -> [AnalysisRun] {
         guard let db else { return [] }
         let sql = """
-        SELECT id, task, context_ref, output_text, evidence_ids, model, created_at
+        SELECT id, task, context_ref, output_text, evidence_ids, model, created_at,
+               dedup_key, range_key, evidence_refs, digest_json
         FROM analysis_runs ORDER BY created_at
         """
         var statement: OpaquePointer?
         defer { sqlite3_finalize(statement) }
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
         var result: [AnalysisRun] = []
-        while sqlite3_step(statement) == SQLITE_ROW {
-            let contextRef = sqlite3_column_type(statement, 2) == SQLITE_NULL ? nil : (text(statement, 2).flatMap(UUID.init(uuidString:)))
-            result.append(AnalysisRun(
-                id: UUID(uuidString: text(statement, 0) ?? "") ?? UUID(),
-                task: RiverTaskKind(rawValue: text(statement, 1) ?? "") ?? .query,
-                inputContextReference: contextRef,
-                outputText: text(statement, 3) ?? "",
-                evidenceIDs: JSONDecoder.uuids(text(statement, 4)),
-                model: text(statement, 5) ?? "",
-                createdAt: Date(timeIntervalSince1970: sqlite3_column_double(statement, 6))
-            ))
+        while sqlite3_step(statement) == SQLITE_ROW, let prepared = statement {
+            result.append(analysisRunRecord(prepared).run)
         }
         return result
+    }
+
+    private static func jsonStringArray(_ values: [String]) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: values) else { return "[]" }
+        return String(data: data, encoding: .utf8) ?? "[]"
+    }
+
+    private static func parseJSONStringArray(_ text: String?) -> [String] {
+        guard let text, let data = text.data(using: .utf8),
+              let list = try? JSONSerialization.jsonObject(with: data) as? [String] else { return [] }
+        return list
     }
 
     @discardableResult
@@ -803,10 +1021,135 @@ final class V2Store {
         return text(statement, 0)
     }
 
+    // MARK: Habit review (个人规则 / 回顾问题 / 回顾批次)
+    //
+    // 负载是完整的 Codable JSON；列上只冗余查询需要的状态字段。
+    // habit_* 三张表都是用户知识，不参与 clearDerivedData。
+
+    struct HabitPayloadRow {
+        var id: UUID
+        var status: String
+        var dedupKey: String
+        var batchID: UUID?
+        var periodKey: String
+        var payloadJSON: String
+        var createdAt: Date
+        var shownAt: Date?
+    }
+
+    @discardableResult
+    func upsertHabitRule(id: UUID, status: String, payloadJSON: String, updatedAt: Date) -> Bool {
+        mutate(
+            "INSERT OR REPLACE INTO habit_rules(id, status, payload_json, updated_at) VALUES (?, ?, ?, ?)"
+        ) { statement in
+            bindText(statement, 1, id.uuidString)
+            bindText(statement, 2, status)
+            bindText(statement, 3, payloadJSON)
+            sqlite3_bind_double(statement, 4, updatedAt.timeIntervalSince1970)
+        }
+    }
+
+    @discardableResult
+    func upsertHabitCard(id: UUID, batchID: UUID?, dedupKey: String, status: String, payloadJSON: String, updatedAt: Date) -> Bool {
+        mutate(
+            "INSERT OR REPLACE INTO habit_cards(id, batch_id, dedup_key, status, payload_json, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+        ) { statement in
+            bindText(statement, 1, id.uuidString)
+            if let batchID {
+                bindText(statement, 2, batchID.uuidString)
+            } else {
+                sqlite3_bind_null(statement, 2)
+            }
+            bindText(statement, 3, dedupKey)
+            bindText(statement, 4, status)
+            bindText(statement, 5, payloadJSON)
+            sqlite3_bind_double(statement, 6, updatedAt.timeIntervalSince1970)
+        }
+    }
+
+    @discardableResult
+    func upsertHabitBatch(id: UUID, periodKey: String, payloadJSON: String, createdAt: Date, shownAt: Date?) -> Bool {
+        mutate(
+            "INSERT OR REPLACE INTO habit_batches(id, period_key, payload_json, created_at, shown_at) VALUES (?, ?, ?, ?, ?)"
+        ) { statement in
+            bindText(statement, 1, id.uuidString)
+            bindText(statement, 2, periodKey)
+            bindText(statement, 3, payloadJSON)
+            sqlite3_bind_double(statement, 4, createdAt.timeIntervalSince1970)
+            if let shownAt {
+                sqlite3_bind_double(statement, 5, shownAt.timeIntervalSince1970)
+            } else {
+                sqlite3_bind_null(statement, 5)
+            }
+        }
+    }
+
+    func habitRuleRows() -> [HabitPayloadRow] {
+        let sql = "SELECT id, status, '' , NULL, '', payload_json, updated_at, NULL FROM habit_rules"
+        return queryHabitRows(sql)
+    }
+
+    func habitCardRows() -> [HabitPayloadRow] {
+        let sql = """
+        SELECT id, status, dedup_key, batch_id, '', payload_json, updated_at, NULL
+        FROM habit_cards ORDER BY updated_at
+        """
+        return queryHabitRows(sql)
+    }
+
+    func habitBatchRows() -> [HabitPayloadRow] {
+        let sql = "SELECT id, '', '', NULL, period_key, payload_json, created_at, shown_at FROM habit_batches ORDER BY created_at"
+        return queryHabitRows(sql)
+    }
+
+    private func queryHabitRows(_ sql: String) -> [HabitPayloadRow] {
+        guard let db else { return [] }
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        var result: [HabitPayloadRow] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            let id = UUID(uuidString: text(statement, 0) ?? "") ?? UUID()
+            let status = text(statement, 1) ?? ""
+            let dedupKey = text(statement, 2) ?? ""
+            let batchID = sqlite3_column_type(statement, 3) == SQLITE_NULL ? nil : (text(statement, 3).flatMap(UUID.init(uuidString:)))
+            let periodKey = text(statement, 4) ?? ""
+            let payloadJSON = text(statement, 5) ?? "{}"
+            let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 6))
+            let shownAt = sqlite3_column_type(statement, 7) == SQLITE_NULL
+                ? nil
+                : Date(timeIntervalSince1970: sqlite3_column_double(statement, 7))
+            result.append(HabitPayloadRow(
+                id: id,
+                status: status,
+                dedupKey: dedupKey,
+                batchID: batchID,
+                periodKey: periodKey,
+                payloadJSON: payloadJSON,
+                createdAt: createdAt,
+                shownAt: shownAt
+            ))
+        }
+        return result
+    }
+
     // MARK: Derived data lifecycle
+
+    /// 清除实时活动在事实层的全部痕迹：activities/episodes 全表，
+    /// raw_events 仅限 systemApp 来源的 appForeground（地点/健康等其它来源不受影响）。
+    /// 与 `ActivityStore.clearActivity` 的"删除实时片段"承诺对齐——此前该操作
+    /// 只删了活动目录，V2 里同内容的副本原样保留。
+    func clearActivityEvidence() -> Bool {
+        transaction {
+            guard execute("DELETE FROM activities") else { return false }
+            guard execute("DELETE FROM episodes") else { return false }
+            return execute("DELETE FROM raw_events WHERE source = 'systemApp' AND kind = 'appForeground'")
+        }
+    }
 
     /// Deletes every table that can be rebuilt from evidence, leaving
     /// raw_events (and thus the user's ability to retrace) intact.
+    /// `habit_*` 三张表是用户确认过的知识与回顾记录，不属于派生数据，不在这里清除。
     func clearDerivedData() {
         _ = execute("DELETE FROM analysis_runs")
         _ = execute("DELETE FROM memory_confirmations")
@@ -817,6 +1160,24 @@ final class V2Store {
     }
 
     // MARK: Low-level helpers
+
+    /// 在单个事务里执行一组写入。V2Store 此前没有事务助手，"删除+插入"
+    /// 这类多语句写各自跑在 autocommit 里——中间失败会永久丢掉旧结果。
+    /// 传入的闭包返回 false 时回滚并返回 false（lastError 已由内部语句设置）。
+    private func transaction(_ work: () -> Bool) -> Bool {
+        guard let db else { return false }
+        guard execute("BEGIN IMMEDIATE") else { return false }
+        if work() {
+            guard execute("COMMIT") else {
+                _ = execute("ROLLBACK")
+                return false
+            }
+            return true
+        } else {
+            _ = execute("ROLLBACK")
+            return false
+        }
+    }
 
     private func mutate(_ sql: String, binds: (OpaquePointer) -> Void) -> Bool {
         guard let db else { return false }

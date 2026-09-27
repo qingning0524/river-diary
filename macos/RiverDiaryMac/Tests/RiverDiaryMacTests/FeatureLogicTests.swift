@@ -114,7 +114,7 @@ final class FeatureLogicTests: XCTestCase {
 
     func testInsightRequestRoundTripPreservesArchiveIdentity() throws {
         let request = InsightRequest(
-            task: .analysisMood,
+            task: .analysisWeekly,
             startDate: "2026-09-01",
             endDate: "2026-09-07",
             sourceSummary: "7 天日记 · 12 段足迹 · 3 条快记",
@@ -125,7 +125,7 @@ final class FeatureLogicTests: XCTestCase {
         let decoded = try JSONDecoder().decode(InsightRequest.self, from: data)
 
         XCTAssertEqual(decoded.id, request.id)
-        XCTAssertEqual(decoded.task, .analysisMood)
+        XCTAssertEqual(decoded.task, .analysisWeekly)
         XCTAssertEqual(decoded.sourceSummary, request.sourceSummary)
     }
 
@@ -184,44 +184,6 @@ final class FeatureLogicTests: XCTestCase {
         XCTAssertTrue(normalized.contains("**相关日期**\n- 2026-09-03"))
         XCTAssertTrue(normalized.contains("**证据**\n- 2026-09-03"))
         XCTAssertTrue(normalized.contains("**边界**\n相关性"))
-    }
-
-    func testAIAnalysisBundleParserSplitsAllSixCards() {
-        let raw = AITask.analysisSuite.map { task in
-            """
-            ## \(task.title)
-            **结论**
-            \(task.title)结论
-            **关键依据**
-            - 2026-09-03 · 日记：依据
-            **建议**
-            做一件小事。
-            **边界**
-            只基于当前记录。
-            """
-        }.joined(separator: "\n\n")
-
-        let parsed = AIAnalysisBundleParser.parse(raw)
-
-        XCTAssertEqual(parsed.count, AITask.analysisSuite.count)
-        for task in AITask.analysisSuite {
-            XCTAssertTrue(parsed[task]?.contains("\(task.title)结论") == true)
-            XCTAssertTrue(parsed[task]?.contains("**关键依据**") == true)
-        }
-    }
-
-    func testAIAnalysisBundleParserAcceptsDecoratedNumberedHeadings() {
-        let raw = """
-        ### 1. 每日总结：
-        今天的记录很有限。
-        ### 2、情绪关联
-        暂时看不出稳定关联。
-        """
-
-        let parsed = AIAnalysisBundleParser.parse(raw)
-
-        XCTAssertNotNil(parsed[.analysisDaily])
-        XCTAssertNotNil(parsed[.analysisMood])
     }
 
     func testAIAnalysisFormatterCompletesTraceableStructure() {

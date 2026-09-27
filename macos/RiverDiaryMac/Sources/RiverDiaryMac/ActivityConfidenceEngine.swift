@@ -46,7 +46,11 @@ enum ActivityConfidenceEngine {
             tiers: [0, 5 * 60, 30 * 60, 2 * 3600, 5 * 3600],
             points: [0, 3, 8, 12, 15]
         )
-        let liveBreadthScore = min(3, Set(live.map(\.dayKey)).count)
+        // 调用方传入的都是单日会话，dayKey 去重恒为 1——这个"广度"分量
+        // 永远拿不满，整条 live 上限实际只有 23/25。改成按当天分布的小时
+        // 广度计（≥3 个不同小时=1，≥6=2，≥9=3），语义不变、单日可达满分。
+        let distinctHours = Set(live.map { Calendar.current.component(.hour, from: $0.start) }).count
+        let liveBreadthScore = distinctHours >= 9 ? 3 : (distinctHours >= 6 ? 2 : (distinctHours >= 3 ? 1 : 0))
         let liveQualityScore = live.isEmpty
             ? 0
             : min(7, 1 + (longestLive >= 5 * 60 ? 3 : 0) + (live.count >= 4 ? 3 : 0))

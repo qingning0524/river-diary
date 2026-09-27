@@ -50,8 +50,10 @@ enum ActivityV2Projection {
                 title: title,
                 summary: summary,
                 category: episodeCategory(first.category),
-                confidence: first.windowTitle?.isEmpty == false ? 85 : 65,
-                confidenceFactors: [ConfidenceFactor(name: "实时应用片段", value: 1)],
+                // App and title presence describe source detail, not how certain
+                // the episode's semantic interpretation is. Leave uncalibrated.
+                confidence: 0,
+                confidenceFactors: [],
                 activityIDs: group.map(\.id),
                 evidenceIDs: group.map(\.id)
             )

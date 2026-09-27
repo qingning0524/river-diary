@@ -188,6 +188,8 @@ struct AppCommands: Commands {
                 .keyboardShortcut(RiverDestination.timeline.navigationShortcut.keyboardShortcut)
             Button(RiverDestination.dailyReview.title) { postNavigation(.dailyReview) }
                 .keyboardShortcut(RiverDestination.dailyReview.navigationShortcut.keyboardShortcut)
+            Button(RiverDestination.habitReview.title) { postNavigation(.habitReview) }
+                .keyboardShortcut(RiverDestination.habitReview.navigationShortcut.keyboardShortcut)
             Button(RiverDestination.health.title) { postNavigation(.health) }
                 .keyboardShortcut(RiverDestination.health.navigationShortcut.keyboardShortcut)
             Button(RiverDestination.footprints.title) { postNavigation(.footprints) }
@@ -205,7 +207,7 @@ struct AppCommands: Commands {
         CommandMenu("数据") {
             Button("立即采集一次") { ingestion.captureNow() }
                 .disabled(!ingestion.enabled)
-            Button("打开采集数据源…", action: presentImport)
+            Button("打开数据源页") { postNavigation(.sources) }
             Divider()
             Button("导入 iOS 数据…", action: presentImport)
         }

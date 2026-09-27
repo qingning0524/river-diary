@@ -6,11 +6,19 @@ enum ActivityFusionEngine {
     static func dayStats(
         dateKey: String,
         entry: DiaryEntry?,
-        liveSessions: [ActivitySession]
+        liveSessions: [ActivitySession],
+        calendar: Calendar = .current
     ) -> FusedDayStats {
-        let live = liveSessions.filter {
+        let candidates = liveSessions.filter {
             ActivityClassifier.isRecordable(appName: $0.appName, bundleID: $0.bundleID)
         }.sorted { $0.start < $1.start }
+        let live: [ActivitySession]
+        if let date = DiaryEntry.dateFormatter.date(from: dateKey),
+           let day = calendar.dateInterval(of: .day, for: date) {
+            live = ActivityTimelineEngine.normalizedSessions(candidates, in: day)
+        } else {
+            live = candidates
+        }
         let pipelineTotal = Double(entry?.screenMinutes ?? 0) * 60
         let liveTotal = live.reduce(0) { $0 + $1.duration }
         let appItems = fusedAppUsage(entry: entry, live: live, pipelineTotal: pipelineTotal)
@@ -31,7 +39,7 @@ enum ActivityFusionEngine {
         }
 
         let categoryUsage = categories.values.sorted { $0.duration > $1.duration }
-        let timeline = hourlyTimeline(live)
+        let timeline = hourlyTimeline(live, calendar: calendar)
         let focusSessions = live.filter { ActivityClassifier.isFocus($0.category) }
         let focusTotal = focusSessions.reduce(0) { $0 + $1.duration }
         let conflicts = dataConflicts(entry: entry, pipelineTotal: pipelineTotal, liveTotal: liveTotal)
@@ -87,6 +95,22 @@ enum ActivityFusionEngine {
                         source: matchedLive.isEmpty ? .pipeline : .fused
                     )
                 )
+            } else {
+                // 管道条目缺 min（明细只列了应用没给时长）时，用该应用的实时
+                // 片段时长补位：此前 matched 的实时片段被排除在"未匹配"集合外、
+                // 又不产出条目，应用/类别分布会整体变空而 liveTotal 照计。
+                let liveTotal = matchedLive.reduce(TimeInterval(0)) { $0 + $1.duration }
+                if liveTotal > 0 {
+                    appItems.append(
+                        UsageItem(
+                            name: app.app,
+                            duration: liveTotal,
+                            count: 1,
+                            category: ActivityClassifier.category(appName: app.app, title: nil),
+                            source: .fused
+                        )
+                    )
+                }
             }
         }
 
@@ -290,19 +314,21 @@ enum ActivityFusionEngine {
         )
     }
 
-    private static func hourlyTimeline(_ sessions: [ActivitySession]) -> [ActivityHour] {
+    private static func hourlyTimeline(_ sessions: [ActivitySession], calendar: Calendar) -> [ActivityHour] {
         var groups: [Int: (duration: TimeInterval, categories: [String: TimeInterval])] = [:]
 
         for session in sessions {
-            let calendar = Calendar.current
             var cursor = session.start
             let end = session.end
 
             while cursor < end {
+                // nextTime 而非 nextTimePreservingSmallerComponents：
+                // 后者会把会话起始的秒数一直带着走，每个跨小时边界都漏
+                // 最长 59 秒到前一小时。
                 let nextHour = calendar.nextDate(
                     after: cursor,
-                    matching: DateComponents(minute: 0),
-                    matchingPolicy: .nextTimePreservingSmallerComponents
+                    matching: DateComponents(minute: 0, second: 0),
+                    matchingPolicy: .nextTime
                 ) ?? end
                 let chunkEnd = min(nextHour, end)
                 let duration = chunkEnd.timeIntervalSince(cursor)

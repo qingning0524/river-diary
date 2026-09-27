@@ -281,7 +281,7 @@ struct DatabaseOverviewView: View {
                     id: episode.id.uuidString,
                     time: episode.startTime.formatted(date: .omitted, time: .shortened),
                     title: episode.title,
-                    detail: "\(episode.summary.isEmpty ? "无摘要" : episode.summary) · 置信度 \(episode.confidence)%",
+                    detail: "\(episode.summary.isEmpty ? "无摘要" : episode.summary) · \(episode.evidenceIDs.count) 条原始依据",
                     source: "episode"
                 )
             }

@@ -17,6 +17,7 @@ enum RiverDestination: String, Hashable, CaseIterable, Identifiable {
     case today
     case timeline
     case dailyReview
+    case habitReview
     case health
     case footprints
     case workLearn
@@ -33,6 +34,7 @@ enum RiverDestination: String, Hashable, CaseIterable, Identifiable {
         case .today: "今日"
         case .timeline: "时间线"
         case .dailyReview: "每日复盘"
+        case .habitReview: "习惯回顾"
         case .health: "健康"
         case .footprints: "足迹"
         case .workLearn: "学习与工作"
@@ -49,6 +51,7 @@ enum RiverDestination: String, Hashable, CaseIterable, Identifiable {
         case .today: RiverNavigationShortcut(key: "1", modifiers: .command, label: "⌘1")
         case .timeline: RiverNavigationShortcut(key: "4", modifiers: .command, label: "⌘4")
         case .dailyReview: RiverNavigationShortcut(key: "5", modifiers: .command, label: "⌘5")
+        case .habitReview: RiverNavigationShortcut(key: "r", modifiers: [.command, .shift], label: "⌘⇧R")
         case .health: RiverNavigationShortcut(key: "6", modifiers: .command, label: "⌘6")
         case .footprints: RiverNavigationShortcut(key: "7", modifiers: .command, label: "⌘7")
         case .workLearn: RiverNavigationShortcut(key: "8", modifiers: .command, label: "⌘8")
@@ -65,6 +68,7 @@ enum RiverDestination: String, Hashable, CaseIterable, Identifiable {
         case .today: "book.closed"
         case .timeline: "timeline.selection"
         case .dailyReview: "checklist"
+        case .habitReview: "sparkles"
         case .health: "heart.text.square"
         case .footprints: "mappin.and.ellipse"
         case .workLearn: "hammer.fill"
@@ -134,6 +138,7 @@ struct RiverShellView: View {
     let v2Store: V2Store
 
     @State private var destination: RiverDestination = .today
+    @State private var requestedTimelineItemID: String?
     @State private var inspectorContent: InspectorContent?
     @State private var inspectorReturnFocusID: String?
     @FocusState private var inspectorSourceFocusID: String?
@@ -152,6 +157,7 @@ struct RiverShellView: View {
     @State private var isLocked = false
     @StateObject private var memoryLibrary: MemoryLibraryStore
     @StateObject private var journalEditor = JournalEditorStore()
+    @StateObject private var habitReview: HabitReviewStore
     @EnvironmentObject private var feedback: FeedbackCenter
 
     init(
@@ -172,6 +178,9 @@ struct RiverShellView: View {
         self.v2Store = v2Store
         // 记忆库与全进程共享同一条 V2 连接，不再自开一份 SQLCipher。
         _memoryLibrary = StateObject(wrappedValue: MemoryLibraryStore(v2Store: v2Store))
+        // 习惯回顾与个人规则也走同一条 V2 连接；调度在应用激活时进行，
+        // 不依赖用户停在时间线页面。
+        _habitReview = StateObject(wrappedValue: HabitReviewStore(v2Store: v2Store))
     }
 
     var body: some View {
@@ -190,13 +199,11 @@ struct RiverShellView: View {
                         EvidenceConsoleView(
                             store: store,
                             activity: activity,
-                            ingestion: ingestion,
-                            v2Store: v2Store,
+                            ai: ai,
                             selectedDate: dateContext.selectedDate,
                             onSelectTimelineItem: { item, focusID in
                                 presentEpisode(item, returningFocusTo: focusID)
-                            },
-                            onStartTracking: { activity.startTracking() }
+                            }
                         )
                         .frame(width: AppLayout.consoleWidth)
                     }
@@ -298,6 +305,9 @@ struct RiverShellView: View {
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
                 store.checkExternalSnapshotChanged()
                 memoryLibrary.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
+                // 习惯回顾是应用级调度：激活时检查当前周期是否到期，
+                // 不依赖用户停在时间线页面；手动节奏只在打开回顾页时生成。
+                Task { await habitReview.evaluateWithAIIfNeeded(ai: ai) }
                 if appLockEnabled && !isLocked { isLocked = true }
             }
             .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification)) { _ in
@@ -479,7 +489,7 @@ struct RiverShellView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    sidebarSection("一天", items: [.today, .timeline, .dailyReview])
+                    sidebarSection("一天", items: [.today, .timeline, .dailyReview, .habitReview])
                     sidebarSection("生活", items: [.health, .footprints, .workLearn])
                     sidebarSection("记忆", items: [.memory, .ask, .progress])
                     sidebarSection("系统", items: [.database, .sources])
@@ -537,14 +547,10 @@ struct RiverShellView: View {
         .overlay(alignment: .trailing) { RiverRule().frame(width: 1) }
     }
 
-    /// Glanceable source health for the pinned footer: tracking, location, and
-    /// the first pipeline signal — at most three quiet lines.
+    /// Glanceable source health for the pinned footer. Live capture is shown on
+    /// Today beside the day's facts so its state has one clear home.
     private var sidebarStatusLines: [SidebarFooter.StatusLine] {
         var lines: [SidebarFooter.StatusLine] = [
-            .init(
-                color: activity.isTracking ? AppTheme.recording : Color.tertiaryInk,
-                text: activity.isTracking ? "生活记录 · 采集中" : "生活记录 · 已暂停"
-            ),
             .init(color: location.statusState.color, text: "地点足迹 · \(location.statusState.label)"),
         ]
         if let pipeline = sidebarStatusItems.first(where: { $0.id == "project-pipeline" }) {
@@ -556,11 +562,13 @@ struct RiverShellView: View {
     private func sidebarSection(_ title: String, items: [RiverDestination]) -> some View {
         SidebarGroup(title: title) {
             ForEach(items) { item in
+                let habitBadgeCount = item == .habitReview ? habitReview.pendingCount : 0
                 SidebarNavRow(
                     title: item.title,
                     symbol: item.symbol,
                     shortcut: item.navigationShortcut.label,
-                    badge: item == .timeline && journalEditor.hasUnsavedChanges ? "未保存" : nil,
+                    badge: habitBadgeCount > 0 ? String(habitBadgeCount) : nil,
+                    badgeIsCount: item == .habitReview,
                     isSelected: item == destination
                 ) {
                     destination = item
@@ -568,7 +576,9 @@ struct RiverShellView: View {
                 .accessibilityLabel(
                     item == .timeline && journalEditor.hasUnsavedChanges
                         ? "时间线，有未保存的日记草稿"
-                        : item.title
+                        : habitBadgeCount > 0
+                            ? "\(item.title)，有 \(habitBadgeCount) 个观察想和你聊聊"
+                            : item.title
                 )
             }
         }
@@ -602,6 +612,10 @@ struct RiverShellView: View {
                 selectedDate: dateContext.selectedDate,
                 inspectorSourceFocusID: $inspectorSourceFocusID,
                 onOpenTimeline: { destination = .timeline },
+                onOpenTimelineItem: { itemID in
+                    requestedTimelineItemID = itemID
+                    destination = .timeline
+                },
                 onOpenJournal: {
                     shouldExpandJournalEditor = true
                     destination = .timeline
@@ -612,19 +626,24 @@ struct RiverShellView: View {
                 onShowCapture: { showsCapture = true },
                 onOpenAsk: openAsk,
                 onOpenFootprints: { destination = .footprints },
-                onOpenSettings: { openSettings() }
+                onOpenSettings: { openSettings() },
+                onStartTracking: { activity.startTracking() },
+                habitReviewPendingCount: habitReview.pendingCount,
+                onOpenHabitReview: { destination = .habitReview }
             )
         case .timeline:
             TimelineWorkspaceView(
                 store: store,
                 activity: activity,
                 ingestion: ingestion,
+                ai: ai,
                 selectedDate: Binding(
                     get: { dateContext.selectedDate },
                     set: { dateContext.setSelectedDate($0) }
                 ),
                 editor: journalEditor,
                 shouldExpandJournalEditor: $shouldExpandJournalEditor,
+                requestedFocusItemID: $requestedTimelineItemID,
                 inspectorSourceFocusID: $inspectorSourceFocusID,
                 onSelectTimelineItem: { item, focusID in presentEpisode(item, returningFocusTo: focusID) },
                 onShowCapture: { showsCapture = true },
@@ -641,6 +660,13 @@ struct RiverShellView: View {
                 onRevealEvidence: { title, items in
                     inspectorContent = .evidence(title: title, items: items)
                 }
+            )
+        case .habitReview:
+            HabitReviewView(
+                habit: habitReview,
+                activity: activity,
+                ai: ai,
+                onOpenTimeline: { destination = .timeline }
             )
         case .database:
             DatabaseOverviewView(
@@ -667,6 +693,7 @@ struct RiverShellView: View {
             )
         case .footprints:
             FootprintsWorkspaceView(
+                store: store,
                 activity: activity,
                 entries: store.entries,
                 selectedDate: dateContext.selectedDate,
@@ -679,6 +706,7 @@ struct RiverShellView: View {
             )
         case .workLearn:
             WorkLearnWorkspaceView(
+                store: store,
                 activity: activity,
                 entries: store.entries,
                 selectedDate: dateContext.selectedDate,

@@ -2,81 +2,31 @@ import Foundation
 
 enum AITask: String, Codable {
     case dailyOverview
-    case footprintQuestion
-    case insightReading
     case memorySearch
-    case riverReading
-    case noteThemes
+    case timelineDigest
+    case habitReview
     case analysisDaily
-    case analysisMood
-    case analysisFocus
-    case analysisHealth
     case analysisWeekly
-    case analysisAction
 
-    static let analysisSuite: [AITask] = [
+    /// 需要四段结构（结论/关键依据/建议/边界）+ 证据核验的任务。
+    /// 六卡综合分析套件已删除，这两个是仅存的成员。
+    static let structuredAnalysisTasks: [AITask] = [
         .analysisDaily,
-        .analysisMood,
-        .analysisFocus,
-        .analysisHealth,
-        .analysisWeekly,
-        .analysisAction
+        .analysisWeekly
     ]
 
     var isAnalysisSuiteTask: Bool {
-        Self.analysisSuite.contains(self)
+        Self.structuredAnalysisTasks.contains(self)
     }
 
     var title: String {
         switch self {
         case .dailyOverview: "AI 本日整理"
-        case .footprintQuestion: "AI 足迹问答"
-        case .insightReading: "AI 状态洞察"
         case .memorySearch: "AI 搜索"
-        case .riverReading: "AI 情绪河流"
-        case .noteThemes: "AI 快记归纳"
+        case .timelineDigest: "AI 时间线整理"
+        case .habitReview: "习惯回顾交流"
         case .analysisDaily: "每日总结"
-        case .analysisMood: "情绪关联"
-        case .analysisFocus: "专注分析"
-        case .analysisHealth: "健康恢复"
         case .analysisWeekly: "本周规律"
-        case .analysisAction: "行动建议"
-        }
-    }
-
-    var analysisIcon: String {
-        switch self {
-        case .analysisDaily: "sun.max.fill"
-        case .analysisMood: "heart.circle.fill"
-        case .analysisFocus: "scope"
-        case .analysisHealth: "leaf.fill"
-        case .analysisWeekly: "calendar.badge.clock"
-        case .analysisAction: "lightbulb.fill"
-        default: "sparkles"
-        }
-    }
-
-    var analysisColor: String {
-        switch self {
-        case .analysisDaily: "#7C5CFC"
-        case .analysisMood: "#F06292"
-        case .analysisFocus: "#42A5F5"
-        case .analysisHealth: "#66BB6A"
-        case .analysisWeekly: "#FFA726"
-        case .analysisAction: "#26C6DA"
-        default: "#7787FF"
-        }
-    }
-
-    var analysisSubtitle: String {
-        switch self {
-        case .analysisDaily: "把今天的数据变成一段有温度的叙述"
-        case .analysisMood: "找出情绪变化和活动之间的关联"
-        case .analysisFocus: "分析专注模式和碎片化程度"
-        case .analysisHealth: "睡眠、运动与恢复的关系"
-        case .analysisWeekly: "过去一周的规律和趋势"
-        case .analysisAction: "基于数据给出明日建议"
-        default: ""
         }
     }
 }
@@ -91,6 +41,9 @@ struct AITaskState: Identifiable {
     var isArchived = false
     var sourceSummary: String? = nil
     var model: String? = nil
+    /// 该归档结果所属的范围键（如 d-2026-09-27 / w-2026-09-21）。
+    /// 恢复逻辑据此避免跨页面互踩：今日页与复盘页各自恢复自己的范围。
+    var archivedRangeKey: String? = nil
 }
 
 struct InsightRequest: Codable, Hashable, Identifiable {
@@ -100,19 +53,6 @@ struct InsightRequest: Codable, Hashable, Identifiable {
     var endDate: String?
     var sourceSummary: String
     var createdAt: Date
-}
-
-struct InsightResult: Codable, Hashable, Identifiable {
-    var id: String { resultKey }
-    var resultKey: String
-    var startDate: String
-    var endDate: String
-    var task: AITask
-    var model: String
-    var answer: String
-    var sourceSummary: String
-    var createdAt: Date
-    var isLocal: Bool
 }
 
 struct AIProfile: Codable, Identifiable, Hashable {
@@ -186,73 +126,6 @@ struct AIChatResponse: Codable {
 
     var choices: [Choice]?
     var error: APIError?
-}
-
-struct AIAppUsageContext: Codable {
-    var name: String
-    var minutes: Int
-    var category: String
-    var source: String
-}
-
-struct AIBrowseContext: Codable {
-    var site: String
-    var visits: Int
-}
-
-struct AIHourContext: Codable {
-    var hour: Int
-    var minutes: Int
-    var primaryCategory: String
-}
-
-struct AIHealthContext: Codable {
-    var steps: Int
-    var distanceKM: Double
-    var activeEnergyKcal: Double
-}
-
-struct AIDayContext: Codable {
-    var date: String
-    var screenMinutes: Int
-    var liveMinutes: Int
-    var focusMinutes: Int
-    var steps: Int
-    var mood: Int?
-    var energy: Int?
-    var focusScore: Int?
-    var outputScore: Int?
-    var topApps: [String]
-}
-
-struct AISessionContext: Codable {
-    var app: String
-    var category: String
-    var start: String
-    var minutes: Int
-    var title: String?
-}
-
-struct AIAnalysisContext: Codable {
-    var scope: String
-    var days: Int
-    var pipelineTotalMinutes: Int
-    var liveTotalMinutes: Int
-    var focusTotalMinutes: Int
-    var fragmentation: Int
-    var confidence: Int
-    var apps: [AIAppUsageContext]
-    var categories: [AIAppUsageContext]
-    var browse: [AIBrowseContext]
-    var timeline: [AIHourContext]
-    var health: AIHealthContext
-    var daily: [AIDayContext]
-    var recentSessions: [AISessionContext]?
-}
-
-struct AIRequestPayload {
-    var question: String
-    var context: AIAnalysisContext
 }
 
 enum AISearchAnswerFormatter {
@@ -339,48 +212,5 @@ enum AIAnalysisAnswerFormatter {
         return headings.reduce(text) { result, heading in
             result.replacingOccurrences(of: "\n\n\n\(heading)", with: "\n\n\(heading)")
         }
-    }
-}
-
-enum AIAnalysisBundleParser {
-    private static let taskByTitle: [String: AITask] = Dictionary(
-        uniqueKeysWithValues: AITask.analysisSuite.map { ($0.title, $0) }
-    )
-
-    static func parse(_ raw: String) -> [AITask: String] {
-        var result: [AITask: String] = [:]
-        var currentTask: AITask?
-        var currentLines: [String] = []
-
-        func flush() {
-            guard let task = currentTask else { return }
-            let body = currentLines.joined(separator: "\n")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            if !body.isEmpty {
-                result[task] = AIAnalysisAnswerFormatter.normalize(body)
-            }
-            currentLines = []
-        }
-
-        for line in raw.components(separatedBy: .newlines) {
-            if let task = task(forHeading: line) {
-                flush()
-                currentTask = task
-            } else if currentTask != nil {
-                currentLines.append(line)
-            }
-        }
-        flush()
-        return result
-    }
-
-    private static func task(forHeading line: String) -> AITask? {
-        var heading = line.trimmingCharacters(in: .whitespacesAndNewlines)
-        heading = heading.replacingOccurrences(of: "#", with: "")
-        heading = heading.replacingOccurrences(of: "*", with: "")
-        heading = heading.replacingOccurrences(of: "【", with: "")
-        heading = heading.replacingOccurrences(of: "】", with: "")
-        heading = heading.trimmingCharacters(in: CharacterSet(charactersIn: "0123456789.、：: "))
-        return taskByTitle[heading]
     }
 }

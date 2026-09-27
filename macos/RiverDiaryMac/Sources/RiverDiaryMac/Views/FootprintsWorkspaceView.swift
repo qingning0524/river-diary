@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FootprintsWorkspaceView: View {
     @Environment(\.riverDensity) private var density
+    @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     let entries: [DiaryEntry]
     let selectedDate: Date
@@ -14,7 +15,11 @@ struct FootprintsWorkspaceView: View {
 
     var body: some View {
         // 一帧只构建一次时间线；placeStatus 与 placeItems 都从同一份结果取。
-        let timeline = ActivityTimelineEngine.build(for: selectedDate, sessions: activity.liveSessions(for: selectedDate))
+        let timeline = ActivityTimelineEngine.build(
+            for: selectedDate,
+            sessions: activity.liveSessions(for: selectedDate),
+            annotations: store.timelineAnnotations
+        )
         let placeItems = timeline.items.filter { item in
             guard let place = item.annotation?.normalized.placeName else { return false }
             return !place.isEmpty

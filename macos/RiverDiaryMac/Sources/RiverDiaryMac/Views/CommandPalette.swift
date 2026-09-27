@@ -56,6 +56,7 @@ struct CommandPaletteView: View {
             .init(id: "today", title: "前往今日", symbol: "book.closed", keywords: "today 今天 首页", shortcutText: RiverDestination.today.navigationShortcut.label) { onNavigate(.today) },
             .init(id: "timeline", title: "打开时间线", symbol: "timeline.selection", keywords: "timeline 时间线 足迹", shortcutText: RiverDestination.timeline.navigationShortcut.label) { onNavigate(.timeline) },
             .init(id: "daily-review", title: "打开每日复盘", symbol: "checklist", keywords: "review 复盘 回顾", shortcutText: RiverDestination.dailyReview.navigationShortcut.label) { onNavigate(.dailyReview) },
+            .init(id: "habit-review", title: "打开习惯回顾", symbol: "sparkles", keywords: "habit review 习惯 回顾 确认 规律", shortcutText: RiverDestination.habitReview.navigationShortcut.label) { onNavigate(.habitReview) },
             .init(id: "health", title: "查看健康", symbol: "heart.text.square", keywords: "health 健康 睡眠 心情 运动", shortcutText: RiverDestination.health.navigationShortcut.label) { onNavigate(.health) },
             .init(id: "footprints", title: "查看足迹", symbol: "mappin.and.ellipse", keywords: "footprints 足迹 地点 位置", shortcutText: RiverDestination.footprints.navigationShortcut.label) { onNavigate(.footprints) },
             .init(id: "work-learn", title: "查看学习与工作", symbol: "hammer.fill", keywords: "work learn 学习 工作 项目", shortcutText: RiverDestination.workLearn.navigationShortcut.label) { onNavigate(.workLearn) },

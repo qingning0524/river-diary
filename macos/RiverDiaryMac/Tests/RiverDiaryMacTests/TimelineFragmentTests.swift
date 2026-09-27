@@ -196,6 +196,16 @@ final class TimelineReviewCriteriaTests: XCTestCase {
         XCTAssertFalse(build([session(600, 640)], annotations: [key: TimelineAnnotation(isReviewed: true)]).items[0].needsReview)
     }
 
+    func testPlaceAnnotationExplainsTheStretchAndAppearsAsTheActivityTitle() {
+        let session = session(600, 640)
+        let key = TimelineAnnotation.key(for: session)
+        let item = build([session], annotations: [key: TimelineAnnotation(placeName: "图书馆")]).items[0]
+
+        XCTAssertFalse(item.needsReview)
+        XCTAssertTrue(item.hasDescribingEvidence)
+        XCTAssertEqual(item.title, "图书馆")
+    }
+
     func testShortBlocksGapsAndFragmentRunsAreNeverInTheQueue() {
         XCTAssertFalse(build([session(600, 610)]).items[0].needsReview)
         let withGap = build([session(600, 640), session(700, 720)])

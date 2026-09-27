@@ -10,9 +10,11 @@ struct TimelineWorkspaceView: View {
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ingestion: DataIngestionStore
+    @ObservedObject var ai: AIAssistantStore
     @Binding var selectedDate: Date
     @ObservedObject var editor: JournalEditorStore
     @Binding var shouldExpandJournalEditor: Bool
+    @Binding var requestedFocusItemID: String?
     @FocusState.Binding var inspectorSourceFocusID: String?
     var onSelectTimelineItem: (ActivityTimelineItem, String) -> Void
     var onShowCapture: () -> Void
@@ -22,6 +24,9 @@ struct TimelineWorkspaceView: View {
     @EnvironmentObject private var feedbackCenter: FeedbackCenter
 
     @State private var selectedItemID: String?
+    @State private var pendingFocusItemID: String?
+    @State private var pendingFocusID: String?
+    @State private var materializeTimelineForFocus = false
     @State private var timelineCategory: String?
     @State private var timelineFavoritesOnly = false
     @State private var timelineNeedsReviewOnly = false
@@ -31,19 +36,25 @@ struct TimelineWorkspaceView: View {
     @State private var isJournalExpanded = false
     /// 已展开的碎片带。折叠状态属于页面：切一天、换筛选都不该记住另一天的展开。
     @State private var expandedRunIDs: Set<String> = []
+    @State private var showsRawTimeline = false
+    @State private var digestDebounceTask: Task<Void, Never>?
+    @State private var isDigestStale = false
     /// 时间带拖到哪里，页面就滚到哪一行；`.row(nil)` 表示停下来。用 `Equatable`
     /// 的枚举而不是一个可选 String，是为了让"再点同一条"也能再次触发滚动。
     @State private var scrollTarget: ScrollTarget?
+    @State private var pendingFocusRowID: String?
     /// 标题权限的说明关掉之后不再出现（设置里的"问题"清单仍会一直列着它）。
     @AppStorage("timeline.titleNoticeDismissed") private var titleCaptureNoticeDismissed = false
 
     private enum ScrollTarget: Hashable {
         case row(String)
         case journal
+        case timelinePanel
     }
 
     private var entry: DiaryEntry { store.entry(for: selectedDate) }
     private var captures: [QuickCapture] { store.captures(for: entry) }
+    private var dateKey: String { DiaryEntry.dateFormatter.string(from: selectedDate) }
     private var isToday: Bool { Calendar.current.isDateInToday(selectedDate) }
     private var nowSession: ActivitySession? { isToday ? activity.activeSession : nil }
 
@@ -66,14 +77,50 @@ struct TimelineWorkspaceView: View {
             pageBody(timeline, displayed: displayed)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear { openRequestedJournalEditor() }
+        .onAppear {
+            openRequestedJournalEditor()
+            restoreAndRefreshDigest()
+            if requestedFocusItemID != nil {
+                openRequestedTimelineItem(in: timeline)
+            } else {
+                materializeTimelineForFocus = false
+            }
+        }
+        .onChange(of: requestedFocusItemID) { _, itemID in
+            if itemID != nil { openRequestedTimelineItem(in: timeline) }
+        }
         .onChange(of: shouldExpandJournalEditor) { _, requested in
             if requested { openRequestedJournalEditor() }
+        }
+        .onDisappear {
+            // 防抖任务比页面活得久：离开页面就取消，不能在后台再发起付费请求。
+            digestDebounceTask?.cancel()
         }
         .onChange(of: selectedDate) { _, _ in
             journalError = nil
             isJournalExpanded = editor.buffer(for: entry).isDirty
             expandedRunIDs = []
+            materializeTimelineForFocus = false
+            restoreAndRefreshDigest()
+        }
+        .onChange(of: activity.sessions.count) { _, _ in
+            scheduleDigestRefresh()
+        }
+        .onChange(of: activity.lastSavedAt) { _, _ in
+            scheduleDigestRefresh()
+        }
+        .onChange(of: store.quickCaptures[dateKey]?.count ?? 0) { _, _ in
+            scheduleDigestRefresh()
+        }
+        .onChange(of: store.entry(for: selectedDate).displayOverview) { _, _ in
+            scheduleDigestRefresh()
+        }
+        .onChange(of: store.timelineAnnotations.values.map(\.updatedAt).max()) { _, _ in
+            scheduleDigestRefresh()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .riverAnalysisRunDidChange)) { _ in
+            guard !showsRawTimeline, ai.timelineDigest(for: dateKey) == nil else { return }
+            restoreAndRefreshDigest()
         }
         .confirmationDialog(
             "丢弃未保存的日记？",
@@ -126,27 +173,116 @@ struct TimelineWorkspaceView: View {
     }
 
     private func pageBody(_ timeline: ActivityTimeline, displayed: [ActivityTimelineItem]) -> some View {
-        RiverPageBody(lazy: false) {
-            ScrollViewReader { proxy in
-                VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
-                    dayOverview(timeline)
-                        .riverAppear(index: 0)
-                    journalCard
-                        .id(ScrollTarget.journal)
-                        .riverAppear(index: 1)
-                    timelineCard(timeline, displayed: displayed)
-                        .frame(minHeight: 380)
-                        .riverAppear(index: 2)
-                }
-                .onChange(of: scrollTarget) { _, target in
-                    guard let target else { return }
+        RiverPageBody(lazy: false, scrollContent: { proxy in
+            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
+                dayOverview(timeline)
+                    .riverAppear(index: 0)
+                journalCard
+                    .id(ScrollTarget.journal)
+                    .riverAppear(index: 1)
+                timelineCard(timeline, displayed: displayed)
+                    .frame(minHeight: 380)
+                    .id(ScrollTarget.timelinePanel)
+                    .riverAppear(index: 2)
+                retrospectiveCapturesCard(timeline)
+                    .riverAppear(index: 3)
+            }
+            .onChange(of: scrollTarget) { _, target in
+                guard let target else { return }
+                switch target {
+                case .journal:
                     withAnimation(reduceMotion ? nil : .easeOut(duration: AppMotion.calm)) {
-                        proxy.scrollTo(target, anchor: .center)
+                        proxy.scrollTo(ScrollTarget.journal, anchor: .center)
                     }
-                    scrollTarget = nil
+                case .row(let rowID):
+                    withAnimation(reduceMotion ? nil : .easeOut(duration: AppMotion.calm)) {
+                        proxy.scrollTo(rowID, anchor: .center)
+                    }
+                case .timelinePanel:
+                    proxy.scrollTo(ScrollTarget.timelinePanel, anchor: .top)
+                    guard let rowID = pendingFocusRowID else {
+                        scrollTarget = nil
+                        return
+                    }
+                    Task { @MainActor in
+                        await Task.yield()
+                        try? await Task.sleep(nanoseconds: 80_000_000)
+                        withAnimation(reduceMotion ? nil : .easeOut(duration: AppMotion.calm)) {
+                            proxy.scrollTo(rowID, anchor: .center)
+                        }
+                        if let itemID = pendingFocusItemID,
+                           let item = timeline.items.first(where: { $0.id == itemID }) {
+                            let focusID = pendingFocusID ?? "timeline:\(item.id)"
+                            selectedItemID = item.id
+                            inspectorSourceFocusID = focusID
+                            onSelectTimelineItem(item, focusID)
+                        }
+                        pendingFocusItemID = nil
+                        pendingFocusID = nil
+                        pendingFocusRowID = nil
+                        scrollTarget = nil
+                    }
+                    return
+                }
+                scrollTarget = nil
+            }
+        })
+    }
+
+    @ViewBuilder
+    private func retrospectiveCapturesCard(_ timeline: ActivityTimeline) -> some View {
+        if !timeline.retrospectiveCaptures.isEmpty {
+            RiverPanel(title: "为这一天补记", systemImage: "text.badge.plus", accent: AppTheme.neutral) {
+                VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
+                    Text("以下内容写于其他日期，未指定当天的发生时间。")
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(Color.secondaryInk)
+                    ForEach(timeline.retrospectiveCaptures) { capture in
+                        VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
+                            Text(capture.text)
+                                .font(AppTypography.secondary())
+                                .foregroundStyle(Color.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text("补记于 \(capture.createdAt.formatted(date: .abbreviated, time: .shortened))")
+                                .font(AppTypography.metadata())
+                                .foregroundStyle(Color.tertiaryInk)
+                        }
+                        .padding(.vertical, density.spacing(AppSpacing.xs))
+                    }
                 }
             }
         }
+    }
+
+    private func openRequestedTimelineItem(in timeline: ActivityTimeline) {
+        guard let requestedID = requestedFocusItemID else { return }
+        guard let item = timeline.items.first(where: { $0.id == requestedID }) else {
+            requestedFocusItemID = nil
+            return
+        }
+
+        materializeTimelineForFocus = true
+        timelineCategory = nil
+        timelineFavoritesOnly = false
+        timelineNeedsReviewOnly = false
+        query = ""
+
+        let containingRun = timeline.foldedItems.first { run in
+            run.id == item.id || run.fragments.contains(where: { $0.id == item.id })
+        }
+        let rowID: String
+        if let run = containingRun, run.isFragmentRun, run.id != item.id {
+            expandedRunIDs.insert(run.id)
+            rowID = "fragment-\(item.id)"
+        } else {
+            rowID = item.id
+        }
+        let focusID = "timeline:\(item.id)"
+        pendingFocusItemID = item.id
+        pendingFocusID = focusID
+        pendingFocusRowID = rowID
+        scrollTarget = .timelinePanel
+        requestedFocusItemID = nil
     }
 
     // MARK: Day overview
@@ -310,47 +446,171 @@ struct TimelineWorkspaceView: View {
 
     private func timelineCard(_ timeline: ActivityTimeline, displayed: [ActivityTimelineItem]) -> some View {
         RiverPanel(
-            title: "时间线",
+            title: "这一天",
             systemImage: "list.bullet.indent",
             accent: AppTheme.accent,
-            trailingText: "\(timeline.recordedNodeCount) 个节点",
+            trailingText: showsRawTimeline ? "\(timeline.recordedNodeCount) 条原始记录" : nil,
             padding: AppSpacing.sm
         ) {
             VStack(alignment: .leading, spacing: 0) {
-                timelineToolbar(timeline)
+                timelineModePicker
                 RiverRule()
-                if displayed.isEmpty {
-                    noMatches(timeline)
-                } else {
-                    if let notice = titleCaptureNotice {
-                        RiverInlineNotice(
-                            systemImage: "text.magnifyingglass",
-                            text: notice,
-                            tint: AppTheme.warning,
-                            actionTitle: "打开权限",
-                            action: { activity.requestAccessibility() },
-                            onDismiss: { titleCaptureNoticeDismissed = true }
-                        )
-                        .padding(.top, density.spacing(AppSpacing.sm))
-                    }
-                    RiverTimelineView(
-                        items: displayed,
-                        nowSession: nowSession,
-                        selectedItemID: selectedItemID,
-                        onSelect: selectTimelineItem,
-                        onWriteNote: onShowCapture,
-                        inspectorSourceFocusID: $inspectorSourceFocusID,
-                        isScrollable: false,
-                        expandedRunIDs: expandedRunIDs,
-                        onToggleRun: toggleRun
+                if let notice = titleCaptureNotice {
+                    RiverInlineNotice(
+                        systemImage: "text.magnifyingglass",
+                        text: notice,
+                        tint: AppTheme.warning,
+                        actionTitle: "打开权限",
+                        action: { activity.requestAccessibility() },
+                        onDismiss: { titleCaptureNoticeDismissed = true }
                     )
-                    if let foldingNote = foldingNote(timeline) {
-                        RiverRule()
-                        SettingsFootnote(text: foldingNote)
-                            .padding(.top, density.spacing(AppSpacing.sm))
+                    .padding(.top, density.spacing(AppSpacing.sm))
+                }
+                if showsRawTimeline {
+                    timelineToolbar(timeline)
+                    if displayed.isEmpty {
+                        noMatches(timeline)
+                    } else {
+                        RiverTimelineView(
+                            items: displayed,
+                            nowSession: nowSession,
+                            selectedItemID: selectedItemID,
+                            onSelect: selectTimelineItem,
+                            onWriteNote: onShowCapture,
+                            inspectorSourceFocusID: $inspectorSourceFocusID,
+                            isScrollable: false,
+                            materializeAllRows: materializeTimelineForFocus,
+                            expandedRunIDs: expandedRunIDs,
+                            onToggleRun: toggleRun
+                        )
+                        if let foldingNote = foldingNote(timeline) {
+                            RiverRule()
+                            SettingsFootnote(text: foldingNote)
+                                .padding(.top, density.spacing(AppSpacing.sm))
+                        }
                     }
+                } else {
+                    TimelineAIDigestView(
+                        digest: ai.timelineDigest(for: dateKey),
+                        timeline: timeline,
+                        isStale: isDigestStale,
+                        isGenerating: ai.state(for: .timelineDigest)?.isLoading == true,
+                        automaticAnalysisEnabled: ingestion.enabled,
+                        hasVerifiedConnection: ai.hasVerifiedConnection,
+                        lastUpdated: ai.state(for: .timelineDigest)?.updatedAt,
+                        errorMessage: ai.state(for: .timelineDigest)?.error,
+                        onSelectItem: { item in selectTimelineItem(item, focusID: "timeline:\(item.id)") },
+                        onOpenSettings: onOpenSettings,
+                        onOpenJournal: {
+                            shouldExpandJournalEditor = true
+                            openRequestedJournalEditor()
+                        }
+                    )
                 }
             }
+        }
+    }
+
+    private var timelineModePicker: some View {
+        HStack(spacing: density.spacing(AppSpacing.xs)) {
+            FilterChip(title: "AI 整理", isSelected: !showsRawTimeline) {
+                showsRawTimeline = false
+                restoreAndRefreshDigest()
+            }
+            FilterChip(title: "原始记录", isSelected: showsRawTimeline) {
+                showsRawTimeline = true
+            }
+            Spacer(minLength: 0)
+            if !showsRawTimeline, ingestion.enabled, ai.hasVerifiedConnection,
+               ai.timelineDigest(for: dateKey) == nil,
+               ai.state(for: .timelineDigest)?.isLoading != true {
+                Text("待自动整理")
+                    .font(AppTypography.micro())
+                    .foregroundStyle(Color.tertiaryInk)
+            }
+        }
+        .padding(.horizontal, density.spacing(AppSpacing.sm))
+        .padding(.vertical, density.spacing(AppSpacing.sm))
+    }
+
+    private func restoreAndRefreshDigest() {
+        let date = selectedDate
+        let dayKey = DiaryEntry.dateFormatter.string(from: date)
+        ai.restoreAnalysisResults(startDate: dayKey, endDate: dayKey)
+        guard ingestion.enabled, ai.hasVerifiedConnection else { return }
+        let dayEntry = store.entry(for: date)
+        let sessions = activity.liveSessions(for: date)
+        let dayCaptures = store.captures(for: dayEntry)
+        let browserVisits = AppDatabase.shared.chromeVisits(for: dayKey)
+        let entries = store.entries.filter { $0.date == dayKey }
+        let annotations = store.timelineAnnotations
+        let existingDigest = ai.timelineDigest(for: dayKey)
+        let fingerprint = ai.currentTimelineSourceFingerprint(
+            day: date,
+            entries: entries,
+                sessions: sessions,
+                captures: dayCaptures,
+                browserVisits: browserVisits,
+                annotations: annotations
+        )
+        isDigestStale = existingDigest.map { $0.sourceFingerprint != fingerprint } ?? false
+        let targetDayKey = dayKey
+        digestDebounceTask?.cancel()
+        digestDebounceTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard !Task.isCancelled else { return }
+            guard DiaryEntry.dateFormatter.string(from: selectedDate) == targetDayKey else { return }
+            let succeeded = await ai.organizeTimeline(
+                day: date,
+                entries: entries,
+                sessions: sessions,
+                captures: dayCaptures,
+                browserVisits: browserVisits,
+                annotations: annotations,
+                sourceSummary: "时间线自动整理 · \(sessions.count) 段活动 · \(dayCaptures.count) 条快记"
+            )
+            if succeeded { isDigestStale = false }
+        }
+    }
+
+    private func scheduleDigestRefresh() {
+        guard !showsRawTimeline, ingestion.enabled, ai.hasVerifiedConnection else { return }
+        digestDebounceTask?.cancel()
+        let date = selectedDate
+        let dayKey = DiaryEntry.dateFormatter.string(from: date)
+        let dayEntry = store.entry(for: date)
+        let sessions = activity.liveSessions(for: date)
+        let dayCaptures = store.captures(for: dayEntry)
+        let browserVisits = AppDatabase.shared.chromeVisits(for: dayKey)
+        let entries = store.entries.filter { $0.date == dayKey }
+        let annotations = store.timelineAnnotations
+        let existingDigest = ai.timelineDigest(for: dayKey)
+        let fingerprint = ai.currentTimelineSourceFingerprint(
+            day: date,
+            entries: entries,
+            sessions: sessions,
+            captures: dayCaptures,
+            browserVisits: browserVisits,
+            annotations: annotations
+        )
+        isDigestStale = existingDigest.map { $0.sourceFingerprint != fingerprint } ?? false
+        let targetDayKey = dayKey
+        digestDebounceTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(90))
+            guard !Task.isCancelled else { return }
+            // 任务比页面活得久：离开本页或切到别的日期后，这 90 秒的定时器
+            // 不能再发起付费请求，也不能改写别的日子的"记录有更新"标记。
+            guard DiaryEntry.dateFormatter.string(from: selectedDate) == targetDayKey else { return }
+            let succeeded = await ai.organizeTimeline(
+                day: date,
+                entries: entries,
+                sessions: sessions,
+                captures: dayCaptures,
+                browserVisits: browserVisits,
+                annotations: annotations,
+                sourceSummary: "活动更新后自动整理 · \(sessions.count) 段活动"
+            )
+            if succeeded { isDigestStale = false }
         }
     }
 
@@ -397,7 +657,16 @@ struct TimelineWorkspaceView: View {
             hasNowRow: nowSession != nil
         )
         guard let target = TimelineDisplayList.scrubTarget(for: moment, rows: rows) else { return }
-        if let runID = target.expandsRunID { expandedRunIDs.insert(runID) }
+        let expandsRun = target.expandsRunID
+        if let runID = expandsRun { expandedRunIDs.insert(runID) }
+        // 碎片带刚展开时成员行尚未被 LazyVStack 物化，同帧 scrollTo 是静默
+        // 无效的；且拖拽路径上 scrollTarget 常与上次相等，onChange 不会重发。
+        // 与洞察跳转同款处理：先物化整列，再延迟补一次滚动。
+        if expandsRun != nil { materializeTimelineForFocus = true }
+        if scrollTarget == .row(target.rowID) {
+            // 同值再触发：先置 nil 让 onChange 能再次 fires。
+            scrollTarget = nil
+        }
         scrollTarget = .row(target.rowID)
         if commit { selectTimelineItem(target.item, focusID: "timeline:\(target.item.id)") }
     }
@@ -586,13 +855,10 @@ struct TimelineDayOverview: View {
     /// half-empty band imply the rest was idle. Unrecorded is never counted as zero.
     private var coverageNote: String {
         let recorded = timeline.sessions.reduce(0.0) { $0 + $1.duration }
-        let span = timeline.items
-            .filter { $0.kind != .gap }
-            .reduce(0.0) { $0 + max($1.duration, $1.end.timeIntervalSince($1.start)) }
-        guard span > 0 else {
+        guard recorded > 0 else {
             return "这一天还没有实时足迹。未记录不等于没有发生，也不按零计算。"
         }
-        let unrecorded = max(86_400 - recorded, 0)
+        let unrecorded = max(timeline.dayInterval.duration - recorded, 0)
         return "灰色区间没有实时足迹：这一天有 \(ActivityFormatter.time(unrecorded)) 未被记录，不按零计算。"
     }
 }

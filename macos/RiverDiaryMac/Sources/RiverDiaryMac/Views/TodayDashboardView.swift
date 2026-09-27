@@ -13,15 +13,24 @@ struct TodayDashboardView: View {
     let selectedDate: Date
     @FocusState.Binding var inspectorSourceFocusID: String?
     var onOpenTimeline: () -> Void
+    var onOpenTimelineItem: (String) -> Void
     var onOpenJournal: () -> Void
     var onSelectTimelineItem: (ActivityTimelineItem, String) -> Void
     var onShowCapture: () -> Void
     var onOpenAsk: (String) -> Void
     var onOpenFootprints: () -> Void
     var onOpenSettings: () -> Void
+    var onStartTracking: () -> Void
+    /// 习惯回顾入口：只在确有问题包时出现一条简洁入口。
+    var habitReviewPendingCount: Int = 0
+    var onOpenHabitReview: () -> Void = {}
 
     @State private var reportError: String?
     @State private var isBriefExpanded = false
+    @State private var showsCorrectionSheet = false
+    @State private var correctionItemID = ""
+    @State private var correctionDraft = ""
+    @State private var correctionSaved = false
 
     private var entry: DiaryEntry { store.entry(for: selectedDate) }
     private var isSelectedDateToday: Bool { Calendar.current.isDateInToday(selectedDate) }
@@ -86,13 +95,9 @@ struct TodayDashboardView: View {
 
     private func focusShareText(_ s: Snapshot) -> String {
         guard hasRecordedTime(s) else { return "还没有可计的记录" }
-        let share = Int((s.stats.focusTotal / s.timeline.totalDuration) * 100)
-        return "占全部记录 \(share)%"
-    }
-
-    private func longestSessionCaption(_ s: Snapshot) -> String {
-        guard let longest = s.stats.longestSession else { return "没有可识别的连续片段" }
-        return "\(longest.appName) · \(ActivityFormatter.timeRange(longest.start, longest.end))"
+        let share = s.stats.focusTotal / s.timeline.totalDuration * 100
+        if share > 0, share < 1 { return "占全部记录不足 1%" }
+        return "占全部记录 \(Int(share.rounded()))%"
     }
 
     private func workDuration(_ s: Snapshot) -> TimeInterval {
@@ -137,7 +142,78 @@ struct TodayDashboardView: View {
         guard let answer = dailyTaskState?.answer?.trimmingCharacters(in: .whitespacesAndNewlines), !answer.isEmpty else {
             return nil
         }
-        return answer
+        guard !answer.hasPrefix(EvidenceReference.unverifiedAnswerPrefix) else { return nil }
+        return EvidenceReference.displayText(from: answer)
+    }
+
+    private var dailyJudgment: String? {
+        guard let answer = dailyTaskState?.answer, !answer.hasPrefix(EvidenceReference.unverifiedAnswerPrefix) else { return nil }
+        let headline = AnalysisDigestParser.extract(from: answer).digest.headline
+            .replacingOccurrences(of: #"^\**概览\**\s*[:：]?\s*"#, with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return headline.isEmpty ? nil : headline
+    }
+
+    private func annotatedPlaces(_ snapshot: Snapshot) -> [String] {
+        let manualPlaces = snapshot.timeline.items.compactMap { item -> String? in
+            let place = item.annotation?.normalized.placeName ?? ""
+            return place.isEmpty ? nil : place
+        }
+        let citedPlaces = EvidenceReference.extract(from: dailyTaskState?.answer ?? "").compactMap { reference -> String? in
+            guard let parsed = EvidenceReference.parse(reference), parsed.kind == .location,
+                  let id = UUID(uuidString: parsed.value) else { return nil }
+            return ai.locationEvidenceTitle(id: id, dayKey: dateKey)
+        }
+        return Array(Set(manualPlaces + citedPlaces)).sorted()
+    }
+
+    private var recordedTodayDuration: TimeInterval {
+        activity.liveSessions(for: Date()).reduce(0) {
+            $0 + max($1.duration, $1.end.timeIntervalSince($1.start))
+        }
+    }
+
+    private var recordingStatusDetail: String {
+        let appLine: String?
+        if let active = activity.activeSession {
+            appLine = "\(active.appName) · 已持续 \(ActivityFormatter.time(Date().timeIntervalSince(active.start)))"
+        } else {
+            appLine = nil
+        }
+        let saveLine = activity.lastSavedAt.map { "上次保存 \($0.formatted(date: .omitted, time: .shortened))" }
+        return ([appLine, "今日已记录 \(ActivityFormatter.time(recordedTodayDuration))", saveLine]
+            .compactMap { $0 }).joined(separator: " · ")
+    }
+
+    /// Option A: a compact, date-adjacent state label, not another dashboard card.
+    @ViewBuilder
+    private var recordingStatusControl: some View {
+        if activity.isTracking && !activity.isCurrentlyPaused {
+            HStack(spacing: density.spacing(AppSpacing.xs)) {
+                Circle()
+                    .fill(AppTheme.recording)
+                    .frame(width: 6, height: 6)
+                    .accessibilityHidden(true)
+                Text("正在记录")
+                    .font(AppTypography.micro().weight(.semibold))
+                    .foregroundStyle(Color.ink)
+            }
+            .padding(.horizontal, density.spacing(AppSpacing.sm))
+            .padding(.vertical, density.spacing(4))
+            .background(Color.surface, in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.border, lineWidth: 1))
+            .help(recordingStatusDetail)
+            .accessibilityLabel("正在记录。\(recordingStatusDetail)")
+        } else {
+            HStack(spacing: density.spacing(AppSpacing.xs)) {
+                StatusBadge(activity.isCurrentlyPaused ? "按计划暂停" : "已暂停", tone: .neutral)
+                if !activity.isTracking {
+                    Button("开始记录", action: onStartTracking)
+                        .smallAction()
+                }
+            }
+            .accessibilityElement(children: .contain)
+        }
     }
 
     private var dailyReportSource: String {
@@ -158,29 +234,90 @@ struct TodayDashboardView: View {
         let s = makeSnapshot()
         return RiverPage {
             reportHeader.riverAppear(index: 0)
-            glanceHero(s).riverAppear(index: 1)
-            dayBrief(s).riverAppear(index: 2)
+            dayBrief(s).riverAppear(index: 1)
+            glanceHero(s).riverAppear(index: 2)
             insightRow(s).riverAppear(index: 3)
-            evidenceInbox(s).riverAppear(index: 4)
+            if habitReviewPendingCount > 0 {
+                habitReviewEntry.riverAppear(index: 4)
+            }
+            evidenceInbox(s).riverAppear(index: 5)
         }
         .task(id: dateKey) {
             ai.restoreAnalysisResults(startDate: dateKey, endDate: dateKey)
+            if ingestion.enabled, ai.hasVerifiedConnection, ai.state(for: .analysisDaily)?.answer == nil {
+                await generateDailyReport()
+            }
         }
         .onChange(of: dateKey) { _, _ in
             reportError = nil
             isBriefExpanded = false
+            correctionSaved = false
         }
+        .sheet(isPresented: $showsCorrectionSheet) {
+            correctionSheet(s)
+        }
+    }
+
+    // MARK: Habit review entry
+
+    /// 习惯回顾的安静入口：一行说明 + 预计耗时，不使用徽标或庆祝样式。
+    private var habitReviewEntry: some View {
+        Button(action: onOpenHabitReview) {
+            HStack(alignment: .center, spacing: density.spacing(AppSpacing.md)) {
+                RiverIconWell(systemImage: "sparkles", tint: AppTheme.accent, size: 32)
+                VStack(alignment: .leading, spacing: density.spacing(2)) {
+                    Text("习惯回顾 · 有 \(habitReviewPendingCount) 个观察想和你聊聊")
+                        .font(AppTypography.rowTitle().weight(.semibold))
+                        .foregroundStyle(Color.ink)
+                    Text("我从最近的记录里留意到一些和你有关的事")
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(Color.secondaryInk)
+                }
+                Spacer(minLength: density.spacing(AppSpacing.sm))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.tertiaryInk)
+            }
+            .padding(.horizontal, density.spacing(AppSpacing.panelPadding))
+            .frame(minHeight: density.spacing(56))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.surface, in: RoundedRectangle(cornerRadius: AppRadius.panel, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppRadius.panel, style: .continuous)
+                    .strokeBorder(Color.border, lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: AppRadius.panel, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("打开习惯回顾，有 \(habitReviewPendingCount) 个观察想和你聊聊")
     }
 
     // MARK: Header
 
     private var reportHeader: some View {
-        PageHeader(
-            pageTitle,
-            context: isSelectedDateToday ? "你今天实际把时间花在哪里" : "你在\(selectedDateLabel)实际把时间花在哪里",
-            badge: isSelectedDateToday ? "今天" : nil,
-            emphasis: true
-        ) {
+        HStack(alignment: .top, spacing: density.spacing(AppSpacing.md)) {
+            VStack(alignment: .leading, spacing: density.spacing(3)) {
+                HStack(alignment: .firstTextBaseline, spacing: density.spacing(AppSpacing.sm)) {
+                    Text(pageTitle)
+                        .font(AppTypography.pageTitleLarge())
+                        .foregroundStyle(Color.ink)
+                    if isSelectedDateToday {
+                        Text("今天")
+                            .font(AppTypography.micro().weight(.semibold))
+                            .foregroundStyle(AppTheme.accent)
+                            .padding(.horizontal, density.spacing(AppSpacing.sm))
+                            .padding(.vertical, density.spacing(3))
+                            .background(AppTheme.accentSoft, in: Capsule())
+                        recordingStatusControl
+                    }
+                }
+                Text("先读懂这一天，再回到每条记录")
+                    .font(AppTypography.secondary())
+                    .foregroundStyle(Color.secondaryInk)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: density.spacing(AppSpacing.md))
             HStack(spacing: density.spacing(AppSpacing.sm)) {
                 Button("询问这一天") { onOpenAsk("这一天做了什么？") }
                     .primaryCTA()
@@ -190,42 +327,36 @@ struct TodayDashboardView: View {
                     .secondaryCTA()
             }
         }
+        .accessibilityElement(children: .contain)
     }
 
     // MARK: Glance hero
 
-    /// The ten-second read of the day: four totals and the whole day in one band.
-    /// Carries the page's accent wash so the eye lands here first.
+    /// The factual companion to the daily interpretation: recorded time, focus,
+    /// places the user named, and the compact day band.
     private func glanceHero(_ s: Snapshot) -> some View {
         RiverPanel(padding: AppSpacing.panelPadding, tint: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.lg)) {
                 HStack(alignment: .top, spacing: 0) {
                     TodayHeroStat(
-                        title: "记录总时长",
-                        value: hasRecordedTime(s) ? ActivityFormatter.time(s.timeline.totalDuration) : "—",
+                        title: "专注投入",
+                        value: hasRecordedTime(s) ? ActivityFormatter.time(s.stats.focusTotal) : "—",
                         caption: hasRecordedTime(s)
-                            ? "\(s.timeline.sessions.count) 段实时片段 · \(s.captures.count) 条快记"
-                            : "\(dayName)还没有记录的时间段",
+                            ? focusShareText(s)
+                            : "暂时没有可计的片段",
                         valueFont: AppTypography.metricDisplay()
                     )
                     TodayStatDivider()
                     TodayHeroStat(
-                        title: "专注时长",
-                        value: hasRecordedTime(s) ? ActivityFormatter.time(s.stats.focusTotal) : "—",
-                        caption: focusShareText(s)
+                        title: "已记录",
+                        value: hasRecordedTime(s) ? ActivityFormatter.time(s.timeline.totalDuration) : "—",
+                        caption: "\(s.timeline.sessions.count) 段活动 · \(s.captures.count) 条快记"
                     )
                     TodayStatDivider()
                     TodayHeroStat(
-                        title: "最长连续",
-                        value: s.stats.longestSession.map { ActivityFormatter.time($0.duration) } ?? "—",
-                        caption: longestSessionCaption(s)
-                    )
-                    TodayStatDivider()
-                    TodayHeroStat(
-                        title: "证据质量",
-                        value: "\(s.stats.confidence)%",
-                        caption: "数据量与来源一致性",
-                        progress: Double(s.stats.confidence) / 100
+                        title: "地点线索",
+                        value: annotatedPlaces(s).isEmpty ? "未知" : "\(annotatedPlaces(s).count) 个",
+                        caption: annotatedPlaces(s).isEmpty ? "还没有已标注地点" : annotatedPlaces(s).joined(separator: " · ")
                     )
                 }
 
@@ -242,47 +373,64 @@ struct TodayDashboardView: View {
 
     private func dayBrief(_ s: Snapshot) -> some View {
         RiverPanel(
-            title: isSelectedDateToday ? "今天发生了什么" : "\(selectedDateLabel)发生了什么",
-            systemImage: "text.alignleft",
+            title: "AI 的今日判断",
+            systemImage: "sparkles",
             accent: AppTheme.accent
         ) {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
                 HStack(alignment: .top, spacing: density.spacing(AppSpacing.md)) {
                     VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
-                        if dailyReport == nil && !isBriefExpanded {
-                            Text(s.localReport.headline)
-                                .font(AppTypography.sectionTitle())
+                        if let dailyReport {
+                            Text(dailyJudgment ?? s.localReport.headline)
+                                .font(.editorial(25, weight: .regular))
                                 .foregroundStyle(Color.ink)
                                 .fixedSize(horizontal: false, vertical: true)
-                            ForEach(s.localReport.highlights, id: \.self) { highlight in
-                                HStack(alignment: .firstTextBaseline, spacing: density.spacing(AppSpacing.sm)) {
-                                    Circle().fill(AppTheme.accent).frame(width: 5, height: 5)
-                                    Text(highlight)
-                                        .font(AppTypography.secondary())
-                                        .foregroundStyle(Color.secondaryInk)
-                                        .lineSpacing(4)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                        } else {
-                            Text(dailyReport ?? s.localReport.overview)
+                            Text(isBriefExpanded ? dailyReport : String(dailyReport.prefix(260)))
                                 .font(AppTypography.primary())
-                                .foregroundStyle(Color.ink)
+                                .foregroundStyle(Color.secondaryInk)
                                 .lineSpacing(5)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else {
+                            Text(s.localReport.headline)
+                                .font(.editorial(23, weight: .regular))
+                                .foregroundStyle(Color.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text(ai.hasVerifiedConnection
+                                 ? "我还没有生成对这一天的整体判断。可以结合已记录的活动、时间和可用地点线索，试着概括今天更像工作、学习还是休闲。"
+                                 : "连接并验证 AI 模型后，我可以结合活动、时间和已有地点线索，尝试概括今天的生活节奏。")
+                                .font(AppTypography.secondary())
+                                .foregroundStyle(Color.secondaryInk)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     Spacer(minLength: density.spacing(AppSpacing.sm))
                     StatusBadge(
-                        dailyReport == nil ? s.localReport.kind.title : "AI 摘要",
+                        dailyReport == nil ? s.localReport.kind.title : "AI 推断",
                         tone: dailyReport == nil ? .neutral : .positive
                     )
                 }
 
-                Text(dailyReport == nil ? s.localReport.sourceLine : dailyReportSource)
+                Text(dailyReport == nil ? s.localReport.sourceLine : "AI 对记录的解释 · \(dailyReportSource)")
                     .font(AppTypography.metadata())
                     .foregroundStyle(Color.tertiaryInk)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if dailyReport != nil {
+                    dailyMoments(s)
+                } else {
+                    reportInsights(s.localReport.insights)
+                }
+
+                if let conflict = s.stats.conflicts.first {
+                    Text("来源差异：\(conflict)")
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(Color.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if dailyReport != nil {
+                    dailyEvidenceLinks(s)
+                }
 
                 HStack(spacing: density.spacing(AppSpacing.sm)) {
                     Button {
@@ -297,11 +445,20 @@ struct TodayDashboardView: View {
                     .smallAction()
                     .disabled(dailyTaskState?.isLoading == true)
 
-                    Button(isBriefExpanded ? "收起" : "展开完整摘要") {
-                        isBriefExpanded.toggle()
+                    if dailyReport != nil {
+                        Button(isBriefExpanded ? "收起" : "展开完整解释") {
+                            isBriefExpanded.toggle()
+                        }
+                        .linkAction()
+                        .font(AppTypography.secondary())
+
+                        Button {
+                            openCorrection(for: s)
+                        } label: {
+                            Label("改一改这个判断", systemImage: "pencil")
+                        }
+                        .secondaryCTA()
                     }
-                    .linkAction()
-                    .font(AppTypography.secondary())
 
                     if let reportError {
                         Text(reportError)
@@ -311,7 +468,254 @@ struct TodayDashboardView: View {
                     }
                 }
 
-                SettingsFootnote(text: "质量估算参考数据量、实时片段和来源一致性，不代表摘要正确率。")
+                if correctionSaved {
+                    HStack(spacing: density.spacing(AppSpacing.sm)) {
+                        Text("已更新这条时间片；长期习惯需在习惯回顾中单独确认。")
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.secondaryInk)
+                        Button("去习惯回顾", action: onOpenHabitReview)
+                            .linkAction()
+                            .font(AppTypography.metadata())
+                    }
+                }
+
+                SettingsFootnote(text: "事实来自可核对记录；工作、学习或休闲是 AI 的推断。未记录的时间仍然未知。")
+            }
+        }
+    }
+
+    private func dailyMoments(_ snapshot: Snapshot) -> some View {
+        let moments = snapshot.timeline.items
+            .filter { $0.kind == .activity && $0.duration > 0 }
+            .sorted { $0.duration > $1.duration }
+            .prefix(3)
+            .sorted { $0.start < $1.start }
+        return VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
+            Text("支持这个判断的片段")
+                .font(AppTypography.metadata().weight(.medium))
+                .foregroundStyle(Color.secondaryInk)
+            ForEach(Array(moments)) { item in
+                Button {
+                    onOpenTimelineItem(item.id)
+                } label: {
+                    HStack(spacing: density.spacing(AppSpacing.sm)) {
+                        Text(item.start.formatted(date: .omitted, time: .shortened))
+                            .font(AppTypography.mono())
+                            .foregroundStyle(Color.tertiaryInk)
+                        Text(momentTitle(for: item))
+                            .font(AppTypography.secondary())
+                            .foregroundStyle(Color.ink)
+                            .lineLimit(1)
+                        Spacer(minLength: density.spacing(AppSpacing.xs))
+                        Text(ActivityFormatter.time(item.duration))
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.secondaryInk)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.tertiaryInk)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("查看依据：\(item.title)，\(ActivityFormatter.timeRange(item.start, item.end))")
+            }
+        }
+    }
+
+    private func momentTitle(for item: ActivityTimelineItem) -> String {
+        let annotated = item.annotation?.normalized.title ?? ""
+        return annotated.isEmpty ? item.title : annotated
+    }
+
+    private func openCorrection(for snapshot: Snapshot) {
+        let candidates = snapshot.timeline.items.filter { $0.kind == .activity && $0.isAnnotatable }
+        correctionItemID = candidates.max(by: { $0.duration < $1.duration })?.id ?? ""
+        correctionDraft = ""
+        showsCorrectionSheet = true
+    }
+
+    private func correctionSheet(_ snapshot: Snapshot) -> some View {
+        let candidates = snapshot.timeline.items.filter { $0.kind == .activity && $0.isAnnotatable }.sorted { $0.start < $1.start }
+        return VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
+            Text("纠正今天的理解")
+                .font(AppTypography.sheetTitle())
+                .foregroundStyle(Color.ink)
+            Text("选择最相关的时间片，补充这段实际在做什么。保存后会更新这条时间片并重新理解当天；若要形成长期习惯，还需到习惯回顾中确认。")
+                .font(AppTypography.secondary())
+                .foregroundStyle(Color.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if candidates.isEmpty {
+                Text("今天还没有可标注的活动片段。")
+                    .font(AppTypography.secondary())
+                    .foregroundStyle(Color.tertiaryInk)
+            } else {
+                Picker("关联片段", selection: $correctionItemID) {
+                    ForEach(candidates) { item in
+                        Text("\(item.start.formatted(date: .omitted, time: .shortened)) · \(item.title)")
+                            .tag(item.id)
+                    }
+                }
+                .pickerStyle(.menu)
+                TextField("例如：这是个人项目，不是工作", text: $correctionDraft, axis: .vertical)
+                    .lineLimit(2...4)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            HStack {
+                Spacer()
+                Button("取消") { showsCorrectionSheet = false }
+                    .buttonStyle(.plain)
+                Button("保存并重新理解") { saveCorrection(snapshot: snapshot) }
+                    .primaryCTA()
+                    .disabled(candidates.isEmpty || correctionDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(AppSpacing.panelPadding)
+        .frame(width: 480)
+    }
+
+    private func saveCorrection(snapshot: Snapshot) {
+        guard let item = snapshot.timeline.items.first(where: { $0.id == correctionItemID }),
+              let key = item.annotationKey else { return }
+        let correction = correctionDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !correction.isEmpty else { return }
+        var annotation = store.timelineAnnotations[key] ?? TimelineAnnotation()
+        let correctionNote = "今日理解更正：\(correction)"
+        annotation.note = [annotation.note, correctionNote]
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .joined(separator: "\n")
+        annotation.isReviewed = true
+        annotation.reviewedAt = Date()
+        do {
+            try store.saveTimelineAnnotation(annotation, for: key)
+            showsCorrectionSheet = false
+            correctionSaved = true
+            Task { await generateDailyReport() }
+        } catch {
+            reportError = "纠正未能保存：\(UserFacingError.message(for: error))"
+        }
+    }
+
+    private func reportInsights(_ insights: [TimelineAnalysisInsight]) -> some View {
+        VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
+            ForEach(insights) { insight in
+                Button {
+                    onOpenTimelineItem(insight.itemID)
+                } label: {
+                    HStack(alignment: .top, spacing: density.spacing(AppSpacing.sm)) {
+                        Circle()
+                            .fill(insight.kind == .needsReview ? AppTheme.warning : AppTheme.accent)
+                            .frame(width: 5, height: 5)
+                            .padding(.top, 6)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
+                            HStack(alignment: .firstTextBaseline, spacing: density.spacing(AppSpacing.sm)) {
+                                Text(insight.timeRange)
+                                    .font(AppTypography.mono())
+                                    .foregroundStyle(Color.tertiaryInk)
+                                Text(insight.title)
+                                    .font(AppTypography.secondary().weight(.medium))
+                                    .foregroundStyle(Color.ink)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                Text(insight.kind.label)
+                                    .font(AppTypography.micro())
+                                    .foregroundStyle(Color.secondaryInk)
+                                    .fixedSize()
+                            }
+                            if !insight.detail.isEmpty {
+                                Text(insight.detail)
+                                    .font(AppTypography.metadata())
+                                    .foregroundStyle(Color.secondaryInk)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                            }
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.tertiaryInk)
+                            .accessibilityHidden(true)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(insight.kind.label)，\(insight.timeRange)，\(insight.title)，查看依据")
+                .help("打开时间线中的依据")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func dailyEvidenceLinks(_ snapshot: Snapshot) -> some View {
+        let targets = dailyEvidenceTargets(in: snapshot)
+        if !targets.isEmpty {
+            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xs)) {
+                Text("AI 引用 \(targets.count) 条可核对记录")
+                    .font(AppTypography.metadata())
+                    .foregroundStyle(Color.secondaryInk)
+                ChipFlow(spacing: AppSpacing.xs) {
+                    ForEach(targets) { target in
+                        FilterChip(title: target.title, isSelected: false) {
+                            if let itemID = target.itemID {
+                                onOpenTimelineItem(itemID)
+                            } else if target.opensFootprints {
+                                onOpenFootprints()
+                            } else {
+                                onOpenJournal()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func dailyEvidenceTargets(in snapshot: Snapshot) -> [DailyEvidenceTarget] {
+        let refs = Array(Set(EvidenceReference.extract(from: dailyTaskState?.answer ?? ""))).sorted().prefix(6)
+        let browserVisits = AppDatabase.shared.chromeVisits(for: dateKey)
+        return refs.compactMap { reference in
+            guard let parsed = EvidenceReference.parse(reference) else { return nil }
+            switch parsed.kind {
+            case .raw:
+                guard let id = UUID(uuidString: parsed.value),
+                      let item = snapshot.timeline.items.first(where: { $0.sessions.contains(where: { $0.id == id }) }) else { return nil }
+                return DailyEvidenceTarget(
+                    id: reference,
+                    title: "活动 · \(item.start.formatted(date: .omitted, time: .shortened))",
+                    itemID: item.id
+                )
+            case .capture:
+                guard let id = UUID(uuidString: parsed.value),
+                      let item = snapshot.timeline.items.first(where: { $0.capture?.id == id }) else { return nil }
+                return DailyEvidenceTarget(
+                    id: reference,
+                    title: "快记 · \(item.start.formatted(date: .omitted, time: .shortened))",
+                    itemID: item.id
+                )
+            case .browser:
+                guard let id = UUID(uuidString: parsed.value),
+                      let visit = browserVisits.first(where: { $0.evidenceID == id }) else { return nil }
+                return DailyEvidenceTarget(
+                    id: reference,
+                    title: "Chrome · \(visit.title.isEmpty ? visit.domain : visit.title)",
+                    itemID: nil,
+                    opensFootprints: true
+                )
+            case .location:
+                guard let id = UUID(uuidString: parsed.value),
+                      let title = ai.locationEvidenceTitle(id: id, dayKey: dateKey) else { return nil }
+                return DailyEvidenceTarget(
+                    id: reference,
+                    title: title,
+                    itemID: nil,
+                    opensFootprints: true
+                )
+            case .diary:
+                return DailyEvidenceTarget(id: reference, title: "日记 · \(parsed.value)", itemID: nil)
+            case .health, .episode:
+                return nil
             }
         }
     }
@@ -321,17 +725,26 @@ struct TodayDashboardView: View {
         guard dailyTaskState?.isLoading != true else { return }
         reportError = nil
         let dayEntries = store.entries.filter { $0.date == dateKey }
-        let sessions = activity.liveSessions(for: selectedDate)
+        let sessions = ActivityTimelineEngine.build(
+            for: selectedDate,
+            sessions: activity.liveSessions(for: selectedDate),
+            captures: captures,
+            annotations: store.timelineAnnotations
+        ).sessions
         let success = await ai.runAnalysisDaily(
             entries: dayEntries,
             sessions: sessions,
             captures: captures,
+            browserVisits: AppDatabase.shared.chromeVisits(for: dateKey),
+            annotations: store.timelineAnnotations,
             archiveStartDate: dateKey,
             archiveEndDate: dateKey,
             sourceSummary: "Today · \(sessions.count) 段实时片段 · \(captures.count) 条快记"
         )
         if !success {
             reportError = ai.state(for: .analysisDaily)?.error ?? "日报生成失败，请稍后重试。"
+        } else if ai.state(for: .analysisDaily)?.answer?.hasPrefix(EvidenceReference.unverifiedAnswerPrefix) == true {
+            reportError = "AI 总结没有提供可核对的证据；请先查看本地事实重点。"
         }
     }
 
@@ -425,15 +838,28 @@ struct TodayDashboardView: View {
     // MARK: Review queue
 
     private func evidenceInbox(_ s: Snapshot) -> some View {
-        let items = Array(s.timeline.items
-            .filter(\.needsReview)
+        let digest = ai.storedTimelineDigest(for: dateKey)
+        let currentFingerprint = ai.currentTimelineSourceFingerprint(
+            day: selectedDate,
+            entries: [s.entry],
+            sessions: s.timeline.sessions,
+            captures: s.captures,
+            browserVisits: AppDatabase.shared.chromeVisits(for: dateKey),
+            annotations: store.timelineAnnotations
+        )
+        let clarifications = Dictionary(
+            (digest?.sourceFingerprint == currentFingerprint ? digest?.clarifications ?? [] : []).map { ($0.candidateID, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let items = Array(s.timeline.foldedItems
+            .filter { $0.needsReview || clarifications[$0.id] != nil }
             .sorted { $0.reviewSpan > $1.reviewSpan }
             .prefix(4))
 
         return RiverPanel(
             title: "需要你确认",
             systemImage: "questionmark.circle",
-            detail: items.isEmpty ? "暂无待确认项" : "\(items.count) 条时间片缺少说明",
+            detail: items.isEmpty ? "暂无待确认项" : "\(items.count) 段活动需要补充理解",
             accent: AppTheme.warning
         ) {
             if items.isEmpty {
@@ -448,7 +874,12 @@ struct TodayDashboardView: View {
                 VStack(spacing: density.spacing(AppSpacing.xs)) {
                     ForEach(items) { item in
                         let focusID = "today-review:\(item.id)"
-                        TodayReviewRow(item: item, focus: $inspectorSourceFocusID, focusID: focusID) {
+                        TodayReviewRow(
+                            item: item,
+                            clarification: clarifications[item.id],
+                            focus: $inspectorSourceFocusID,
+                            focusID: focusID
+                        ) {
                             inspectorSourceFocusID = focusID
                             onSelectTimelineItem(item, focusID)
                         }
@@ -469,6 +900,13 @@ private struct TodayCategorySlice: Identifiable {
     let fraction: CGFloat
 
     var id: String { name }
+}
+
+private struct DailyEvidenceTarget: Identifiable {
+    let id: String
+    let title: String
+    let itemID: String?
+    var opensFootprints = false
 }
 
 /// One hero number: label above, value, then the caption that qualifies it.
@@ -567,6 +1005,7 @@ private struct TodayReviewRow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let item: ActivityTimelineItem
+    var clarification: TimelineDigestClarification?
     let focus: FocusState<String?>.Binding
     let focusID: String
     let action: () -> Void
@@ -586,7 +1025,7 @@ private struct TodayReviewRow: View {
                         .font(AppTypography.rowTitle())
                         .foregroundStyle(Color.ink)
                         .lineLimit(1)
-                    Text("\(item.needsReviewReason ?? "待确认") · \(item.start.formatted(date: .omitted, time: .shortened))")
+                    Text("\(clarification?.opening ?? item.needsReviewReason ?? "待确认") · \(item.start.formatted(date: .omitted, time: .shortened))")
                         .font(AppTypography.metadata())
                         .foregroundStyle(Color.secondaryInk)
                 }

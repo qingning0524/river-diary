@@ -153,6 +153,13 @@ struct InspectorPanel: View {
                                 .foregroundStyle(AppTheme.ok)
                         }
                     }
+                    section("为什么这样说") {
+                        Text(explanationText(for: item))
+                            .font(AppTypography.secondary())
+                            .foregroundStyle(Color.secondaryInk)
+                            .lineSpacing(5)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
 
                 section("依据") {
@@ -194,7 +201,7 @@ struct InspectorPanel: View {
                     }
                 }
 
-                section("可信度") {
+                section("依据细度") {
                     confidenceBadge(for: item)
                 }
 
@@ -242,7 +249,10 @@ struct InspectorPanel: View {
             .padding(AppSpacing.panelPadding)
         }
         .riverScrollIndicators()
-        .onAppear { isEditing = false }
+        .onAppear { resetEditingIfNecessary(for: item) }
+        // .episode(A)→.episode(B) 是同一分支、结构身份不变，onAppear 不会重触发；
+        // 编辑草稿必须在节点变化时丢弃，否则 A 的标注会被保存进 B。
+        .onChange(of: item.id) { _, _ in resetEditingIfNecessary(for: item) }
         .confirmationDialog(
             "删除这条快记？",
             isPresented: Binding(
@@ -280,6 +290,22 @@ struct InspectorPanel: View {
         }
     }
 
+    /// 节点切换或面板重新出现时丢弃上一节点的编辑草稿。
+    /// `editingItemID` 记录草稿属于哪个节点；同节点保持草稿（不丢用户输入）。
+    @State private var editingItemID: String?
+
+    private func resetEditingIfNecessary(for item: ActivityTimelineItem) {
+        guard editingItemID != item.id else { return }
+        editingItemID = item.id
+        isEditing = false
+        editingTitle = ""
+        editingNote = ""
+        editingPlaceName = ""
+        editingActivityLabel = ""
+        editingFavorite = false
+        editingReviewed = false
+    }
+
     private func toggleEditing(_ item: ActivityTimelineItem) {
         if isEditing {
             if let key = item.annotationKey {
@@ -306,6 +332,7 @@ struct InspectorPanel: View {
             editingActivityLabel = item.annotation?.activityLabel ?? ""
             editingFavorite = item.annotation?.isFavorite ?? false
             editingReviewed = item.annotation?.isReviewed ?? false
+            editingItemID = item.id
             isEditing = true
         }
     }
@@ -360,22 +387,54 @@ struct InspectorPanel: View {
 
     private func confidenceBadge(for item: ActivityTimelineItem) -> some View {
         let titled = item.sessions.filter { !($0.windowTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
-        let label: String
-        let tone: StatusTone
-        if item.sessions.isEmpty {
-            label = "未知"
-            tone = .neutral
-        } else if titled == item.sessions.count {
-            label = "高"
-            tone = .positive
-        } else if titled > 0 {
-            label = "中"
-            tone = .attention
+        let description: String
+        if item.kind == .capture {
+            description = "这是你写下的快记，时间表示记录时刻。"
+        } else if item.kind == .gap {
+            description = "这里没有实时片段；未记录不代表没有发生。"
+        } else if !hasAnnotationText(item) {
+            if item.sessions.isEmpty {
+                description = "没有可读取的原始活动片段。"
+            } else if titled == item.sessions.count {
+                description = "包含应用名和窗口标题；这些信息仍不能证明完成了什么。"
+            } else if titled > 0 {
+                description = "部分片段包含窗口标题，其余只有应用名。"
+            } else {
+                description = "只有应用名和时长，无法得知具体目标。"
+            }
         } else {
-            label = "低"
-            tone = .neutral
+            description = "包含你添加的标题、活动或地点说明；原始片段仍可在下方核对。"
         }
-        return StatusBadge(label, tone: tone)
+        return Text(description)
+            .font(AppTypography.metadata())
+            .foregroundStyle(Color.secondaryInk)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func hasAnnotationText(_ item: ActivityTimelineItem) -> Bool {
+        guard let annotation = item.annotation?.normalized else { return false }
+        return !annotation.title.isEmpty || !annotation.note.isEmpty
+            || !annotation.placeName.isEmpty || !annotation.activityLabel.isEmpty
+    }
+
+    private func explanationText(for item: ActivityTimelineItem) -> String {
+        if item.kind == .capture {
+            return "这句话由你手动留下，时间线记录的是写下它的时刻。"
+        }
+        if item.kind == .gap {
+            return "这段时间没有实时片段。应用不会把空白解释成休息或未工作。"
+        }
+        if item.isFragmentRun {
+            return "这是一组短片段的展示折叠。展开后能逐条查看；折叠不会改变时长和来源记录。"
+        }
+        if hasAnnotationText(item) {
+            return "标题、地点或活动说明来自你的人工整理。下方保留自动记录，便于核对和修改。"
+        }
+        let appNames = item.apps.prefix(2).map(\.name).joined(separator: "、")
+        if item.sessions.contains(where: { !($0.windowTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+            return "系统记录到前台应用\(appNames.isEmpty ? "" : " \(appNames)")及窗口标题。标题说明屏幕上显示的内容，不自动证明完成了某项工作。"
+        }
+        return "系统只记录到前台应用\(appNames.isEmpty ? "" : " \(appNames)")和时长；具体做了什么仍未知。"
     }
 
     // MARK: Evidence

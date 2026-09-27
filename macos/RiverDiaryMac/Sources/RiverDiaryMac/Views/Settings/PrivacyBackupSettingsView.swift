@@ -34,7 +34,7 @@ struct PrivacyBackupSettingsView: View {
     }
 
     private var storageCard: some View {
-        SettingsGroup(title: "存储状态", detail: store.stateFileSummary) {
+        SettingsGroup(title: "信任与存储", detail: "本机加密、采集时间与数据范围。") {
             RiverPanel {
                 RiverPanelRow(
                     title: store.isEncrypted ? "已加密保护" : "等待首次保存",
@@ -46,6 +46,9 @@ struct PrivacyBackupSettingsView: View {
                     StatusBadge(store.isEncrypted ? "已加密" : "待保存", tone: store.isEncrypted ? .positive : .neutral)
                 }
 
+                RiverValueRow(title: "最近采集", value: lastCaptureText)
+                RiverValueRow(title: "实时片段", value: "\(activity.sessions.count) 段 · 近 365 天")
+                RiverValueRow(title: "项目数据源", value: store.externalSourceURL == nil ? "内置快照" : "已连接")
                 RiverValueRow(title: "修改天数", value: "\(store.localChangeCount) 天")
                 RiverValueRow(title: "快记条数", value: "\(store.quickCaptures.values.reduce(0) { $0 + $1.count }) 条")
                 RiverValueRow(title: "原始快照", value: "\(store.entries.count) 条")
@@ -87,6 +90,14 @@ struct PrivacyBackupSettingsView: View {
                 .padding(.top, AppSpacing.md)
             }
         }
+    }
+
+    private var lastCaptureText: String {
+        if let last = ingestion.lastIngestedAt {
+            let prefix = Calendar.current.isDateInToday(last) ? "今天 " : ""
+            return "\(prefix)\(last.formatted(date: .omitted, time: .shortened))"
+        }
+        return ingestion.enabled ? "等待下一次采集" : "未启用"
     }
 
     private var controlCard: some View {
@@ -170,9 +181,9 @@ struct PrivacyBackupSettingsView: View {
                 }
 
                 EqualWidthRow(spacing: AppSpacing.lg) {
-                    privacyRule("本地优先", "评分、筛选和图表本机完成；AI 仅在手动生成或已开启的定时分析时请求。")
+                    privacyRule("本地优先", "评分、筛选和图表本机完成；启用自动采集与 AI 分析后，打开某天的时间线会整理该日记录，定时采集也会自动整理当天。")
                     privacyRule("密钥保护", "API Key 保存在本机加密文件，并限制为当前用户可读。")
-                    privacyRule("发送范围", "请求发送给当前模型服务商：所选范围的日记、评分、已选来源活动和快记；人工标注与每日目标仅在你手动请求相关 AI 回答时作为候选。窗口标题由单独开关控制。")
+                    privacyRule("发送范围", "自动整理会发送所选日期的日记、快记与已选来源活动；窗口标题、Chrome 页面标题和反向地理编码地点名称各由 AI 设置中的独立开关控制，默认均关闭。地点只发送名称，不发送坐标；关闭自动采集与 AI 分析后，只会在你手动请求时发送相应资料。")
                 }
                 .padding(.top, AppSpacing.md)
             }
@@ -358,6 +369,9 @@ struct PrivacyBackupSettingsView: View {
                     trackingEnabled: activity.isTracking
                 )
             )
+            // 恢复后的 V2 活动证据必须与恢复后的实时层一致（legacy 备份没有
+            // V2 快照，旧证据会残留）。
+            activity.rebuildV2EvidenceAfterRestore()
             report("备份已恢复。", kind: .success)
         } catch {
             report("恢复失败：\(UserFacingError.message(for: error))", kind: .error)

@@ -11,7 +11,7 @@ The current visual baseline follows the provided “daily evidence report” ref
 
 - **Left:** date context and text-first navigation.
 - **Center:** a daily evidence report with a strong date header, one primary action, compact facts, and the river timeline.
-- **Right:** an evidence console that explains the judgment, lists the records used, and offers quick questions.
+- **Right:** a short queue of evidence that needs the user's attention; selecting a row opens the source and correction controls in the inspector.
 - **Material:** warm paper canvas, opaque off-white panels, 1px hairlines, small radii, and generous whitespace.
 - **Accent:** one restrained steel blue for selection, primary actions, evidence bars, links, and timeline nodes.
 - **Language:** every conclusion carries an epistemic label such as `事实`, `推断`, `部分`, or `可纠正`.
@@ -35,10 +35,10 @@ This is a style reference, not a pixel copy. The product keeps native macOS beha
 1. Orientation: selected date, current workspace, source coverage.
 2. Day Brief: what happened in one scan.
 3. Core actions: open timeline, ask, review, correct.
-4. Evidence: sources, confidence, missing data, replay.
+4. Evidence: sources, missing data, limits, replay.
 5. Detail: raw records, derived facts, report versions.
 
-Today uses: Day Brief → 2–3 core interactive cards → compact fact list → river timeline → evidence console.
+Today uses: Day Brief → 2–3 core interactive cards → compact fact list → river timeline → evidence console. Day Brief shows at most three linkable day insights, each marked as an observation, user note, or material item needing explanation; it does not fill unused slots with synthetic conclusions.
 
 ## Navigation
 
@@ -185,15 +185,17 @@ Compact, always visible, keyboard accessible. Shows date and range, not a full c
 
 One concise summary plus observed activity duration, evidence coverage, and status. It must never present an unsupported single life score.
 
+The summary reads from `TimelineAnalysisSnapshot`. Each of at most three insight rows shows its time, short claim, epistemic type and source detail, and opens the matching timeline item. A material unexplained item may occupy one row; ordinary missing time stays unknown without becoming a task. Data coverage describes what was recorded; it is not confidence in an interpretation.
+
 ### Core cards
 
 Cards exist only when they are interactive entry points. Phase 1 shows at most 2–3 prominent cards, prioritizing Work & Learn and Footprints. Other domains use compact rows or expandable details.
 
-Every card has: title, observed value, coverage/confidence, state, primary action, evidence action, and correction action when applicable.
+Every card has: title, observed value, coverage and source state, primary action, evidence action, and correction action when applicable. A confidence score appears only when calibrated for that claim.
 
 ### Timeline
 
-The timeline answers "what happened, and when". It is an evidence table, never a decorative river chart: no gradient spine, glowing app bubbles, animated water or app-icon collage.
+The timeline answers "what happened, and when". Its default `AI 整理` mode presents the day as an automatically prepared reading of nearby activity; `原始记录` remains the complete evidence table. Neither mode is a decorative river chart: no gradient spine, glowing app bubbles or animated water. App logos appear only as small local app identifiers beside an AI activity segment.
 
 The 时间线 page leads with the day, then the ordered rows:
 
@@ -202,14 +204,22 @@ TimelineWorkspaceView          the 时间线 destination
   pinned header                PageHeader + RiverDayRibbon (the whole day, always visible)
   day overview panel           four compact stats, a RiverRule, a coverage footnote
   journal panel                the day's writing, collapsed to a summary until edited
-  timeline panel               filter bar, RiverRule, RiverTimelineView, folding footnote
+  timeline panel               AI 整理 / 原始记录 switch; digest or RiverTimelineView
 ```
 
-`RiverDayRibbon` is the one-glance component: a fixed 00:00–24:00 band, 6-hour guides, one segment per recorded item, and a "现在" tick on today. It is pinned in the header rather than repeated in the body, because it answers a question about the whole day and the row list scrolls away. It exists because a row list can say what happened but only a laid-out day shows *where* the recorded evidence sits and how much of the day holds none. It is deliberately not a chart — no per-category rainbow, no axis drama.
+`RiverDayRibbon` is the one-glance component: a 00:00–24:00 band, 6-hour guides, one segment per recorded item, and a "现在" tick on today. Ordinary days use an even 24-hour scale; local clock-change days map the actual 23/25-hour interval and identify the offset on the time cursor. It is pinned in the header rather than repeated in the body, because it answers a question about the whole day and the row list scrolls away. It exists because a row list can say what happened but only a laid-out day shows *where* the recorded evidence sits and how much of the day holds none. It is deliberately not a chart — no per-category rainbow, no axis drama.
 
-The ribbon is also the page's **scrubber**. Hovering draws a crosshair with the time under the pointer; pressing and dragging walks the day and scrolls the list to the row at that moment; releasing selects it. Dragging onto a folded 碎片带 expands it first — landing on "12 段碎片" without showing which fragment was meant is not an answer. The translation from a moment to a row lives in `TimelineDisplayList.scrubTarget(for:rows:)`, the same code the list renders from, so the two cannot drift.
+The ribbon is also the page's **scrubber**. Hovering draws a crosshair with the time under the pointer and says "未记录" over empty time; pressing and dragging scrolls to evidence only when a row covers that moment. A folded 碎片带 expands and selects the member at that moment. A capture marker has a small hit area matching its visible tick. Clicking empty time never jumps to a nearby row. The translation from a moment to a row lives in `TimelineDisplayList.scrubTarget(for:rows:)`, the same code the list renders from, so the two cannot drift.
 
-Row anatomy (`RiverTimelineView`), all five columns fixed so the eye can scan one column at a time:
+`TimelineAIDigestView` is the default. It shows one short overview, then activity segments grouped by time of day; each segment links back to its contributing `ActivityTimelineItem`s. Overview evidence can open an activity, capture, or the matching journal entry. User captures stay separate and optional. Unknown intervals keep their real start and end, and app-only input is rendered as app usage with unknown detail. A changed source marks the saved digest as old while the debounced refresh runs. If a candidate was not returned by the model, it still appears as a local factual row.
+
+`AIAssistantStore.organizeTimeline` sends candidates only when the existing **自动采集与 AI 分析** preference is enabled and the model connection has been verified. Window titles remain behind their independent preference. The model returns candidate IDs, title and summary; local code validates IDs, grouping gaps and text lengths, then derives timestamps, durations and source sessions from local records. The normalized digest and source fingerprint are stored in `ai_results`; the related `AnalysisRun` is stored as `timelineDigest`. A repeated source fingerprint skips the request. The daily capture schedule and opening a date in Timeline both use this same path; live session updates debounce for 90 seconds.
+
+The model is not allowed to promote app names into task completion, mood, location or intent. Segments without a window title or user annotation use local app/time wording, even if the model returned a more specific sentence. Unsupported JSON or IDs leave the local list readable and report the issue in the AI status line.
+
+App logos are loaded from local application bundles using the recorded bundle ID, grouped by foreground duration and limited to two visible icons plus `+N`. Missing or uninstalled apps use a neutral placeholder. Capture cards do not use app logos.
+
+The `原始记录` mode remains `RiverTimelineView`, an evidence table with five fixed columns:
 
 ```text
 time column      54pt   start over end, monospaced digits, trailing-aligned
@@ -226,7 +236,7 @@ Six rules keep the rows honest, aligned and quiet:
 - **The connector is continuous.** Rows carry no vertical padding of their own — the padding lives inside each column, and the content column supplies the row's height — so a background connector meets the next row's. It is trimmed at the first and last row so the series has two clear ends, and **the trim is computed after expansion**: expanding a 碎片带 inserts child rows, so the run itself is no longer last and its lower half must keep drawing.
 - **The connector is visible.** `Color.timelineSpine` (`accent` blended into the current surface) reads at ≥ 2.2:1 in every palette, and stays lighter than a solid node so a node still reads as a node. A gap's connector uses the neutral `strongSeparator`, and a 碎片带 draws its connector dashed — the same line, saying "this stretch is made of many small pieces".
 - **Alignment is structural, not arithmetic.** The connector repeats the row's own column grid inside its background and is centred in the same spine column that centres the node. Never position it with a computed `offset(x:)`: that drifts from the rendered layout the moment a column width or an inner padding changes.
-- **Meaning never rests on colour alone.** An activity is a solid round accent node with a surface rim; a gap is a hollow neutral ring; a written note is a square; a 碎片带 is a ring with a solid core; a fragment inside an expanded run is a smaller dot, indented. An empty list explains itself: "没有符合条件的节点" is not the same message as "这一天还没有记录".
+- **Meaning never rests on colour alone.** An activity is a 19pt rimmed node with a solid centre; a gap is a hollow neutral ring; a written note is a warm square stamp; a 碎片带 is a rim with two small dots; a fragment inside an expanded run is a smaller dot, indented. Selection adds a larger soft halo. An empty list explains itself: "没有符合条件的节点" is not the same message as "这一天还没有记录".
 - **Hover is not selection.** Hover is a neutral wash (`ink` at 5%) with the detail chevron fading in; selection is `accentSoft` with a 2.5pt accent capsule as its leading rule and `AppRadius.row`. The two must be one glance apart, because a hover state you mistake for a selection makes the list feel broken. (The raised `chip` fill cannot serve as the hover wash: in light mode `accentSoft` and `chip` are within 1.001:1 of each other.)
 - **Affordances earn their ink.** The trailing detail chevron appears only on the hovered or selected row — a permanent column of chevrons is noise on a list where every row is already clickable. The exception is a 碎片带, whose disclosure is always drawn: it is a container, and its collapsed state has to be visible without hovering.
 
@@ -264,18 +274,18 @@ A selected row uses `AppTheme.accentSoft` with a 2.5pt accent capsule as its lea
 - **The keyword classifier cannot know every app.** On the measured machine it mapped the user's main tools to 浏览/其他, which left the 专注 metric effectively empty (4 minutes across 17 days) — a vocabulary gap, not a folding bug. Settings › 记录 › 应用类别 lets the user assign a category per app, and the mapping is applied at **read time**: history recomputes instantly, the raw day files and the V2 evidence layer are never rewritten, and removing a mapping falls back to re-deriving from app name + title. Interpretation is a layer over evidence, never baked into it — the same rule the annotation system follows.
 - **Window titles stay inside three boundaries**: the encrypted local files and backups, the on-screen inspector, and AI requests behind their own explicit toggle. The review range's Markdown export carries aggregates only; the timeline Markdown builder is the only title-bearing export, declares it in its header, and currently has no UI entry.
 
-The 今日 page must not repeat the timeline. It shows the report header, the day brief, entry cards, compact facts and the review queue (`evidenceInbox`), and reaches the timeline through an action — a second copy of the timeline on 今日 was removed for exactly this reason.
+The 今日 page must not repeat the timeline. It shows the report header, the day brief, entry cards, compact facts and the review queue (`evidenceInbox`), and reaches the timeline through an action — a second copy of the timeline on 今日 was removed for exactly this reason. The current live-capture state appears as a small status pill beside today's date, within the main page header; it is not a second card in the right rail or sidebar footer.
 
 ### Evidence console
 
-The console has two states sharing one right-hand column:
+The console and inspector share one right-hand column:
 
-- **Resting (`EvidenceConsoleView`)** — three always-true questions, each a `RiverPanel` at `.inline`: 正在记录 (live capture status: frontmost app, today's total, last save — or an off-state with an explicit start action), 需要你确认 (the day's material unexplained time, see below), 信任 (encryption badge, last capture, V2 evidence scale, session count). Everything is data the app already owns; no decorative widgets.
+- **Review queue (`EvidenceConsoleView`)** — only the day's material unexplained evidence, capped at four prioritized cards. The queue is empty when nothing needs the user's attention; it never fills the rail with collection status or trust information. Starting capture is available from the Today's header when paused.
 - **What earns a confirmation** — the review queue is a triage list, not a to-do list. A node enters it only when it is an **activity** (never a gap — sleep and being away are life, and the daily review already speaks for them, never a 碎片带 whose members are all under three minutes), **at least 20 minutes** (`reviewMaterialityThreshold` — the same unit the console's own copy uses: "系统无法解释的二十分钟"), **and has nothing that explains it**: no window title, no annotation. The first criterion used to be "≥ 3 minutes and missing a window title", which silently degraded into "≥ 3 minutes" once titles were not being captured — the queue was never empty, which is the opposite of what it was built for ("日常状态是空的"). A long block with a title explains itself and does not need confirming. Items are ordered by unexplained duration, longest first, capped at four. Each row offers 写一句 (inline one-line annotation, saved as the node's title and marked reviewed — the timeline renames itself immediately) and 不用管 (mark reviewed silently); tapping the row opens the full evidence detail.
 - **The instrument does not record itself** — `ActivityClassifier.isRecordable` excludes River Diary (by bundle id and name). Time spent looking at the gauge is not observed life; it is excluded from new sessions and from aggregates.
-- **Detail (`InspectorPanel`)** — the selected fact or inference, source records, time range, coverage, confidence, correction controls, and replay entry. It must distinguish facts from explanations without relying on color alone.
+- **Detail (`InspectorPanel`)** — the selected fact, user note, or inference; its time range, original sources, why it is shown, evidence detail, and correction controls. “依据细度” describes whether an app, window title, or user note is present; it does not score semantic truth. The panel distinguishes facts from explanations without relying on color alone.
 
-Each evidence item is a `RiverPanel` at `.inline`, with a tinted `kind` chip, the source metadata in monospaced digits, and a short “why this judgment” explanation. Below 1320pt the column collapses and the detail state opens as the floating Inspector instead.
+Trust and storage information live under Settings › 隐私与备份, alongside encryption, recent collection, evidence coverage, backups and app lock. The compact review rows keep a tinted kind chip, source metadata in monospaced digits and a short “why this needs review” explanation. Below `AppLayout.sideInspectorBreakpoint` the column collapses and the selected detail opens as the floating Inspector instead.
 
 ### Buttons
 
@@ -304,7 +314,7 @@ Every empty state explains what is missing, why it matters, and the next action.
 ## Interaction and accessibility
 
 - Keyboard: previous/next date, Today, range menu, workspace shortcuts, focus evidence, confirm/correct/undo.
-- VoiceOver: announce workspace, selected date/range, card title, observed value, coverage, confidence, and state.
+- VoiceOver: announce workspace, selected date/range, insight type, time range, source state, and whether a row opens evidence or needs explanation.
 - Focus order: date block → workspace navigation → Day Brief → core actions → cards → timeline → evidence console.
 - Do not rely on hover. Use visible affordances and native button/list behavior. Hover is an enhancement, selection is state: hover may add a neutral wash or fade in an affordance, but the selected state is always the stronger one and every hover-only affordance has a keyboard path.
 - Respect reduced motion. State changes must remain understandable without animation.
@@ -312,7 +322,7 @@ Every empty state explains what is missing, why it matters, and the next action.
 
 ## Mac window layouts
 
-- **Wide (≥1320pt):** sidebar + main workspace + the right column is never empty. With no node selected, `EvidenceConsoleView` occupies it as the console's resting state (正在记录 / 需要你确认 / 信任). When a timeline node is selected, the same column is taken over by `InspectorPanel` — resting and detail states share one slot, so the rail never competes with the inspector.
+- **Wide (≥`AppLayout.sideInspectorBreakpoint`):** sidebar + main workspace + the right column shows only the prioritized review queue. When a timeline node is selected, the same column is taken over by `InspectorPanel` — queue and detail share one slot, so the rail never competes with the inspector.
 - **Standard:** sidebar + main workspace; evidence detail opens as a drawer/Inspector; the console is hidden.
 - **Narrow:** sidebar remains navigable; prominent cards become compact rows; evidence and replay open as a sheet or Inspector; never require horizontal scrolling for core actions.
 - The minimum window size preserves date navigation, primary action, Day Brief, and the current evidence state.
@@ -323,7 +333,7 @@ Every empty state explains what is missing, why it matters, and the next action.
 loading       preserve structure; show quiet progress
 empty         explain absence; offer permission or manual action
 partial       show available facts; name missing sources
-success       show observed value, coverage, confidence, action
+success       show observed value, source coverage, and action
 ai-failed     preserve facts; explain unavailable interpretation; retry
 needs-review  show inference and evidence; confirm, edit, or ignore
 stale         show last valid report and why it is outdated
@@ -367,4 +377,3 @@ Then rebuild the shipping app so `dist/` is never stale:
 ```bash
 make mac        # or ./macos/RiverDiaryMac/make_app.sh
 ```
-

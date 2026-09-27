@@ -8,7 +8,7 @@ final class UIArchitectureTests: XCTestCase {
         // 避免"两处入口、一个视图、两种行为"。
         XCTAssertEqual(
             RiverDestination.allCases.map(\.rawValue),
-            ["today", "timeline", "dailyReview", "health", "footprints", "workLearn", "memory", "ask", "progress", "database", "sources"]
+            ["today", "timeline", "dailyReview", "habitReview", "health", "footprints", "workLearn", "memory", "ask", "progress", "database", "sources"]
         )
         XCTAssertFalse(
             RiverDestination.allCases.contains { $0.rawValue == "settings" },
@@ -20,7 +20,7 @@ final class UIArchitectureTests: XCTestCase {
         let shortcuts = RiverDestination.allCases.map(\.navigationShortcut.label)
         XCTAssertEqual(
             shortcuts,
-            ["⌘1", "⌘4", "⌘5", "⌘6", "⌘7", "⌘8", "⌘2", "⌘3", "⌘9", "⌘0", "⌘⇧D"]
+            ["⌘1", "⌘4", "⌘5", "⌘⇧R", "⌘6", "⌘7", "⌘8", "⌘2", "⌘3", "⌘9", "⌘0", "⌘⇧D"]
         )
         XCTAssertEqual(Set(shortcuts).count, RiverDestination.allCases.count)
     }

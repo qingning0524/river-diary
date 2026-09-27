@@ -84,6 +84,8 @@ final class DiaryStore: ObservableObject {
     @Published private(set) var careAcknowledgments: Set<String> = []
     @Published private(set) var autoDraftPaused = false
     @Published private(set) var draftPausedUntil: Date?
+    /// 未保存的河流信草稿（按月键）；持久化在加密状态文件里。
+    @Published private(set) var letterDrafts: [String: String] = [:]
     @Published private(set) var externalSourceURL: URL?
     @Published private(set) var externalSourceError: String?
     @Published private(set) var externalSourceModifiedAt: Date?
@@ -563,6 +565,12 @@ final class DiaryStore: ObservableObject {
     }
 
     func clearLocalJournal() {
+        // 其余所有变更入口都有这个守卫：状态文件不可读（例如恢复后密钥不匹配）
+        // 时它可能仍含可抢救的用户数据，此时不允许执行破坏性清空。
+        guard !localStateReadFailed else {
+            saveState = .failed("本地状态当前不可读，为避免误删可恢复的数据，已跳过清空。")
+            return
+        }
         let previousOverrides = overrides
         let previousGoals = dailyGoals
         let previousDrafts = journalDrafts
@@ -570,6 +578,8 @@ final class DiaryStore: ObservableObject {
         let previousCare = careAcknowledgments
         let previousQueries = savedQueries
         let previousData = data
+        let previousAutoPaused = autoDraftPaused
+        let previousPausedUntil = draftPausedUntil
 
         overrides = [:]
         dailyGoals = [:]
@@ -577,6 +587,8 @@ final class DiaryStore: ObservableObject {
         dismissedDrafts = []
         careAcknowledgments = []
         savedQueries = []
+        autoDraftPaused = false
+        draftPausedUntil = nil
         hasLocalChanges = hasPersistentLocalEdits
         saveState = .idle
 
@@ -608,9 +620,55 @@ final class DiaryStore: ObservableObject {
             careAcknowledgments = previousCare
             savedQueries = previousQueries
             data = previousData
+            autoDraftPaused = previousAutoPaused
+            draftPausedUntil = previousPausedUntil
             hasLocalChanges = hasPersistentLocalEdits
             saveState = .failed(UserFacingError.message(for: error))
         }
+    }
+
+    // MARK: 河流信草稿
+
+    func letterDraft(for month: String) -> String? {
+        letterDrafts[month]
+    }
+
+    func saveLetterDraft(_ body: String, for month: String) {
+        let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.isEmpty == false else {
+            discardLetterDraft(for: month)
+            return
+        }
+        letterDrafts[month] = body
+        do {
+            try persistCurrentState()
+        } catch {
+            // 草稿保存失败不打断输入；下次变更会再试。
+        }
+    }
+
+    func discardLetterDraft(for month: String) {
+        guard letterDrafts[month] != nil else { return }
+        letterDrafts[month] = nil
+        try? persistCurrentState()
+    }
+
+    private func persistCurrentState() throws {
+        let state = UserState(
+            entries: overrides,
+            quickCaptures: quickCaptures,
+            dismissedDrafts: dismissedDrafts.reduce(into: [:]) { result, value in result[value] = Date() },
+            careAcknowledgments: careAcknowledgments.reduce(into: [:]) { result, value in result[value] = Date() },
+            autoDraftPaused: autoDraftPaused,
+            draftPausedUntil: draftPausedUntil,
+            monthlyLetters: monthlyLetters,
+            savedQueries: savedQueries,
+            timelineAnnotations: timelineAnnotations,
+            dailyGoals: dailyGoals,
+            journalDrafts: journalDrafts,
+            letterDrafts: letterDrafts
+        )
+        try persist(state)
     }
 
     func connectExternalSnapshot(to url: URL) {
@@ -664,12 +722,18 @@ final class DiaryStore: ObservableObject {
         loadExternalOrBundledSnapshot()
 
         if addedCaptures {
+            // 与 addQuickCapture 同一纪律：先记快照，持久化失败整体回滚，
+            // 不能让内存里"看得见"的快记与磁盘分叉。
+            let previousCaptures = quickCaptures
+            let previouslyChanged = hasLocalChanges
             hasLocalChanges = true
             saveState = .saving
             do {
                 try persist()
                 saveState = .saved(Date())
             } catch {
+                quickCaptures = previousCaptures
+                hasLocalChanges = previouslyChanged
                 saveState = .failed(UserFacingError.message(for: error))
             }
         }
@@ -692,11 +756,14 @@ final class DiaryStore: ObservableObject {
         }
 
         // Add quick notes from the record
+        // 去重谓词与 applyIngestedData 完全一致：note.createdAt 为 nil 时
+        // 只按文本判重（回退时间戳是合成值，不参与比较），否则会出现
+        // "同一句话被两条摄取路径各自落一份"的持久化重复。
         for note in record.quickNotes {
             let existing = quickCaptures[date] ?? []
             let createdAt = note.createdAt ?? DiaryEntry.dateFormatter.date(from: date)?.addingTimeInterval(12 * 3600) ?? Date()
             let alreadyExists = existing.contains { capture in
-                capture.text == note.text && abs(capture.createdAt.timeIntervalSince(createdAt)) < 60
+                capture.text == note.text && (note.createdAt == nil || abs(capture.createdAt.timeIntervalSince(createdAt)) < 60)
             }
             guard !alreadyExists else { continue }
             quickCaptures[date, default: []].append(
@@ -706,12 +773,16 @@ final class DiaryStore: ObservableObject {
         }
 
         // Reload and merge
+        let previousCaptures = quickCaptures
+        let previouslyChanged = hasLocalChanges
         loadExternalOrBundledSnapshot()
 
         if hasLocalChanges {
             do {
                 try persist()
             } catch {
+                quickCaptures = previousCaptures
+                hasLocalChanges = previouslyChanged
                 saveState = .failed(UserFacingError.message(for: error))
             }
         }
@@ -888,6 +959,7 @@ final class DiaryStore: ObservableObject {
 
             overrides = payload.overrides
             quickCaptures = payload.quickCaptures
+            letterDrafts = [:]
             dailyGoals = payload.dailyGoals ?? [:]
             journalDrafts = payload.journalDrafts ?? [:]
             monthlyLetters = payload.monthlyLetters ?? [:]
@@ -914,7 +986,8 @@ final class DiaryStore: ObservableObject {
                 timelineAnnotations: payload.timelineAnnotations ?? [:],
                 dailyGoals: payload.dailyGoals ?? [:],
                 journalDrafts: payload.journalDrafts ?? [:]
-            )
+            ,
+            letterDrafts: [:])
             try persist(restoredState)
 
             loadExternalOrBundledSnapshot()
@@ -1008,6 +1081,8 @@ final class DiaryStore: ObservableObject {
                 let state = try decoder.decode(UserState.self, from: plaintext)
                 overrides = state.entries
                 quickCaptures = state.quickCaptures ?? [:]
+                letterDrafts = state.letterDrafts ?? [:]
+                letterDrafts = state.letterDrafts ?? [:]
                 monthlyLetters = state.monthlyLetters ?? [:]
                 savedQueries = state.savedQueries ?? []
                 timelineAnnotations = state.timelineAnnotations ?? [:]
@@ -1264,7 +1339,8 @@ final class DiaryStore: ObservableObject {
             savedQueries: replacementQueries ?? savedQueries,
             timelineAnnotations: replacementAnnotations ?? timelineAnnotations,
             dailyGoals: replacementDailyGoals ?? dailyGoals,
-            journalDrafts: replacementJournalDrafts ?? journalDrafts
+            journalDrafts: replacementJournalDrafts ?? journalDrafts,
+            letterDrafts: letterDrafts
         )
         try persist(state)
     }
@@ -1278,12 +1354,13 @@ final class DiaryStore: ObservableObject {
         encoder.dateEncodingStrategy = .iso8601
         let plaintext = try encoder.encode(state)
         let encrypted = try StateEncryption.encrypt(plaintext)
-        try encrypted.write(to: stateURL, options: .atomic)
-        try LocalStorageProtection.protectFile(at: stateURL)
-
+        // 目录检查必须在写文件之前：写在前的原子写会因为目录不存在直接抛错，
+        // 这段"兜底建目录"就永远执行不到。
         if !fileManager.fileExists(atPath: supportDirectory.path) {
             try fileManager.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
         }
+        try encrypted.write(to: stateURL, options: .atomic)
+        try LocalStorageProtection.protectFile(at: stateURL)
         isEncrypted = true
     }
 }

@@ -94,10 +94,17 @@ final class LocationSourceStore: NSObject, ObservableObject, CLLocationManagerDe
             guard let self else { return }
             latestLocation = location
             record(location)
+            let geocodedTimestamp = location.timestamp
             geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, _ in
                 let name = placemarks?.first?.name ?? placemarks?.first?.locality
                 Task { @MainActor [weak self] in
                     guard let self else { return }
+                    // 三个防错规则：
+                    // 1) 只接受仍然对应最新定位的 geocode 结果——迟到的旧结果
+                    //    会把新地点标成旧地名；
+                    // 2) 失败/取消返回 nil 时不得把已有的好名字抹掉；
+                    // 3) 时间戳早于当前 latestLocation 的结果一律丢弃。
+                    guard name != nil, let delta = self.latestLocation?.timestamp.timeIntervalSince(geocodedTimestamp), delta < 0.5 else { return }
                     latestPlaceName = name
                 }
             }
@@ -105,6 +112,12 @@ final class LocationSourceStore: NSObject, ObservableObject, CLLocationManagerDe
     }
 
     private func record(_ location: CLLocation) {
+        // 无效定位（accuracy < 0）不进入"append-only 证据"：
+        // 它的坐标无意义，距离节流比较还会因 NaN 退化为"总是记录"。
+        guard location.horizontalAccuracy >= 0 else { return }
+        // 明显陈旧的缓存 fix 不作为当前证据写入。
+        if let age = Calendar.current.dateComponents([.second], from: location.timestamp, to: Date()).second,
+           age > 300 { return }
         if let lastRecordedLocation,
            let lastRecordedAt,
            location.timestamp.timeIntervalSince(lastRecordedAt) < 60,

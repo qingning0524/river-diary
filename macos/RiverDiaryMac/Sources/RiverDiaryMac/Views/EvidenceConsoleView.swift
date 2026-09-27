@@ -1,13 +1,7 @@
 import SwiftUI
 
-/// 常驻证据控制台（右栏静息态）。
-///
-/// DESIGN.md 规划的"右侧证据控制台"：宽窗（≥1320pt）且未选中任何节点时，
-/// 右列不停留在空白，而是回答三个始终成立的问题——
-/// 仪器在工作吗（正在记录）、有什么需要我纠正（待确认）、数据在我手里吗（信任）。
-/// 选中时间线节点后，同一列被证据详情（InspectorPanel）接管。
-///
-/// 窄窗下整列收起，不挤压内容。
+/// 常驻待确认队列。实时记录状态位于今日页，信任与存储信息位于设置；
+/// 右栏只呈现需要用户补充或确认的证据。选中时间线节点后，InspectorPanel 接管此列。
 struct EvidenceConsoleView: View {
     @Environment(\.riverDensity) private var density
     @EnvironmentObject private var feedbackCenter: FeedbackCenter
@@ -17,12 +11,9 @@ struct EvidenceConsoleView: View {
     @FocusState private var annotationFieldFocused: Bool
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
-    @ObservedObject var ingestion: DataIngestionStore
-    /// 与全进程共享的 V2 连接；信任卡读取证据规模。
-    let v2Store: V2Store
+    @ObservedObject var ai: AIAssistantStore
     let selectedDate: Date
     var onSelectTimelineItem: (ActivityTimelineItem, String) -> Void
-    var onStartTracking: () -> Void
 
     private var entry: DiaryEntry { store.entry(for: selectedDate) }
 
@@ -39,9 +30,7 @@ struct EvidenceConsoleView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
-                nowCard
                 reviewQueueCard
-                trustCard
             }
             .padding(.leading, density.spacing(AppSpacing.md))
             .padding(.trailing, density.spacing(AppSpacing.page))
@@ -54,88 +43,34 @@ struct EvidenceConsoleView: View {
         .overlay(alignment: .leading) { RiverRule().frame(width: 1) }
     }
 
-    // MARK: - 正在记录
-
-    private var nowCard: some View {
-        RiverPanel(title: "正在记录", systemImage: "dot.radiowaves.left.and.right", accent: AppTheme.accent) {
-            if activity.isTracking {
-                VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
-                    if let active = activity.activeSession {
-                        HStack(spacing: density.spacing(AppSpacing.sm)) {
-                            Circle()
-                                .fill(AppTheme.recording)
-                                .frame(width: 7, height: 7)
-                                .accessibilityHidden(true)
-                            Text(active.appName)
-                                .font(AppTypography.rowTitle())
-                                .foregroundStyle(Color.ink)
-                                .lineLimit(1)
-                            Spacer(minLength: 0)
-                            Text(ActivityFormatter.time(Date().timeIntervalSince(active.start)))
-                                .font(AppTypography.numeric())
-                                .foregroundStyle(Color.secondaryInk)
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("正在记录 \(active.appName)，已持续 \(ActivityFormatter.time(Date().timeIntervalSince(active.start)))")
-                    } else {
-                        Text("当前没有前台片段；应用切换后会自动继续。")
-                            .font(AppTypography.metadata())
-                            .foregroundStyle(Color.secondaryInk)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    todayTotalRow
-                    if let saved = activity.lastSavedAt {
-                        Text("上次保存 \(saved.formatted(date: .omitted, time: .shortened))")
-                            .font(AppTypography.metadata())
-                            .foregroundStyle(Color.tertiaryInk)
-                    }
-                }
-            } else {
-                VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
-                    Text("实时记录未开启。")
-                        .font(AppTypography.secondary())
-                        .foregroundStyle(Color.secondaryInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Button("开始记录") { onStartTracking() }
-                        .buttonStyle(.plain)
-                        .smallAction()
-                }
-            }
-        }
-    }
-
-    private var todayTotalRow: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text("今日已记录")
-                .font(AppTypography.label())
-                .foregroundStyle(Color.secondaryInk)
-            Spacer(minLength: 0)
-            Text(ActivityFormatter.time(todayTotal))
-                .font(AppTypography.numeric())
-                .foregroundStyle(Color.ink)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private var todayTotal: TimeInterval {
-        activity
-            .liveSessions(for: Date())
-            .reduce(0) { $0 + max($1.duration, $1.end.timeIntervalSince($1.start)) }
-    }
-
     // MARK: - 待确认
 
     private var reviewQueueCard: some View {
         let timeline = buildTimeline()
-        let items = Array(timeline.items
-            .filter(\.needsReview)
+        let dayKey = DiaryEntry.dateFormatter.string(from: selectedDate)
+        let digest = ai.storedTimelineDigest(for: dayKey)
+        let currentFingerprint = ai.currentTimelineSourceFingerprint(
+            day: selectedDate,
+            entries: [entry],
+            sessions: timeline.sessions,
+            captures: store.captures(for: entry),
+            browserVisits: AppDatabase.shared.chromeVisits(for: dayKey),
+            annotations: store.timelineAnnotations
+        )
+        let clarifications = Dictionary(
+            (digest?.sourceFingerprint == currentFingerprint ? digest?.clarifications ?? [] : [])
+                .map { ($0.candidateID, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let items = Array(timeline.foldedItems
+            .filter { $0.needsReview || clarifications[$0.id] != nil }
             .sorted { $0.reviewSpan > $1.reviewSpan }
             .prefix(4))
 
         return RiverPanel(
             title: "需要你确认",
             systemImage: "questionmark.circle",
-            detail: items.isEmpty ? "没有待确认项" : "\(items.count) 条",
+            detail: items.isEmpty ? "没有待确认项" : "\(items.count) 段活动需要补充理解",
             accent: AppTheme.warning
         ) {
             if items.isEmpty {
@@ -151,11 +86,11 @@ struct EvidenceConsoleView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        consoleReviewRow(item)
+                        consoleReviewRow(item, clarification: clarifications[item.id])
                         if index < items.count - 1 { RiverRowDivider(inset: density.spacing(AppSpacing.sm)) }
                     }
                 }
-                Text("写一句补全说明，或标记不用管；点行打开证据详情。")
+                Text("AI 的观察只针对这段记录；你可以用自己的话补充，或点行查看来源。")
                     .font(AppTypography.metadata())
                     .foregroundStyle(Color.tertiaryInk)
                     .fixedSize(horizontal: false, vertical: true)
@@ -169,7 +104,7 @@ struct EvidenceConsoleView: View {
     /// 一条待确认证据：是什么、为什么待确认（原因 + 时间范围）、多长，
     /// 以及两个动作——"写一句"补全说明（主），"不用管"标记已知（次）。
     /// 点行本身仍打开完整证据详情。
-    private func consoleReviewRow(_ item: ActivityTimelineItem) -> some View {
+    private func consoleReviewRow(_ item: ActivityTimelineItem, clarification: TimelineDigestClarification?) -> some View {
         let spanText = item.duration >= 60
             ? ActivityFormatter.time(item.duration)
             : "不到 1 分钟"
@@ -181,7 +116,7 @@ struct EvidenceConsoleView: View {
                         .font(AppTypography.rowTitle())
                         .foregroundStyle(Color.ink)
                         .lineLimit(1)
-                    Text("\(item.needsReviewReason ?? "待确认") · \(item.start.formatted(date: .omitted, time: .shortened))–\(item.end.formatted(date: .omitted, time: .shortened))")
+                    Text("\(clarification?.opening ?? item.needsReviewReason ?? "待确认") · \(item.start.formatted(date: .omitted, time: .shortened))–\(item.end.formatted(date: .omitted, time: .shortened))")
                         .font(AppTypography.metadata())
                         .foregroundStyle(Color.tertiaryInk)
                         .lineLimit(1)
@@ -197,7 +132,7 @@ struct EvidenceConsoleView: View {
 
             if isAnnotating {
                 HStack(spacing: density.spacing(AppSpacing.xs)) {
-                    TextField("写一句说明，比如：备课时间", text: $annotationDraft)
+                    TextField("用自己的话补充或纠正这段活动", text: $annotationDraft)
                         .textFieldStyle(.plain)
                         .font(AppTypography.secondary())
                         .focused($annotationFieldFocused)
@@ -262,9 +197,41 @@ struct EvidenceConsoleView: View {
             try store.saveTimelineAnnotation(annotation, for: key)
             feedbackCenter.show("已补充：\(trimmed)", kind: .success)
             closeAnnotating()
+            Task { await reanalyzeSelectedDayAfterCorrection() }
         } catch {
             feedbackCenter.show("保存失败：\(UserFacingError.message(for: error))", kind: .error)
         }
+    }
+
+    @MainActor
+    private func reanalyzeSelectedDayAfterCorrection() async {
+        guard ai.analysisReady else { return }
+        let dayKey = DiaryEntry.dateFormatter.string(from: selectedDate)
+        let dayEntry = store.entry(for: selectedDate)
+        let dayCaptures = store.captures(for: dayEntry)
+        let sessions = activity.liveSessions(for: selectedDate)
+        let browserVisits = AppDatabase.shared.chromeVisits(for: dayKey)
+        let dayEntries = store.entries.filter { $0.date == dayKey }
+        let annotations = store.timelineAnnotations
+        _ = await ai.organizeTimeline(
+            day: selectedDate,
+            entries: dayEntries,
+            sessions: sessions,
+            captures: dayCaptures,
+            browserVisits: browserVisits,
+            annotations: annotations,
+            sourceSummary: "用户补充时间线 · \(dayKey)"
+        )
+        _ = await ai.runAnalysisDaily(
+            entries: dayEntries,
+            sessions: sessions,
+            captures: dayCaptures,
+            browserVisits: browserVisits,
+            annotations: annotations,
+            archiveStartDate: dayKey,
+            archiveEndDate: dayKey,
+            sourceSummary: "用户补充后重新理解当天 · \(dayKey)"
+        )
     }
 
     /// "不用管"：我知道这段时间是什么，不需要说明。
@@ -281,51 +248,4 @@ struct EvidenceConsoleView: View {
         }
     }
 
-    // MARK: - 信任
-
-    private var trustCard: some View {
-        RiverPanel(title: "信任", systemImage: "lock.shield", accent: AppTheme.ok) {
-            VStack(spacing: 0) {
-                HStack(spacing: density.spacing(AppSpacing.sm)) {
-                    Text("本机加密")
-                        .font(AppTypography.label())
-                        .foregroundStyle(Color.secondaryInk)
-                    Spacer(minLength: 0)
-                    StatusBadge(store.isEncrypted ? "已开启" : "未开启", tone: store.isEncrypted ? .positive : .attention)
-                }
-                .padding(.vertical, density.spacing(6))
-                RiverRowDivider(inset: 0)
-                trustRow(title: "上次采集", value: lastCaptureText)
-                trustRow(title: "V2 证据", value: "\(v2Store.countRows(in: .rawEvents)) 条原始事件")
-                trustRow(title: "实时片段", value: "\(activity.sessions.count) 段 · 近 365 天", showsDivider: false)
-            }
-        }
-    }
-
-    private var lastCaptureText: String {
-        if let last = ingestion.lastIngestedAt {
-            let prefix = Calendar.current.isDateInToday(last) ? "今天 " : ""
-            return "\(prefix)\(last.formatted(date: .omitted, time: .shortened))"
-        }
-        return ingestion.enabled ? "等待下一次采集" : "未启用"
-    }
-
-    private func trustRow(title: String, value: String, showsDivider: Bool = true) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-                .font(AppTypography.label())
-                .foregroundStyle(Color.secondaryInk)
-            Spacer(minLength: 0)
-            Text(value)
-                .font(AppTypography.metadata())
-                .foregroundStyle(Color.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-        }
-        .padding(.vertical, density.spacing(6))
-        .overlay(alignment: .bottom) {
-            if showsDivider { RiverRowDivider(inset: 0) }
-        }
-        .accessibilityElement(children: .combine)
-    }
 }

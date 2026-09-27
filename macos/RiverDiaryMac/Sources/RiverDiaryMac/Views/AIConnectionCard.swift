@@ -16,6 +16,7 @@ struct AIConnectionCard: View {
                     endpointRow
                     if ai.providerRequiresAPIKey { apiKeyRow }
                     modelRow
+                    contextPrivacyRow
                     actionRow
                 }
             }
@@ -77,7 +78,23 @@ struct AIConnectionCard: View {
                 .labelsHidden()
                 .frame(width: 150)
 
+            }
+        }
+    }
+
+    private var contextPrivacyRow: some View {
+        RiverPanelRow(
+            title: "发送给模型的上下文",
+            detail: "窗口标题、Chrome 页面标题和附近地名可帮助理解活动；各自独立控制，不发送坐标或完整网址。"
+        ) {
+            VStack(alignment: .leading, spacing: AppSpacing.xs) {
                 Toggle("发送窗口标题", isOn: $ai.includeTitles)
+                    .toggleStyle(.switch)
+                    .font(AppTypography.label())
+                Toggle("发送 Chrome 页面标题", isOn: $ai.includeBrowserHistory)
+                    .toggleStyle(.switch)
+                    .font(AppTypography.label())
+                Toggle("发送地点名称", isOn: $ai.includePlaceNames)
                     .toggleStyle(.switch)
                     .font(AppTypography.label())
             }
