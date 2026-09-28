@@ -277,6 +277,33 @@ final class DatabaseCipherTests: XCTestCase {
     }
 
     @MainActor
+    func testFutureBackupVersionIsRejectedWithoutChangingLocalState() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("river-future-backup-version-\(UUID().uuidString)", isDirectory: true)
+        try LocalStorageProtection.ensurePrivateDirectory(at: directory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let backup = LocalBackupPayload(
+            version: LocalBackupPayload.currentVersion + 1,
+            exportedAt: Date(),
+            overrides: [:],
+            quickCaptures: [:],
+            dismissedDrafts: [:],
+            careAcknowledgments: [:]
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        let backupURL = directory.appendingPathComponent("future.riverbackup")
+        try StateEncryption.encrypt(try encoder.encode(backup)).write(to: backupURL)
+
+        let diary = DiaryStore(supportDirectory: directory.appendingPathComponent("state", isDirectory: true))
+        diary.saveLetterDraft("现有本地草稿", for: "2026-09")
+        XCTAssertThrowsError(try diary.restoreFullBackup(from: backupURL))
+        XCTAssertEqual(diary.letterDraft(for: "2026-09"), "现有本地草稿")
+    }
+
+    @MainActor
     func testFailedFullBackupRestoreRollsBackLegacyV2AndJournalState() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("river-full-backup-rollback-\(UUID().uuidString)", isDirectory: true)

@@ -10,7 +10,8 @@ enum JournalSaveState: Equatable {
 }
 
 struct LocalBackupPayload: Codable {
-    var version = 6
+    static let currentVersion = 6
+    var version = currentVersion
     var exportedAt: Date
     var sourcePath: String?
     var data: DiaryData?
@@ -1369,6 +1370,13 @@ final class DiaryStore: ObservableObject {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let payload = try decoder.decode(LocalBackupPayload.self, from: plaintext)
+        guard (1...LocalBackupPayload.currentVersion).contains(payload.version) else {
+            throw NSError(
+                domain: "RiverDiaryMac",
+                code: 16,
+                userInfo: [NSLocalizedDescriptionKey: "备份版本高于当前应用支持范围；请使用更新版本的 River Diary 恢复。"]
+            )
+        }
         try validateDatabaseSnapshots?(payload.legacyDatabaseSnapshot, payload.v2DatabaseSnapshot)
 
         guard (restoreActivity == nil && restoreDatabaseSnapshots == nil) || rollbackExternalData != nil else {
