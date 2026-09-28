@@ -59,6 +59,14 @@ struct RiverDiaryMacApp: App {
         let activityStore = ActivityStore(v2Store: sharedV2)
         diaryStore.onQuickCaptureSaved = { activityStore.replicateQuickCapture($0) }
         diaryStore.onQuickCaptureRemoved = { activityStore.tombstoneQuickCapture($0) }
+        diaryStore.onQuickCaptureMetadataChanged = { sharedV2.saveSharedUserRecord($0) }
+        diaryStore.loadSharedQuickCaptureMetadata = {
+            Dictionary(uniqueKeysWithValues: sharedV2.sharedUserRecords().compactMap { record in
+                guard record.kind == .quickCaptureMetadata, record.status == "current",
+                      let metadata = record.quickCaptureMetadata else { return nil }
+                return (metadata.eventID, metadata)
+            })
+        }
         diaryStore.onSharedJournalEntryChanged = { sharedV2.saveSharedUserRecord($0) }
         diaryStore.onSharedMonthlyLetterChanged = { sharedV2.saveSharedUserRecord($0) }
         diaryStore.onMoodScoreChanged = { day, score, updatedAt in

@@ -124,6 +124,18 @@ struct RiverNodeTimelineView: View {
                 .font(.caption2.monospaced())
                 .foregroundStyle(.tertiary)
             }
+            if let metadata = quickCaptureMetadata(for: item) {
+                HStack(spacing: 8) {
+                    if let tag = metadata.tag, !tag.isEmpty {
+                        Label(tag, systemImage: "tag")
+                    }
+                    if metadata.isPinned {
+                        Label("置顶", systemImage: "pin.fill")
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
             Spacer(minLength: 0)
         }
         .padding(.vertical, 4)
@@ -204,6 +216,14 @@ struct RiverNodeTimelineView: View {
             return text
         }
         return item.event.kind
+    }
+
+    private func quickCaptureMetadata(for item: RiverTimelineEvent) -> RiverQuickCaptureMetadata? {
+        guard ["quickCapture", "manual.quickCapture", "manual.note"].contains(item.event.kind) else { return nil }
+        return node.database?.sharedUserRecords.first {
+            $0.kind == .quickCaptureMetadata && $0.status == "current"
+                && $0.logicalKey == item.event.id.uuidString.lowercased()
+        }?.quickCaptureMetadata
     }
 }
 

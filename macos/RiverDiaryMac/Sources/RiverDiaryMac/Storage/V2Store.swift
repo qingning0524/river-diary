@@ -1790,11 +1790,17 @@ final class V2Store {
     }
 
     func sharedUserRecords() -> [RiverSharedStateRecord] {
-        StateOperationResolver.resolve(allStateOperations()).currentByField.values.compactMap { operation in
+        let operations = allStateOperations()
+        let tombstones = StateOperationResolver.tombstonedObjectIDs(operations)
+        return StateOperationResolver.resolve(operations).currentByField.values.compactMap { operation in
             guard operation.operationType == "shared.record.upsert", operation.fieldKey == "record",
                   let record = try? JSONDecoder().decode(RiverSharedStateRecord.self, from: operation.payload),
                   record.targetID == operation.targetID else { return nil }
             return record
+        }.filter { record in
+            guard record.kind == .quickCaptureMetadata,
+                  let metadata = record.quickCaptureMetadata else { return true }
+            return !tombstones.contains("event:\(metadata.eventID.uuidString)")
         }.sorted {
             if $0.kind != $1.kind { return $0.kind.rawValue < $1.kind.rawValue }
             if $0.createdAt != $1.createdAt { return $0.createdAt < $1.createdAt }
@@ -2917,7 +2923,7 @@ extension V2Store: RiverSyncLocalStore {
                     else { sqlite3_bind_null(statement, 8) }
                     sqlite3_bind_int64(statement, 9, memory.isUserConfirmed ? 1 : 0)
                 }
-            case .pendingConfirmation, .journalEntry, .monthlyLetter, .unknown:
+            case .pendingConfirmation, .journalEntry, .monthlyLetter, .quickCaptureMetadata, .unknown:
                 // These records are read directly from the canonical operation projection.
                 ok = true
             }

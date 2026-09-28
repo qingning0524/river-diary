@@ -582,4 +582,22 @@ struct ReplicationCoreTests {
         #expect(first.pendingConfirmationContent?.targetID == "1700000000|com.example.editor|Editor")
         #expect(first.pendingConfirmationContent?.evidenceRefs == ["raw:event-1", "raw:event-2"])
     }
+
+    @Test func quickCaptureMetadataRecordHasStableIdentityAndSharedPinState() throws {
+        let eventID = UUID(uuidString: "00000000-0000-0000-0000-000000000654")!
+        let content = RiverQuickCaptureMetadata(
+            eventID: eventID, tag: "灵感", isPinned: true, updatedAt: Date(timeIntervalSince1970: 100)
+        )
+        let first = try #require(RiverSharedStateRecord.quickCaptureMetadata(content))
+        let second = try #require(RiverSharedStateRecord.quickCaptureMetadata(content))
+        #expect(first == second)
+        #expect(first.quickCaptureMetadata == content)
+        #expect(first.logicalKey == eventID.uuidString.lowercased())
+        #expect(RiverStateOperationFreshness.changesAnalyticalState(StateOperation(
+            actorDeviceID: RiverDeviceID(rawValue: "mac_capture"),
+            clock: HybridLogicalClock(physicalMilliseconds: 100, deviceID: RiverDeviceID(rawValue: "mac_capture")),
+            causalFrontier: try InputFrontier(), targetID: first.targetID, fieldKey: "record",
+            operationType: "shared.record.upsert", payload: try JSONEncoder().encode(first)
+        )))
+    }
 }

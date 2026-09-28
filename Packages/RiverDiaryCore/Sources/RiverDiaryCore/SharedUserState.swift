@@ -12,6 +12,7 @@ public enum RiverSharedStateRecordKind: Hashable, Sendable, Codable {
     case pendingConfirmation
     case journalEntry
     case monthlyLetter
+    case quickCaptureMetadata
     case unknown(String)
 
     public var rawValue: String {
@@ -23,6 +24,7 @@ public enum RiverSharedStateRecordKind: Hashable, Sendable, Codable {
         case .pendingConfirmation: "pendingConfirmation"
         case .journalEntry: "journalEntry"
         case .monthlyLetter: "monthlyLetter"
+        case .quickCaptureMetadata: "quickCaptureMetadata"
         case .unknown(let value): value
         }
     }
@@ -36,6 +38,7 @@ public enum RiverSharedStateRecordKind: Hashable, Sendable, Codable {
         case "pendingConfirmation": self = .pendingConfirmation
         case "journalEntry": self = .journalEntry
         case "monthlyLetter": self = .monthlyLetter
+        case "quickCaptureMetadata": self = .quickCaptureMetadata
         default: self = .unknown(rawValue)
         }
     }
@@ -111,6 +114,20 @@ public struct RiverMoodScoreReset: Codable, Hashable, Sendable {
     public let day: String
 
     public init(day: String) { self.day = day }
+}
+
+public struct RiverQuickCaptureMetadata: Codable, Hashable, Sendable {
+    public let eventID: UUID
+    public let tag: String?
+    public let isPinned: Bool
+    public let updatedAt: Date
+
+    public init(eventID: UUID, tag: String? = nil, isPinned: Bool = false, updatedAt: Date = Date()) {
+        self.eventID = eventID
+        self.tag = tag
+        self.isPinned = isPinned
+        self.updatedAt = updatedAt
+    }
 }
 
 /// Codable payload shared with the Mac TimelineAnnotation projection so a
@@ -195,6 +212,11 @@ public extension RiverSharedStateRecord {
         return try? JSONDecoder().decode(RiverMonthlyLetterContent.self, from: data)
     }
 
+    var quickCaptureMetadata: RiverQuickCaptureMetadata? {
+        guard kind == .quickCaptureMetadata, let data = payloadJSON.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(RiverQuickCaptureMetadata.self, from: data)
+    }
+
     static func journalEntry(_ content: RiverJournalEntryContent, status: String = "current") -> Self? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -213,6 +235,17 @@ public extension RiverSharedStateRecord {
         let id = RiverStableIdentifier.uuid(namespace: "monthly-letter", key: content.monthKey)
         return Self(id: id, kind: .monthlyLetter, status: "current", logicalKey: content.monthKey,
                     payloadJSON: payload, createdAt: content.createdAt, updatedAt: content.updatedAt)
+    }
+
+    static func quickCaptureMetadata(_ content: RiverQuickCaptureMetadata, status: String = "current") -> Self? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let bytes = try? encoder.encode(content),
+              let payload = String(data: bytes, encoding: .utf8) else { return nil }
+        let id = RiverStableIdentifier.uuid(namespace: "quick-capture-metadata", key: content.eventID.uuidString.lowercased())
+        return Self(id: id, kind: .quickCaptureMetadata, status: status,
+                    logicalKey: content.eventID.uuidString.lowercased(), payloadJSON: payload,
+                    createdAt: content.updatedAt, updatedAt: content.updatedAt)
     }
 
     var pendingConfirmationContent: RiverPendingConfirmationContent? {
@@ -322,6 +355,8 @@ public enum RiverStateOperationFreshness {
                 return record.status == "current"
             case .unknown:
                 return record.status == "current" || record.status == "confirmed" || record.status == "deleted"
+            case .quickCaptureMetadata:
+                return record.status == "current" || record.status == "deleted"
             }
         default:
             return false

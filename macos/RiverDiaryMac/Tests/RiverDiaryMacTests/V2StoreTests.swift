@@ -250,6 +250,7 @@ final class V2StoreTests: XCTestCase {
         let diary = DiaryStore(supportDirectory: stateDirectory)
         diary.onSharedJournalEntryChanged = { replicationStore.saveSharedUserRecord($0) }
         diary.onSharedMonthlyLetterChanged = { replicationStore.saveSharedUserRecord($0) }
+        diary.onQuickCaptureMetadataChanged = { replicationStore.saveSharedUserRecord($0) }
         diary.onMoodScoreChanged = { day, score, updatedAt in
             replicationStore.setMoodScore(dayKey: day, score: score, updatedAt: updatedAt)
         }
@@ -277,6 +278,14 @@ final class V2StoreTests: XCTestCase {
         )
         try diary.saveMonthlyLetter(letter)
         XCTAssertEqual(replicationStore.sharedUserRecords().first { $0.kind == .monthlyLetter }?.monthlyLetterContent?.body, "共享的信件正文")
+
+        let quickCaptureDay = DiaryEntry.dateFormatter.date(from: day)!
+        XCTAssertTrue(diary.addQuickCapture("跨设备快记", tag: "记录", for: quickCaptureDay))
+        let quickCapture = try XCTUnwrap(diary.captures(for: entry).first { $0.text == "跨设备快记" })
+        let initialMetadata = try XCTUnwrap(replicationStore.sharedUserRecords().first { $0.kind == .quickCaptureMetadata })
+        XCTAssertEqual(initialMetadata.quickCaptureMetadata?.tag, "记录")
+        diary.setQuickCapturePinned(quickCapture, entry: entry, pinned: true)
+        XCTAssertEqual(replicationStore.sharedUserRecords().first { $0.id == initialMetadata.id }?.quickCaptureMetadata?.isPinned, true)
     }
 
     func testDiaryStoreProjectsImportedJournalLetterAndDeletion() throws {

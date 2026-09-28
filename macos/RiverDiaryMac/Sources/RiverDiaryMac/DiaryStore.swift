@@ -82,6 +82,8 @@ final class DiaryStore: ObservableObject {
     var onTimelineAnnotationChanged: ((TimelineAnnotation, String) throws -> Void)?
     var onQuickCaptureSaved: ((QuickCapture) -> Bool)?
     var onQuickCaptureRemoved: ((QuickCapture) -> Bool)?
+    var onQuickCaptureMetadataChanged: ((RiverSharedStateRecord) -> Bool)?
+    var loadSharedQuickCaptureMetadata: (() -> [UUID: RiverQuickCaptureMetadata])?
     var onSharedJournalEntryChanged: ((RiverSharedStateRecord) -> Bool)?
     var onSharedMonthlyLetterChanged: ((RiverSharedStateRecord) -> Bool)?
     var onMoodScoreChanged: ((String, Int, Date) -> Bool)?
@@ -401,8 +403,10 @@ final class DiaryStore: ObservableObject {
         saveState = .saving
         do {
             try persist()
-            if onQuickCaptureSaved?(capture) == false {
-                saveState = .failed("快记已保存在本机，但还没有进入加密复制队列；下次打开应用时会重试。")
+            let eventSaved = onQuickCaptureSaved?(capture) ?? true
+            let metadataSaved = eventSaved && persistSharedQuickCaptureMetadata(for: capture, updatedAt: capture.createdAt)
+            if !eventSaved || !metadataSaved {
+                saveState = .failed("快记已保存在本机，但完整元数据尚未进入加密复制队列；下次打开应用时会重试。")
                 return true
             }
             saveState = .saved(Date())
@@ -443,7 +447,9 @@ final class DiaryStore: ObservableObject {
         guard let onQuickCaptureSaved else { return 0 }
         var migrated = 0
         for capture in quickCaptures.values.flatMap(\.self) where onQuickCaptureSaved(capture) {
-            migrated += 1
+            if persistSharedQuickCaptureMetadata(for: capture, updatedAt: capture.createdAt) {
+                migrated += 1
+            }
         }
         return migrated
     }
@@ -453,13 +459,36 @@ final class DiaryStore: ObservableObject {
         let previousPinned = quickCaptures[entry.date]?[index].isPinned
         quickCaptures[entry.date]?[index].isPinned = pinned
         hasLocalChanges = true
-        do { try persist() } catch {
-            if let previousPinned, let index = quickCaptures[entry.date]?.firstIndex(where: { $0.id == capture.id }) {
+        do {
+            try persist()
+            var updatedCapture = capture
+            updatedCapture.isPinned = pinned
+            guard persistSharedQuickCaptureMetadata(for: updatedCapture, updatedAt: Date()) else {
+                if let index = quickCaptures[entry.date]?.firstIndex(where: { $0.id == capture.id }) {
+                    quickCaptures[entry.date]?[index].isPinned = previousPinned
+                }
+                hasLocalChanges = hasPersistentLocalEdits
+                try persist()
+                saveState = .failed("置顶状态尚未进入加密复制队列，已恢复为原状态。")
+                return
+            }
+            saveState = .saved(Date())
+        } catch {
+            if let index = quickCaptures[entry.date]?.firstIndex(where: { $0.id == capture.id }) {
                 quickCaptures[entry.date]?[index].isPinned = previousPinned
             }
             hasLocalChanges = hasPersistentLocalEdits
             saveState = .failed(UserFacingError.message(for: error))
         }
+    }
+
+    private func persistSharedQuickCaptureMetadata(for capture: QuickCapture, updatedAt: Date) -> Bool {
+        guard let onQuickCaptureMetadataChanged else { return true }
+        let content = RiverQuickCaptureMetadata(
+            eventID: capture.id, tag: capture.tag, isPinned: capture.pinned, updatedAt: updatedAt
+        )
+        guard let record = RiverSharedStateRecord.quickCaptureMetadata(content) else { return false }
+        return onQuickCaptureMetadataChanged(record)
     }
 
     func setAutoDraftPaused(_ paused: Bool) {
@@ -668,6 +697,7 @@ final class DiaryStore: ObservableObject {
     func applySharedDiaryRecords(_ records: [RiverSharedStateRecord]) {
         var updatedOverrides = overrides
         var updatedLetters = monthlyLetters
+        var updatedCaptures = quickCaptures
         var changed = false
         for record in records {
             switch record.kind {
@@ -708,15 +738,27 @@ final class DiaryStore: ObservableObject {
                 guard updatedLetters[content.monthKey] != letter else { continue }
                 updatedLetters[content.monthKey] = letter
                 changed = true
+            case .quickCaptureMetadata:
+                guard record.status == "current", let metadata = record.quickCaptureMetadata else { continue }
+                for date in Array(updatedCaptures.keys) {
+                    guard let index = updatedCaptures[date]?.firstIndex(where: { $0.id == metadata.eventID }) else { continue }
+                    if updatedCaptures[date]?[index].tag != metadata.tag
+                        || updatedCaptures[date]?[index].pinned != metadata.isPinned {
+                        updatedCaptures[date]?[index].tag = metadata.tag
+                        updatedCaptures[date]?[index].isPinned = metadata.isPinned
+                        changed = true
+                    }
+                }
             default:
                 continue
             }
         }
         guard changed else { return }
         do {
-            try persist(overrides: updatedOverrides, monthlyLetters: updatedLetters)
+            try persist(overrides: updatedOverrides, monthlyLetters: updatedLetters, quickCaptures: updatedCaptures)
             overrides = updatedOverrides
             monthlyLetters = updatedLetters
+            quickCaptures = updatedCaptures
             hasLocalChanges = hasPersistentLocalEdits
             if let current = data {
                 data = DiaryData(
@@ -952,6 +994,7 @@ final class DiaryStore: ObservableObject {
             )
             addedCaptures = true
         }
+        if applySharedQuickCaptureMetadata() { addedCaptures = true }
 
         loadExternalOrBundledSnapshot()
 
@@ -1006,6 +1049,7 @@ final class DiaryStore: ObservableObject {
             )
             hasLocalChanges = true
         }
+        if applySharedQuickCaptureMetadata() { hasLocalChanges = true }
 
         // Reload and merge
         let previousCaptures = quickCaptures
@@ -1026,6 +1070,26 @@ final class DiaryStore: ObservableObject {
     private static func stableImportedCaptureID(_ noteID: String) -> UUID {
         UUID(uuidString: noteID)
             ?? RiverStableIdentifier.uuid(namespace: "ingested.quick-capture", key: noteID)
+    }
+
+    @discardableResult
+    private func applySharedQuickCaptureMetadata() -> Bool {
+        guard let loadSharedQuickCaptureMetadata else { return false }
+        let metadataByEventID = loadSharedQuickCaptureMetadata()
+        guard !metadataByEventID.isEmpty else { return false }
+        var changed = false
+        for dayKey in Array(quickCaptures.keys) {
+            guard var captures = quickCaptures[dayKey] else { continue }
+            for index in captures.indices {
+                guard let metadata = metadataByEventID[captures[index].id],
+                      captures[index].tag != metadata.tag || captures[index].pinned != metadata.isPinned else { continue }
+                captures[index].tag = metadata.tag
+                captures[index].isPinned = metadata.isPinned
+                changed = true
+            }
+            quickCaptures[dayKey] = captures
+        }
+        return changed
     }
 
     private func buildIngestedHealth(_ ingestion: IngestedUserData) -> [String: IOSHealthSummary] {
@@ -1561,6 +1625,7 @@ final class DiaryStore: ObservableObject {
     private func persist(
         overrides replacementOverrides: [String: EntryOverride]? = nil,
         monthlyLetters replacementLetters: [String: MonthlyLetter]? = nil,
+        quickCaptures replacementQuickCaptures: [String: [QuickCapture]]? = nil,
         savedQueries replacementQueries: [SavedQuery]? = nil,
         timelineAnnotations replacementAnnotations: [String: TimelineAnnotation]? = nil,
         dailyGoals replacementDailyGoals: [String: DailyGoal]? = nil,
@@ -1572,7 +1637,7 @@ final class DiaryStore: ObservableObject {
 
         let state = UserState(
             entries: replacementOverrides ?? overrides,
-            quickCaptures: quickCaptures,
+            quickCaptures: replacementQuickCaptures ?? quickCaptures,
             dismissedDrafts: dismissedDrafts.reduce(into: [:]) { result, value in result[value] = Date() },
             careAcknowledgments: careAcknowledgments.reduce(into: [:]) { result, value in result[value] = Date() },
             autoDraftPaused: autoDraftPaused,

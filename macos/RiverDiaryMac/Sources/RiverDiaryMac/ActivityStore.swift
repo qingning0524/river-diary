@@ -157,21 +157,32 @@ final class ActivityStore: ObservableObject {
         let id = event.id
         let targetID = "event:\(id.uuidString)"
         let operations = v2Store.allStateOperations()
-        if StateOperationResolver.tombstonedObjectIDs(operations).contains(targetID) { return true }
-        guard v2Store.rawEvents(ids: [id]).first != nil,
-              let deviceID = v2Store.localDeviceIdentifier(),
-              let payload = try? JSONEncoder().encode(true) else { return false }
-        let operationID = RiverStableIdentifier.uuid(
-            namespace: "quick-capture.tombstone.\(deviceID.rawValue)",
-            key: id.uuidString.lowercased()
-        )
-        return v2Store.appendStateOperation(
-            id: operationID,
-            targetID: targetID,
-            fieldKey: "deleted",
-            operationType: "object.tombstone",
-            payload: payload
-        ) != nil
+        if !StateOperationResolver.tombstonedObjectIDs(operations).contains(targetID) {
+            guard v2Store.rawEvents(ids: [id]).first != nil,
+                  let deviceID = v2Store.localDeviceIdentifier(),
+                  let payload = try? JSONEncoder().encode(true) else { return false }
+            let operationID = RiverStableIdentifier.uuid(
+                namespace: "quick-capture.tombstone.\(deviceID.rawValue)",
+                key: id.uuidString.lowercased()
+            )
+            guard v2Store.appendStateOperation(
+                id: operationID,
+                targetID: targetID,
+                fieldKey: "deleted",
+                operationType: "object.tombstone",
+                payload: payload
+            ) != nil else { return false }
+        }
+        if let existing = v2Store.sharedUserRecords().first(where: {
+            $0.kind == .quickCaptureMetadata && $0.logicalKey == id.uuidString.lowercased() && $0.status == "current"
+        }), let metadata = existing.quickCaptureMetadata,
+           let deletedMetadata = RiverSharedStateRecord.quickCaptureMetadata(
+            RiverQuickCaptureMetadata(eventID: id, tag: metadata.tag, isPinned: metadata.isPinned, updatedAt: Date()),
+            status: "deleted"
+           ) {
+            _ = v2Store.saveSharedUserRecord(deletedMetadata)
+        }
+        return true
     }
 
     private func matchingQuickCaptureEvent(for capture: QuickCapture) -> RawEvent? {
