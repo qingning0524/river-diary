@@ -46,6 +46,7 @@ struct RiverDiaryMacApp: App {
     /// 主窗口与原生设置窗口共用同一个反馈中心，设置页的保存/失败提示
     /// 才会走到用户看得见的地方。
     @StateObject private var feedback = FeedbackCenter()
+    @State private var pendingDailyRebuild: Task<Void, Never>?
     /// 全进程共享一条 V2 事实库连接：否则每个 store 各开一次 SQLCipher
     /// 并在主线程重复建表 DDL；恢复快照时也只需重开这一条连接。
     private let v2Store: V2Store
@@ -147,20 +148,22 @@ struct RiverDiaryMacApp: App {
                     ingestion.captureNow(runsAIAnalysis: false)
                 }
                 _ = ai.reconcilePendingTimelineConfirmations()
-                let today = DiaryEntry.dateFormatter.string(from: Date())
-                let analysisStore = activity.replicationDatabase()
-                let staleReview = analysisStore.canonicalArtifactRevision(
-                    logicalKey: RiverCanonicalArtifactKey.dailyReview(dayKey: today), kind: .dailyReview
-                )?.status == .stale
-                let currentFrontier = try? analysisStore.currentInputFrontier()
-                let queuedReview = analysisStore.analysisJobs().contains {
-                    $0.logicalKey == RiverCanonicalArtifactKey.dailyReview(dayKey: today) && $0.artifactType == .dailyReview
-                        && $0.inputFrontier == currentFrontier
-                        && ($0.status == .queued || $0.status == .running)
+                store.reloadSharedTimelineAnnotations()
+                store.applySharedDiaryRecords(v2Store.sharedUserRecords())
+                if store.migrateLegacyTimelineAnnotationsToOperations() {
+                    DispatchQueue.main.async { activity.syncSettingsStore.synchronize() }
                 }
-                if (staleReview || queuedReview) && ai.canRunAutomaticAnalysis {
-                    Task { @MainActor in
-                        await Task.yield()
+
+                let today = DiaryEntry.dateFormatter.string(from: Date())
+                if ai.needsCurrentDayRebuild(dayKey: today) && ai.canRunAutomaticAnalysis {
+                    pendingDailyRebuild?.cancel()
+                    pendingDailyRebuild = Task { @MainActor in
+                        do { try await Task.sleep(nanoseconds: 900_000_000) } catch { return }
+                        while !Task.isCancelled && ai.isDailyAnalysisPipelineRunning {
+                            do { try await Task.sleep(nanoseconds: 250_000_000) } catch { return }
+                        }
+                        guard !Task.isCancelled, ai.canRunAutomaticAnalysis,
+                              ai.needsCurrentDayRebuild(dayKey: today) else { return }
                         guard let date = DiaryEntry.dateFormatter.date(from: today),
                               let interval = Calendar.current.dateInterval(of: .day, for: date) else { return }
                         let sessions = activity.sessions(from: interval.start, to: interval.end)
@@ -176,11 +179,6 @@ struct RiverDiaryMacApp: App {
                             sourceSummary: "同步到较新的 Event 后自动更新今日回顾"
                         )
                     }
-                }
-                store.reloadSharedTimelineAnnotations()
-                store.applySharedDiaryRecords(v2Store.sharedUserRecords())
-                if store.migrateLegacyTimelineAnnotationsToOperations() {
-                    DispatchQueue.main.async { activity.syncSettingsStore.synchronize() }
                 }
                 ai.restoreAnalysisResults(startDate: today, endDate: today)
             }

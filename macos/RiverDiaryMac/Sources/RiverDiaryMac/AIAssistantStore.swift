@@ -262,6 +262,29 @@ final class AIAssistantStore: ObservableObject {
         analysisReady && (allowRemoteAnalysis || isLocalAIEndpoint)
     }
 
+    var isDailyAnalysisPipelineRunning: Bool {
+        [.timelineDigest, .dailyOverview, .analysisDaily].contains { taskStates[$0]?.isLoading == true }
+    }
+
+    func needsCurrentDayRebuild(dayKey: String) -> Bool {
+        guard let frontier = try? analysisStore.currentInputFrontier() else { return false }
+        let rangeKey = ContextAssembler.dayRangeKey(dayKey)
+        let timelineKey = "\(RiverTaskKind.timelineDigest.rawValue)|\(rangeKey)"
+        let staleDaily = analysisStore.canonicalArtifactRevision(
+            logicalKey: RiverCanonicalArtifactKey.dailyReview(dayKey: dayKey), kind: .dailyReview
+        )?.status == .stale
+        let staleTimeline = analysisStore.canonicalArtifactRevision(
+            logicalKey: timelineKey, kind: .semanticTimeline
+        )?.status == .stale
+        let queuedForCurrentInput = analysisStore.analysisJobs().contains {
+            ($0.logicalKey == RiverCanonicalArtifactKey.dailyReview(dayKey: dayKey) && $0.artifactType == .dailyReview
+                || $0.logicalKey == timelineKey && $0.artifactType == .semanticTimeline)
+                && $0.inputFrontier == frontier
+                && ($0.status == .queued || $0.status == .running)
+        }
+        return staleDaily || staleTimeline || queuedForCurrentInput
+    }
+
     var hasVerifiedConnection: Bool {
         guard isConfigured, hasAPIKey, let record = lastRequestRecord else { return false }
         return record.success && record.provider == provider.label && record.model == model

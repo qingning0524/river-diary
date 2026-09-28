@@ -191,6 +191,53 @@ final class AnalysisInterconnectTests: XCTestCase {
         XCTAssertEqual(v2.analysisRuns().count, 1, "stale-frontier snapshot must not be sent")
     }
 
+    func testCurrentDayRebuildDetectsStaleArtifactAndQueuedCurrentFrontier() throws {
+        let dayKey = "2026-09-28"
+        let staleStore = try makeStore()
+        let staleAI = AIAssistantStore(v2Store: staleStore)
+        XCTAssertFalse(staleAI.needsCurrentDayRebuild(dayKey: dayKey))
+
+        let staleDevice = try XCTUnwrap(staleStore.localDeviceIdentifier())
+        let staleTimeline = RiverArtifactRevision(
+            id: "stale-current-day-timeline",
+            logicalKey: "\(RiverTaskKind.timelineDigest.rawValue)|\(ContextAssembler.dayRangeKey(dayKey))",
+            kind: .semanticTimeline,
+            revisionNumber: 1,
+            originDeviceID: staleDevice,
+            clock: HybridLogicalClock(physicalMilliseconds: 1_790_000_000_000, deviceID: staleDevice),
+            inputFrontier: try staleStore.currentInputFrontier(),
+            inputSnapshotHash: "old-input",
+            pipelineVersion: "1.0",
+            promptVersion: "1",
+            modelProvider: "test",
+            modelIdentifier: "test-model",
+            content: Data("{}".utf8),
+            contentHash: SHA256Hex.hash(Data("{}".utf8)),
+            status: .stale
+        )
+        XCTAssertTrue(staleStore.insertArtifactRevision(staleTimeline))
+        XCTAssertTrue(staleAI.needsCurrentDayRebuild(dayKey: dayKey))
+
+        let queuedStore = try makeStore()
+        let queuedAI = AIAssistantStore(v2Store: queuedStore)
+        let queuedDevice = try XCTUnwrap(queuedStore.localDeviceIdentifier())
+        let frontier = try queuedStore.currentInputFrontier()
+        let queuedReview = RiverAnalysisJob(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000901")!,
+            logicalKey: RiverCanonicalArtifactKey.dailyReview(dayKey: dayKey),
+            artifactType: .dailyReview,
+            inputFrontier: frontier,
+            status: .queued,
+            originDeviceID: queuedDevice,
+            pipelineVersion: "1.0|test",
+            promptVersion: "1"
+        )
+        XCTAssertTrue(queuedStore.saveAnalysisJob(queuedReview))
+        XCTAssertTrue(queuedAI.needsCurrentDayRebuild(dayKey: dayKey))
+        XCTAssertTrue(queuedStore.saveAnalysisJob(queuedReview.transitioning(to: .succeeded)))
+        XCTAssertFalse(queuedAI.needsCurrentDayRebuild(dayKey: dayKey))
+    }
+
     func testTimelineDigestClarificationBecomesSharedAndAnnotationClosesIt() throws {
         let v2 = try makeStore()
         let ai = AIAssistantStore(v2Store: v2)

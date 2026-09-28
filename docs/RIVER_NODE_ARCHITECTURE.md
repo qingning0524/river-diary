@@ -109,7 +109,7 @@ Mac Artifact 的 `inputSnapshotHash` 基于实际 system/user prompt、超参数
 
 ## 真实验证与仍需真实设备验证的场景
 
-本轮 Xcode beta 工具链验证：RiverDiaryCore 35 项测试通过；macOS 全量 368 项测试通过；iPhone iOS 27 真机目标构建与签名成功；先前构建曾安装并在 iPhone 14 Pro 上接受启动，但由于当前 CoreDevice 显示设备 unavailable，最新构建目前只在本机产物目录中。`devicectl` 曾接受启动请求，但随后设备状态变为 unavailable，截图请求失败，未能目视或操作验证 UI；之前设备锁定时也曾拒绝启动。未签名/adhoc 的模拟器构建没有 Keychain access group，因此其 Keychain 启动失败不代表真机签名包的运行结果。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份、Timeline clarification 共享和用户状态操作对旧 Artifact 失效；macOS tests 覆盖 AnalysisJob 请求快照加密落盘/恢复输入序列化、mock transport 下同 frontier 恢复及 stale frontier 拒绝重放、习惯回顾、记忆确认、待确认事项纠正、TimelineDigest clarification 发布与关闭、快记 Event/tombstone与标签置顶元数据、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
+本轮 Xcode beta 工具链验证：RiverDiaryCore 35 项测试通过；macOS 全量 369 项测试通过；iPhone iOS 27 真机目标构建与签名成功；先前构建曾安装并在 iPhone 14 Pro 上接受启动，但由于当前 CoreDevice 显示设备 unavailable，最新真机签名包目前只在本机产物目录中。`devicectl` 曾接受启动请求，但随后设备状态变为 unavailable，截图请求失败，无法用真机验证当前 UI。当前 iPhone 17 Pro iOS 27 模拟器构建可安装并启动，截图显示真实空数据库的“今天还没有采集到事件”状态；该模拟器包没有 TeamIdentifier 和 Keychain access group，因此只证明启动与空状态 UI，不证明真机钥匙串身份或密钥持久性。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份、Timeline clarification 共享和用户状态操作对旧 Artifact 失效；macOS tests 覆盖 AnalysisJob 请求快照加密落盘/恢复输入序列化、mock transport 下同 frontier 恢复及 stale frontier 拒绝重放、本日新旧输入重建判定、习惯回顾、记忆确认、待确认事项纠正、TimelineDigest clarification 发布与关闭、快记 Event/tombstone与标签置顶元数据、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
 
 以下情形还没有通过真实 iPhone/Mac + 用户 iCloud 账号实际验收：Core Location 后台 Visits 的系统交付、Shortcuts 个人自动化触发、MapKit/Geocoder 实际 POI 质量、跨设备 iCloud 延迟和文件提供器协调、LAN/Bonjour 实际传输及 LAN/iCloud 重复投递、真实权限撤销、Personal Team 重签名后的持久性与恢复。
 
@@ -119,7 +119,7 @@ Developer Diagnostics 已在两端设置中提供显式开关，展示数据库�
 
 - iPhone 与 Mac 已接入可选 MultipeerConnectivity/Bonjour 快速复制：只交换 AES-GCM 复制对象，接收端验密并写入同一复制目录，常规协调器再导入。重复 Event ID 已在存储层幂等；LAN + iCloud 的重复到达目前仍只有模拟单测，尚未真机验证本地网络授权、断连续传和文件提供器协调。
 - iPhone 本地备份加密导出/合并恢复已实现并可编译，但尚未通过模拟器文件选择器操作或真机恢复测试。还未覆盖旧版打包日记正文和本地系统权限状态。
-- AnalysisJob 已持久化；Mac 对可恢复任务保存加密请求快照，并且只重放 frontier、provider/model/endpoint 和请求指纹均匹配的请求。习惯回顾的应用激活重建已接入，但 cadence/证据门控下的进程崩溃恢复尚未故障注入；其他任务的输入变化后通用重建、全任务防抖和崩溃期间成本/幂等边界仍需继续实现和验收。
+- AnalysisJob 已持久化；Mac 对可恢复任务保存加密请求快照，并且只重放 frontier、provider/model/endpoint 和请求指纹均匹配的请求。Mac 收到同步变更后会对本日 TimelineDigest/DailyReview 做 900ms trailing debounce，等待同一分析流水线结束，再从最新本机事实重建；这个调度目前只覆盖本日流水线。习惯回顾的应用激活重建已接入，但 cadence/证据门控下的进程崩溃恢复尚未故障注入；其他任务的输入变化后专用重建、全任务防抖和崩溃期间成本/幂等边界仍需继续实现和验收。
 - 通用待确认事项已成为共享用户记录：iPhone 对多次到访且有真实地图候选的未确认地点生成稳定事项，Mac/iPhone 可确认、拒绝或改名，结果通过 State Operation 复制。Mac TimelineDigest 的来源校验 clarification 也会生成共享事项；更一般的活动解释与其他 AI 任务尚未接入统一确认管线，离线并发作答、重复提问和地点候选门槛仍需真机验收。
 - Mac 快记文本和时间已进入 Event 流；旧快记在启动时幂等迁移，删除通过 tombstone 传播，收到删除操作后会刷新 Mac 快记投影。手写日记、评分、删除和已保存月度河流信已写入共享 State Operation，并在 iPhone 时间线/回顾页显示。Mac 启动时等待日记源加载后迁移旧 override 与信件。快记标签与置顶状态也通过共享用户记录复制并显示在 iPhone 时间线；自动生成但尚未保存的河流信草稿仍不会同步。
 - 旧版 Mac `habit_*` 与长期记忆记录会在复制前迁移到共享 State Operation；iPhone 可查看/回答回顾卡、确认或撤销长期记忆。两端离线并发、撤销/退役、重装恢复和真实 iCloud 的操作级验收仍未完成。其他复盘状态、自动生成语义确认和长期历史迁移仍有未覆盖部分。
