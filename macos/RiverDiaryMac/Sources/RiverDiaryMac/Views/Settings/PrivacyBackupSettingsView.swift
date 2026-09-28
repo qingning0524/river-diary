@@ -363,7 +363,7 @@ struct PrivacyBackupSettingsView: View {
                     }
                 }
 
-                RiverPanelRow(title: "恢复备份", detail: "要求保留同一加密密钥；跨设备密钥恢复尚未实现") {
+                RiverPanelRow(title: "恢复备份", detail: "备份不含密钥；从仍有密钥的设备复制转移码，在此设备导入后恢复") {
                     HStack(spacing: AppSpacing.sm) {
                         Button { importBackup() } label: {
                             Label("恢复", systemImage: "square.and.arrow.down")

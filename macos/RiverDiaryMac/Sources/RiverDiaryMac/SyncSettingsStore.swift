@@ -412,6 +412,9 @@ final class SyncSettingsStore: ObservableObject {
         let sessionCount = SessionBuilder.build(events.compactMap { $0.replica() }).count
         let pendingHabitCount = database.habitCardRows().filter { $0.status == "bundled" || $0.status == "shown" }.count
         let pendingMemoryCount = database.memories().filter { database.memoryConfirmation(for: $0.id)?.confirmed != true }.count
+        let pendingGenericCount = database.sharedUserRecords().filter {
+            $0.kind == .pendingConfirmation && $0.status == "pending"
+        }.count
         let report = RiverMacDiagnosticsReport(
             generatedAt: Date(),
             deviceID: deviceID.rawValue,
@@ -423,7 +426,7 @@ final class SyncSettingsStore: ObservableObject {
             artifactCount: artifacts.count,
             canonicalArtifactCount: canonical.count,
             staleArtifactCount: database.staleArtifactRevisionCount(),
-            pendingConfirmationStatus: "习惯卡 \(pendingHabitCount) 张、记忆 \(pendingMemoryCount) 条待确认；通用确认中心尚未接入",
+            pendingConfirmationStatus: "习惯卡 \(pendingHabitCount) 张、记忆 \(pendingMemoryCount) 条、地点/时间线 \(pendingGenericCount) 条待确认",
             importedObjectCount: database.countRows(in: .syncImports),
             exportedEventBatches: lastReport?.exportedEventBatches ?? 0,
             exportedOperationBatches: lastReport?.exportedOperationBatches ?? 0,

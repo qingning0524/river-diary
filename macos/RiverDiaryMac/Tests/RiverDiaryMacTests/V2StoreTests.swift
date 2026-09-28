@@ -43,6 +43,33 @@ final class V2StoreTests: XCTestCase {
         XCTAssertEqual(store.countRows(in: .rawEvents), 0)
     }
 
+    func testDeveloperDiagnosticsCountsSharedPendingTimelineConfirmations() throws {
+        let (store, databaseURL) = try makeStore()
+        let suiteName = "river-diagnostics-confirmations-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let sync = SyncSettingsStore(database: store, preferences: defaults)
+        let activity = ActivityStore(
+            activityDirectory: databaseURL.deletingLastPathComponent().appendingPathComponent("Activity"),
+            userDefaults: defaults,
+            v2Store: store
+        )
+        let confirmation = try XCTUnwrap(RiverSharedStateRecord.timelineClarification(
+            candidateID: "diagnostics-candidate",
+            observation: "观察到一段编辑器活动。",
+            opening: "当时在处理什么？",
+            evidenceRefs: ["raw:diagnostics-event"],
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000)
+        ))
+        XCTAssertTrue(store.saveSharedUserRecord(confirmation))
+
+        let reportData = try XCTUnwrap(sync.makeDiagnosticsReport(activity: activity))
+        let report = try XCTUnwrap(JSONSerialization.jsonObject(with: reportData) as? [String: Any])
+        let pendingStatus = try XCTUnwrap(report["pendingConfirmationStatus"] as? String)
+        XCTAssertTrue(pendingStatus.contains("时间线 1 条"))
+        XCTAssertFalse(pendingStatus.contains("尚未接入"))
+    }
+
     func testRawEventRoundTripAndEmptyState() throws {
         let (store, _) = try makeStore()
         XCTAssertEqual(store.countRows(in: .rawEvents), 0)

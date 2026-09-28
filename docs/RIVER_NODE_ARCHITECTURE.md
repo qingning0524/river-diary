@@ -47,7 +47,7 @@ River Diary 由多个本地优先的 River Node 组成。iPhone 和 Mac 都有�
 
 使用 SQLite `user_version=4`。从 V1/V2/V3 幂等创建 AnalysisJob、共享用户记录和习惯/记忆决策投影；更新版遇到更高的 `user_version` 时停止打开，不会尝试用旧代码改写新库。
 
-iPhone“本地备份”导出 Event、State Operation、Artifact 修订和设备登记，并用共享同步密钥封装为 AES-GCM 加密的 `local_backup` 文件。恢复采用可重试的幂等合并，不清空当前数据库；恢复文件不含密钥，需保留或重新导入同一同步密钥。旧版打包日记正文不包含在 River Node 备份内。设备 ID 在钥匙串仍可读取时保持不变；同一设备也可从所选复制目录重新导入自己之前发布的对象，并从已有 Manifest 修订号之后继续。
+iPhone“本地备份”导出 Event、State Operation、Artifact 修订和设备登记，并用共享同步密钥封装为 AES-GCM 加密的 `local_backup` 文件。恢复采用可重试的幂等合并，不清空当前数据库；恢复文件不含密钥，需保留密钥或从仍保留密钥的设备导出转移码、在恢复设备导入同一密钥。密钥转移走独立的同步密钥设置，不把密钥写入备份。旧版打包日记正文不包含在 River Node 备份内。设备 ID 在钥匙串仍可读取时保持不变；同一设备也可从所选复制目录重新导入自己之前发布的对象，并从已有 Manifest 修订号之后继续。
 
 ### macOS
 
@@ -111,11 +111,11 @@ iPhone 的本机 AnalysisJob 指纹覆盖实际 system/user prompt、模型、en
 
 ## 真实验证与仍需真实设备验证的场景
 
-本轮 Xcode beta 工具链验证：RiverDiaryCore 36 项测试通过；macOS 全量 370 项测试通过；iPhone iOS 27 真机目标构建与签名成功；先前构建曾安装并在 iPhone 14 Pro 上接受启动，但由于当前 CoreDevice 显示设备 unavailable，最新真机签名包目前只在本机产物目录中。`devicectl` 曾接受启动请求，但随后设备状态变为 unavailable，截图请求失败，无法用真机验证当前 UI。当前 iPhone 17 Pro iOS 27 模拟器无 TeamIdentifier 的构建可以安装并启动，但界面明确报告“本地事件库不可用”，Keychain access group 权限错误 `OSStatus -34018`。该模拟器容器中有本轮启动生成的 SQLite `user_version=4` 数据库、Event/State Operation/Artifact/AnalysisJob 表和 WAL journal，原始 Event 数为 0；但 app 无法取得可用设备身份/钥匙串访问，因此这只验证到 schema bootstrap 和正确失败提示，不证明一个可工作的本地节点，也不替代真机签名包验证。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份、Timeline clarification 共享、用户状态操作对旧 Artifact 失效，以及分析请求/Artifact 指纹分离；macOS tests 覆盖 AnalysisJob 请求快照加密落盘/恢复输入序列化、mock transport 下同 frontier 恢复及 stale frontier 拒绝重放、本日新旧输入重建判定、远程 AI 未授权时零网络请求与同意后恢复、习惯回顾、记忆确认、待确认事项纠正、TimelineDigest clarification 发布与关闭、快记 Event/tombstone与标签置顶元数据、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
+本轮 Xcode beta 工具链验证：RiverDiaryCore 36 项测试通过；macOS 全量 371 项测试通过；iPhone iOS 27 真机目标构建与签名成功；先前构建曾安装并在 iPhone 14 Pro 上接受启动，但由于当前 CoreDevice 显示设备 unavailable，最新真机签名包目前只在本机产物目录中。`devicectl` 曾接受启动请求，但随后设备状态变为 unavailable，截图请求失败，无法用真机验证当前 UI。当前 iPhone 17 Pro iOS 27 模拟器无 TeamIdentifier 的构建可以安装并启动，但界面明确报告“本地事件库不可用”，Keychain access group 权限错误 `OSStatus -34018`。该模拟器容器中有本轮启动生成的 SQLite `user_version=4` 数据库、Event/State Operation/Artifact/AnalysisJob 表和 WAL journal，原始 Event 数为 0；但 app 无法取得可用设备身份/钥匙串访问，因此这只验证到 schema bootstrap 和正确失败提示，不证明一个可工作的本地节点，也不替代真机签名包验证。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份、Timeline clarification 共享、用户状态操作对旧 Artifact 失效，以及分析请求/Artifact 指纹分离；macOS tests 覆盖 AnalysisJob 请求快照加密落盘/恢复输入序列化、mock transport 下同 frontier 恢复及 stale frontier 拒绝重放、本日新旧输入重建判定、远程 AI 未授权时零网络请求与同意后恢复、诊断报告共享待确认事项计数、习惯回顾、记忆确认、待确认事项纠正、TimelineDigest clarification 发布与关闭、快记 Event/tombstone与标签置顶元数据、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
 
 以下情形还没有通过真实 iPhone/Mac + 用户 iCloud 账号实际验收：Core Location 后台 Visits 的系统交付、Shortcuts 个人自动化触发、MapKit/Geocoder 实际 POI 质量、跨设备 iCloud 延迟和文件提供器协调、LAN/Bonjour 实际传输及 LAN/iCloud 重复投递、真实权限撤销、Personal Team 重签名后的持久性与恢复。
 
-Developer Diagnostics 已在两端设置中提供显式开关，展示数据库计数、Artifact 状态、共享待确认事项、导入对象、前沿、目录授权、LAN 状态、最近同步摘要、准确序号缺口范围、完整性失败、位置/地图/活动采集时间和最近 AnalysisJob；报告导出为不包含 Event 正文、坐标或密钥的 JSON。已接入测试 Event、iPhone 单次定位请求、完整同步管线、派生状态重建、Artifact 失效和报告导出。iPhone 的用户授权状态会显示；Mac 位置采集器和平台不支持的动作会明确标为未实现。
+Developer Diagnostics 已在两端设置中提供显式开关，展示数据库计数、Artifact 状态、习惯卡/记忆/通用事项待确认数、导入对象、前沿、目录授权、LAN 状态、最近同步摘要、准确序号缺口范围、完整性失败、位置/地图/活动采集时间和最近 AnalysisJob；报告导出为不包含 Event 正文、坐标或密钥的 JSON。已接入测试 Event、iPhone 单次定位请求、完整同步管线、派生状态重建、Artifact 失效和报告导出。iPhone 的用户授权状态会显示；Mac 位置采集器和平台不支持的动作会明确标为未实现。
 
 ## V1 未完成项
 
