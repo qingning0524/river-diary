@@ -22,6 +22,27 @@ private final class AnalysisRecoveryURLProtocol: URLProtocol {
     override func stopLoading() {}
 }
 
+private final class ConsentGateURLProtocol: URLProtocol {
+    static var requestCount = 0
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        Self.requestCount += 1
+        guard let url = request.url,
+              let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil) else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Data(#"{"choices":[{"message":{"content":"unexpected network call"}}]}"#.utf8))
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() {}
+}
+
 // MARK: - AI 分析数据互通测试
 //
 // 覆盖：结果层按去重键 upsert 与读取、上下文装配器（规则/记忆/结论/指纹/快照）、
@@ -236,6 +257,41 @@ final class AnalysisInterconnectTests: XCTestCase {
         XCTAssertTrue(queuedAI.needsCurrentDayRebuild(dayKey: dayKey))
         XCTAssertTrue(queuedStore.saveAnalysisJob(queuedReview.transitioning(to: .succeeded)))
         XCTAssertFalse(queuedAI.needsCurrentDayRebuild(dayKey: dayKey))
+    }
+
+    func testRemoteAnalysisRequiresConsentBeforeSendingPersonalData() async throws {
+        let v2 = try makeStore()
+        let suiteName = "river-analysis-consent-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.set(false, forKey: "ai.footprint.allowRemoteAnalysis")
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [ConsentGateURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        ConsentGateURLProtocol.requestCount = 0
+
+        let ai = AIAssistantStore(v2Store: v2, userDefaults: defaults, urlSession: session)
+        ai.provider = .ollama
+        ai.endpoint = "https://remote.example.test/v1/chat/completions"
+        ai.model = "test-model"
+        XCTAssertTrue(ai.analysisReady, "The remote Ollama-compatible endpoint needs no stored API key")
+
+        let answer = await ai.runTask(.memorySearch, system: "Search private records.", prompt: "private user data")
+
+        XCTAssertNil(answer)
+        XCTAssertEqual(ConsentGateURLProtocol.requestCount, 0)
+        XCTAssertTrue(ai.state(for: .memorySearch)?.error?.contains("尚未同意向网络 AI 发送个人数据") == true)
+        XCTAssertEqual(v2.analysisJobs().filter { $0.status == .queued }.count, 1)
+
+        ai.allowRemoteAnalysis = true
+        for _ in 0..<100 {
+            if v2.analysisJobs().first?.status == .succeeded { break }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        XCTAssertEqual(ConsentGateURLProtocol.requestCount, 1)
+        XCTAssertEqual(v2.analysisJobs().first?.status, .succeeded)
     }
 
     func testTimelineDigestClarificationBecomesSharedAndAnnotationClosesIt() throws {
