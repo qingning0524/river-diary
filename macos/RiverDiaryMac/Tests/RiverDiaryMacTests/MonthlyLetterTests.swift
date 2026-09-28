@@ -57,12 +57,29 @@ final class MonthlyLetterTests: XCTestCase {
         encoder.dateEncodingStrategy = .iso8601
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let state = UserState(monthlyLetters: [letter.month: letter])
+        let draftUpdatedAt = date(9, 13)
+        let draftDeletedAt = date(9, 14)
+        let draftBody = "尚未保存的河流信草稿。"
+        let state = UserState(
+            monthlyLetters: [letter.month: letter],
+            letterDrafts: [letter.month: draftBody],
+            letterDraftUpdatedAt: [letter.month: draftUpdatedAt],
+            letterDraftDeletedAt: ["2026-08": draftDeletedAt]
+        )
         let restored = try decoder.decode(UserState.self, from: encoder.encode(state))
         XCTAssertEqual(restored.monthlyLetters?[letter.month], letter)
+        XCTAssertEqual(restored.letterDrafts?[letter.month], draftBody)
+        XCTAssertEqual(restored.letterDraftUpdatedAt?[letter.month], draftUpdatedAt)
+        XCTAssertEqual(restored.letterDraftDeletedAt?["2026-08"], draftDeletedAt)
         let backup = LocalBackupPayload(exportedAt: date(9, 12), overrides: [:], quickCaptures: [:],
-                                        dismissedDrafts: [:], careAcknowledgments: [:], monthlyLetters: [letter.month: letter])
-        XCTAssertEqual(try decoder.decode(LocalBackupPayload.self, from: encoder.encode(backup)).monthlyLetters?[letter.month], letter)
+                                        dismissedDrafts: [:], careAcknowledgments: [:], monthlyLetters: [letter.month: letter],
+                                        letterDrafts: [letter.month: draftBody], letterDraftUpdatedAt: [letter.month: draftUpdatedAt],
+                                        letterDraftDeletedAt: ["2026-08": draftDeletedAt])
+        let restoredBackup = try decoder.decode(LocalBackupPayload.self, from: encoder.encode(backup))
+        XCTAssertEqual(restoredBackup.monthlyLetters?[letter.month], letter)
+        XCTAssertEqual(restoredBackup.letterDrafts?[letter.month], draftBody)
+        XCTAssertEqual(restoredBackup.letterDraftUpdatedAt?[letter.month], draftUpdatedAt)
+        XCTAssertEqual(restoredBackup.letterDraftDeletedAt?["2026-08"], draftDeletedAt)
         XCTAssertTrue(letter.markdown.contains(letter.body))
         XCTAssertTrue(letter.markdown.contains(letter.evidence))
     }

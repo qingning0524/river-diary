@@ -2923,7 +2923,7 @@ extension V2Store: RiverSyncLocalStore {
                     else { sqlite3_bind_null(statement, 8) }
                     sqlite3_bind_int64(statement, 9, memory.isUserConfirmed ? 1 : 0)
                 }
-            case .pendingConfirmation, .journalEntry, .monthlyLetter, .quickCaptureMetadata, .unknown:
+            case .pendingConfirmation, .journalEntry, .monthlyLetter, .monthlyLetterDraft, .quickCaptureMetadata, .unknown:
                 // These records are read directly from the canonical operation projection.
                 ok = true
             }

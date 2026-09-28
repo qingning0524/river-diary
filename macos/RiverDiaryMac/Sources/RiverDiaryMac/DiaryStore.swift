@@ -10,7 +10,7 @@ enum JournalSaveState: Equatable {
 }
 
 struct LocalBackupPayload: Codable {
-    var version = 5
+    var version = 6
     var exportedAt: Date
     var sourcePath: String?
     var data: DiaryData?
@@ -25,6 +25,9 @@ struct LocalBackupPayload: Codable {
     var timelineAnnotations: [String: TimelineAnnotation]? = nil
     var dailyGoals: [String: DailyGoal]? = nil
     var journalDrafts: [String: JournalDraftRecord]? = nil
+    var letterDrafts: [String: String]? = nil
+    var letterDraftUpdatedAt: [String: Date]? = nil
+    var letterDraftDeletedAt: [String: Date]? = nil
     var legacyDatabaseSnapshot: Data? = nil
     var v2DatabaseSnapshot: Data? = nil
 }
@@ -43,6 +46,9 @@ private struct DiaryStoreRestoreCheckpoint {
     let dailyGoals: [String: DailyGoal]
     let journalDrafts: [String: JournalDraftRecord]
     let monthlyLetters: [String: MonthlyLetter]
+    let letterDrafts: [String: String]
+    let letterDraftUpdatedAt: [String: Date]
+    let letterDraftDeletedAt: [String: Date]
     let savedQueries: [SavedQuery]
     let timelineAnnotations: [String: TimelineAnnotation]
     let dismissedDrafts: Set<String>
@@ -86,6 +92,8 @@ final class DiaryStore: ObservableObject {
     var loadSharedQuickCaptureMetadata: (() -> [UUID: RiverQuickCaptureMetadata])?
     var onSharedJournalEntryChanged: ((RiverSharedStateRecord) -> Bool)?
     var onSharedMonthlyLetterChanged: ((RiverSharedStateRecord) -> Bool)?
+    var onSharedMonthlyLetterDraftChanged: ((RiverSharedStateRecord) -> Bool)?
+    var loadSharedMonthlyLetterDrafts: (() -> [String: RiverMonthlyLetterDraftContent])?
     var onMoodScoreChanged: ((String, Int, Date) -> Bool)?
     var onMoodScoreReset: ((String, Date) -> Bool)?
     var onDiaryDataReady: (() -> Void)?
@@ -98,6 +106,8 @@ final class DiaryStore: ObservableObject {
     @Published private(set) var draftPausedUntil: Date?
     /// 未保存的河流信草稿（按月键）；持久化在加密状态文件里。
     @Published private(set) var letterDrafts: [String: String] = [:]
+    private var letterDraftUpdatedAt: [String: Date] = [:]
+    private var letterDraftDeletedAt: [String: Date] = [:]
     @Published private(set) var externalSourceURL: URL?
     @Published private(set) var externalSourceError: String?
     @Published private(set) var externalSourceModifiedAt: Date?
@@ -114,7 +124,9 @@ final class DiaryStore: ObservableObject {
 
     private var hasPersistentLocalEdits: Bool {
         !overrides.isEmpty || !quickCaptures.isEmpty || !monthlyLetters.isEmpty
-            || !savedQueries.isEmpty || !timelineAnnotations.isEmpty || !dailyGoals.isEmpty || !journalDrafts.isEmpty
+            || !letterDrafts.isEmpty || !letterDraftDeletedAt.isEmpty
+            || !savedQueries.isEmpty || !timelineAnnotations.isEmpty
+            || !dailyGoals.isEmpty || !journalDrafts.isEmpty
     }
 
     private lazy var supportDirectory: URL? = {
@@ -189,12 +201,41 @@ final class DiaryStore: ObservableObject {
         }
         var updated = monthlyLetters
         updated[letter.month] = letter
+        var updatedDrafts = letterDrafts
+        updatedDrafts[letter.month] = nil
+        var updatedDraftDates = letterDraftUpdatedAt
+        updatedDraftDates[letter.month] = nil
+        let draftDeletionDate = Date()
+        var updatedDraftDeletions = letterDraftDeletedAt
+        updatedDraftDeletions[letter.month] = draftDeletionDate
         do {
-            try persist(monthlyLetters: updated)
+            try persist(
+                monthlyLetters: updated,
+                letterDrafts: updatedDrafts,
+                letterDraftUpdatedAt: updatedDraftDates,
+                letterDraftDeletedAt: updatedDraftDeletions
+            )
             monthlyLetters = updated
+            letterDrafts = updatedDrafts
+            letterDraftUpdatedAt = updatedDraftDates
+            letterDraftDeletedAt = updatedDraftDeletions
             hasLocalChanges = true
-            if let record = Self.sharedRecord(for: letter), onSharedMonthlyLetterChanged?(record) == false {
-                saveState = .failed("河流信已加密保存在本机，但尚未进入复制队列；下次打开应用时会重试。")
+            let letterQueued = Self.sharedRecord(for: letter).map { onSharedMonthlyLetterChanged?($0) != false } ?? true
+            let draftDeleted = persistSharedMonthlyLetterDraft(
+                monthKey: letter.month, body: "", updatedAt: draftDeletionDate, status: "deleted"
+            )
+            if draftDeleted {
+                updatedDraftDeletions[letter.month] = nil
+                do {
+                    try persist(letterDraftDeletedAt: updatedDraftDeletions)
+                    letterDraftDeletedAt = updatedDraftDeletions
+                } catch {
+                    saveState = .failed("河流信已保存，草稿删除已进入复制队列，但本机待处理状态无法清理；下次打开时会重试。")
+                    return
+                }
+            }
+            if !letterQueued || !draftDeleted {
+                saveState = .failed("河流信已保存在本机，但河流信或草稿状态尚未完整进入复制队列；下次打开应用时会重试。")
             } else {
                 saveState = .saved(Date())
             }
@@ -691,6 +732,65 @@ final class DiaryStore: ObservableObject {
                 migrated += 1
             }
         }
+        if onSharedMonthlyLetterDraftChanged != nil {
+            let originalDrafts = letterDrafts
+            let originalDraftDates = letterDraftUpdatedAt
+            let originalDraftDeletions = letterDraftDeletedAt
+            var localDraftStateChanged = false
+            for (monthKey, body) in Array(letterDrafts) where monthlyLetters[monthKey]?.body == body {
+                letterDrafts[monthKey] = nil
+                letterDraftUpdatedAt[monthKey] = nil
+                letterDraftDeletedAt[monthKey] = Date()
+                localDraftStateChanged = true
+            }
+            if localDraftStateChanged {
+                do { try persistCurrentState() }
+                catch {
+                    letterDrafts = originalDrafts
+                    letterDraftUpdatedAt = originalDraftDates
+                    letterDraftDeletedAt = originalDraftDeletions
+                    saveState = .failed("已保存河流信的草稿清理未写入本机：\(UserFacingError.message(for: error))")
+                    return migrated
+                }
+            }
+
+            for (monthKey, deletedAt) in Array(letterDraftDeletedAt) {
+                guard persistSharedMonthlyLetterDraft(
+                    monthKey: monthKey, body: "", updatedAt: deletedAt, status: "deleted"
+                ) else { continue }
+                var completed = letterDraftDeletedAt
+                completed[monthKey] = nil
+                do {
+                    try persist(letterDraftDeletedAt: completed)
+                    letterDraftDeletedAt = completed
+                    migrated += 1
+                } catch {
+                    saveState = .failed("草稿删除已进入复制队列，但本机待处理状态清理失败：\(UserFacingError.message(for: error))")
+                }
+            }
+
+            let sharedDrafts = loadSharedMonthlyLetterDrafts?() ?? [:]
+            var updatedDraftDates = letterDraftUpdatedAt
+            for (monthKey, body) in letterDrafts {
+                let localUpdatedAt = letterDraftUpdatedAt[monthKey]
+                if let shared = sharedDrafts[monthKey],
+                   shared.body == body || (localUpdatedAt.map { $0 <= shared.updatedAt } ?? true) {
+                    continue
+                }
+                let updatedAt = localUpdatedAt ?? Date()
+                guard persistSharedMonthlyLetterDraft(monthKey: monthKey, body: body, updatedAt: updatedAt) else { continue }
+                updatedDraftDates[monthKey] = updatedAt
+                migrated += 1
+            }
+            if updatedDraftDates != letterDraftUpdatedAt {
+                do {
+                    try persist(letterDraftUpdatedAt: updatedDraftDates)
+                    letterDraftUpdatedAt = updatedDraftDates
+                } catch {
+                    saveState = .failed("草稿已进入复制队列，但更新时间无法保存到本机：\(UserFacingError.message(for: error))")
+                }
+            }
+        }
         return migrated
     }
 
@@ -698,6 +798,9 @@ final class DiaryStore: ObservableObject {
         var updatedOverrides = overrides
         var updatedLetters = monthlyLetters
         var updatedCaptures = quickCaptures
+        var updatedDrafts = letterDrafts
+        var updatedDraftDates = letterDraftUpdatedAt
+        var updatedDraftDeletions = letterDraftDeletedAt
         var changed = false
         for record in records {
             switch record.kind {
@@ -730,6 +833,15 @@ final class DiaryStore: ObservableObject {
                 changed = true
             case .monthlyLetter:
                 guard record.status == "current", let content = record.monthlyLetterContent else { continue }
+                if let pendingDelete = updatedDraftDeletions[content.monthKey], pendingDelete > content.updatedAt {
+                    // The local discard/save operation is newer than this letter snapshot.
+                } else if let draftDate = updatedDraftDates[content.monthKey], draftDate <= content.updatedAt,
+                          updatedDrafts[content.monthKey] != nil {
+                    updatedDrafts[content.monthKey] = nil
+                    updatedDraftDates[content.monthKey] = nil
+                    updatedDraftDeletions[content.monthKey] = max(draftDate, content.updatedAt)
+                    changed = true
+                }
                 let letter = MonthlyLetter(
                     month: content.monthKey, title: content.title, body: content.body,
                     evidence: content.evidence, createdAt: content.createdAt,
@@ -738,6 +850,37 @@ final class DiaryStore: ObservableObject {
                 guard updatedLetters[content.monthKey] != letter else { continue }
                 updatedLetters[content.monthKey] = letter
                 changed = true
+            case .monthlyLetterDraft:
+                guard let content = record.monthlyLetterDraftContent else { continue }
+                if record.status == "deleted" {
+                    if let draftDate = updatedDraftDates[content.monthKey], draftDate > content.updatedAt { continue }
+                    if let pendingDelete = updatedDraftDeletions[content.monthKey], pendingDelete > content.updatedAt { continue }
+                    if updatedDrafts[content.monthKey] != nil {
+                        updatedDrafts[content.monthKey] = nil
+                        changed = true
+                    }
+                    if updatedDraftDates[content.monthKey] != nil {
+                        updatedDraftDates[content.monthKey] = nil
+                        changed = true
+                    }
+                    if updatedDraftDeletions[content.monthKey] != nil {
+                        updatedDraftDeletions[content.monthKey] = nil
+                        changed = true
+                    }
+                    continue
+                }
+                guard record.status == "current" else { continue }
+                if let pendingDelete = updatedDraftDeletions[content.monthKey], pendingDelete > content.updatedAt { continue }
+                if let draftDate = updatedDraftDates[content.monthKey], draftDate > content.updatedAt { continue }
+                if updatedDrafts[content.monthKey] != content.body || updatedDraftDates[content.monthKey] != content.updatedAt {
+                    updatedDrafts[content.monthKey] = content.body
+                    updatedDraftDates[content.monthKey] = content.updatedAt
+                    changed = true
+                }
+                if updatedDraftDeletions[content.monthKey] != nil {
+                    updatedDraftDeletions[content.monthKey] = nil
+                    changed = true
+                }
             case .quickCaptureMetadata:
                 guard record.status == "current", let metadata = record.quickCaptureMetadata else { continue }
                 for date in Array(updatedCaptures.keys) {
@@ -755,10 +898,20 @@ final class DiaryStore: ObservableObject {
         }
         guard changed else { return }
         do {
-            try persist(overrides: updatedOverrides, monthlyLetters: updatedLetters, quickCaptures: updatedCaptures)
+            try persist(
+                overrides: updatedOverrides,
+                monthlyLetters: updatedLetters,
+                quickCaptures: updatedCaptures,
+                letterDrafts: updatedDrafts,
+                letterDraftUpdatedAt: updatedDraftDates,
+                letterDraftDeletedAt: updatedDraftDeletions
+            )
             overrides = updatedOverrides
             monthlyLetters = updatedLetters
             quickCaptures = updatedCaptures
+            letterDrafts = updatedDrafts
+            letterDraftUpdatedAt = updatedDraftDates
+            letterDraftDeletedAt = updatedDraftDeletions
             hasLocalChanges = hasPersistentLocalEdits
             if let current = data {
                 data = DiaryData(
@@ -874,7 +1027,8 @@ final class DiaryStore: ObservableObject {
                 try fileManager.removeItem(at: legacyStateURL)
             }
             // 快记、月信和时间线标注不属于"本地日记"，清空后若仍有残留则重建状态文件。
-            if !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !timelineAnnotations.isEmpty {
+            if !quickCaptures.isEmpty || !monthlyLetters.isEmpty || !letterDrafts.isEmpty
+                || !letterDraftDeletedAt.isEmpty || !timelineAnnotations.isEmpty {
                 try persist()
             } else {
                 isEncrypted = false
@@ -907,18 +1061,70 @@ final class DiaryStore: ObservableObject {
             discardLetterDraft(for: month)
             return
         }
+        let previousBody = letterDrafts[month]
+        let previousUpdatedAt = letterDraftUpdatedAt[month]
+        let previousDeletedAt = letterDraftDeletedAt[month]
+        let updatedAt = Date()
         letterDrafts[month] = body
+        letterDraftUpdatedAt[month] = updatedAt
+        letterDraftDeletedAt[month] = nil
         do {
             try persistCurrentState()
         } catch {
-            // 草稿保存失败不打断输入；下次变更会再试。
+            letterDrafts[month] = previousBody
+            letterDraftUpdatedAt[month] = previousUpdatedAt
+            letterDraftDeletedAt[month] = previousDeletedAt
+            saveState = .failed("河流信草稿无法加密保存：\(UserFacingError.message(for: error))")
+            return
         }
+        saveState = persistSharedMonthlyLetterDraft(monthKey: month, body: body, updatedAt: updatedAt)
+            ? .saved(updatedAt)
+            : .failed("草稿已加密保存在本机，但尚未进入跨设备复制队列；下次变更时会重试。")
     }
 
     func discardLetterDraft(for month: String) {
         guard letterDrafts[month] != nil else { return }
+        let previousBody = letterDrafts[month]
+        let previousUpdatedAt = letterDraftUpdatedAt[month]
+        let previousDeletedAt = letterDraftDeletedAt[month]
+        let deletedAt = Date()
         letterDrafts[month] = nil
-        try? persistCurrentState()
+        letterDraftUpdatedAt[month] = nil
+        letterDraftDeletedAt[month] = deletedAt
+        do {
+            try persistCurrentState()
+        } catch {
+            letterDrafts[month] = previousBody
+            letterDraftUpdatedAt[month] = previousUpdatedAt
+            letterDraftDeletedAt[month] = previousDeletedAt
+            saveState = .failed("草稿无法从本机加密状态中删除：\(UserFacingError.message(for: error))")
+            return
+        }
+        guard persistSharedMonthlyLetterDraft(monthKey: month, body: "", updatedAt: deletedAt, status: "deleted") else {
+            saveState = .failed("草稿已在本机删除，删除状态暂存在本机并会在下次启动时重试复制。")
+            return
+        }
+        var completedDeletions = letterDraftDeletedAt
+        completedDeletions[month] = nil
+        do {
+            try persist(letterDraftDeletedAt: completedDeletions)
+            letterDraftDeletedAt = completedDeletions
+            saveState = .saved(Date())
+        } catch {
+            saveState = .failed("草稿删除已进入复制队列，但本机待处理状态无法清理：\(UserFacingError.message(for: error))")
+        }
+    }
+
+    private func persistSharedMonthlyLetterDraft(
+        monthKey: String,
+        body: String,
+        updatedAt: Date,
+        status: String = "current"
+    ) -> Bool {
+        guard let onSharedMonthlyLetterDraftChanged else { return true }
+        let content = RiverMonthlyLetterDraftContent(monthKey: monthKey, body: body, updatedAt: updatedAt)
+        guard let record = RiverSharedStateRecord.monthlyLetterDraft(content, status: status) else { return false }
+        return onSharedMonthlyLetterDraftChanged(record)
     }
 
     private func persistCurrentState() throws {
@@ -934,7 +1140,9 @@ final class DiaryStore: ObservableObject {
             timelineAnnotations: timelineAnnotations,
             dailyGoals: dailyGoals,
             journalDrafts: journalDrafts,
-            letterDrafts: letterDrafts
+            letterDrafts: letterDrafts,
+            letterDraftUpdatedAt: letterDraftUpdatedAt,
+            letterDraftDeletedAt: letterDraftDeletedAt
         )
         try persist(state)
     }
@@ -1161,6 +1369,9 @@ final class DiaryStore: ObservableObject {
             timelineAnnotations: timelineAnnotations,
             dailyGoals: dailyGoals,
             journalDrafts: journalDrafts,
+            letterDrafts: letterDrafts,
+            letterDraftUpdatedAt: letterDraftUpdatedAt,
+            letterDraftDeletedAt: letterDraftDeletedAt,
             legacyDatabaseSnapshot: legacyDatabaseSnapshot,
             v2DatabaseSnapshot: v2DatabaseSnapshot
         )
@@ -1263,7 +1474,9 @@ final class DiaryStore: ObservableObject {
 
             overrides = payload.overrides
             quickCaptures = payload.quickCaptures
-            letterDrafts = [:]
+            letterDrafts = payload.letterDrafts ?? [:]
+            letterDraftUpdatedAt = payload.letterDraftUpdatedAt ?? [:]
+            letterDraftDeletedAt = payload.letterDraftDeletedAt ?? [:]
             dailyGoals = payload.dailyGoals ?? [:]
             journalDrafts = payload.journalDrafts ?? [:]
             monthlyLetters = payload.monthlyLetters ?? [:]
@@ -1289,9 +1502,11 @@ final class DiaryStore: ObservableObject {
                 savedQueries: payload.savedQueries ?? [],
                 timelineAnnotations: payload.timelineAnnotations ?? [:],
                 dailyGoals: payload.dailyGoals ?? [:],
-                journalDrafts: payload.journalDrafts ?? [:]
-            ,
-            letterDrafts: [:])
+                journalDrafts: payload.journalDrafts ?? [:],
+                letterDrafts: payload.letterDrafts ?? [:],
+                letterDraftUpdatedAt: payload.letterDraftUpdatedAt ?? [:],
+                letterDraftDeletedAt: payload.letterDraftDeletedAt ?? [:]
+            )
             try persist(restoredState)
 
             loadExternalOrBundledSnapshot()
@@ -1386,7 +1601,8 @@ final class DiaryStore: ObservableObject {
                 overrides = state.entries
                 quickCaptures = state.quickCaptures ?? [:]
                 letterDrafts = state.letterDrafts ?? [:]
-                letterDrafts = state.letterDrafts ?? [:]
+                letterDraftUpdatedAt = state.letterDraftUpdatedAt ?? [:]
+                letterDraftDeletedAt = state.letterDraftDeletedAt ?? [:]
                 monthlyLetters = state.monthlyLetters ?? [:]
                 savedQueries = state.savedQueries ?? []
                 timelineAnnotations = state.timelineAnnotations ?? [:]
@@ -1413,6 +1629,9 @@ final class DiaryStore: ObservableObject {
                 let state = try decoder.decode(UserState.self, from: raw)
                 overrides = state.entries
                 quickCaptures = state.quickCaptures ?? [:]
+                letterDrafts = state.letterDrafts ?? [:]
+                letterDraftUpdatedAt = state.letterDraftUpdatedAt ?? [:]
+                letterDraftDeletedAt = state.letterDraftDeletedAt ?? [:]
                 monthlyLetters = state.monthlyLetters ?? [:]
                 savedQueries = state.savedQueries ?? []
                 timelineAnnotations = state.timelineAnnotations ?? [:]
@@ -1539,6 +1758,9 @@ final class DiaryStore: ObservableObject {
             dailyGoals: dailyGoals,
             journalDrafts: journalDrafts,
             monthlyLetters: monthlyLetters,
+            letterDrafts: letterDrafts,
+            letterDraftUpdatedAt: letterDraftUpdatedAt,
+            letterDraftDeletedAt: letterDraftDeletedAt,
             savedQueries: savedQueries,
             timelineAnnotations: timelineAnnotations,
             dismissedDrafts: dismissedDrafts,
@@ -1573,6 +1795,9 @@ final class DiaryStore: ObservableObject {
         dailyGoals = checkpoint.dailyGoals
         journalDrafts = checkpoint.journalDrafts
         monthlyLetters = checkpoint.monthlyLetters
+        letterDrafts = checkpoint.letterDrafts
+        letterDraftUpdatedAt = checkpoint.letterDraftUpdatedAt
+        letterDraftDeletedAt = checkpoint.letterDraftDeletedAt
         savedQueries = checkpoint.savedQueries
         timelineAnnotations = checkpoint.timelineAnnotations
         dismissedDrafts = checkpoint.dismissedDrafts
@@ -1629,7 +1854,10 @@ final class DiaryStore: ObservableObject {
         savedQueries replacementQueries: [SavedQuery]? = nil,
         timelineAnnotations replacementAnnotations: [String: TimelineAnnotation]? = nil,
         dailyGoals replacementDailyGoals: [String: DailyGoal]? = nil,
-        journalDrafts replacementJournalDrafts: [String: JournalDraftRecord]? = nil
+        journalDrafts replacementJournalDrafts: [String: JournalDraftRecord]? = nil,
+        letterDrafts replacementLetterDrafts: [String: String]? = nil,
+        letterDraftUpdatedAt replacementLetterDraftUpdatedAt: [String: Date]? = nil,
+        letterDraftDeletedAt replacementLetterDraftDeletedAt: [String: Date]? = nil
     ) throws {
         guard supportDirectory != nil else {
             throw NSError(domain: "RiverDiaryMac", code: 1, userInfo: [NSLocalizedDescriptionKey: "无法访问应用支持目录"])
@@ -1647,7 +1875,9 @@ final class DiaryStore: ObservableObject {
             timelineAnnotations: replacementAnnotations ?? timelineAnnotations,
             dailyGoals: replacementDailyGoals ?? dailyGoals,
             journalDrafts: replacementJournalDrafts ?? journalDrafts,
-            letterDrafts: letterDrafts
+            letterDrafts: replacementLetterDrafts ?? letterDrafts,
+            letterDraftUpdatedAt: replacementLetterDraftUpdatedAt ?? letterDraftUpdatedAt,
+            letterDraftDeletedAt: replacementLetterDraftDeletedAt ?? letterDraftDeletedAt
         )
         try persist(state)
     }

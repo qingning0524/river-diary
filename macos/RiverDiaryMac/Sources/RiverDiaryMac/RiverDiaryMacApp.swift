@@ -70,6 +70,14 @@ struct RiverDiaryMacApp: App {
         }
         diaryStore.onSharedJournalEntryChanged = { sharedV2.saveSharedUserRecord($0) }
         diaryStore.onSharedMonthlyLetterChanged = { sharedV2.saveSharedUserRecord($0) }
+        diaryStore.onSharedMonthlyLetterDraftChanged = { sharedV2.saveSharedUserRecord($0) }
+        diaryStore.loadSharedMonthlyLetterDrafts = {
+            Dictionary(uniqueKeysWithValues: sharedV2.sharedUserRecords().compactMap { record in
+                guard record.kind == .monthlyLetterDraft,
+                      let draft = record.monthlyLetterDraftContent else { return nil }
+                return (draft.monthKey, draft)
+            })
+        }
         diaryStore.onMoodScoreChanged = { day, score, updatedAt in
             sharedV2.setMoodScore(dayKey: day, score: score, updatedAt: updatedAt)
         }

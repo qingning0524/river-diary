@@ -38,6 +38,8 @@ struct ReviewContentView: View {
 
     @State private var dayRange = 7
     @State private var editingLetter: MonthlyLetter?
+    @State private var loadedLetterBody: String?
+    @State private var letterDraftSaveTask: Task<Void, Never>?
     @State private var letterMessage: String?
     @State private var isWeeklyRestoreAttempted = false
     var showsHeader = true
@@ -89,6 +91,20 @@ struct ReviewContentView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { loadMonthlyLetter() }
         .onChange(of: endDate) { _, _ in loadMonthlyLetter() }
+        .onChange(of: editingLetter?.body) { _, body in
+            guard let body, let letter = editingLetter, body != loadedLetterBody else { return }
+            scheduleLetterDraftSave(body, month: letter.month)
+        }
+        .onChange(of: store.letterDraft(for: MonthlyLetter.monthKey(for: endDate))) { _, sharedDraftBody in
+            let monthKey = MonthlyLetter.monthKey(for: endDate)
+            guard var letter = editingLetter, letter.month == monthKey,
+                  letter.body == loadedLetterBody else { return }
+            letter.body = sharedDraftBody ?? store.monthlyLetters[monthKey]?.body ?? baseLetter(for: monthKey).body
+            guard letter.body != editingLetter?.body else { return }
+            editingLetter = letter
+            loadedLetterBody = letter.body
+        }
+        .onDisappear { flushLetterDraftIfNeeded() }
         // 打开复盘页时从结果层恢复本周期已保存的周报（结果层有值就不重算）。
         .task(id: startDate) { restoreWeeklyIfNeeded() }
         .onChange(of: startDate) { _, _ in
@@ -352,32 +368,57 @@ struct ReviewContentView: View {
     }
 
     private func loadMonthlyLetter() {
-        if let editingLetter {
-            store.saveLetterDraft(editingLetter.body, for: editingLetter.month)
-        }
+        flushLetterDraftIfNeeded()
         let key = MonthlyLetter.monthKey(for: endDate)
         var seeded = store.monthlyLetters[key] ?? baseLetter(for: key)
         if let draftBody = store.letterDraft(for: key) {
             seeded.body = draftBody
         }
         editingLetter = seeded
+        loadedLetterBody = seeded.body
         letterMessage = nil
     }
 
     private func saveLetter() {
         guard let letter = editingLetter ?? activeLetter else { return }
+        letterDraftSaveTask?.cancel()
+        letterDraftSaveTask = nil
         do {
             try store.saveMonthlyLetter(letter)
             editingLetter = letter
+            loadedLetterBody = letter.body
             store.discardLetterDraft(for: letter.month)
             library.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
-            letterMessage = "已保存到加密本地状态。"
-            feedbackCenter.show("已保存河流信", kind: .success)
+            if case .failed(let message) = store.saveState {
+                letterMessage = message
+                feedbackCenter.show(message, kind: .error)
+            } else {
+                letterMessage = "已保存到加密本地状态并加入跨设备复制队列。"
+                feedbackCenter.show("已保存河流信", kind: .success)
+            }
         } catch {
             let message = UserFacingError.message(for: error)
             letterMessage = message
             feedbackCenter.show("保存失败：\(message)", kind: .error)
         }
+    }
+
+    private func scheduleLetterDraftSave(_ body: String, month: String) {
+        letterDraftSaveTask?.cancel()
+        letterDraftSaveTask = Task { @MainActor in
+            do { try await Task.sleep(nanoseconds: 500_000_000) } catch { return }
+            guard editingLetter?.month == month, editingLetter?.body == body else { return }
+            loadedLetterBody = body
+            store.saveLetterDraft(body, for: month)
+        }
+    }
+
+    private func flushLetterDraftIfNeeded() {
+        letterDraftSaveTask?.cancel()
+        letterDraftSaveTask = nil
+        guard let letter = editingLetter, letter.body != loadedLetterBody else { return }
+        loadedLetterBody = letter.body
+        store.saveLetterDraft(letter.body, for: letter.month)
     }
 
     private var actionRow: some View {

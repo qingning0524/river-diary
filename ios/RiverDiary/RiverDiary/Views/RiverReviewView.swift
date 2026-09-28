@@ -41,6 +41,12 @@ struct RiverReviewView: View {
             .sorted { $0.logicalKey > $1.logicalKey }
     }
 
+    private var sharedMonthlyLetterDrafts: [RiverSharedStateRecord] {
+        (node.database?.sharedUserRecords ?? [])
+            .filter { $0.kind == .monthlyLetterDraft && $0.status == "current" }
+            .sorted { $0.logicalKey > $1.logicalKey }
+    }
+
     private var sharedArtifacts: [RiverArtifactRevision] {
         ((try? node.database?.canonicalArtifactRevisions()) ?? [])
             .filter { $0.kind != .dailyReview && $0.kind != .memory }
@@ -103,6 +109,26 @@ struct RiverReviewView: View {
                                     if !letter.evidence.isEmpty {
                                         Text(letter.evidence).font(.caption).foregroundStyle(.secondary)
                                     }
+                                }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                    }
+                }
+
+                if !sharedMonthlyLetterDrafts.isEmpty {
+                    Section("未保存的河流信草稿") {
+                        ForEach(sharedMonthlyLetterDrafts) { record in
+                            if let draft = record.monthlyLetterDraftContent {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack {
+                                        Text(draft.monthKey).font(.caption.monospaced())
+                                        Spacer()
+                                        Label("未保存", systemImage: "pencil")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Text(draft.body).font(.callout).textSelection(.enabled)
                                 }
                                 .padding(.vertical, 4)
                             }

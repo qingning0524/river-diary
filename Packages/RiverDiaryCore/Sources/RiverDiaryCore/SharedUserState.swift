@@ -12,6 +12,7 @@ public enum RiverSharedStateRecordKind: Hashable, Sendable, Codable {
     case pendingConfirmation
     case journalEntry
     case monthlyLetter
+    case monthlyLetterDraft
     case quickCaptureMetadata
     case unknown(String)
 
@@ -24,6 +25,7 @@ public enum RiverSharedStateRecordKind: Hashable, Sendable, Codable {
         case .pendingConfirmation: "pendingConfirmation"
         case .journalEntry: "journalEntry"
         case .monthlyLetter: "monthlyLetter"
+        case .monthlyLetterDraft: "monthlyLetterDraft"
         case .quickCaptureMetadata: "quickCaptureMetadata"
         case .unknown(let value): value
         }
@@ -38,6 +40,7 @@ public enum RiverSharedStateRecordKind: Hashable, Sendable, Codable {
         case "pendingConfirmation": self = .pendingConfirmation
         case "journalEntry": self = .journalEntry
         case "monthlyLetter": self = .monthlyLetter
+        case "monthlyLetterDraft": self = .monthlyLetterDraft
         case "quickCaptureMetadata": self = .quickCaptureMetadata
         default: self = .unknown(rawValue)
         }
@@ -97,6 +100,18 @@ public struct RiverMonthlyLetterContent: Codable, Hashable, Sendable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.isFavorite = isFavorite
+    }
+}
+
+public struct RiverMonthlyLetterDraftContent: Codable, Hashable, Sendable {
+    public let monthKey: String
+    public let body: String
+    public let updatedAt: Date
+
+    public init(monthKey: String, body: String, updatedAt: Date) {
+        self.monthKey = monthKey
+        self.body = body
+        self.updatedAt = updatedAt
     }
 }
 
@@ -212,6 +227,11 @@ public extension RiverSharedStateRecord {
         return try? JSONDecoder().decode(RiverMonthlyLetterContent.self, from: data)
     }
 
+    var monthlyLetterDraftContent: RiverMonthlyLetterDraftContent? {
+        guard kind == .monthlyLetterDraft, let data = payloadJSON.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(RiverMonthlyLetterDraftContent.self, from: data)
+    }
+
     var quickCaptureMetadata: RiverQuickCaptureMetadata? {
         guard kind == .quickCaptureMetadata, let data = payloadJSON.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(RiverQuickCaptureMetadata.self, from: data)
@@ -235,6 +255,17 @@ public extension RiverSharedStateRecord {
         let id = RiverStableIdentifier.uuid(namespace: "monthly-letter", key: content.monthKey)
         return Self(id: id, kind: .monthlyLetter, status: "current", logicalKey: content.monthKey,
                     payloadJSON: payload, createdAt: content.createdAt, updatedAt: content.updatedAt)
+    }
+
+    static func monthlyLetterDraft(_ content: RiverMonthlyLetterDraftContent, status: String = "current") -> Self? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let bytes = try? encoder.encode(content),
+              let payload = String(data: bytes, encoding: .utf8) else { return nil }
+        let id = RiverStableIdentifier.uuid(namespace: "monthly-letter-draft", key: content.monthKey)
+        return Self(id: id, kind: .monthlyLetterDraft, status: status,
+                    logicalKey: content.monthKey, payloadJSON: payload,
+                    createdAt: content.updatedAt, updatedAt: content.updatedAt)
     }
 
     static func quickCaptureMetadata(_ content: RiverQuickCaptureMetadata, status: String = "current") -> Self? {
@@ -353,6 +384,8 @@ public enum RiverStateOperationFreshness {
                 return record.status == "current" || record.status == "deleted"
             case .monthlyLetter:
                 return record.status == "current"
+            case .monthlyLetterDraft:
+                return record.status == "current" || record.status == "deleted"
             case .unknown:
                 return record.status == "current" || record.status == "confirmed" || record.status == "deleted"
             case .quickCaptureMetadata:

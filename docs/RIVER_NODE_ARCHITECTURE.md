@@ -22,7 +22,7 @@ River Diary 由多个本地优先的 River Node 组成。iPhone 和 Mac 都有�
 - `ios/RiverDiary/RiverDiary/Views/RiverReviewView.swift`：读取共享回顾卡、回答卡片并确认个人习惯规则，同时显示共享月度河流信。
 - `macos/RiverDiaryMac/Sources/RiverDiaryMac/ActivityStore.swift`：把 Mac 快记写入本机 Event 流，并为删除追加共享 tombstone。
 - `macos/RiverDiaryMac/Sources/RiverDiaryMac/AIAssistantStore.swift`：把经 TimelineDigest 来源校验的 clarification 投影为共享待确认事项，并在已有用户标注后关闭或更新对应事项。
-- `macos/RiverDiaryMac/Sources/RiverDiaryMac/DiaryStore.swift`：把 Mac 手写日记、手动评分和已保存的月度河流信复制为共享 State Operation，并将其他节点的 canonical 投影写回本地加密状态。
+- `macos/RiverDiaryMac/Sources/RiverDiaryMac/DiaryStore.swift`：把 Mac 手写日记、手动评分、已保存的月度河流信和未保存草稿复制为共享 State Operation，并将其他节点的 canonical 投影写回本地加密状态。
 - `macos/RiverDiaryMac/Sources/RiverDiaryMac/Storage/V2Store.swift`：Mac SQLCipher V2 事实库、序号前沿、状态操作、Artifact、AnalysisJob 和地点投影。
 - `macos/RiverDiaryMac/Sources/RiverDiaryMac/SyncSettingsStore.swift`：Mac 文件夹授权、同步密钥、设备管理、同步状态和周期核对。
 - `macos/RiverDiaryMac/Sources/RiverDiaryMac/ActivityTimeline.swift`、`Views/RiverTimelineView.swift`：本机和远端应用会话融合、地点节点、快记和未记录时段的展示。
@@ -41,7 +41,7 @@ River Diary 由多个本地优先的 River Node 组成。iPhone 和 Mac 都有�
 - `state_operations`：操作 ID、Actor、序号、HLC、因果前沿、目标字段与 payload。
 - `artifacts`、`artifact_dependencies`：不可变分析修订、输入前沿、内容摘要与依赖范围。
 - `analysis_jobs`：待运行的分析任务、输入前沿和持久化状态。
-- `shared_user_records`：从共享 State Operation 重建的习惯规则、回顾卡、回顾批次、长期记忆、待确认事项、手写日记和月度河流信投影。
+- `shared_user_records`：从共享 State Operation 重建的习惯规则、回顾卡、回顾批次、长期记忆、待确认事项、手写日记、已保存月度河流信和未保存草稿投影。
 - `places`：由位置 Event 和 State Operation 重建的地点投影。
 - `devices`、`sync_imports`、`sync_exports`、`sync_state`：设备注册、对象去重、同步前沿、Manifest 和核对摘要。
 
@@ -65,7 +65,7 @@ iPhone“本地备份”导出 Event、State Operation、Artifact 修订和设�
 
 ## State Operation 与权威
 
-State Operation 是追加式、带设备序号和 HLC 的字段操作。当前已接入的类型包括地点确认/改名、评分设置/重置、设备退役、Event tombstone、Timeline 标注、习惯规则/回顾卡/回顾批次/回顾节奏、长期记忆记录/确认、共享待确认事项的创建/决定、手写日记/河流信当前记录与日记删除、快记元数据，以及 Artifact 过期标记。删除使用 tombstone 或稳定记录的 deleted 状态；Artifact 失效本身也通过 `artifact.stale` 操作表达，不改写已发布修订。
+State Operation 是追加式、带设备序号和 HLC 的字段操作。当前已接入的类型包括地点确认/改名、评分设置/重置、设备退役、Event tombstone、Timeline 标注、习惯规则/回顾卡/回顾批次/回顾节奏、长期记忆记录/确认、共享待确认事项的创建/决定、手写日记、已保存河流信、未保存河流信草稿、日记删除、快记元数据，以及 Artifact 过期标记。删除使用 tombstone 或稳定记录的 deleted 状态；Artifact 失效本身也通过 `artifact.stale` 操作表达，不改写已发布修订。
 
 共享记录遇到未知 `kind` 时保留原始字符串并允许转发；当前客户端不渲染未知类型，也不会因其存在而中止 State Operation 重建。
 
@@ -111,7 +111,7 @@ iPhone 的本机 AnalysisJob 指纹覆盖实际 system/user prompt、模型、en
 
 ## 真实验证与仍需真实设备验证的场景
 
-本轮 Xcode beta 工具链验证：RiverDiaryCore 36 项测试通过；macOS 全量 371 项测试通过；iPhone iOS 27 真机目标构建与签名成功；先前构建曾安装并在 iPhone 14 Pro 上接受启动，但由于当前 CoreDevice 显示设备 unavailable，最新真机签名包目前只在本机产物目录中。`devicectl` 曾接受启动请求，但随后设备状态变为 unavailable，截图请求失败，无法用真机验证当前 UI。当前 iPhone 17 Pro iOS 27 模拟器无 TeamIdentifier 的构建可以安装并启动，但界面明确报告“本地事件库不可用”，Keychain access group 权限错误 `OSStatus -34018`。该模拟器容器中有本轮启动生成的 SQLite `user_version=4` 数据库、Event/State Operation/Artifact/AnalysisJob 表和 WAL journal，原始 Event 数为 0；但 app 无法取得可用设备身份/钥匙串访问，因此这只验证到 schema bootstrap 和正确失败提示，不证明一个可工作的本地节点，也不替代真机签名包验证。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份、Timeline clarification 共享、用户状态操作对旧 Artifact 失效，以及分析请求/Artifact 指纹分离；macOS tests 覆盖 AnalysisJob 请求快照加密落盘/恢复输入序列化、mock transport 下同 frontier 恢复及 stale frontier 拒绝重放、本日新旧输入重建判定、远程 AI 未授权时零网络请求与同意后恢复、诊断报告共享待确认事项计数、习惯回顾、记忆确认、待确认事项纠正、TimelineDigest clarification 发布与关闭、快记 Event/tombstone与标签置顶元数据、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
+本轮 Xcode beta 工具链验证：RiverDiaryCore 37 项测试通过；macOS 全量 373 项测试通过；iPhone iOS 27 真机目标构建与签名成功；先前构建曾安装并在 iPhone 14 Pro 上接受启动，但由于当前 CoreDevice 显示设备 unavailable，最新真机签名包目前只在本机产物目录中。`devicectl` 曾接受启动请求，但随后设备状态变为 unavailable，截图请求失败，无法用真机验证当前 UI。当前 iPhone 17 Pro iOS 27 模拟器无 TeamIdentifier 的构建可以安装并启动，但界面明确报告“本地事件库不可用”，Keychain access group 权限错误 `OSStatus -34018`。该模拟器容器中有本轮启动生成的 SQLite `user_version=4` 数据库、Event/State Operation/Artifact/AnalysisJob 表和 WAL journal，原始 Event 数为 0；但 app 无法取得可用设备身份/钥匙串访问，因此这只验证到 schema bootstrap 和正确失败提示，不证明一个可工作的本地节点，也不替代真机签名包验证。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份、Timeline clarification 共享、用户状态操作对旧 Artifact 失效，以及分析请求/Artifact 指纹分离；macOS tests 覆盖 AnalysisJob 请求快照加密落盘/恢复输入序列化、mock transport 下同 frontier 恢复及 stale frontier 拒绝重放、本日新旧输入重建判定、远程 AI 未授权时零网络请求与同意后恢复、诊断报告共享待确认事项计数、未保存月度河流信草稿的复制/保存删除/重启后删除重试及备份往返、习惯回顾、记忆确认、待确认事项纠正、TimelineDigest clarification 发布与关闭、快记 Event/tombstone与标签置顶元数据、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
 
 以下情形还没有通过真实 iPhone/Mac + 用户 iCloud 账号实际验收：Core Location 后台 Visits 的系统交付、Shortcuts 个人自动化触发、MapKit/Geocoder 实际 POI 质量、跨设备 iCloud 延迟和文件提供器协调、LAN/Bonjour 实际传输及 LAN/iCloud 重复投递、真实权限撤销、Personal Team 重签名后的持久性与恢复。
 
@@ -123,7 +123,7 @@ Developer Diagnostics 已在两端设置中提供显式开关，展示数据库�
 - iPhone 本地备份加密导出/合并恢复已实现并可编译，但尚未通过模拟器文件选择器操作或真机恢复测试。还未覆盖旧版打包日记正文和本地系统权限状态。
 - AnalysisJob 已持久化；Mac 对可恢复任务保存加密请求快照，并且只重放 frontier、provider/model/endpoint 和请求指纹均匹配的请求。Mac 收到同步变更后会对本日 TimelineDigest/DailyReview 做 900ms trailing debounce，等待同一分析流水线结束，再从最新本机事实重建；这个调度目前只覆盖本日流水线。习惯回顾的应用激活重建已接入，但 cadence/证据门控下的进程崩溃恢复尚未故障注入；其他任务的输入变化后专用重建、全任务防抖和崩溃期间成本/幂等边界仍需继续实现和验收。
 - 通用待确认事项已成为共享用户记录：iPhone 对多次到访且有真实地图候选的未确认地点生成稳定事项，Mac/iPhone 可确认、拒绝或改名，结果通过 State Operation 复制。Mac TimelineDigest 的来源校验 clarification 也会生成共享事项；更一般的活动解释与其他 AI 任务尚未接入统一确认管线，离线并发作答、重复提问和地点候选门槛仍需真机验收。
-- Mac 快记文本和时间已进入 Event 流；旧快记在启动时幂等迁移，删除通过 tombstone 传播，收到删除操作后会刷新 Mac 快记投影。手写日记、评分、删除和已保存月度河流信已写入共享 State Operation，并在 iPhone 时间线/回顾页显示。Mac 启动时等待日记源加载后迁移旧 override 与信件。快记标签与置顶状态也通过共享用户记录复制并显示在 iPhone 时间线；自动生成但尚未保存的河流信草稿仍不会同步。
+- Mac 快记文本和时间已进入 Event 流；旧快记在启动时幂等迁移，删除通过 tombstone 传播，收到删除操作后会刷新 Mac 快记投影。手写日记、评分、删除、已保存月度河流信和未保存河流信草稿已写入共享 State Operation；iPhone 回顾页只读显示未保存草稿。Mac 启动时等待日记源加载后迁移旧 override、已保存信件和未保存草稿；本地加密备份也包含草稿及待重试的草稿删除状态。快记标签与置顶状态也通过共享用户记录复制并显示在 iPhone 时间线。
 - 旧版 Mac `habit_*` 与长期记忆记录会在复制前迁移到共享 State Operation；iPhone 可查看/回答回顾卡、确认或撤销长期记忆。两端离线并发、撤销/退役、重装恢复和真实 iCloud 的操作级验收仍未完成。其他复盘状态、自动生成语义确认和长期历史迁移仍有未覆盖部分。
 - iCloud offline、权限撤销、坏文件和未知协议有代码保护路径及核心测试，但还没有两个真实安装实例/真实 iCloud 文件提供器的端到端故障注入。
 - 仍需在真实设备上完成文档 Scenario A–O 的操作级验收；模拟器启动不等同于完成位置、Shortcuts、iCloud、签名和 AI 场景。

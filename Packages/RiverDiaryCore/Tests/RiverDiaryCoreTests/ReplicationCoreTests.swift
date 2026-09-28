@@ -635,4 +635,35 @@ struct ReplicationCoreTests {
             systemPrompt: "system", userPrompt: "updated private daily prompt", temperature: 0.2, maxTokens: 900
         ))
     }
+
+    @Test func monthlyLetterDraftUsesStableSharedIdentityAndDeletionChangesState() throws {
+        let date = Date(timeIntervalSince1970: 1_800_000_000)
+        let content = RiverMonthlyLetterDraftContent(monthKey: "2026-09", body: "尚未保存的河流信。", updatedAt: date)
+        let first = try #require(RiverSharedStateRecord.monthlyLetterDraft(content))
+        let second = try #require(RiverSharedStateRecord.monthlyLetterDraft(content))
+        #expect(first == second)
+        #expect(first.kind == .monthlyLetterDraft)
+        #expect(first.logicalKey == "2026-09")
+        #expect(first.monthlyLetterDraftContent == content)
+
+        let actor = RiverDeviceID(rawValue: "mac_letter_draft")
+        func operation(for record: RiverSharedStateRecord) throws -> StateOperation {
+            try StateOperation(
+                actorDeviceID: actor,
+                clock: HybridLogicalClock(physicalMilliseconds: 1_800_000_000_000, deviceID: actor),
+                causalFrontier: InputFrontier(),
+                targetID: record.targetID,
+                fieldKey: "record",
+                operationType: "shared.record.upsert",
+                payload: JSONEncoder().encode(record)
+            )
+        }
+        #expect(RiverStateOperationFreshness.changesAnalyticalState(try operation(for: first)))
+        let deletion = try #require(RiverSharedStateRecord.monthlyLetterDraft(
+            RiverMonthlyLetterDraftContent(monthKey: "2026-09", body: "", updatedAt: date.addingTimeInterval(10)),
+            status: "deleted"
+        ))
+        #expect(deletion.id == first.id)
+        #expect(RiverStateOperationFreshness.changesAnalyticalState(try operation(for: deletion)))
+    }
 }

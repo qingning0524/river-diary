@@ -315,6 +315,64 @@ final class V2StoreTests: XCTestCase {
         XCTAssertEqual(replicationStore.sharedUserRecords().first { $0.id == initialMetadata.id }?.quickCaptureMetadata?.isPinned, true)
     }
 
+    func testMonthlyLetterDraftIsSharedAndRemovedWhenSaved() throws {
+        let (replicationStore, databaseURL) = try makeStore()
+        let source = DiaryStore(supportDirectory: databaseURL.deletingLastPathComponent().appendingPathComponent("letter-draft-source"))
+        source.saveLetterDraft("还没有决定是否保存的正文。", for: "2026-09")
+        source.onSharedMonthlyLetterChanged = { replicationStore.saveSharedUserRecord($0) }
+        source.onSharedMonthlyLetterDraftChanged = { replicationStore.saveSharedUserRecord($0) }
+        source.loadSharedMonthlyLetterDrafts = {
+            Dictionary(uniqueKeysWithValues: replicationStore.sharedUserRecords().compactMap { record in
+                guard record.kind == .monthlyLetterDraft, record.status == "current",
+                      let draft = record.monthlyLetterDraftContent else { return nil }
+                return (draft.monthKey, draft)
+            })
+        }
+        XCTAssertEqual(source.migrateLocalJournalStateToSharedOperations(), 1)
+        XCTAssertEqual(source.migrateLocalJournalStateToSharedOperations(), 0, "local draft migration is idempotent")
+        let sharedDraft = try XCTUnwrap(replicationStore.sharedUserRecords().first {
+            $0.kind == .monthlyLetterDraft && $0.status == "current"
+        })
+        XCTAssertEqual(sharedDraft.monthlyLetterDraftContent?.body, "还没有决定是否保存的正文。")
+
+        let target = DiaryStore(supportDirectory: databaseURL.deletingLastPathComponent().appendingPathComponent("letter-draft-target"))
+        target.applySharedDiaryRecords(replicationStore.sharedUserRecords())
+        XCTAssertEqual(target.letterDraft(for: "2026-09"), "还没有决定是否保存的正文。")
+
+        try source.saveMonthlyLetter(MonthlyLetter(
+            month: "2026-09", title: "九月河流信", body: "正式保存的正文。", evidence: "日记记录",
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000), updatedAt: Date(timeIntervalSince1970: 1_700_000_100)
+        ))
+        XCTAssertEqual(replicationStore.sharedUserRecords().first { $0.id == sharedDraft.id }?.status, "deleted")
+        target.applySharedDiaryRecords(replicationStore.sharedUserRecords())
+        XCTAssertNil(target.letterDraft(for: "2026-09"))
+        XCTAssertEqual(target.monthlyLetters["2026-09"]?.body, "正式保存的正文。")
+    }
+
+    func testFailedMonthlyLetterDraftTombstoneResumesAfterStoreReload() throws {
+        let (replicationStore, databaseURL) = try makeStore()
+        let stateDirectory = databaseURL.deletingLastPathComponent().appendingPathComponent("letter-draft-retry")
+        let source = DiaryStore(supportDirectory: stateDirectory)
+        source.onSharedMonthlyLetterDraftChanged = { _ in false }
+        source.saveLetterDraft("稍后会删除的草稿。", for: "2026-09")
+        source.discardLetterDraft(for: "2026-09")
+        XCTAssertTrue(replicationStore.sharedUserRecords().filter { $0.kind == .monthlyLetterDraft }.isEmpty)
+
+        let relaunched = DiaryStore(supportDirectory: stateDirectory)
+        relaunched.onSharedMonthlyLetterDraftChanged = { replicationStore.saveSharedUserRecord($0) }
+        relaunched.loadSharedMonthlyLetterDrafts = {
+            Dictionary(uniqueKeysWithValues: replicationStore.sharedUserRecords().compactMap { record in
+                guard record.kind == .monthlyLetterDraft,
+                      let draft = record.monthlyLetterDraftContent else { return nil }
+                return (draft.monthKey, draft)
+            })
+        }
+        XCTAssertNil(relaunched.letterDraft(for: "2026-09"))
+        XCTAssertEqual(relaunched.migrateLocalJournalStateToSharedOperations(), 1)
+        XCTAssertEqual(replicationStore.sharedUserRecords().first { $0.kind == .monthlyLetterDraft }?.status, "deleted")
+        XCTAssertEqual(relaunched.migrateLocalJournalStateToSharedOperations(), 0, "pending deletion retry is idempotent")
+    }
+
     func testDiaryStoreProjectsImportedJournalLetterAndDeletion() throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("river-shared-journal-projection-\(UUID().uuidString)", isDirectory: true)
