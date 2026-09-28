@@ -25,6 +25,10 @@ public struct RiverAnalysisJob: Identifiable, Codable, Hashable, Sendable {
     public let pipelineVersion: String
     public let promptVersion: String
     public let lastError: String?
+    /// Exact local request inputs required to safely resume this job. Sensitive
+    /// prompt content stays in the node's protected database and is never synced.
+    public let requestSnapshot: Data?
+    public let requestFingerprint: String?
 
     public init(
         id: UUID,
@@ -40,7 +44,9 @@ public struct RiverAnalysisJob: Identifiable, Codable, Hashable, Sendable {
         originDeviceID: RiverDeviceID,
         pipelineVersion: String,
         promptVersion: String,
-        lastError: String? = nil
+        lastError: String? = nil,
+        requestSnapshot: Data? = nil,
+        requestFingerprint: String? = nil
     ) {
         self.id = id
         self.logicalKey = logicalKey
@@ -56,6 +62,8 @@ public struct RiverAnalysisJob: Identifiable, Codable, Hashable, Sendable {
         self.pipelineVersion = pipelineVersion
         self.promptVersion = promptVersion
         self.lastError = lastError
+        self.requestSnapshot = requestSnapshot
+        self.requestFingerprint = requestFingerprint
     }
 
     public func transitioning(to next: RiverAnalysisJobStatus, at date: Date = Date(), error: String? = nil) -> Self {
@@ -73,17 +81,20 @@ public struct RiverAnalysisJob: Identifiable, Codable, Hashable, Sendable {
             originDeviceID: originDeviceID,
             pipelineVersion: pipelineVersion,
             promptVersion: promptVersion,
-            lastError: error
+            lastError: error,
+            requestSnapshot: next == .queued || next == .running ? requestSnapshot : nil,
+            requestFingerprint: requestFingerprint
         )
     }
 }
 
 public enum RiverAnalysisJobScheduler {
     public static func jobID(deviceID: RiverDeviceID, logicalKey: String, artifactType: RiverArtifactKind,
-                             inputFrontier: InputFrontier, pipelineVersion: String, promptVersion: String) -> UUID {
+                             inputFrontier: InputFrontier, pipelineVersion: String, promptVersion: String,
+                             requestFingerprint: String? = nil) -> UUID {
         RiverStableIdentifier.uuid(
             namespace: "analysis-job.\(deviceID.rawValue)",
-            key: "\(logicalKey)|\(artifactType.rawValue)|\(inputFrontier.stableKey)|\(pipelineVersion)|\(promptVersion)"
+            key: "\(logicalKey)|\(artifactType.rawValue)|\(inputFrontier.stableKey)|\(pipelineVersion)|\(promptVersion)|\(requestFingerprint ?? "")"
         )
     }
 
@@ -98,6 +109,20 @@ public enum RiverAnalysisJobScheduler {
             && artifact.pipelineVersion == job.pipelineVersion
             && artifact.promptVersion == job.promptVersion
             && artifact.status != .stale
+    }
+
+    public static func canResume(
+        _ job: RiverAnalysisJob,
+        at currentFrontier: InputFrontier,
+        pipelineVersion: String,
+        requestFingerprint: String
+    ) -> Bool {
+        (job.status == .queued || job.status == .running)
+            && job.attempt < 3
+            && job.inputFrontier == currentFrontier
+            && job.pipelineVersion == pipelineVersion
+            && job.requestSnapshot != nil
+            && job.requestFingerprint == requestFingerprint
     }
 
     public static func nextQueuedJob(from jobs: [RiverAnalysisJob]) -> RiverAnalysisJob? {

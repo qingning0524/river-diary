@@ -70,13 +70,15 @@ final class V2StoreTests: XCTestCase {
     }
 
     func testAnalysisJobsPersistTheirFrontierAndStateTransitions() throws {
-        let (store, _) = try makeStore()
+        let (store, databaseURL) = try makeStore()
         let device = RiverDeviceID(rawValue: "mac-analysis-jobs")
         let frontier = try InputFrontier(sequences: [device.rawValue: 12], operationSequences: [device.rawValue: 3])
+        let requestSnapshot = Data("private exact user prompt input".utf8)
         let queued = RiverAnalysisJob(
             id: UUID(), logicalKey: "daily-review:2026-09-28", artifactType: .dailyReview,
             inputFrontier: frontier, priority: 100, originDeviceID: device,
-            pipelineVersion: "1.0", promptVersion: "1"
+            pipelineVersion: "1.0", promptVersion: "1", requestSnapshot: requestSnapshot,
+            requestFingerprint: SHA256Hex.hash(requestSnapshot)
         )
 
         XCTAssertTrue(store.saveAnalysisJob(queued))
@@ -86,7 +88,10 @@ final class V2StoreTests: XCTestCase {
         XCTAssertTrue(store.saveAnalysisJob(running))
         XCTAssertEqual(store.latestAnalysisJob()?.status, .running)
         XCTAssertEqual(store.latestAnalysisJob()?.attempt, 1)
+        XCTAssertEqual(store.latestAnalysisJob()?.requestSnapshot, requestSnapshot)
+        XCTAssertEqual(store.latestAnalysisJob()?.requestFingerprint, SHA256Hex.hash(requestSnapshot))
         XCTAssertEqual(store.countRows(in: .analysisJobs), 1)
+        XCTAssertNil(try Data(contentsOf: databaseURL).range(of: requestSnapshot))
     }
 
     func testMacQuickCaptureEntersEventStreamAndDeletionReplicatesAsTombstone() throws {

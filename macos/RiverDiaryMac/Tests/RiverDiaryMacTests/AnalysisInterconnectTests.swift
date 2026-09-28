@@ -15,6 +15,47 @@ final class AnalysisInterconnectTests: XCTestCase {
         return V2Store(databaseURL: directory.appendingPathComponent("interconnect.db"))
     }
 
+    func testAnalysisRecoverySnapshotPreservesExactPromptAndTimelineValidationInputs() throws {
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let session = ActivitySession(
+            appName: "Xcode", bundleID: "com.example.xcode", windowTitle: "RiverDiary.swift",
+            category: "工作", start: start, end: start.addingTimeInterval(1_800)
+        )
+        let candidate = ActivityTimelineItem(
+            id: "candidate-1", kind: .activity, start: session.start, end: session.end,
+            sessions: [session]
+        )
+        let timelineContext = TimelineDigestRecoveryContext(
+            dayKey: "2026-09-28", fingerprint: "fingerprint-v1", candidates: [candidate],
+            captures: [], entries: [], browserVisits: [], locationEvents: []
+        )
+        let snapshot = PersistedAnalysisRequest(
+            version: 1, taskRawValue: AITask.timelineDigest.rawValue,
+            system: "exact system prompt", prompt: "exact user prompt with private diary evidence",
+            temperature: 0.15, maxTokens: 2_000,
+            archiveStartDate: "2026-09-28", archiveEndDate: "2026-09-28",
+            sourceSummary: "daily timeline", evidenceIDs: [session.id], contextSnapshotID: UUID(),
+            answerPolicy: .timelineDigest, includesStructuredDigest: false,
+            allowedReferences: ["raw:\(session.id.uuidString)"],
+            runMetadata: PersistedAnalysisRunMetadata(
+                dedupKey: "timeline-digest|2026-09-28", rangeKey: "d-2026-09-28",
+                evidenceRefs: ["raw:\(session.id.uuidString)"], digestJSON: nil
+            ),
+            timelineDigestContext: timelineContext,
+            artifactInputFingerprint: "prompt-and-context-hash",
+            providerLabel: "Ollama", modelIdentifier: "llama3.2", endpointFingerprint: "local-endpoint-hash"
+        )
+
+        let bytes = try JSONEncoder().encode(snapshot)
+        let restored = try JSONDecoder().decode(PersistedAnalysisRequest.self, from: bytes)
+        XCTAssertEqual(restored.system, snapshot.system)
+        XCTAssertEqual(restored.prompt, snapshot.prompt)
+        XCTAssertEqual(restored.allowedReferences, snapshot.allowedReferences)
+        XCTAssertEqual(restored.timelineDigestContext?.candidates, [candidate])
+        XCTAssertEqual(restored.timelineDigestContext?.fingerprint, "fingerprint-v1")
+        XCTAssertEqual(restored.endpointFingerprint, "local-endpoint-hash")
+    }
+
     // MARK: B1 结果层
 
     func testKeyedUpsertKeepsOnlyLatestPerDedupKey() throws {

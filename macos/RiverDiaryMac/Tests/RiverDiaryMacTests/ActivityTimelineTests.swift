@@ -16,6 +16,19 @@ final class ActivityTimelineTests: XCTestCase {
         ActivityTimelineEngine.build(for: day, sessions: sessions, captures: captures, grouped: grouped, calendar: calendar)
     }
 
+    func testActivityTimelineItemCanBePersistedAsAnExactAnalysisRecoveryInput() throws {
+        let source = session(600, 630, title: "RiverDiaryMac.swift")
+        let item = ActivityTimelineItem(
+            id: "candidate-1", kind: .activity, start: source.start, end: source.end,
+            sessions: [source], annotationKey: "episode:test",
+            annotation: TimelineAnnotation(title: "开发", note: "用户标注")
+        )
+
+        let bytes = try JSONEncoder().encode(item)
+        let restored = try JSONDecoder().decode(ActivityTimelineItem.self, from: bytes)
+        XCTAssertEqual(restored, item)
+    }
+
     func testClipsBothMidnightBoundariesAndDropsInvalidSessions() {
         let model = build([session(-20, 20), session(1430, 1500), session(30, 20), session(60, 60), session(-60, -30)])
         XCTAssertEqual(model.totalDuration, 30 * 60)

@@ -1,7 +1,7 @@
 import Foundation
 import RiverDiaryCore
 
-struct ActivityTimelinePlaceMarker: Identifiable, Hashable {
+struct ActivityTimelinePlaceMarker: Identifiable, Codable, Hashable {
     var id: UUID
     var time: Date
     var title: String
@@ -10,8 +10,8 @@ struct ActivityTimelinePlaceMarker: Identifiable, Hashable {
 }
 
 /// A presentation model derived from recorded evidence; it never changes source sessions.
-struct ActivityTimelineItem: Identifiable, Hashable {
-    enum Kind: String { case activity, capture, gap, place }
+struct ActivityTimelineItem: Identifiable, Codable, Hashable {
+    enum Kind: String, Codable { case activity, capture, gap, place }
 
     var id: String
     var kind: Kind

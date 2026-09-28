@@ -123,7 +123,10 @@ struct RiverDiaryMacApp: App {
                 }
             }
             .frame(minWidth: 960, minHeight: 640)
-            .onAppear { activity.startAutomaticSync() }
+            .onAppear {
+                activity.startAutomaticSync()
+                Task { await ai.resumeRecoverableAnalysisJobs() }
+            }
             .onReceive(NotificationCenter.default.publisher(for: .riverCanonicalSyncDidChange)) { notification in
                 let report = notification.object as? SyncRunReport
                 if (report?.importedEventBatches ?? 0) > 0 || (report?.importedOperationBatches ?? 0) > 0 {

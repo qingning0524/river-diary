@@ -113,7 +113,8 @@ struct PrivacyBackupSettingsView: View {
                 RiverValueRow(title: "Last geocode", value: events.filter { $0.source == .location && $0.payload.mapProvider != nil }.max { $0.recordedAt < $1.recordedAt }?.recordedAt.formatted(date: .abbreviated, time: .shortened) ?? "—")
                 RiverValueRow(title: "Map candidate records", value: "\(events.filter { $0.source == .location && $0.payload.mapProvider != nil }.count)")
                 RiverValueRow(title: "Last App Activity Intent", value: events.filter { $0.persistedSource == "shortcuts" }.max { $0.recordedAt < $1.recordedAt }?.recordedAt.formatted(date: .abbreviated, time: .shortened) ?? "—")
-                RiverValueRow(title: "AI job", value: database.latestAnalysisJob().map { "\($0.status.rawValue) · \($0.logicalKey) · attempt \($0.attempt)" } ?? "暂无已记录任务")
+                let latestJob = database.latestAnalysisJob().map { "\($0.status.rawValue) · \($0.logicalKey) · attempt \($0.attempt)" } ?? "暂无已记录任务"
+                RiverValueRow(title: "AI job", value: [latestJob, ai.recoveredAnalysisStatus].compactMap { $0 }.joined(separator: " · "))
 
                 HStack(spacing: AppSpacing.sm) {
                     Button("Generate Test Event") {

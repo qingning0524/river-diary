@@ -395,18 +395,39 @@ struct ReplicationCoreTests {
             inputFrontier: frontier, pipelineVersion: "1.0", promptVersion: "1"
         )
         #expect(firstID == secondID)
+        let requestA = RiverAnalysisJobScheduler.jobID(
+            deviceID: device, logicalKey: "daily-review:2026-09-28", artifactType: .dailyReview,
+            inputFrontier: frontier, pipelineVersion: "1.0", promptVersion: "1", requestFingerprint: "request-a"
+        )
+        let requestB = RiverAnalysisJobScheduler.jobID(
+            deviceID: device, logicalKey: "daily-review:2026-09-28", artifactType: .dailyReview,
+            inputFrontier: frontier, pipelineVersion: "1.0", promptVersion: "1", requestFingerprint: "request-b"
+        )
+        #expect(requestA != requestB)
 
         let lowPriority = RiverAnalysisJob(
             id: UUID(), logicalKey: "low", artifactType: .insight, inputFrontier: frontier,
             priority: 1, createdAt: Date(timeIntervalSince1970: 1), originDeviceID: device,
             pipelineVersion: "1", promptVersion: "1"
         )
+        let snapshot = Data("exact system + user prompt".utf8)
         let highPriority = RiverAnalysisJob(
             id: UUID(), logicalKey: "high", artifactType: .dailyReview, inputFrontier: frontier,
             priority: 5, createdAt: Date(timeIntervalSince1970: 2), originDeviceID: device,
-            pipelineVersion: "1", promptVersion: "1"
+            pipelineVersion: "1", promptVersion: "1", requestSnapshot: snapshot,
+            requestFingerprint: "snapshot-hash"
         )
         #expect(RiverAnalysisJobScheduler.nextQueuedJob(from: [lowPriority, highPriority])?.id == highPriority.id)
+        #expect(highPriority.transitioning(to: .running).requestSnapshot == snapshot)
+        #expect(highPriority.transitioning(to: .running).requestFingerprint == "snapshot-hash")
+        #expect(highPriority.transitioning(to: .succeeded).requestSnapshot == nil)
+        #expect(RiverAnalysisJobScheduler.canResume(
+            highPriority, at: frontier, pipelineVersion: "1", requestFingerprint: "snapshot-hash"
+        ))
+        #expect(!RiverAnalysisJobScheduler.canResume(
+            highPriority, at: try InputFrontier(sequences: [device.rawValue: 5], operationSequences: [device.rawValue: 2]),
+            pipelineVersion: "1", requestFingerprint: "snapshot-hash"
+        ))
     }
 
     @Test func artifactResolverDoesNotUseProviderOrModelAsArtifactIdentity() throws {

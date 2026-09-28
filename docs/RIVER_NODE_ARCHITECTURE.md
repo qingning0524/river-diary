@@ -102,11 +102,13 @@ Artifact 记录 logicalKey、类型、来源设备、HLC、输入 frontier/snaps
 
 iPhone 与 Mac 的每日回顾共用 `daily-review:<yyyy-MM-dd>` logicalKey、`.dailyReview` 类型、pipeline/prompt 版本和纯文本内容；provider/model 保留为 provenance，不作为 Artifact 身份。相同输入前沿的现有 canonical Artifact 会被两端复用，避免各自再生成一个结果。
 
-两端都有持久化 AnalysisJob 表，记录 logicalKey、Artifact 类型、输入前沿、优先级、状态、时间、重试次数、来源设备和 pipeline/prompt 版本。iPhone 今日回顾会跳过相同输入的 canonical Artifact；新 Event 使正在运行的结果失效时，在用户仍授权远程分析（或配置本机模型）的前提下最多自动补跑三次。Mac 统一 `runTask` 入口会持久化 queued/running/succeeded/failed 状态；请求中输入变化时会追加最新前沿的 queued 任务。收到跨设备新 Event 后，Mac 会在授权仍有效时重新从当前当天时间线构造输入并自动生成 R2。Mac 启动后自动恢复目前覆盖今日回顾；其他任务类型的 queued 任务通用消费、全任务防抖和重新构造 prompt 仍未闭环，不能复用旧 prompt 冒充新输入分析。
+Mac Artifact 的 `inputSnapshotHash` 基于实际 system/user prompt、超参数、证据引用和校验上下文，provider/model/endpoint 留在 provenance 或本机 AnalysisJob 身份中，不参与 Artifact 输入身份。
+
+两端都有持久化 AnalysisJob 表，记录 logicalKey、Artifact 类型、输入前沿、优先级、状态、时间、重试次数、来源设备和 pipeline/prompt 版本。iPhone 今日回顾会跳过相同输入的 canonical Artifact；新 Event 使正在运行的结果失效时，在用户仍授权远程分析（或配置本机模型）的前提下最多自动补跑三次。Mac `runTask` 会把确切的 system/user prompt、参数、响应策略和验证所需本机候选保存到本地 SQLCipher job snapshot；请求指纹进入 job 身份，快照不参与复制。启动后只在输入 frontier、供应商、模型、endpoint 指纹及请求快照指纹仍一致、consent 有效且重试次数未超限时重放；成功或终态会清除快照。当前可恢复时间线摘要、日/周验证分析和记忆搜索；习惯回顾需把响应写回共享回顾卡，因此不只重放原始文本。请求中输入变化时不会重放旧 prompt：当日回顾由现有管线重建，其它任务需要专用重新构造器。全任务防抖和端到端崩溃/并发成本验收仍未闭环。
 
 ## 真实验证与仍需真实设备验证的场景
 
-本轮 Xcode beta 工具链验证：RiverDiaryCore 33 项测试通过；macOS 全量 363 项测试通过；iPhone iOS 27 真机目标顺序构建成功，使用 Personal Team 签名并安装到已连接的 iPhone 14 Pro。`devicectl` 曾接受启动请求，但随后设备状态变为 unavailable，截图请求失败，未能目视或操作验证 UI；之前设备锁定时也曾拒绝启动。未签名/adhoc 的模拟器构建没有 Keychain access group，因此其 Keychain 启动失败不代表真机签名包的运行结果。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份/用户决定和用户状态操作对旧 Artifact 失效；macOS tests 覆盖 AnalysisJob、习惯回顾、记忆确认、待确认事项纠正、快记 Event/tombstone、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
+本轮 Xcode beta 工具链验证：RiverDiaryCore 33 项测试通过；macOS 全量 365 项测试通过；iPhone iOS 27 真机目标顺序构建成功，使用 Personal Team 签名并安装到已连接的 iPhone 14 Pro。`devicectl` 曾接受启动请求，但随后设备状态变为 unavailable，截图请求失败，未能目视或操作验证 UI；之前设备锁定时也曾拒绝启动。未签名/adhoc 的模拟器构建没有 Keychain access group，因此其 Keychain 启动失败不代表真机签名包的运行结果。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份/用户决定和用户状态操作对旧 Artifact 失效；macOS tests 覆盖 AnalysisJob 请求快照加密落盘/恢复输入序列化、习惯回顾、记忆确认、待确认事项纠正、快记 Event/tombstone、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
 
 以下情形还没有通过真实 iPhone/Mac + 用户 iCloud 账号实际验收：Core Location 后台 Visits 的系统交付、Shortcuts 个人自动化触发、MapKit/Geocoder 实际 POI 质量、跨设备 iCloud 延迟和文件提供器协调、LAN/Bonjour 实际传输及 LAN/iCloud 重复投递、真实权限撤销、Personal Team 重签名后的持久性与恢复。
 
@@ -116,7 +118,7 @@ Developer Diagnostics 已在两端设置中提供显式开关，展示数据库�
 
 - iPhone 与 Mac 已接入可选 MultipeerConnectivity/Bonjour 快速复制：只交换 AES-GCM 复制对象，接收端验密并写入同一复制目录，常规协调器再导入。重复 Event ID 已在存储层幂等；LAN + iCloud 的重复到达目前仍只有模拟单测，尚未真机验证本地网络授权、断连续传和文件提供器协调。
 - iPhone 本地备份加密导出/合并恢复已实现并可编译，但尚未通过模拟器文件选择器操作或真机恢复测试。还未覆盖旧版打包日记正文和本地系统权限状态。
-- AnalysisJob 已持久化并接入 iPhone 今日回顾与 Mac 统一分析入口；每日回顾迟到数据重算可自动运行，其余任务类型的 queued 任务通用消费、输入快照精确重建和防抖仍未闭环。
+- AnalysisJob 已持久化；Mac 对可恢复任务保存加密请求快照，并且只重放 frontier、provider/model/endpoint 和请求指纹均匹配的请求。习惯回顾的领域写回处理、输入变化后的通用上下文重建、全任务防抖和崩溃期间成本/幂等边界仍需继续实现和验收。
 - 通用待确认事项已成为共享用户记录：iPhone 对多次到访且有真实地图候选的未确认地点生成稳定事项，Mac/iPhone 可确认、拒绝或改名，结果通过 State Operation 复制。当前还没有从语义 Timeline / AI 活动理解自动提出一般性确认问题；地点候选创建门槛及两设备同时作答的用户体验仍需真实操作验收。
 - Mac 快记文本和时间已进入 Event 流；旧快记在启动时幂等迁移，删除通过 tombstone 传播，收到删除操作后会刷新 Mac 快记投影。手写日记、评分、删除和已保存月度河流信已写入共享 State Operation，并在 iPhone 时间线/回顾页显示。Mac 启动时等待日记源加载后迁移旧 override 与信件。快记标签与置顶元数据仍留在本地状态；自动生成但尚未保存的河流信草稿也不会同步。
 - 旧版 Mac `habit_*` 与长期记忆记录会在复制前迁移到共享 State Operation；iPhone 可查看/回答回顾卡、确认或撤销长期记忆。两端离线并发、撤销/退役、重装恢复和真实 iCloud 的操作级验收仍未完成。其他复盘状态、自动生成语义确认和长期历史迁移仍有未覆盖部分。
