@@ -2111,7 +2111,7 @@ final class V2Store {
         evidenceRefs: [String],
         digestJSON: String?
     ) -> Bool {
-        guard let db else { return false }
+        guard db != nil else { return false }
         let refs = Self.jsonStringArray(evidenceRefs)
         if let dedupKey, !dedupKey.isEmpty {
             // 删除与插入必须在同一事务里：中间失败要么整体成功要么整体回滚，
@@ -2137,7 +2137,7 @@ final class V2Store {
         digestJSON: String?,
         dedupKey: String?
     ) -> Bool {
-        guard let db else { return false }
+        guard db != nil else { return false }
         let sql = """
         INSERT OR REPLACE INTO analysis_runs(id, task, context_ref, output_text, evidence_ids, model, created_at,
                                             dedup_key, range_key, evidence_refs, digest_json)
@@ -2592,7 +2592,7 @@ final class V2Store {
     /// 这类多语句写各自跑在 autocommit 里——中间失败会永久丢掉旧结果。
     /// 传入的闭包返回 false 时回滚并返回 false（lastError 已由内部语句设置）。
     private func transaction(_ work: () -> Bool) -> Bool {
-        guard let db else { return false }
+        guard db != nil else { return false }
         guard execute("BEGIN IMMEDIATE") else { return false }
         if work() {
             guard execute("COMMIT") else {
@@ -2645,7 +2645,7 @@ final class V2Store {
     }
 
     private func bindBlob(_ statement: OpaquePointer?, _ index: Int32, _ data: Data) {
-        data.withUnsafeBytes { bytes in
+        _ = data.withUnsafeBytes { bytes in
             sqlite3_bind_blob(statement, index, bytes.baseAddress, Int32(bytes.count), Self.transientDestructor)
         }
     }

@@ -27,7 +27,7 @@ struct TodayView: View {
     var body: some View {
         NavigationStack {
             Group {
-            if let entry {
+            if entry != nil {
                 TabView(selection: dateSelection) {
                     ForEach(Array(store.entries.reversed())) { pageEntry in
                         datePage(for: pageEntry)

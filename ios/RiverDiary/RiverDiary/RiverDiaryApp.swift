@@ -25,7 +25,7 @@ struct RiverDiaryApp: App {
         riverNode.migrateLegacyMoodScores(store.localMoodScoresByDate)
         let healthStore = HealthKitStore()
         healthStore.onHealthSnapshotChanged = { nights, exerciseDays in
-            await riverNode.recordHealthSnapshot(nights: nights, exerciseDays: exerciseDays)
+            riverNode.recordHealthSnapshot(nights: nights, exerciseDays: exerciseDays)
         }
         _store = StateObject(wrappedValue: store)
         _riverNode = StateObject(wrappedValue: riverNode)

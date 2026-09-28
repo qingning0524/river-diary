@@ -345,7 +345,6 @@ extension HabitReviewCadence {
     /// 不回补错过的历史周期：应用关闭后恢复，只处理当前周期。
     func currentPeriod(now: Date, time: HabitReviewTimePreset, calendar: Calendar) -> (key: String, dueDate: Date) {
         let startOfDay = calendar.startOfDay(for: now)
-        let dueTime = DateComponents(hour: time.hour, minute: time.minute)
         switch self {
         case .weekly:
             let week = calendar.dateInterval(of: .weekOfYear, for: startOfDay)
@@ -372,7 +371,6 @@ extension HabitReviewCadence {
         case .monthly:
             // 月末集中处理；当月所选日期不存在时落在最后一天——这里固定取月末。
             let month = calendar.dateInterval(of: .month, for: startOfDay)
-            let monthStart = month?.start ?? startOfDay
             let lastDay = calendar.date(byAdding: DateComponents(day: -1, second: 0), to: month?.end ?? startOfDay) ?? startOfDay
             let due = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: calendar.startOfDay(for: lastDay)) ?? lastDay
             return ("m-" + Self.monthStamp(now, calendar: calendar), due)

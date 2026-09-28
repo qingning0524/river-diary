@@ -99,8 +99,8 @@ final class HealthKitStore: ObservableObject {
         guard let startDate = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: .now)) else { return }
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: nil, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
-        let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: 800, sortDescriptors: [sortDescriptor]) { _, samples, error in
-            let nights = Self.aggregate(samples: samples)
+        let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: 800, sortDescriptors: [sortDescriptor]) { [weak self] _, samples, error in
+            let nights = HealthKitStore.aggregate(samples: samples)
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.nights = nights

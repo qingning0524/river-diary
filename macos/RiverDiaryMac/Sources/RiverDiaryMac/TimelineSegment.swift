@@ -93,7 +93,6 @@ enum TimelinePeriod: String, CaseIterable, Identifiable {
     /// 对不连续时段（深夜）这是唯一正确的归属方式：跨度判定会把
     /// 05:00–23:00 空洞里的时刻也包进来。
     func contains(moment: Date, on date: Date, calendar: Calendar = .current) -> Bool {
-        let day = calendar.startOfDay(for: date)
         let hour = calendar.component(.hour, from: moment)
         let minute = calendar.component(.minute, from: moment)
         let minuteOfDay = hour * 60 + minute
