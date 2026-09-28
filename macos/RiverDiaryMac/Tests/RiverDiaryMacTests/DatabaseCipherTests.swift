@@ -235,6 +235,7 @@ final class DatabaseCipherTests: XCTestCase {
             DailyGoal(title: "生成本地全库备份", isCompleted: true),
             for: DiaryEntry.dateFormatter.date(from: "2026-09-20")!
         )
+        sourceDiary.saveLetterDraft("仍未正式保存的河流信草稿。", for: "2026-09")
         let backupURL = directory.appendingPathComponent("RiverDiary.riverbackup")
         try sourceDiary.exportFullBackup(
             to: backupURL,
@@ -272,6 +273,7 @@ final class DatabaseCipherTests: XCTestCase {
         XCTAssertEqual(try legacyNote(for: "2026-09-20", in: try XCTUnwrap(targetLegacy.db)), legacyMarker)
         XCTAssertEqual(targetV2.rawEvents(ids: [rawEvent.id]).first?.payload.locationName, v2Marker)
         XCTAssertEqual(targetDiary.dailyGoals["2026-09-20"]?.title, "生成本地全库备份")
+        XCTAssertEqual(targetDiary.letterDraft(for: "2026-09"), "仍未正式保存的河流信草稿。")
     }
 
     @MainActor
