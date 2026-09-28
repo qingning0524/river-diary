@@ -298,7 +298,8 @@ final class RiverNodeStore: ObservableObject {
         }
         do {
             let object = try JSONDecoder().decode(EncryptedReplicationObject.self, from: data)
-            guard object.kind == "local_backup", object.protocolVersion <= 1 else {
+            guard object.kind == "local_backup",
+                  object.protocolVersion == EncryptedReplicationObject.currentProtocolVersion else {
                 throw RiverLocalDatabaseError.sql("文件不是受支持的 River Diary 本地备份。")
             }
             let key = try RiverSecureStore.loadSyncKey()

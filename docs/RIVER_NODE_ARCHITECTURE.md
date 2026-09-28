@@ -47,7 +47,7 @@ River Diary 由多个本地优先的 River Node 组成。iPhone 和 Mac 都有�
 
 使用 SQLite `user_version=4`。从 V1/V2/V3 幂等创建 AnalysisJob、共享用户记录和习惯/记忆决策投影；更新版遇到更高的 `user_version` 时停止打开，不会尝试用旧代码改写新库。
 
-iPhone“本地备份”导出 Event、State Operation、Artifact 修订和设备登记，并用共享同步密钥封装为 AES-GCM 加密的 `local_backup` 文件。恢复采用可重试的幂等合并，不清空当前数据库；恢复文件不含密钥，需保留密钥或从仍保留密钥的设备导出转移码、在恢复设备导入同一密钥。密钥转移走独立的同步密钥设置，不把密钥写入备份。旧版打包日记正文不包含在 River Node 备份内。设备 ID 在钥匙串仍可读取时保持不变；同一设备也可从所选复制目录重新导入自己之前发布的对象，并从已有 Manifest 修订号之后继续。
+iPhone“本地备份”导出 Event、State Operation、Artifact 修订和设备登记，并用共享同步密钥封装为 AES-GCM 加密的 `local_backup` 文件（backup protocol/schema 1）。恢复先拒绝不受支持的版本和重复不可变 ID，再采用可重试的幂等合并，不清空当前数据库；未来版本备份不会开始写入。恢复文件不含密钥，需保留密钥或从仍保留密钥的设备导出转移码、在恢复设备导入同一密钥。密钥转移走独立的同步密钥设置，不把密钥写入备份。旧版打包日记正文不包含在 River Node 备份内。设备 ID 在钥匙串仍可读取时保持不变；同一设备也可从所选复制目录重新导入自己之前发布的对象，并从已有 Manifest 修订号之后继续。
 
 ### macOS
 

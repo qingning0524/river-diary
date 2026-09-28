@@ -3,6 +3,9 @@ import Foundation
 /// Portable snapshot of a River Node's canonical and source records. The
 /// containing file is encrypted by the app with the user's shared sync key.
 public struct RiverNodeBackup: Codable, Hashable, Sendable {
+    public static let currentProtocolVersion = 1
+    public static let currentSchemaVersion = 1
+
     public let format: String
     public let protocolVersion: Int
     public let schemaVersion: Int
@@ -14,8 +17,8 @@ public struct RiverNodeBackup: Codable, Hashable, Sendable {
     public let deviceRegistrations: [DeviceRegistration]
 
     public init(
-        protocolVersion: Int = 1,
-        schemaVersion: Int = 1,
+        protocolVersion: Int = RiverNodeBackup.currentProtocolVersion,
+        schemaVersion: Int = RiverNodeBackup.currentSchemaVersion,
         exportedAt: Date = Date(),
         sourceDeviceID: RiverDeviceID,
         events: [RiverEvent],
@@ -32,5 +35,11 @@ public struct RiverNodeBackup: Codable, Hashable, Sendable {
         self.stateOperations = stateOperations
         self.artifactRevisions = artifactRevisions
         self.deviceRegistrations = deviceRegistrations
+    }
+
+    public var isSupported: Bool {
+        format == "river-node-backup"
+            && protocolVersion == Self.currentProtocolVersion
+            && schemaVersion == Self.currentSchemaVersion
     }
 }

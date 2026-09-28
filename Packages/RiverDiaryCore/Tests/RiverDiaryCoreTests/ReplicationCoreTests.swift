@@ -49,6 +49,19 @@ struct ReplicationCoreTests {
             artifactRevisions: [],
             deviceRegistrations: []
         )
+        #expect(backup.isSupported)
+        #expect(!RiverNodeBackup(
+            protocolVersion: 0, sourceDeviceID: device, events: [],
+            stateOperations: [], artifactRevisions: [], deviceRegistrations: []
+        ).isSupported)
+        #expect(!RiverNodeBackup(
+            protocolVersion: RiverNodeBackup.currentProtocolVersion + 1,
+            sourceDeviceID: device, events: [], stateOperations: [], artifactRevisions: [], deviceRegistrations: []
+        ).isSupported)
+        #expect(!RiverNodeBackup(
+            schemaVersion: RiverNodeBackup.currentSchemaVersion + 1,
+            sourceDeviceID: device, events: [], stateOperations: [], artifactRevisions: [], deviceRegistrations: []
+        ).isSupported)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let key = SyncEncryptionKey()

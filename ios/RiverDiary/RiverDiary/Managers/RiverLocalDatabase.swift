@@ -605,9 +605,7 @@ final class RiverLocalDatabase: ObservableObject {
     /// state, and each immutable stream batch can be safely retried after an
     /// interrupted restore.
     func restoreLocalBackup(_ backup: RiverNodeBackup) throws {
-        guard backup.format == "river-node-backup",
-              backup.protocolVersion <= 1,
-              backup.schemaVersion <= Self.supportedSchemaVersion else {
+        guard backup.isSupported else {
             throw RiverLocalDatabaseError.sql("备份格式或版本高于当前应用支持范围。")
         }
         guard Set(backup.events.map(\.id)).count == backup.events.count,

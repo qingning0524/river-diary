@@ -40,6 +40,8 @@ public struct SyncEncryptionKey: Sendable, Equatable {
 }
 
 public struct EncryptedReplicationObject: Codable, Hashable, Sendable, Identifiable {
+    public static let currentProtocolVersion = 1
+
     public let id: String
     public let kind: String
     public let protocolVersion: Int
@@ -50,7 +52,8 @@ public struct EncryptedReplicationObject: Codable, Hashable, Sendable, Identifia
         case id, kind, protocolVersion, ciphertext, ciphertextSHA256
     }
 
-    public init(id: String, kind: String, protocolVersion: Int = 1, ciphertext: Data, ciphertextSHA256: String) {
+    public init(id: String, kind: String, protocolVersion: Int = EncryptedReplicationObject.currentProtocolVersion,
+                ciphertext: Data, ciphertextSHA256: String) {
         self.id = id
         self.kind = kind
         self.protocolVersion = protocolVersion
