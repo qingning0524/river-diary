@@ -1,5 +1,26 @@
 import XCTest
+import RiverDiaryCore
 @testable import RiverDiaryMac
+
+private final class AnalysisRecoveryURLProtocol: URLProtocol {
+    static let responseBody = Data(#"{"choices":[{"message":{"content":"**结论**\n已恢复的搜索结果。\n**相关日期**\n- 2026-09-28\n**证据**\n- 无\n**边界**\n相关不代表因果；如果你想，可以继续检索。"}}]}"#.utf8)
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        guard let url = request.url,
+              let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"]) else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Self.responseBody)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() {}
+}
 
 // MARK: - AI 分析数据互通测试
 //
@@ -31,7 +52,9 @@ final class AnalysisInterconnectTests: XCTestCase {
         )
         let snapshot = PersistedAnalysisRequest(
             version: 1, taskRawValue: AITask.timelineDigest.rawValue,
-            system: "exact system prompt", prompt: "exact user prompt with private diary evidence",
+            system: "exact system prompt",
+            effectiveSystem: "exact system prompt",
+            prompt: "exact user prompt with private diary evidence",
             temperature: 0.15, maxTokens: 2_000,
             archiveStartDate: "2026-09-28", archiveEndDate: "2026-09-28",
             sourceSummary: "daily timeline", evidenceIDs: [session.id], contextSnapshotID: UUID(),
@@ -49,11 +72,104 @@ final class AnalysisInterconnectTests: XCTestCase {
         let bytes = try JSONEncoder().encode(snapshot)
         let restored = try JSONDecoder().decode(PersistedAnalysisRequest.self, from: bytes)
         XCTAssertEqual(restored.system, snapshot.system)
+        XCTAssertEqual(restored.effectiveSystem, snapshot.effectiveSystem)
         XCTAssertEqual(restored.prompt, snapshot.prompt)
         XCTAssertEqual(restored.allowedReferences, snapshot.allowedReferences)
         XCTAssertEqual(restored.timelineDigestContext?.candidates, [candidate])
         XCTAssertEqual(restored.timelineDigestContext?.fingerprint, "fingerprint-v1")
         XCTAssertEqual(restored.endpointFingerprint, "local-endpoint-hash")
+
+        let alternateProvider = PersistedAnalysisRequest(
+            version: snapshot.version, taskRawValue: snapshot.taskRawValue, system: snapshot.system,
+            effectiveSystem: snapshot.effectiveSystem, prompt: snapshot.prompt,
+            temperature: snapshot.temperature, maxTokens: snapshot.maxTokens,
+            archiveStartDate: snapshot.archiveStartDate, archiveEndDate: snapshot.archiveEndDate,
+            sourceSummary: snapshot.sourceSummary, evidenceIDs: snapshot.evidenceIDs,
+            contextSnapshotID: UUID(), answerPolicy: snapshot.answerPolicy,
+            includesStructuredDigest: snapshot.includesStructuredDigest,
+            allowedReferences: snapshot.allowedReferences, runMetadata: snapshot.runMetadata,
+            timelineDigestContext: snapshot.timelineDigestContext,
+            artifactInputFingerprint: snapshot.artifactInputFingerprint,
+            providerLabel: "Different Provider", modelIdentifier: "other-model",
+            endpointFingerprint: "other-endpoint"
+        )
+        func artifactInputHash(_ value: PersistedAnalysisRequest) -> String {
+            analysisArtifactInputFingerprint(
+                taskRawValue: value.taskRawValue, effectiveSystem: value.effectiveSystem,
+                prompt: value.prompt, temperature: value.temperature, maxTokens: value.maxTokens,
+                answerPolicy: value.answerPolicy, includesStructuredDigest: value.includesStructuredDigest
+            )
+        }
+        XCTAssertEqual(artifactInputHash(snapshot), artifactInputHash(alternateProvider))
+        XCTAssertNotEqual(analysisJobRequestFingerprint(snapshot), analysisJobRequestFingerprint(alternateProvider))
+    }
+
+    func testQueuedAnalysisJobReplaysSameFrontierAndCompletesItsArtifact() async throws {
+        let v2 = try makeStore()
+        let suiteName = "river-analysis-recovery-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [AnalysisRecoveryURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+        let ai = AIAssistantStore(v2Store: v2, userDefaults: defaults, urlSession: session)
+        ai.provider = .ollama
+        ai.endpoint = "http://localhost:11434/v1/chat/completions"
+        ai.model = "llama3.2"
+        XCTAssertTrue(ai.analysisReady)
+        XCTAssertTrue(ai.canRunAutomaticAnalysis, "localhost inference does not require cloud consent")
+
+        let device = try XCTUnwrap(v2.localDeviceIdentifier())
+        let frontier = try v2.currentInputFrontier()
+        let system = "Search local records accurately."
+        let prompt = "Find the note about rebuilding River Diary."
+        let sourceSummary = "search recovery test"
+        let dedupKey = "memory-search|river-diary-rebuild"
+        let rangeKey = "query:river-diary-rebuild"
+        let endpointFingerprint = SHA256Hex.hash(Data(ai.endpoint.trimmingCharacters(in: .whitespacesAndNewlines).utf8))
+        let runMetadata = PersistedAnalysisRunMetadata(
+            dedupKey: dedupKey, rangeKey: rangeKey, evidenceRefs: [], digestJSON: nil
+        )
+        let artifactInputFingerprint = analysisArtifactInputFingerprint(
+            taskRawValue: AITask.memorySearch.rawValue, effectiveSystem: system, prompt: prompt,
+            temperature: 0.1, maxTokens: 700, answerPolicy: .memorySearch,
+            includesStructuredDigest: false
+        )
+        let snapshot = PersistedAnalysisRequest(
+            version: 1, taskRawValue: AITask.memorySearch.rawValue, system: system,
+            effectiveSystem: system, prompt: prompt, temperature: 0.1, maxTokens: 700,
+            archiveStartDate: nil, archiveEndDate: nil, sourceSummary: sourceSummary,
+            evidenceIDs: [], contextSnapshotID: nil, answerPolicy: .memorySearch,
+            includesStructuredDigest: false, allowedReferences: [], runMetadata: runMetadata,
+            timelineDigestContext: nil, artifactInputFingerprint: artifactInputFingerprint,
+            providerLabel: ai.provider.label, modelIdentifier: ai.model, endpointFingerprint: endpointFingerprint
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let snapshotData = try encoder.encode(snapshot)
+        let requestFingerprint = analysisJobRequestFingerprint(snapshot)
+        let pipeline = "1.0|\(ai.provider.label)|\(ai.model)|\(endpointFingerprint)"
+        let jobID = RiverAnalysisJobScheduler.jobID(
+            deviceID: device, logicalKey: dedupKey, artifactType: .insight,
+            inputFrontier: frontier, pipelineVersion: pipeline, promptVersion: "1",
+            requestFingerprint: requestFingerprint
+        )
+        let interruptedJob = RiverAnalysisJob(
+            id: jobID, logicalKey: dedupKey, artifactType: .insight, inputFrontier: frontier,
+            priority: 10, status: .running, attempt: 1, originDeviceID: device,
+            pipelineVersion: pipeline, promptVersion: "1", requestSnapshot: snapshotData,
+            requestFingerprint: requestFingerprint
+        )
+        XCTAssertTrue(v2.saveAnalysisJob(interruptedJob))
+
+        await ai.resumeRecoverableAnalysisJobs()
+
+        let finishedJob = try XCTUnwrap(v2.analysisJobs().first { $0.id == jobID })
+        XCTAssertEqual(finishedJob.status, .succeeded)
+        XCTAssertNil(finishedJob.requestSnapshot, "terminal jobs must not retain the full prompt")
+        XCTAssertNotNil(v2.canonicalArtifactRevision(logicalKey: dedupKey, kind: .insight))
+        XCTAssertTrue(ai.recoveredAnalysisStatus?.contains("成功 1 个") == true)
     }
 
     // MARK: B1 结果层
