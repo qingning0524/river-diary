@@ -22,7 +22,10 @@ final class IPhoneAIStore: ObservableObject {
         didSet { UserDefaults.standard.set(includeManualText, forKey: "river.ai.includeManualText") }
     }
     @Published var allowsNetworkAnalysis: Bool {
-        didSet { UserDefaults.standard.set(allowsNetworkAnalysis, forKey: "river.ai.networkConsent") }
+        didSet {
+            UserDefaults.standard.set(allowsNetworkAnalysis, forKey: "river.ai.networkConsent")
+            if allowsNetworkAnalysis { resumeQueuedDailyReviewIfNeeded() }
+        }
     }
     @Published var apiKeyInput = ""
     @Published private(set) var hasAPIKey = RiverSecureStore.hasNetworkAIKey()
@@ -82,7 +85,8 @@ final class IPhoneAIStore: ObservableObject {
 
     func analyzeToday(automaticRecomputeDepth: Int = 0) async {
         guard !isGenerating else { return }
-        guard let requestURL = URL(string: endpoint.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+        let normalizedEndpoint = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let requestURL = URL(string: normalizedEndpoint) else {
             errorMessage = "请输入有效的 OpenAI 兼容 API 地址。"
             status = "配置无效"
             return
@@ -98,7 +102,8 @@ final class IPhoneAIStore: ObservableObject {
             status = "等待网络 AI 授权"
             return
         }
-        guard !model.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        let requestModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !requestModel.isEmpty else {
             errorMessage = "请先填写模型名称。"
             status = "配置无效"
             return
@@ -136,6 +141,41 @@ final class IPhoneAIStore: ObservableObject {
             let dayKey = Self.dayKey(start)
             let logicalKey = RiverCanonicalArtifactKey.dailyReview(dayKey: dayKey)
             let provider = localHost ? "local-openai-compatible" : "network-openai-compatible"
+            let lines = selected.map { event, payload in Self.promptLine(event, payload) }
+            let system = "你是 River Diary 的个人日记分析器。只根据用户提供的事件写一段简洁、谨慎的日终回顾；区分观察与推断，不补造事件，不推断医学结论，不复述坐标。输出中文正文，不需要标题或 JSON。"
+            let user = "请总结今天的时间线，指出有依据的主要活动和仍不确定的部分。\n\n事件：\n" + lines.joined(separator: "\n")
+            let requestBody = ChatCompletionRequest(
+                model: requestModel,
+                messages: [ChatMessage(role: "system", content: system), ChatMessage(role: "user", content: user)],
+                temperature: 0.2,
+                max_tokens: 900
+            )
+            let artifactInputFingerprint = RiverAnalysisFingerprints.artifactInput(
+                frontier: frontier, systemPrompt: system, userPrompt: user
+            )
+            let endpointFingerprint = Self.sha256(Data(requestURL.absoluteString.utf8))
+            let jobPipeline = "\(pipelineVersion)|\(provider)|\(requestModel)|\(endpointFingerprint)"
+            let requestFingerprint = RiverAnalysisFingerprints.request(
+                endpoint: requestURL.absoluteString, model: requestModel,
+                systemPrompt: system, userPrompt: user, temperature: requestBody.temperature,
+                maxTokens: requestBody.max_tokens
+            )
+
+            for job in try database.analysisJobs()
+            where job.logicalKey == logicalKey
+                && (job.status == .queued || job.status == .running)
+                && (job.inputFrontier != frontier || job.pipelineVersion != jobPipeline
+                    || job.requestFingerprint != requestFingerprint) {
+                guard try database.saveAnalysisJob(job.transitioning(
+                    to: .superseded, error: "当前输入或请求设置已变化；旧请求不会重放。"
+                )) else {
+                    throw RiverLocalDatabaseError.sql("旧 AnalysisJob 无法安全终止。")
+                }
+            }
+
+            // Canonical reuse is cross-device: the receiver trusts an Artifact
+            // with the same frontier and pipeline/prompt versions even when
+            // its local prompt serialization differs from the origin node.
             if let existing = try database.canonicalArtifactRevisions().first(where: {
                 $0.logicalKey == logicalKey && $0.kind == .dailyReview
                     && $0.inputFrontier == frontier && $0.pipelineVersion == pipelineVersion
@@ -143,9 +183,12 @@ final class IPhoneAIStore: ObservableObject {
             }) {
                 if let queued = try database.analysisJobs().first(where: {
                     $0.logicalKey == logicalKey && $0.inputFrontier == frontier
+                        && $0.pipelineVersion == jobPipeline && $0.requestFingerprint == requestFingerprint
                         && ($0.status == .queued || $0.status == .running)
                 }) {
-                    try database.saveAnalysisJob(queued.transitioning(to: .succeeded))
+                    guard try database.saveAnalysisJob(queued.transitioning(to: .succeeded)) else {
+                        throw RiverLocalDatabaseError.sql("已有 canonical Artifact，但 AnalysisJob 无法标记完成。")
+                    }
                 }
                 dailyReview = String(data: existing.content, encoding: .utf8)
                 status = "已有相同输入的 canonical Artifact；跳过重复分析"
@@ -153,14 +196,14 @@ final class IPhoneAIStore: ObservableObject {
                 return
             }
 
-            let jobPipeline = "\(pipelineVersion)|\(provider)|\(model)"
             let jobID = RiverAnalysisJobScheduler.jobID(
                 deviceID: database.deviceID,
                 logicalKey: logicalKey,
                 artifactType: .dailyReview,
                 inputFrontier: frontier,
                 pipelineVersion: jobPipeline,
-                promptVersion: promptVersion
+                promptVersion: promptVersion,
+                requestFingerprint: requestFingerprint
             )
             let previous = try database.analysisJobs().first { $0.id == jobID }
             activeJob = RiverAnalysisJob(
@@ -174,7 +217,8 @@ final class IPhoneAIStore: ObservableObject {
                 attempt: previous?.attempt ?? 0,
                 originDeviceID: database.deviceID,
                 pipelineVersion: jobPipeline,
-                promptVersion: promptVersion
+                promptVersion: promptVersion,
+                requestFingerprint: requestFingerprint
             )
             guard let queuedJob = activeJob, try database.saveAnalysisJob(queuedJob) else {
                 throw RiverLocalDatabaseError.sql("AnalysisJob 无法持久化。")
@@ -185,15 +229,6 @@ final class IPhoneAIStore: ObservableObject {
                 throw RiverLocalDatabaseError.sql("AnalysisJob 无法进入 running 状态。")
             }
 
-            let lines = selected.map { event, payload in Self.promptLine(event, payload) }
-            let system = "你是 River Diary 的个人日记分析器。只根据用户提供的事件写一段简洁、谨慎的日终回顾；区分观察与推断，不补造事件，不推断医学结论，不复述坐标。输出中文正文，不需要标题或 JSON。"
-            let user = "请总结今天的时间线，指出有依据的主要活动和仍不确定的部分。\n\n事件：\n" + lines.joined(separator: "\n")
-            let requestBody = ChatCompletionRequest(
-                model: model,
-                messages: [ChatMessage(role: "system", content: system), ChatMessage(role: "user", content: user)],
-                temperature: 0.2,
-                max_tokens: 900
-            )
             var request = URLRequest(url: requestURL)
             request.httpMethod = "POST"
             request.timeoutInterval = 90
@@ -216,12 +251,6 @@ final class IPhoneAIStore: ObservableObject {
 
             let stamp = try database.nextManifestStamp()
             let evidence = selected.map { $0.0.id.uuidString }
-            let fingerprintEncoder = JSONEncoder()
-            fingerprintEncoder.outputFormatting = [.sortedKeys]
-            let sourceText = try selected.map { event, payload in
-                "\(event.id.uuidString)|\(String(decoding: try fingerprintEncoder.encode(payload), as: UTF8.self))"
-            }.joined(separator: "\n")
-            let sourceHash = Self.sha256(Data("\(frontier.stableKey)|\(sourceText)".utf8))
             let content = Data(answer.utf8)
             let artifactStatus: ArtifactStatus = try database.currentInputFrontier() != frontier
                 ? .stale
@@ -234,11 +263,11 @@ final class IPhoneAIStore: ObservableObject {
                 originDeviceID: database.deviceID,
                 clock: stamp.clock,
                 inputFrontier: frontier,
-                inputSnapshotHash: sourceHash,
+                inputSnapshotHash: artifactInputFingerprint,
                 pipelineVersion: pipelineVersion,
                 promptVersion: promptVersion,
                 modelProvider: provider,
-                modelIdentifier: model,
+                modelIdentifier: requestModel,
                 content: content,
                 contentHash: Self.sha256(content),
                 status: artifactStatus,
@@ -265,11 +294,16 @@ final class IPhoneAIStore: ObservableObject {
                 status = database.isCurrentStateVerified() ? "已分析 · 本机状态已核对" : "已分析 · 等待其他设备合并"
             }
         } catch {
+            var failureStateSaved = true
             if let activeJob {
-                try? database.saveAnalysisJob(activeJob.transitioning(to: .failed, error: error.localizedDescription))
+                failureStateSaved = (try? database.saveAnalysisJob(
+                    activeJob.transitioning(to: .failed, error: error.localizedDescription)
+                )) == true
             }
             status = "分析失败"
-            errorMessage = error.localizedDescription
+            errorMessage = failureStateSaved
+                ? error.localizedDescription
+                : "分析失败，且失败状态无法写入本机任务记录：\(error.localizedDescription)"
         }
     }
 
@@ -295,15 +329,23 @@ final class IPhoneAIStore: ObservableObject {
         let logicalKey = RiverCanonicalArtifactKey.dailyReview(dayKey: dayKey)
         let jobs = (try? database.analysisJobs()) ?? []
         let frontier = try? database.currentInputFrontier()
+        let normalizedEndpoint = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
+        let requestURL = URL(string: normalizedEndpoint)
+        let localHost = ["localhost", "127.0.0.1", "::1"].contains(requestURL?.host?.lowercased() ?? "")
+        let provider = localHost ? "local-openai-compatible" : "network-openai-compatible"
+        let requestModel = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        let endpointIdentity = requestURL?.absoluteString ?? normalizedEndpoint
+        let endpointFingerprint = Self.sha256(Data(endpointIdentity.utf8))
+        let expectedPipeline = "\(pipelineVersion)|\(provider)|\(requestModel)|\(endpointFingerprint)"
         if let frontier {
             for job in jobs where job.logicalKey == logicalKey
                 && (job.status == .queued || job.status == .running)
-                && job.inputFrontier != frontier {
-                try? database.saveAnalysisJob(job.transitioning(to: .superseded))
+                && (job.inputFrontier != frontier || job.pipelineVersion != expectedPipeline) {
+                _ = try? database.saveAnalysisJob(job.transitioning(to: .superseded))
             }
         }
         let hasPendingJob = jobs.contains {
-            $0.logicalKey == logicalKey && $0.inputFrontier == frontier
+            $0.logicalKey == logicalKey && $0.inputFrontier == frontier && $0.pipelineVersion == expectedPipeline
                 && ($0.status == .queued || $0.status == .running)
         }
         let staleArtifact = ((try? database.canonicalArtifactRevisions()) ?? []).first {
@@ -312,11 +354,9 @@ final class IPhoneAIStore: ObservableObject {
         guard hasPendingJob || staleArtifact != nil else { return }
         if !hasPendingJob, let frontier,
            jobs.contains(where: {
-               $0.logicalKey == logicalKey && $0.inputFrontier == frontier
+               $0.logicalKey == logicalKey && $0.inputFrontier == frontier && $0.pipelineVersion == expectedPipeline
                    && ($0.status == .failed || $0.status == .succeeded)
            }) { return }
-        let requestURL = URL(string: endpoint.trimmingCharacters(in: .whitespacesAndNewlines))
-        let localHost = ["localhost", "127.0.0.1", "::1"].contains(requestURL?.host?.lowercased() ?? "")
         guard localHost || allowsNetworkAnalysis else { return }
         Task { @MainActor [weak self] in
             await Task.yield()

@@ -600,4 +600,39 @@ struct ReplicationCoreTests {
             operationType: "shared.record.upsert", payload: try JSONEncoder().encode(first)
         )))
     }
+
+    @Test func analysisFingerprintsSeparateArtifactInputsFromProviderRequestIdentity() throws {
+        let frontier = try InputFrontier(sequences: ["iphone_test": 12], operationSequences: ["iphone_test": 4])
+        let artifactFingerprint = RiverAnalysisFingerprints.artifactInput(
+            frontier: frontier, systemPrompt: "system", userPrompt: "private daily prompt"
+        )
+        #expect(artifactFingerprint == RiverAnalysisFingerprints.artifactInput(
+            frontier: frontier, systemPrompt: "system", userPrompt: "private daily prompt"
+        ))
+        #expect(artifactFingerprint != RiverAnalysisFingerprints.artifactInput(
+            frontier: try InputFrontier(sequences: ["iphone_test": 13], operationSequences: ["iphone_test": 4]),
+            systemPrompt: "system", userPrompt: "private daily prompt"
+        ))
+
+        let localRequest = RiverAnalysisFingerprints.request(
+            endpoint: "http://localhost:11434/v1/chat/completions", model: "llama3.2",
+            systemPrompt: "system", userPrompt: "private daily prompt", temperature: 0.2, maxTokens: 900
+        )
+        #expect(localRequest == RiverAnalysisFingerprints.request(
+            endpoint: "http://localhost:11434/v1/chat/completions", model: "llama3.2",
+            systemPrompt: "system", userPrompt: "private daily prompt", temperature: 0.2, maxTokens: 900
+        ))
+        #expect(localRequest != RiverAnalysisFingerprints.request(
+            endpoint: "https://api.example.test/v1/chat/completions", model: "llama3.2",
+            systemPrompt: "system", userPrompt: "private daily prompt", temperature: 0.2, maxTokens: 900
+        ))
+        #expect(localRequest != RiverAnalysisFingerprints.request(
+            endpoint: "http://localhost:11434/v1/chat/completions", model: "other-model",
+            systemPrompt: "system", userPrompt: "private daily prompt", temperature: 0.2, maxTokens: 900
+        ))
+        #expect(localRequest != RiverAnalysisFingerprints.request(
+            endpoint: "http://localhost:11434/v1/chat/completions", model: "llama3.2",
+            systemPrompt: "system", userPrompt: "updated private daily prompt", temperature: 0.2, maxTokens: 900
+        ))
+    }
 }
