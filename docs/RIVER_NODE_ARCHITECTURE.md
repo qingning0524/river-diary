@@ -111,7 +111,7 @@ iPhone 的本机 AnalysisJob 指纹覆盖实际 system/user prompt、模型、en
 
 ## 真实验证与仍需真实设备验证的场景
 
-本轮 Xcode beta 工具链验证：RiverDiaryCore 37 项测试通过；macOS 全量 373 项测试通过；iPhone iOS 27 真机目标构建与签名成功；先前构建曾安装并在 iPhone 14 Pro 上接受启动，但由于当前 CoreDevice 显示设备 unavailable，最新真机签名包目前只在本机产物目录中。`devicectl` 曾接受启动请求，但随后设备状态变为 unavailable，截图请求失败，无法用真机验证当前 UI。当前 iPhone 17 Pro iOS 27 模拟器无 TeamIdentifier 的构建可以安装并启动，但界面明确报告“本地事件库不可用”，Keychain access group 权限错误 `OSStatus -34018`。该模拟器容器中有本轮启动生成的 SQLite `user_version=4` 数据库、Event/State Operation/Artifact/AnalysisJob 表和 WAL journal，原始 Event 数为 0；但 app 无法取得可用设备身份/钥匙串访问，因此这只验证到 schema bootstrap 和正确失败提示，不证明一个可工作的本地节点，也不替代真机签名包验证。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份、Timeline clarification 共享、用户状态操作对旧 Artifact 失效，以及分析请求/Artifact 指纹分离；macOS tests 覆盖 AnalysisJob 请求快照加密落盘/恢复输入序列化、mock transport 下同 frontier 恢复及 stale frontier 拒绝重放、本日新旧输入重建判定、远程 AI 未授权时零网络请求与同意后恢复、诊断报告共享待确认事项计数、未保存月度河流信草稿的复制/正式保存 tombstone/重启后删除重试及备份往返、习惯回顾、记忆确认、待确认事项纠正、TimelineDigest clarification 发布与关闭、快记 Event/tombstone与标签置顶元数据、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
+本轮 Xcode beta 工具链验证：RiverDiaryCore 37 项测试通过；macOS 全量 373 项测试通过；iPhone iOS 27 真机目标构建和 Team `Z29662632F` 签名校验通过。已将同 Bundle ID 的开发构建更新安装到已连接的 iPhone 14 Pro，开发者安装器确认数据容器可访问，后台启动后进程仍在运行；未卸载应用或读取数据库正文。iPhone Mirroring 报告设备正在使用，因此没有操作屏幕、读取 Timeline 正文或验证 UI 控件；本次运行也没有主动触发 AI 分析。当前 iPhone 17 Pro iOS 27 无 TeamIdentifier 模拟器构建虽可安装和启动，但界面报告“本地事件库不可用”，Keychain access group 错误 `OSStatus -34018`；模拟器中的 v4 SQLite/WAL 文件只证明 schema bootstrap，不证明可工作的本地节点。Core tests 覆盖精确序号缺口、LAN 对象与后续 iCloud 重复投递幂等、共享习惯/记忆/日记/河流信加密复制、未知共享记录类型保留、provider/model 不作为 Artifact 身份、待确认事项身份、Timeline clarification 共享、用户状态操作对旧 Artifact 失效，以及分析请求/Artifact 指纹分离；macOS tests 覆盖 AnalysisJob 请求快照加密落盘/恢复输入序列化、mock transport 下同 frontier 恢复及 stale frontier 拒绝重放、本日新旧输入重建判定、远程 AI 未授权时零网络请求与同意后恢复、诊断报告共享待确认事项计数、未保存月度河流信草稿的复制/正式保存 tombstone/重启后删除重试及备份往返、习惯回顾、记忆确认、待确认事项纠正、TimelineDigest clarification 发布与关闭、快记 Event/tombstone与标签置顶元数据、DiaryStore 日记/河流信/评分复制和 State Operation Artifact 失效。LAN/Bonjour 实际设备互连、真实用户 iCloud 账号、位置后台交付、Shortcuts 自动化、真机交互和重装流程仍需操作级验收。
 
 以下情形还没有通过真实 iPhone/Mac + 用户 iCloud 账号实际验收：Core Location 后台 Visits 的系统交付、Shortcuts 个人自动化触发、MapKit/Geocoder 实际 POI 质量、跨设备 iCloud 延迟和文件提供器协调、LAN/Bonjour 实际传输及 LAN/iCloud 重复投递、真实权限撤销、Personal Team 重签名后的持久性与恢复。
 
@@ -127,4 +127,4 @@ Developer Diagnostics 已在两端设置中提供显式开关，展示数据库�
 - 旧版 Mac `habit_*` 与长期记忆记录会在复制前迁移到共享 State Operation；iPhone 可查看/回答回顾卡、确认或撤销长期记忆。两端离线并发、撤销/退役、重装恢复和真实 iCloud 的操作级验收仍未完成。其他复盘状态、自动生成语义确认和长期历史迁移仍有未覆盖部分。
 - iCloud offline、权限撤销、坏文件和未知协议有代码保护路径及核心测试，但还没有两个真实安装实例/真实 iCloud 文件提供器的端到端故障注入。
 - 仍需在真实设备上完成文档 Scenario A–O 的操作级验收；模拟器启动不等同于完成位置、Shortcuts、iCloud、签名和 AI 场景。
-- 真机验收需先在 iPhone 上信任上述开发者配置；之后才能继续验证位置后台交付、Shortcuts、LAN、iCloud 和重装场景。
+- iPhone 14 Pro 已接受同 Team ID 的开发构建更新并运行 River Diary 进程，证明当前开发者身份被设备接受；设备正在被用户使用，尚未操作位置、Shortcuts、同步、备份或重装界面。
