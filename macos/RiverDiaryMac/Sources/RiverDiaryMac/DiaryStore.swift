@@ -733,27 +733,6 @@ final class DiaryStore: ObservableObject {
             }
         }
         if onSharedMonthlyLetterDraftChanged != nil {
-            let originalDrafts = letterDrafts
-            let originalDraftDates = letterDraftUpdatedAt
-            let originalDraftDeletions = letterDraftDeletedAt
-            var localDraftStateChanged = false
-            for (monthKey, body) in Array(letterDrafts) where monthlyLetters[monthKey]?.body == body {
-                letterDrafts[monthKey] = nil
-                letterDraftUpdatedAt[monthKey] = nil
-                letterDraftDeletedAt[monthKey] = Date()
-                localDraftStateChanged = true
-            }
-            if localDraftStateChanged {
-                do { try persistCurrentState() }
-                catch {
-                    letterDrafts = originalDrafts
-                    letterDraftUpdatedAt = originalDraftDates
-                    letterDraftDeletedAt = originalDraftDeletions
-                    saveState = .failed("已保存河流信的草稿清理未写入本机：\(UserFacingError.message(for: error))")
-                    return migrated
-                }
-            }
-
             for (monthKey, deletedAt) in Array(letterDraftDeletedAt) {
                 guard persistSharedMonthlyLetterDraft(
                     monthKey: monthKey, body: "", updatedAt: deletedAt, status: "deleted"
@@ -833,15 +812,6 @@ final class DiaryStore: ObservableObject {
                 changed = true
             case .monthlyLetter:
                 guard record.status == "current", let content = record.monthlyLetterContent else { continue }
-                if let pendingDelete = updatedDraftDeletions[content.monthKey], pendingDelete > content.updatedAt {
-                    // The local discard/save operation is newer than this letter snapshot.
-                } else if let draftDate = updatedDraftDates[content.monthKey], draftDate <= content.updatedAt,
-                          updatedDrafts[content.monthKey] != nil {
-                    updatedDrafts[content.monthKey] = nil
-                    updatedDraftDates[content.monthKey] = nil
-                    updatedDraftDeletions[content.monthKey] = max(draftDate, content.updatedAt)
-                    changed = true
-                }
                 let letter = MonthlyLetter(
                     month: content.monthKey, title: content.title, body: content.body,
                     evidence: content.evidence, createdAt: content.createdAt,

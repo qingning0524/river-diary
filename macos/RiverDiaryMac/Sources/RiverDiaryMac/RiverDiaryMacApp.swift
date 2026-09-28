@@ -157,8 +157,12 @@ struct RiverDiaryMacApp: App {
                 }
                 _ = ai.reconcilePendingTimelineConfirmations()
                 store.reloadSharedTimelineAnnotations()
+                let operationFrontierBeforeMigration = try? v2Store.currentInputFrontier()
+                _ = store.migrateLocalJournalStateToSharedOperations()
                 store.applySharedDiaryRecords(v2Store.sharedUserRecords())
-                if store.migrateLegacyTimelineAnnotationsToOperations() {
+                let operationFrontierAfterMigration = try? v2Store.currentInputFrontier()
+                let migratedLegacyAnnotations = store.migrateLegacyTimelineAnnotationsToOperations()
+                if operationFrontierBeforeMigration != operationFrontierAfterMigration || migratedLegacyAnnotations {
                     DispatchQueue.main.async { activity.syncSettingsStore.synchronize() }
                 }
 
