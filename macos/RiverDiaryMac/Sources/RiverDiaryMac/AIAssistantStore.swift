@@ -791,6 +791,13 @@ final class AIAssistantStore: ObservableObject {
             let encodedRequestSnapshot = try snapshotEncoder.encode(requestSnapshot)
             let requestSnapshotData = resumeJob?.requestSnapshot ?? encodedRequestSnapshot
             let requestFingerprint = resumeJob?.requestFingerprint ?? analysisJobRequestFingerprint(requestSnapshot)
+            for job in analysisStore.analysisJobs()
+            where job.logicalKey == artifactKey
+                && (job.status == .queued || job.status == .running)
+                && job.id != resumeJob?.id
+                && job.requestFingerprint != requestFingerprint {
+                _ = analysisStore.saveAnalysisJob(job.transitioning(to: .superseded, error: "同一逻辑任务已收到不同请求快照。"))
+            }
             guard let deviceID = analysisStore.localDeviceIdentifier() else {
                 throw RiverSyncStoreError.persistence("无法读取本机设备身份，不能创建 AnalysisJob。")
             }
@@ -998,6 +1005,7 @@ final class AIAssistantStore: ObservableObject {
         var completedCount = 0
         var failedCount = 0
         var needsRetryAfterActiveTask = false
+        var needsDomainRebuild = false
         while true {
             let jobs = analysisStore.analysisJobs().filter { !processed.contains($0.id) }
             guard let job = RiverAnalysisJobScheduler.nextQueuedJob(from: jobs) else { break }
@@ -1023,7 +1031,7 @@ final class AIAssistantStore: ObservableObject {
                 continue
             }
             guard task != .habitReview else {
-                _ = analysisStore.saveAnalysisJob(job.transitioning(to: .failed, error: "习惯回顾需要专用管线把回复转为共享回顾卡；此任务不会只重放文本请求。"))
+                needsDomainRebuild = true
                 continue
             }
             let endpointFingerprint = SHA256Hex.hash(Data(endpoint.trimmingCharacters(in: .whitespacesAndNewlines).utf8))
@@ -1122,6 +1130,9 @@ final class AIAssistantStore: ObservableObject {
 
         if needsRetryAfterActiveTask {
             recoveredAnalysisStatus = "待恢复任务已保留；当前同类分析完成后会继续。"
+        } else if needsDomainRebuild {
+            let successes = completedCount > 0 ? "另有 \(completedCount) 个任务已恢复。" : ""
+            recoveredAnalysisStatus = "习惯回顾需由专用管线重建当前上下文后恢复。" + successes
         } else if completedCount > 0 || failedCount > 0 {
             recoveredAnalysisStatus = "已处理恢复任务：成功 \(completedCount) 个，需处理 \(failedCount) 个。"
         } else if !processed.isEmpty {

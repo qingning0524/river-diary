@@ -170,6 +170,25 @@ final class AnalysisInterconnectTests: XCTestCase {
         XCTAssertNil(finishedJob.requestSnapshot, "terminal jobs must not retain the full prompt")
         XCTAssertNotNil(v2.canonicalArtifactRevision(logicalKey: dedupKey, kind: .insight))
         XCTAssertTrue(ai.recoveredAnalysisStatus?.contains("成功 1 个") == true)
+
+        let lateEvent = RawEvent(source: .manual, kind: .quickCapture, payload: RawEventPayload(text: "late evidence"))
+        XCTAssertTrue(v2.insertRawEvent(lateEvent))
+        let staleKey = dedupKey + "|stale-frontier"
+        let staleJobID = RiverAnalysisJobScheduler.jobID(
+            deviceID: device, logicalKey: staleKey, artifactType: .insight,
+            inputFrontier: frontier, pipelineVersion: pipeline, promptVersion: "1",
+            requestFingerprint: requestFingerprint
+        )
+        let staleJob = RiverAnalysisJob(
+            id: staleJobID, logicalKey: staleKey, artifactType: .insight, inputFrontier: frontier,
+            priority: 10, status: .running, attempt: 1, originDeviceID: device,
+            pipelineVersion: pipeline, promptVersion: "1", requestSnapshot: snapshotData,
+            requestFingerprint: requestFingerprint
+        )
+        XCTAssertTrue(v2.saveAnalysisJob(staleJob))
+        await ai.resumeRecoverableAnalysisJobs()
+        XCTAssertEqual(v2.analysisJobs().first { $0.id == staleJobID }?.status, .superseded)
+        XCTAssertEqual(v2.analysisRuns().count, 1, "stale-frontier snapshot must not be sent")
     }
 
     // MARK: B1 结果层
