@@ -80,6 +80,14 @@ final class MonthlyLetterTests: XCTestCase {
         XCTAssertEqual(restoredBackup.letterDrafts?[letter.month], draftBody)
         XCTAssertEqual(restoredBackup.letterDraftUpdatedAt?[letter.month], draftUpdatedAt)
         XCTAssertEqual(restoredBackup.letterDraftDeletedAt?["2026-08"], draftDeletedAt)
+        let versionFiveBackup = LocalBackupPayload(
+            version: 5, exportedAt: date(9, 12), overrides: [:], quickCaptures: [:],
+            dismissedDrafts: [:], careAcknowledgments: [:]
+        )
+        let restoredVersionFive = try decoder.decode(LocalBackupPayload.self, from: encoder.encode(versionFiveBackup))
+        XCTAssertNil(restoredVersionFive.letterDrafts)
+        XCTAssertNil(restoredVersionFive.letterDraftUpdatedAt)
+        XCTAssertNil(restoredVersionFive.letterDraftDeletedAt)
         XCTAssertTrue(letter.markdown.contains(letter.body))
         XCTAssertTrue(letter.markdown.contains(letter.evidence))
     }
@@ -87,6 +95,8 @@ final class MonthlyLetterTests: XCTestCase {
     func testOldStateWithoutLettersStillLoads() throws {
         let oldState = Data(#"{"version":3,"entries":{}}"#.utf8)
         XCTAssertNil(try JSONDecoder().decode(UserState.self, from: oldState).monthlyLetters)
+        XCTAssertNil(try JSONDecoder().decode(UserState.self, from: oldState).letterDrafts)
+        XCTAssertNil(try JSONDecoder().decode(UserState.self, from: oldState).letterDraftDeletedAt)
         XCTAssertNil(MonthlyLetter.make(for: date(9, 1), entries: [], captures: [:], sessions: [],
                                        now: date(9, 12), calendar: calendar))
     }
