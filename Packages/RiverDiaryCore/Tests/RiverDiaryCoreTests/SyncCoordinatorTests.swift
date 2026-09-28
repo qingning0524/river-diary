@@ -144,6 +144,12 @@ struct SyncCoordinatorTests {
             evidence: "手写记录", createdAt: Date(timeIntervalSince1970: 110),
             updatedAt: Date(timeIntervalSince1970: 110)
         )))
+        let draft = try #require(RiverSharedStateRecord.monthlyLetterDraft(
+            RiverMonthlyLetterDraftContent(
+                monthKey: "2026-09", body: "这份信还没有正式保存。",
+                updatedAt: Date(timeIntervalSince1970: 120)
+            )
+        ))
         let frontier = try InputFrontier()
         phoneStore.append(StateOperation(
             actorDeviceID: phone, originSequence: 1,
@@ -158,6 +164,13 @@ struct SyncCoordinatorTests {
             targetID: letter.targetID, fieldKey: "record",
             operationType: "shared.record.upsert", payload: try JSONEncoder().encode(letter)
         ))
+        phoneStore.append(StateOperation(
+            actorDeviceID: phone, originSequence: 3,
+            clock: HybridLogicalClock(physicalMilliseconds: 120, deviceID: phone),
+            causalFrontier: try InputFrontier(operationSequences: [phone.rawValue: 2]),
+            targetID: draft.targetID, fieldKey: "record",
+            operationType: "shared.record.upsert", payload: try JSONEncoder().encode(draft)
+        ))
 
         _ = try RiverSyncCoordinator(store: phoneStore, directory: directory, key: key).synchronize()
         let report = try RiverSyncCoordinator(store: macStore, directory: directory, key: key).synchronize()
@@ -165,6 +178,8 @@ struct SyncCoordinatorTests {
         let received = macStore.operations.values.sorted { $0.originSequence < $1.originSequence }
         #expect(try JSONDecoder().decode(RiverSharedStateRecord.self, from: received[0].payload) == entry)
         #expect(try JSONDecoder().decode(RiverSharedStateRecord.self, from: received[1].payload) == letter)
+        let receivedDraft = try JSONDecoder().decode(RiverSharedStateRecord.self, from: received[2].payload)
+        #expect(receivedDraft.monthlyLetterDraftContent?.body == "这份信还没有正式保存。")
     }
 
     @Test func corruptedArtifactFileCannotImportOrReportVerified() throws {
