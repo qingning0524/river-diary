@@ -9,7 +9,7 @@ final class BackgroundHealthSyncManager {
     static let taskIdentifier = "local.riverdiary.app.health-sync"
 
     private var activeHealthStore: HealthKitStore?
-    private var activeDiaryStore: DiaryStore?
+    private var activeNodeStore: RiverNodeStore?
 
     func register() {
         BGTaskScheduler.shared.register(
@@ -45,21 +45,21 @@ final class BackgroundHealthSyncManager {
         guard HKHealthStore.isHealthDataAvailable() else { return }
 
         let healthStore = HealthKitStore()
+        let nodeStore = RiverNodeStore()
         let diaryStore = DiaryStore()
+        let driveStore = ICloudDriveStore()
         activeHealthStore = healthStore
-        activeDiaryStore = diaryStore
+        activeNodeStore = nodeStore
         defer {
             activeHealthStore = nil
-            activeDiaryStore = nil
+            activeNodeStore = nil
         }
 
         await withCheckedContinuation { continuation in
             healthStore.onHealthSnapshotChanged = { nights, exerciseDays in
                 Task {
-                    await diaryStore.saveHealthSnapshot(
-                        sleepNights: nights,
-                        exerciseDays: exerciseDays
-                    )
+                    nodeStore.recordHealthSnapshot(nights: nights, exerciseDays: exerciseDays)
+                    nodeStore.synchronize(using: driveStore, localMoodScores: diaryStore.localMoodScoresByDate)
                     continuation.resume()
                 }
             }

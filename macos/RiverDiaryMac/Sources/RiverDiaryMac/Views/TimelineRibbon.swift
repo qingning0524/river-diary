@@ -159,7 +159,7 @@ struct RiverDayRibbon: View {
         let formatter = isClockChangeDay ? Self.transitionTimeFormatter : Self.accessibilityTimeFormatter
         let time = fraction >= 0.999_999 ? "24:00" : formatter.string(from: moment)
         let hasEvidence = items.contains { item in
-            if item.kind == .capture {
+            if item.kind == .capture || item.kind == .place {
                 return abs(item.start.timeIntervalSince(moment)) <= TimelineDisplayList.captureHitTolerance
             }
             return item.start <= moment && moment < item.end

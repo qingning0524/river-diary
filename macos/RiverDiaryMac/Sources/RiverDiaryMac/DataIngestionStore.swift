@@ -1,6 +1,7 @@
 import AppKit
 import CryptoKit
 import Foundation
+import RiverDiaryCore
 
 enum RetentionPolicy {
     static func requiresConfirmation(currentDays: Int, requestedDays: Int) -> Bool {
@@ -352,46 +353,42 @@ final class DataIngestionStore: ObservableObject {
 
     private func captureDaily(runsAIAnalysis: Bool) async {
         guard !isRunning else { return }
-        guard let url = sourceURL else {
-            lastError = "未设置数据源。"
-            return
-        }
-        guard fileManager.fileExists(atPath: url.path) else {
-            lastError = "未找到数据源：\(url.lastPathComponent)"
-            refreshSourceMetadata()
-            return
-        }
 
         isRunning = true
         defer { isRunning = false }
 
         do {
-            // 1. Read iOS data
-            let raw = try Data(contentsOf: url, options: .mappedIfSafe)
-            let currentHash = SHA256Hex.hash(raw)
-
-            // Parse iOS JSON in background
-            let iosPayload = try await Task.detached(priority: .utility) { () -> [String: Any]? in
-                let object = try JSONSerialization.jsonObject(with: raw, options: [.fragmentsAllowed])
-                return object as? [String: Any]
-            }.value
-
-            guard let payload = iosPayload else {
-                throw NSError(domain: "RiverDiaryMac.ingestion", code: 1,
-                              userInfo: [NSLocalizedDescriptionKey: "iOS 数据源必须是 JSON 对象。"])
+            // 1. Read the old read-only snapshot if present. Current iPhone data
+            // arrives as encrypted RiverEvents and is merged below.
+            var payload: [String: Any] = [:]
+            if let url = sourceURL, fileManager.fileExists(atPath: url.path) {
+                do {
+                    let raw = try Data(contentsOf: url, options: .mappedIfSafe)
+                    if let value = try JSONSerialization.jsonObject(with: raw, options: [.fragmentsAllowed]) as? [String: Any] {
+                        payload = value
+                    } else {
+                        lastError = "旧版 iOS 快照不是 JSON 对象；继续使用加密同步事件和本机采集。"
+                    }
+                } catch {
+                    lastError = "旧版 iOS 快照无法读取；继续使用加密同步事件和本机采集：\(error.localizedDescription)"
+                }
             }
 
-            // 2. Check if today's iOS data exists.
-            //    没有 iOS 健康数据只是"健康管道今天没数据"，不应连坐 Mac 本地源
-            //    （Chrome/备忘录/屏幕时间是 today-scoped，错过即永久丢）和夜间 AI。
+            // 2. Apply replicated observations and user decisions over legacy
+            // values. Newer canonical operations take precedence by HLC.
+            var iosData = Self.cleanIOSPayload(payload, syncedAt: Date())
+            iosData = replicatedIOSUserData(over: iosData)
             let today = DiaryEntry.dateFormatter.string(from: Date())
-            let hasIOSData = Self.hasTodayData(payload, today: today)
+            let hasIOSData = iosData.moodScores[today] != nil
+                || iosData.sleepNights.contains(where: { $0.date == today })
+                || iosData.exerciseDays.contains(where: { $0.date == today })
+                || iosData.quickNotes.contains(where: { $0.date == today })
+            let currentHash = SHA256Hex.hash(try JSONEncoder().encode(iosData))
             if !hasIOSData {
                 lastStatus = "今日 iOS 数据未同步（\(today)）；继续采集 Mac 本地来源。"
             }
 
-            // 3. Clean iOS data and keep earlier iOS days in the database
-            let iosData = Self.cleanIOSPayload(payload, syncedAt: Date())
+            // 3. Keep the history import into the encrypted legacy database.
             await Task.detached(priority: .utility) {
                 AppDatabase.shared.saveIOSHistory(iosData, excluding: today)
             }.value
@@ -480,6 +477,92 @@ final class DataIngestionStore: ObservableObject {
             lastError = UserFacingError.message(for: error)
             lastStatus = "采集失败"
         }
+    }
+
+    private func replicatedIOSUserData(over legacy: IngestedUserData) -> IngestedUserData {
+        var merged = legacy
+        let events = v2Store.effectiveRawEvents()
+        let operationResolution = StateOperationResolver.resolve(v2Store.allStateOperations())
+        let legacyUpdatedAt = legacy.sourceUpdatedAt.flatMap(Self.parseISODate) ?? .distantPast
+        var sleepByDay: [String: (IngestedSleepNight, Date)] = [:]
+        for value in legacy.sleepNights where Self.isValidDate(value.date) { sleepByDay[value.date] = (value, legacyUpdatedAt) }
+        var exerciseByDay: [String: (IngestedExerciseDay, Date)] = [:]
+        for value in legacy.exerciseDays where Self.isValidDate(value.date) { exerciseByDay[value.date] = (value, legacyUpdatedAt) }
+        var noteByID: [String: IngestedQuickNote] = [:]
+        for value in legacy.quickNotes { noteByID[value.id] = value }
+
+        for event in events where event.persistedSource == "healthkit" || event.persistedSource == "legacy-icloud" {
+            guard let metrics = event.payload.metrics else { continue }
+            let day = Self.localDayKey(event.timestamp, timezoneIdentifier: event.observedTimeZoneIdentifier)
+            if event.persistedKind == "health.sleep.snapshot", let hours = metrics.sleepHours {
+                let candidate = IngestedSleepNight(
+                    date: day,
+                    totalHours: hours,
+                    deepMinutes: Double(metrics.deepSleepMinutes ?? 0),
+                    remMinutes: Double(metrics.remSleepMinutes ?? 0),
+                    awakeMinutes: Double(metrics.awakeMinutes ?? 0)
+                )
+                if event.recordedAt >= (sleepByDay[day]?.1 ?? .distantPast) { sleepByDay[day] = (candidate, event.recordedAt) }
+            } else if event.persistedKind == "health.exercise.snapshot" {
+                let candidate = IngestedExerciseDay(
+                    date: day,
+                    steps: metrics.steps ?? 0,
+                    distanceKilometers: metrics.distanceKm ?? 0,
+                    activeEnergyKilocalories: metrics.activeEnergyKcal ?? 0
+                )
+                if event.recordedAt >= (exerciseByDay[day]?.1 ?? .distantPast) { exerciseByDay[day] = (candidate, event.recordedAt) }
+            }
+        }
+
+        for event in events where ["quickCapture", "manual.quickCapture", "manual.note"].contains(event.persistedKind) {
+            guard let text = event.payload.text?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { continue }
+            let day = Self.localDayKey(event.timestamp, timezoneIdentifier: event.observedTimeZoneIdentifier)
+            noteByID[event.id.uuidString] = IngestedQuickNote(
+                id: event.id.uuidString,
+                date: day,
+                text: text,
+                createdAt: event.timestamp,
+                source: "River Diary 事件"
+            )
+        }
+
+        struct MoodPayload: Decodable { let day: String; let score: Int }
+        struct MoodResetPayload: Decodable { let day: String }
+        for operation in operationResolution.currentByField.values {
+            guard operation.targetID.hasPrefix("mood:"), operation.fieldKey == "score" else { continue }
+            if operation.operationType == "mood.score.set",
+               let payload = try? JSONDecoder().decode(MoodPayload.self, from: operation.payload) {
+                merged.moodScores[payload.day] = payload.score
+            } else if operation.operationType == "mood.score.reset",
+                      let payload = try? JSONDecoder().decode(MoodResetPayload.self, from: operation.payload) {
+                merged.moodScores.removeValue(forKey: payload.day)
+            }
+        }
+
+        merged.sleepNights = sleepByDay.values.map(\.0).sorted { $0.date < $1.date }
+        merged.exerciseDays = exerciseByDay.values.map(\.0).sorted { $0.date < $1.date }
+        merged.quickNotes = noteByID.values.sorted { $0.date == $1.date ? $0.id < $1.id : $0.date < $1.date }
+        let tombstoned = StateOperationResolver.tombstonedObjectIDs(v2Store.allStateOperations())
+        merged.tombstonedQuickCaptureIDs = v2Store.allRawEvents()
+            .filter { ["quickCapture", "manual.quickCapture", "manual.note"].contains($0.persistedKind) }
+            .filter { tombstoned.contains("event:\($0.id.uuidString)") }
+            .map { $0.id.uuidString }
+        if let latestEvent = events.map(\.recordedAt).max(), latestEvent > merged.syncedAt {
+            merged.syncedAt = latestEvent
+        }
+        return merged
+    }
+
+    private nonisolated static func localDayKey(_ date: Date, timezoneIdentifier: String?) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = timezoneIdentifier.flatMap(TimeZone.init(identifier:)) ?? .current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
+
+    private nonisolated static func parseISODate(_ value: String) -> Date? {
+        ISO8601DateFormatter().date(from: value)
     }
 
     private func persist(_ record: DailyCaptureRecord) throws {

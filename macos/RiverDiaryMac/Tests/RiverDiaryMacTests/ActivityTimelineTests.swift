@@ -86,6 +86,27 @@ final class ActivityTimelineTests: XCTestCase {
         XCTAssertEqual(model.items.first { $0.kind == .capture }?.capture, note)
     }
 
+    func testRemoteLocationMarkersJoinThePersonTimelineWithoutAddingScreenTime() {
+        let marker = ActivityTimelinePlaceMarker(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+            time: at(590),
+            title: "到达 学校",
+            detail: "大学 · 来自 iphone_test",
+            originDeviceID: "iphone_test"
+        )
+        let timeline = ActivityTimelineEngine.build(
+            for: day,
+            sessions: [session(600, 630, app: "ChatGPT")],
+            placeMarkers: [marker],
+            calendar: calendar
+        )
+
+        XCTAssertEqual(timeline.items.map(\.kind), [.place, .activity])
+        XCTAssertEqual(timeline.items.first?.title, "到达 学校")
+        XCTAssertEqual(timeline.items.first?.evidenceRef, "raw:\(marker.id.uuidString)")
+        XCTAssertEqual(timeline.totalDuration, 30 * 60)
+    }
+
     func testBackdatedDiaryNoteIsKeptOutsideTheClockTimeline() {
         let note = QuickCapture(text: "补记昨天的散步", createdAt: at(1500))
         let model = build([], captures: [note])

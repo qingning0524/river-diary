@@ -65,6 +65,7 @@ struct TimelineWorkspaceView: View {
             for: selectedDate,
             sessions: activity.liveSessions(for: selectedDate),
             captures: captures,
+            placeMarkers: activity.locationMarkers(for: selectedDate),
             annotations: store.timelineAnnotations
         )
     }

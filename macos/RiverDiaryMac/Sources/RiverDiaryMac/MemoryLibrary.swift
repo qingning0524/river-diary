@@ -14,12 +14,31 @@ final class MemoryLibraryStore: ObservableObject {
     @Published private(set) var analysisRuns: [AnalysisRun] = []
 
     private let v2: V2Store
+    private var syncChangeObserver: NSObjectProtocol?
+    private var lastRefreshEntries: [DiaryEntry] = []
+    private var lastRefreshCaptures: [String: [QuickCapture]] = [:]
+    private var lastRefreshLetters: [String: MonthlyLetter] = [:]
 
     init(v2Store: V2Store? = nil) {
         v2 = v2Store ?? V2Store()
+        syncChangeObserver = NotificationCenter.default.addObserver(
+            forName: .riverCanonicalSyncDidChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.refresh(entries: self.lastRefreshEntries, captures: self.lastRefreshCaptures, letters: self.lastRefreshLetters)
+            }
+        }
+    }
+
+    deinit {
+        if let syncChangeObserver { NotificationCenter.default.removeObserver(syncChangeObserver) }
     }
 
     func refresh(entries: [DiaryEntry], captures: [String: [QuickCapture]], letters: [String: MonthlyLetter]) {
+        lastRefreshEntries = entries
+        lastRefreshCaptures = captures
+        lastRefreshLetters = letters
         durableMemories = v2.memories().sorted { $0.createdAt > $1.createdAt }
         analysisRuns = v2.analysisRuns().sorted { $0.createdAt > $1.createdAt }
         savedReflections = letters.values.sorted { $0.updatedAt > $1.updatedAt }

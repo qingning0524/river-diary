@@ -86,7 +86,7 @@ struct TimelineAIDigestView: View {
                 ForEach(sections) { section in
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
                         Text(section.title)
-                            .font(.system(size: 21, weight: .regular, design: .serif))
+                            .font(AppTypography.editorial(21))
                             .foregroundStyle(Color.ink)
                             .padding(.top, AppSpacing.xs)
                         VStack(spacing: AppSpacing.xs) {
@@ -130,7 +130,7 @@ struct TimelineAIDigestView: View {
                     }
                 }
                 Text(visibleOverview(digest))
-                    .font(.system(size: 16, weight: .regular, design: .serif))
+                    .font(AppTypography.editorial(16))
                     .foregroundStyle(Color.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 DisclosureGroup("查看概览依据 · \(overviewItems(digest).count + digest.overviewDiaryDates.count) 条") {
@@ -293,7 +293,7 @@ private struct DigestRowView: View {
                         appIcons(apps)
                         VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xxs)) {
                             Text(displayedTitle)
-                                .font(.system(size: 16, weight: .medium, design: .serif))
+                                .font(AppTypography.editorial(16, weight: .medium))
                                 .foregroundStyle(Color.ink)
                                 .multilineTextAlignment(.leading)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -332,7 +332,7 @@ private struct DigestRowView: View {
                     Spacer()
                 }
 
-                DisclosureGroup("查看依据 · \(sources.reduce(0) { $0 + max($1.sessions.count, $1.kind == .capture ? 1 : 0) }) 条") {
+                DisclosureGroup("查看依据 · \(sources.reduce(0) { $0 + max($1.sessions.count, ($1.kind == .capture || $1.kind == .place) ? 1 : 0) }) 条") {
                     VStack(alignment: .leading, spacing: AppSpacing.xxs) {
                         ForEach(sources) { item in
                             Button {
@@ -379,7 +379,7 @@ private struct DigestRowView: View {
     private func sourceItemRow(_ item: ActivityTimelineItem) -> some View {
         HStack(alignment: .top, spacing: 0) {
             timeLabel(item.start)
-            marker(item.kind == .gap ? .gap : (item.kind == .capture ? .capture : .activity))
+            marker(item.kind == .gap ? .gap : (item.kind == .capture ? .capture : (item.kind == .place ? .place : .activity)))
             if item.kind == .gap {
                 HStack {
                     Text("这一段没有记录")
@@ -397,18 +397,30 @@ private struct DigestRowView: View {
                         .font(AppTypography.micro().weight(.medium))
                     .foregroundStyle(AppTheme.warning)
                     Text(capture.text)
-                        .font(.system(size: 16, weight: .regular, design: .serif))
+                        .font(AppTypography.editorial(16))
                         .foregroundStyle(Color.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(AppSpacing.sm)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(AppTheme.neutralSoft, in: RoundedRectangle(cornerRadius: AppRadius.panel, style: .continuous))
+            } else if let placeMarker = item.placeMarker {
+                VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                    Text(placeMarker.title)
+                        .font(AppTypography.rowTitle().weight(.semibold))
+                        .foregroundStyle(Color.ink)
+                    Text(placeMarker.detail)
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(Color.secondaryInk)
+                }
+                .padding(AppSpacing.sm)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AppTheme.accentSoft.opacity(0.45), in: RoundedRectangle(cornerRadius: AppRadius.panel, style: .continuous))
             }
         }
     }
 
-    private enum MarkerKind { case activity, gap, capture }
+    private enum MarkerKind { case activity, gap, capture, place }
 
     private func marker(_ kind: MarkerKind) -> some View {
         ZStack {
@@ -426,6 +438,10 @@ private struct DigestRowView: View {
                     .fill(AppTheme.neutralSoft).frame(width: 18, height: 18)
                     .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).stroke(AppTheme.warning.opacity(0.7), lineWidth: 1.2))
                     .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous).fill(AppTheme.warning).frame(width: 7, height: 7))
+            case .place:
+                Image(systemName: "mappin.circle.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(AppTheme.accent)
             }
         }
         .frame(width: 28)

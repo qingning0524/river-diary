@@ -10,6 +10,9 @@ struct ActivitySession: Codable, Hashable, Identifiable {
     var category: String
     var start: Date
     var end: Date
+    var originDeviceID: String? = nil
+    var evidenceQuality: String? = nil
+    var endReason: String? = nil
 
     var duration: TimeInterval { max(0, end.timeIntervalSince(start)) }
     var hour: Int { Calendar.current.component(.hour, from: start) }
@@ -21,6 +24,7 @@ struct ActivitySession: Codable, Hashable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id, appName = "app", bundleID = "bundle", windowTitle = "title", category, start, end
+        case originDeviceID, evidenceQuality, endReason
     }
 
     /// 在同一应用里换了窗口标题：在 `moment` 处切开，返回（截断到此刻的旧段，带新标题的新段）。
@@ -150,5 +154,4 @@ struct FusedRangeStats {
     var narrative: String
     var dayStats: [FusedDayStats]
 }
-
 

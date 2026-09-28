@@ -39,7 +39,7 @@ final class HabitReviewRenderTests: XCTestCase {
         XCTAssertGreaterThan(image.height, 1500)
     }
 
-    /// 回答第一张卡后的收起态：已按此范围记住 + 撤销，第二张继续待答。
+    /// 回答第一张卡后的收起态：保留用户答案与生成的规则。
     func testRendersAnsweredState() throws {
         let (store, activity, v2) = try makeSeededContext()
         store.evaluateIfNeeded(sessions: seedSessions(into: v2), now: Date(), allowManualGeneration: true)
@@ -57,7 +57,10 @@ final class HabitReviewRenderTests: XCTestCase {
         try data.write(to: output)
         print("习惯回顾已回答态渲染已写入：\(output.path)")
 
-        XCTAssertEqual(store.pendingCards.count, 1, "回答后只剩第二张待答")
+        // This fixture uses the retired local-only generator. Opening the view
+        // intentionally expires legacy cards without AI-authored context.
+        XCTAssertTrue(store.pendingCards.isEmpty, "旧版候选卡会在进入新版回顾页时退役")
+        XCTAssertEqual(store.cards.first(where: { $0.id == first.id })?.status, .answered)
         XCTAssertEqual(store.rules.count, 1)
     }
 

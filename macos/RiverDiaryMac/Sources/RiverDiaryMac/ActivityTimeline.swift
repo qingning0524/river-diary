@@ -1,15 +1,26 @@
 import Foundation
+import RiverDiaryCore
+
+struct ActivityTimelinePlaceMarker: Identifiable, Hashable {
+    var id: UUID
+    var time: Date
+    var title: String
+    var detail: String
+    var originDeviceID: String
+}
 
 /// A presentation model derived from recorded evidence; it never changes source sessions.
 struct ActivityTimelineItem: Identifiable, Hashable {
-    enum Kind: String { case activity, capture, gap }
+    enum Kind: String { case activity, capture, gap, place }
 
     var id: String
     var kind: Kind
     var start: Date
     var end: Date
     var sessions: [ActivitySession] = []
+    var secondarySessions: [ActivitySession] = []
     var capture: QuickCapture?
+    var placeMarker: ActivityTimelinePlaceMarker?
     var annotationKey: String?
     var annotation: TimelineAnnotation?
 
@@ -45,6 +56,7 @@ struct ActivityTimelineItem: Identifiable, Hashable {
         case .activity: isFragmentRun ? nil : sessions.first.map { "raw:\($0.id.uuidString)" }
         case .capture: capture.map { "capture:\($0.id.uuidString)" }
         case .gap: nil
+        case .place: placeMarker.map { "raw:\($0.id.uuidString)" }
         }
     }
 
@@ -93,7 +105,11 @@ struct ActivityTimelineItem: Identifiable, Hashable {
     var needsReview: Bool { needsReviewReason != nil }
 
     var duration: TimeInterval { sessions.reduce(0) { $0 + $1.duration } }
-    var category: String { capture != nil ? "快记" : sessions.first?.category ?? "未记录" }
+    var category: String {
+        if capture != nil { return "快记" }
+        if placeMarker != nil { return "地点" }
+        return sessions.first?.category ?? "未记录"
+    }
     var apps: [TimelineAppUsage] {
         Dictionary(grouping: sessions, by: \.appName)
             .map { TimelineAppUsage(name: $0.key, duration: $0.value.reduce(0) { $0 + $1.duration }) }
@@ -107,6 +123,7 @@ struct ActivityTimelineItem: Identifiable, Hashable {
             // 形态决定名字：多数短切换是多工具组合工作，只有真散的才叫"碎片"。
             return FragmentRunShape.classify(self).rowTitle(fallbackCount: fragments.count)
         }
+        if let placeMarker { return placeMarker.title }
         if let capture { return capture.text }
         if kind == .gap { return "没有记录的时间" }
         let names = apps.prefix(2).map(\.name).joined(separator: "、")
@@ -120,6 +137,7 @@ struct ActivityTimelineItem: Identifiable, Hashable {
     /// 计数是仪表的内部数字，不是发生过的事。真的没什么可说时返回空串：
     /// 证据薄的行本来就该薄，不该用一句话把三行填满。
     var evidenceLine: String {
+        if let placeMarker { return placeMarker.detail }
         let note = annotation?.normalized.note ?? ""
         if !note.isEmpty { return note }
 
@@ -155,6 +173,7 @@ struct ActivityTimelineItem: Identifiable, Hashable {
             .joined(separator: " · ")
     }
     var summary: String {
+        if let placeMarker { return placeMarker.detail }
         if let capture { return capture.tag ?? "留给这一天的一句话" }
         if kind == .gap { return "这段时间没有实时足迹" }
         let titles = sessions.compactMap(\.windowTitle).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -179,7 +198,8 @@ struct ActivityTimelineItem: Identifiable, Hashable {
         if let category, self.category != category { return false }
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if needle.isEmpty { return true }
-        let text = ([title, summary, self.category, annotation?.note ?? ""] + sessions.map { $0.appName + " " + ($0.windowTitle ?? "") }).joined(separator: " ")
+        let markerText = placeMarker.map { $0.title + " " + $0.detail + " " + $0.originDeviceID } ?? ""
+        let text = ([title, summary, self.category, annotation?.note ?? "", markerText] + sessions.map { $0.appName + " " + ($0.windowTitle ?? "") }).joined(separator: " ")
         return text.localizedStandardContains(needle)
     }
 }
@@ -225,6 +245,7 @@ struct ActivityTimeline {
 enum ActivityTimelineEngine {
     static func build(
         for date: Date, sessions: [ActivitySession], captures: [QuickCapture] = [],
+        placeMarkers: [ActivityTimelinePlaceMarker] = [],
         grouped: Bool = true, calendar: Calendar = .current,
         annotations: [String: TimelineAnnotation] = [:]
     ) -> ActivityTimeline {
@@ -236,8 +257,30 @@ enum ActivityTimelineEngine {
             )
         }
         let normalized = normalizedSessions(sessions, in: day)
+        let localID = RiverDeviceID(rawValue: "mac_local")
+        let coreSessions = normalized.map { session in
+            RiverAppSession(
+                id: "session:\(session.id.uuidString.lowercased())",
+                originDeviceID: session.originDeviceID.map { RiverDeviceID(rawValue: $0) } ?? localID,
+                applicationIdentifier: session.bundleID,
+                displayName: session.appName,
+                start: session.start,
+                end: session.end,
+                endReason: RiverSessionEndReason(rawValue: session.endReason ?? "") ?? .observedSessionBoundary,
+                quality: RiverSessionEvidenceQuality(rawValue: Int(session.evidenceQuality ?? "2") ?? 2) ?? .observed,
+                evidenceEventIDs: [session.id]
+            )
+        }
+        let sessionsByID = Dictionary(uniqueKeysWithValues: normalized.map { ($0.id.uuidString.lowercased(), $0) })
+        let fusedGroups = SessionFusionEngine.fuse(coreSessions)
         var blocks: [ActivityTimelineItem] = []
-        for session in normalized {
+        for group in fusedGroups {
+            guard let sessionID = UUID(uuidString: group.primary.id.replacingOccurrences(of: "session:", with: "")),
+                  let session = sessionsByID[sessionID.uuidString.lowercased()] else { continue }
+            let secondary = group.secondary.compactMap { secondary -> ActivitySession? in
+                guard let id = UUID(uuidString: secondary.id.replacingOccurrences(of: "session:", with: "")) else { return nil }
+                return sessionsByID[id.uuidString.lowercased()]
+            }
             let annotationKey = TimelineAnnotation.key(for: session)
             if grouped, let last = blocks.last,
                annotations[annotationKey]?.isEmpty != false,
@@ -245,11 +288,19 @@ enum ActivityTimelineEngine {
                session.start.timeIntervalSince(last.end) <= 120,
                session.end.timeIntervalSince(last.start) <= 45 * 60 {
                 blocks[blocks.count - 1].sessions.append(session)
-                blocks[blocks.count - 1].end = session.end
+                blocks[blocks.count - 1].secondarySessions.append(contentsOf: secondary)
+                let secondaryStart = secondary.map { $0.start }.min() ?? session.start
+                let secondaryEnd = secondary.map { $0.end }.max() ?? session.end
+                blocks[blocks.count - 1].start = min(blocks[blocks.count - 1].start, min(session.start, secondaryStart))
+                blocks[blocks.count - 1].end = max(blocks[blocks.count - 1].end, max(session.end, secondaryEnd))
             } else {
+                let secondaryStart = secondary.map { $0.start }.min() ?? session.start
+                let secondaryEnd = secondary.map { $0.end }.max() ?? session.end
+                let groupStart = min(session.start, secondaryStart)
+                let groupEnd = max(session.end, secondaryEnd)
                 blocks.append(ActivityTimelineItem(
                     id: "activity-\(session.id)-\(session.start.timeIntervalSince1970)",
-                    kind: .activity, start: session.start, end: session.end, sessions: [session],
+                    kind: .activity, start: groupStart, end: groupEnd, sessions: [session], secondarySessions: secondary,
                     annotationKey: annotationKey, annotation: annotations[annotationKey]
                 ))
             }
@@ -265,6 +316,15 @@ enum ActivityTimelineEngine {
             items.append(ActivityTimelineItem(
                 id: "capture-\(capture.id)", kind: .capture,
                 start: capture.createdAt, end: capture.createdAt, capture: capture
+            ))
+        }
+        for marker in placeMarkers where day.start <= marker.time && marker.time < day.end {
+            items.append(ActivityTimelineItem(
+                id: "place-\(marker.id.uuidString.lowercased())",
+                kind: .place,
+                start: marker.time,
+                end: marker.time,
+                placeMarker: marker
             ))
         }
         items.sort { $0.start == $1.start ? $0.id < $1.id : $0.start < $1.start }
@@ -499,6 +559,8 @@ enum ActivityTimelineExport {
             let clock = item.start.formatted(date: .omitted, time: .shortened)
             if item.kind == .capture {
                 lines += ["## \(clock) · 快记", "", item.capture?.text ?? "", ""]
+            } else if let marker = item.placeMarker {
+                lines += ["## \(clock) · \(marker.title)", "", marker.detail, ""]
             } else {
                 lines += ["## \(ActivityFormatter.timeRange(item.start, item.end)) · \(item.title)", ""]
                 if item.kind == .activity {

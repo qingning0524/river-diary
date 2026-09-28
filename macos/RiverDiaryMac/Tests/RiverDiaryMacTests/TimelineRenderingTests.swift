@@ -132,7 +132,9 @@ final class TimelineRenderingTests: XCTestCase {
     /// glyph strokes. Widest contiguous block of solid columns wins.
     private func firstNodeCentreX(_ image: (pixels: [UInt8], width: Int, height: Int)) throws -> Int {
         let maxY = min(60, image.height)
-        let maxX = min(400, image.width)
+        // Search only the leading time-and-node columns. Title glyphs can be
+        // blue enough to pass the accent threshold, but they are not timeline nodes.
+        let maxX = min(200, image.width)
         var counts = [Int](repeating: 0, count: maxX)
         for x in 0..<maxX {
             var count = 0
@@ -186,12 +188,18 @@ final class TimelineRenderingTests: XCTestCase {
         XCTAssertGreaterThan(last - first, 100, "the spine is far too short to span three rows")
 
         var longestGap = 0
+        var longestGapStart = 0
         var gap = 0
+        var gapStart = 0
         for y in first...last {
             if drawn[y] {
-                longestGap = max(longestGap, gap)
+                if gap > longestGap {
+                    longestGap = gap
+                    longestGapStart = gapStart
+                }
                 gap = 0
             } else {
+                if gap == 0 { gapStart = y }
                 gap += 1
             }
         }
@@ -199,7 +207,7 @@ final class TimelineRenderingTests: XCTestCase {
         // hole the size of the padding between them (~8pt = 16px).
         XCTAssertLessThan(
             longestGap, 6,
-            "the spine has a \(longestGap)px hole at the node centre; the rows are not connected"
+            "the spine has a \(longestGap)px hole starting at y=\(longestGapStart) at the node centre; the rows are not connected"
         )
     }
 
@@ -213,7 +221,7 @@ final class TimelineRenderingTests: XCTestCase {
         // compare with a band 4pt to the side: the offset band must be far emptier.
         let onCentre = drawn.filter { $0 }.count
         // 8pt to the side is outside the 9pt node, so the connector must not be there.
-        let beside = spineRows(image, around: centreX + 16).filter { $0 }.count
+        let beside = spineRows(image, around: centreX + 22).filter { $0 }.count
         XCTAssertGreaterThan(onCentre, 0, "nothing is drawn on the node axis at all")
         XCTAssertGreaterThan(
             onCentre, beside * 3,
@@ -228,7 +236,7 @@ final class TimelineRenderingTests: XCTestCase {
         let image = try render(Harness(items: makeItems(), density: .compact))
         let centreX = try firstNodeCentreX(image)
         let onCentre = spineRows(image, around: centreX).filter { $0 }.count
-        let beside = spineRows(image, around: centreX + 16).filter { $0 }.count
+        let beside = spineRows(image, around: centreX + 22).filter { $0 }.count
         XCTAssertGreaterThan(onCentre, 0, "nothing is drawn on the node axis in compact density")
         XCTAssertGreaterThan(
             onCentre, beside * 3,
@@ -283,13 +291,14 @@ final class TimelineNodeTests: XCTestCase {
     /// Centre of the node column, and the node's own centre inside the first row.
     private static var nodeCentre: (x: Int, y: Int) {
         let x = AppSpacing.sm + TimelineRowMetrics.timeColumn + TimelineRowMetrics.spineColumn / 2
-        let y = TimelineRowMetrics.topInset - 1 + 4.5
+        let y = TimelineRowMetrics.topInset - 1 + 9.5
         return (Int(x * scale), Int(y * scale))
     }
-    /// Just inside a 9pt square's corner and just outside a 9pt circle's edge.
+    /// Just inside a square's corner and outside the matching circular marker.
     private static var nodeCorner: (x: Int, y: Int) {
         let centre = nodeCentre
-        return (centre.x - Int(4 * scale), centre.y - Int(3 * scale))
+        // 19pt marker: inside a square's corner, outside a circle's radius.
+        return (centre.x - Int(8.5 * scale), centre.y - Int(8.5 * scale))
     }
 
     private func render(_ item: ActivityTimelineItem) throws -> (pixels: [UInt8], width: Int, height: Int) {
@@ -316,13 +325,13 @@ final class TimelineNodeTests: XCTestCase {
         return (r, g, b, (299 * r + 587 * g + 114 * b) / 1000)
     }
 
-    /// The darkest pixel inside the node's box: the accent for an activity, the
-    /// neutral ring for a gap, the ink square for a note.
+    /// The darkest pixel inside the 19pt node: accent for an activity, neutral
+    /// ring for a gap, and the warm square stamp for a note.
     private func darkestInNode(_ image: (pixels: [UInt8], width: Int, height: Int)) -> (r: Int, g: Int, b: Int, luma: Int) {
         let centre = Self.nodeCentre
         var best = at(image, centre.x, centre.y)
-        for x in (centre.x - 9)...(centre.x + 9) {
-            for y in (centre.y - 9)...(centre.y + 9) {
+        for x in (centre.x - 19)...(centre.x + 19) {
+            for y in (centre.y - 19)...(centre.y + 19) {
                 let value = at(image, x, y)
                 if value.luma < best.luma { best = value }
             }
@@ -379,7 +388,7 @@ final class TimelineNodeTests: XCTestCase {
     }
 
     func testCaptureNodeIsSquareWhileActivityIsRound() throws {
-        // The sample sits inside a 9pt square's corner but outside a 9pt circle, so it
+        // The sample sits inside a 19pt square's corner but outside a 19pt circle, so it
         // reads as filled for a note (~135) and as the rim or background for an
         // activity (~228). The thresholds bracket that gap.
         let corner = Self.nodeCorner

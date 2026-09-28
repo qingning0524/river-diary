@@ -13,6 +13,10 @@ final class DiaryStore: ObservableObject {
 
     private let overrideKey = "local-diary-scores"
     private var bundleScores: [String: Int?] = [:]
+    private var syncedMoodScores: [String: Int] = [:]
+    private var syncedMoodResets = Set<String>()
+    var onScoreChanged: ((DiaryEntry, Int) -> Void)?
+    var onScoreReset: ((String) -> Void)?
 
     var entries: [DiaryEntry] {
         (data?.entries ?? []).sorted { $0.date > $1.date }
@@ -23,6 +27,13 @@ final class DiaryStore: ObservableObject {
     }
 
     var latestEntry: DiaryEntry? { entries.first }
+    var localMoodScoresByDate: [String: Int] {
+        let overrides = localScores()
+        return Dictionary(uniqueKeysWithValues: (data?.entries ?? []).compactMap { entry in
+            guard let score = overrides[entry.pageID] else { return nil }
+            return (entry.date, score)
+        })
+    }
 
     init() {
         loadBundleData()
@@ -53,6 +64,7 @@ final class DiaryStore: ObservableObject {
                     decoded.entries[index].metrics?.mood = Double(score)
                 }
             }
+            applySyncedMoodState(to: &decoded)
             data = decoded
             selectedEntryID = data?.entries.max(by: { $0.date < $1.date })?.pageID
 
@@ -72,44 +84,28 @@ final class DiaryStore: ObservableObject {
         await loadFromICloudDrive()
     }
 
-    func saveHealthSnapshot(
-        sleepNights: [SleepNight],
-        exerciseDays: [ExerciseDay]
-    ) async {
-        guard drive.hasAccess else { return }
+    func applySyncedMoodState(scores: [String: Int], resetDays: Set<String>) {
+        syncedMoodScores = scores
+        syncedMoodResets = resetDays
+        guard var updated = data else { return }
+        applySyncedMoodState(to: &updated)
+        data = updated
+    }
 
-        let dateFormatter = HealthKitStore.dayFormatter
-        var moodScores: [String: Int] = [:]
-        for entry in data?.entries ?? [] {
-            if let score = entry.score {
-                moodScores[entry.date] = Int(score.rounded())
+    private func applySyncedMoodState(to data: inout DiaryData) {
+        for index in data.entries.indices {
+            let day = data.entries[index].date
+            if let score = syncedMoodScores[day] {
+                data.entries[index].score = Double(score)
+                data.entries[index].stage = Scoring.stage(for: score)
+                data.entries[index].metrics?.mood = Double(score)
+            } else if syncedMoodResets.contains(day) {
+                let bundled = bundleScores[data.entries[index].pageID] ?? nil
+                data.entries[index].score = bundled.map(Double.init)
+                data.entries[index].stage = bundled.map(Scoring.stage(for:))
+                data.entries[index].metrics?.mood = bundled.map(Double.init)
             }
         }
-
-        await drive.saveUserData(
-            UserDataSnapshot(
-                updatedAt: Date(),
-                moodScores: moodScores,
-                sleepNights: sleepNights.map { night in
-                    SleepNightSnapshot(
-                        date: dateFormatter.string(from: night.date),
-                        totalHours: night.totalHours,
-                        deepMinutes: night.deep / 60,
-                        remMinutes: night.rem / 60,
-                        awakeMinutes: night.awake / 60
-                    )
-                },
-                exerciseDays: exerciseDays.map { day in
-                    ExerciseDaySnapshot(
-                        date: dateFormatter.string(from: day.date),
-                        steps: day.steps,
-                        distanceKilometers: day.distanceKilometers,
-                        activeEnergyKilocalories: day.activeEnergyKilocalories
-                    )
-                },
-                quickNotes: []
-            )
-        )
     }
 
     private func loadFromICloudDrive() async {
@@ -179,24 +175,7 @@ final class DiaryStore: ObservableObject {
         var overrides = localScores()
         overrides[entry.pageID] = validScore
         UserDefaults.standard.set(overrides, forKey: overrideKey)
-
-        Task { [weak self] in
-            guard let self, let data = self.data else { return }
-            var moodScores: [String: Int] = [:]
-            for entry in data.entries {
-                if let score = entry.score {
-                    moodScores[entry.date] = Int(score.rounded())
-                }
-            }
-            let snapshot = UserDataSnapshot(
-                updatedAt: Date(),
-                moodScores: moodScores,
-                sleepNights: [],
-                exerciseDays: [],
-                quickNotes: []
-            )
-            await self.drive.saveUserData(snapshot)
-        }
+        onScoreChanged?(entry, validScore)
     }
 
     private func localScores() -> [String: Int] {
@@ -210,6 +189,9 @@ final class DiaryStore: ObservableObject {
 
     func resetLocalScores() {
         guard var updatedData = data else { return }
+        let resetDays = Set(localScores().keys.compactMap { pageID in
+            updatedData.entries.first(where: { $0.pageID == pageID })?.date
+        })
 
         for index in updatedData.entries.indices {
             let pageID = updatedData.entries[index].pageID
@@ -221,5 +203,6 @@ final class DiaryStore: ObservableObject {
 
         data = updatedData
         UserDefaults.standard.removeObject(forKey: overrideKey)
+        for day in resetDays { onScoreReset?(day) }
     }
 }

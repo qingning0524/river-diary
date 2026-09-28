@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
+import RiverDiaryCore
 
 @MainActor
 final class ICloudDriveStore: ObservableObject {
@@ -21,15 +22,27 @@ final class ICloudDriveStore: ObservableObject {
     var accessedFolder: URL? { securityScopedURL }
     var folderDisplayName: String? { securityScopedURL?.lastPathComponent }
 
+    func resolvedFolderURLForSync() -> URL? { resolveURL() }
+
+    func beginSyncActivity() { isWriting = true }
+    func endSyncActivity() { isWriting = false }
+
+    func readLegacyUserData() throws -> UserDataSnapshot? {
+        guard let folder = resolveURL() else { return nil }
+        let accessed = folder.startAccessingSecurityScopedResource()
+        defer { if accessed { folder.stopAccessingSecurityScopedResource() } }
+        let fileURL = folder.appendingPathComponent(Self.fileName)
+        guard FileManager.default.fileExists(atPath: fileURL.path) else { return nil }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(UserDataSnapshot.self, from: CoordinatedFileIO.read(fileURL))
+    }
+
     func handlePickedFolder(_ url: URL) {
         let accessed = url.startAccessingSecurityScopedResource()
         defer { if accessed { url.stopAccessingSecurityScopedResource() } }
         do {
-            let data = try url.bookmarkData(
-                options: .minimalBookmark,
-                includingResourceValuesForKeys: nil,
-                relativeTo: nil
-            )
+            let data = try SecurityScopedBookmark.create(for: url)
             UserDefaults.standard.set(data, forKey: "icloud-drive-bookmark")
             securityScopedURL = url
             bookmarkData = data
@@ -42,16 +55,13 @@ final class ICloudDriveStore: ObservableObject {
     private func restoreBookmark() {
         guard let data = UserDefaults.standard.data(forKey: "icloud-drive-bookmark") else { return }
         do {
-            var stale = false
-            let url = try URL(
-                resolvingBookmarkData: data,
-                options: .withoutUI,
-                relativeTo: nil,
-                bookmarkDataIsStale: &stale
-            )
+            let resolution = try SecurityScopedBookmark.resolve(data)
+            let url = resolution.url
+            let stale = resolution.isStale
             if stale {
-                if let refreshed = try? url.bookmarkData() {
+                if let refreshed = try? SecurityScopedBookmark.create(for: url) {
                     UserDefaults.standard.set(refreshed, forKey: "icloud-drive-bookmark")
+                    bookmarkData = refreshed
                 }
             }
             securityScopedURL = url
@@ -65,61 +75,14 @@ final class ICloudDriveStore: ObservableObject {
     private func resolveURL() -> URL? {
         guard let data = bookmarkData else { return nil }
         do {
-            var stale = false
-            let url = try URL(
-                resolvingBookmarkData: data,
-                options: .withoutUI,
-                relativeTo: nil,
-                bookmarkDataIsStale: &stale
-            )
-            let accessed = url.startAccessingSecurityScopedResource()
-            defer { if accessed { url.stopAccessingSecurityScopedResource() } }
-            return url
+            let result = try SecurityScopedBookmark.resolve(data)
+            if result.isStale, let refreshed = try? SecurityScopedBookmark.create(for: result.url) {
+                bookmarkData = refreshed
+                UserDefaults.standard.set(refreshed, forKey: "icloud-drive-bookmark")
+            }
+            return result.url
         } catch {
             return nil
-        }
-    }
-
-    func saveUserData(_ data: UserDataSnapshot) async {
-        guard let folder = resolveURL() else {
-            lastError = "iCloud Drive 文件夹未设置"
-            return
-        }
-        isWriting = true
-        lastError = nil
-        defer { isWriting = false }
-
-        do {
-            let accessed = folder.startAccessingSecurityScopedResource()
-            defer { if accessed { folder.stopAccessingSecurityScopedResource() } }
-            let mergedData = await mergeUserData(data, folder: folder)
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            encoder.dateEncodingStrategy = .iso8601
-            let json = try encoder.encode(mergedData)
-            let fileURL = folder.appendingPathComponent(Self.fileName)
-            try json.write(to: fileURL, options: .atomic)
-        } catch {
-            lastError = error.localizedDescription
-        }
-    }
-
-    private func mergeUserData(_ incoming: UserDataSnapshot, folder: URL) async -> UserDataSnapshot {
-        let fileURL = folder.appendingPathComponent(Self.fileName)
-        guard FileManager.default.fileExists(atPath: fileURL.path) else { return incoming }
-
-        do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let existing = try decoder.decode(UserDataSnapshot.self, from: Data(contentsOf: fileURL))
-            var merged = incoming
-            if incoming.moodScores.isEmpty { merged.moodScores = existing.moodScores }
-            if incoming.sleepNights.isEmpty { merged.sleepNights = existing.sleepNights }
-            if incoming.exerciseDays.isEmpty { merged.exerciseDays = existing.exerciseDays }
-            if incoming.quickNotes.isEmpty { merged.quickNotes = existing.quickNotes }
-            return merged
-        } catch {
-            return incoming
         }
     }
 }

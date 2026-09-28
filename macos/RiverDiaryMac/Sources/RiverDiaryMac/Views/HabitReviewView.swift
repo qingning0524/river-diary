@@ -1,4 +1,5 @@
 import SwiftUI
+import RiverDiaryCore
 
 // MARK: - 习惯回顾页
 //
@@ -17,6 +18,7 @@ struct HabitReviewView: View {
     var animatesEntrance = true
 
     @State private var evidenceCardID: UUID?
+    @State private var confirmationCorrections: [UUID: String] = [:]
 
     /// 依据栏出现的最小内容宽度（主列 + 间距 + 栏宽）。
     private let railWidth: CGFloat = 280
@@ -62,6 +64,9 @@ struct HabitReviewView: View {
     @ViewBuilder
     private func mainColumn(showsRail: Bool) -> some View {
         VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
+            if !habit.pendingConfirmations.isEmpty {
+                pendingConfirmationsPanel
+            }
             if let batch = habit.currentBatch, !habit.pendingCards.isEmpty {
                 overviewPanel(batch)
             }
@@ -109,6 +114,58 @@ struct HabitReviewView: View {
                 HabitRhythmPanel(store: habit)
             }
         }
+    }
+
+    private var pendingConfirmationsPanel: some View {
+        RiverPanel(title: "需要你确认", systemImage: "questionmark.circle", detail: "地点候选会在多次真实到访后出现；你的决定会同步到另一台设备。", accent: AppTheme.accent) {
+            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
+                ForEach(habit.pendingConfirmations) { record in
+                    pendingConfirmationRow(record)
+                    if record.id != habit.pendingConfirmations.last?.id {
+                        RiverRule(color: Color.border.opacity(0.6))
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func pendingConfirmationRow(_ record: RiverSharedStateRecord) -> some View {
+        if let content = record.pendingConfirmationContent {
+            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
+                Text(content.question)
+                    .font(AppTypography.rowTitle())
+                    .foregroundStyle(Color.ink)
+                if !content.detail.isEmpty {
+                    Text(content.detail).font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+                }
+                HStack(spacing: density.spacing(AppSpacing.sm)) {
+                    Button("确认") { resolve(record, as: .confirmed) }
+                        .buttonStyle(.borderedProminent)
+                    Button("不正确") { resolve(record, as: .rejected) }
+                        .buttonStyle(.bordered)
+                }
+                HStack(spacing: density.spacing(AppSpacing.sm)) {
+                    TextField("改成自己的地点名称", text: correctionBinding(for: record.id))
+                        .textFieldStyle(.roundedBorder)
+                    Button("保存修改") { resolve(record, as: .corrected) }
+                        .buttonStyle(.bordered)
+                        .disabled((confirmationCorrections[record.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .padding(.vertical, density.spacing(AppSpacing.xs))
+        }
+    }
+
+    private func correctionBinding(for id: UUID) -> Binding<String> {
+        Binding(
+            get: { confirmationCorrections[id, default: ""] },
+            set: { confirmationCorrections[id] = $0 }
+        )
+    }
+
+    private func resolve(_ record: RiverSharedStateRecord, as resolution: RiverPendingConfirmationResolution) {
+        _ = habit.resolvePendingConfirmation(record, as: resolution, correction: confirmationCorrections[record.id])
     }
 
     private var rememberedRules: [HabitPersonalRule] {

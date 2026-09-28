@@ -2,6 +2,8 @@
 
 更新日期：2026-09-07
 
+> 2026-09-28 起，跨设备 River Node、加密复制协议、数据库边界和已知缺口以 [RIVER_NODE_ARCHITECTURE.md](RIVER_NODE_ARCHITECTURE.md) 为准；本文其余章节仍描述原有 Web/Python 管道与产品模块。
+
 River Diary 采用本地优先的三端结构。数据清洗只发生在构建阶段，运行时各端优先读取本机快照，敏感明细不出设备。
 
 ## 1. 分层

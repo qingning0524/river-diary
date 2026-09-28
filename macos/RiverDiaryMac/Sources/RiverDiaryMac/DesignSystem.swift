@@ -202,6 +202,10 @@ extension View {
 // 1–2pt to keep dense evidence tables readable.
 
 enum AppTypography {
+    /// Serif display copy inside AI-authored timeline prose.
+    static func editorial(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .serif)
+    }
     /// Page title, 22pt. One per page. Rounded numerals keep dates friendly.
     static func pageTitle(weight: Font.Weight = .semibold) -> Font {
         .system(size: 22, weight: weight, design: .rounded)

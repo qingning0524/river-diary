@@ -167,6 +167,18 @@ struct InspectorPanel: View {
                         ForEach(item.sessions, id: \.id) { session in
                             EvidenceRow(session: session)
                         }
+                        if let marker = item.placeMarker {
+                            HStack(alignment: .top, spacing: density.spacing(AppSpacing.sm)) {
+                                Text(marker.time.formatted(date: .omitted, time: .shortened))
+                                    .font(AppTypography.metadata().monospacedDigit())
+                                    .foregroundStyle(Color.secondaryInk)
+                                    .frame(width: 46, alignment: .leading)
+                                VStack(alignment: .leading, spacing: density.spacing(AppSpacing.xxs)) {
+                                    Text(marker.title).font(AppTypography.secondary().weight(.medium))
+                                    Text(marker.detail).font(AppTypography.metadata()).foregroundStyle(Color.tertiaryInk)
+                                }
+                            }
+                        }
                         if item.kind == .capture, let capture = item.capture {
                             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
                                 HStack(alignment: .firstTextBaseline, spacing: density.spacing(AppSpacing.sm)) {
@@ -388,7 +400,9 @@ struct InspectorPanel: View {
     private func confidenceBadge(for item: ActivityTimelineItem) -> some View {
         let titled = item.sessions.filter { !($0.windowTitle ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
         let description: String
-        if item.kind == .capture {
+        if let placeMarker = item.placeMarker {
+            description = "系统记录到地点到访或移动；显示名称来自地图线索或已同步的地点确认。来源设备：\(placeMarker.originDeviceID)。"
+        } else if item.kind == .capture {
             description = "这是你写下的快记，时间表示记录时刻。"
         } else if item.kind == .gap {
             description = "这里没有实时片段；未记录不代表没有发生。"
@@ -418,6 +432,9 @@ struct InspectorPanel: View {
     }
 
     private func explanationText(for item: ActivityTimelineItem) -> String {
+        if let placeMarker = item.placeMarker {
+            return "这是一条来自 \(placeMarker.originDeviceID) 的位置到访或移动记录。用户确认的地点名称优先于地图名称；原始坐标仍保留在本地事实库中。"
+        }
         if item.kind == .capture {
             return "这句话由你手动留下，时间线记录的是写下它的时刻。"
         }

@@ -37,6 +37,8 @@ struct TimelineAnalysisInsight: Identifiable, Hashable {
             return item.sessions.map { "raw:\($0.id.uuidString)" }
         case .capture:
             return item.capture.map { ["capture:\($0.id.uuidString)"] } ?? []
+        case .place:
+            return item.placeMarker.map { ["raw:\($0.id.uuidString)"] } ?? []
         case .gap:
             return []
         }
@@ -152,8 +154,7 @@ struct TimelineAnalysisSnapshot {
         let alreadyShown = userNoteIDs.union(reviewItems.map(\.itemID))
         let observations = candidates
             .filter { item in
-                item.kind == .activity
-                    && item.duration > 0
+                (item.kind == .place || (item.kind == .activity && item.duration > 0))
                     && !alreadyShown.contains(item.id)
                     && !(reservedSessionID.map { id in item.sessions.contains(where: { $0.id == id }) } ?? false)
             }
@@ -214,6 +215,14 @@ struct TimelineAnalysisSnapshot {
     }
 
     private static func observationInsight(_ item: ActivityTimelineItem) -> TimelineAnalysisInsight {
+        if let marker = item.placeMarker {
+            return TimelineAnalysisInsight(
+                item: item,
+                kind: .observation,
+                title: marker.title,
+                detail: marker.detail
+            )
+        }
         let title = item.narrativeTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         let duration = ActivityFormatter.time(item.duration)
         let evidence = item.evidenceLine.trimmingCharacters(in: .whitespacesAndNewlines)

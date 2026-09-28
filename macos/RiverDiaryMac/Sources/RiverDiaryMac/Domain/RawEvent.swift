@@ -1,4 +1,5 @@
 import Foundation
+import RiverDiaryCore
 
 /// Where a raw observation came from. Collectors map system signals to these.
 enum RawEventSource: String, Codable, Hashable, CaseIterable, Sendable {
@@ -62,7 +63,12 @@ struct RawEventPayload: Codable, Hashable, Sendable {
     var latitude: Double? = nil
     var longitude: Double? = nil
     var horizontalAccuracy: Double? = nil
+    var sessionEnd: Date? = nil
     var locationName: String? = nil
+    var mapAddress: String? = nil
+    var poiCategory: String? = nil
+    var mapProvider: String? = nil
+    var mapResultIdentifier: String? = nil
     var metrics: RawEventMetrics?
 }
 
@@ -71,17 +77,30 @@ struct RawEventMetrics: Codable, Hashable, Sendable {
     var distanceKm: Double?
     var activeEnergyKcal: Double?
     var sleepHours: Double?
+    var coreSleepMinutes: Int?
+    var deepSleepMinutes: Int?
+    var remSleepMinutes: Int?
+    var awakeMinutes: Int?
     var screenMinutes: Int?
 }
 
 /// Immutable evidence. Created only by collectors; appended only.
 struct RawEvent: Identifiable, Codable, Hashable, Sendable {
     var id: UUID
+    var originDeviceID: RiverDeviceID?
+    var originSequence: UInt64
     var timestamp: Date
+    var recordedAt: Date
+    var observedTimeZoneIdentifier: String?
     var source: RawEventSource
+    var sourceRawValue: String?
     var kind: RawEventKind
+    var kindRawValue: String?
     var payload: RawEventPayload
     var sourceHash: String
+
+    var persistedSource: String { sourceRawValue ?? source.rawValue }
+    var persistedKind: String { kindRawValue ?? kind.rawValue }
 
     init(
         id: UUID = UUID(),
@@ -89,13 +108,60 @@ struct RawEvent: Identifiable, Codable, Hashable, Sendable {
         source: RawEventSource,
         kind: RawEventKind,
         payload: RawEventPayload = RawEventPayload(),
-        sourceHash: String = ""
+        sourceHash: String = "",
+        originDeviceID: RiverDeviceID? = nil,
+        originSequence: UInt64 = 0,
+        recordedAt: Date = Date(),
+        observedTimeZoneIdentifier: String? = TimeZone.current.identifier,
+        sourceRawValue: String? = nil,
+        kindRawValue: String? = nil
     ) {
         self.id = id
+        self.originDeviceID = originDeviceID
+        self.originSequence = originSequence
         self.timestamp = timestamp
+        self.recordedAt = recordedAt
+        self.observedTimeZoneIdentifier = observedTimeZoneIdentifier
         self.source = source
+        self.sourceRawValue = sourceRawValue
         self.kind = kind
+        self.kindRawValue = kindRawValue
         self.payload = payload
         self.sourceHash = sourceHash
+    }
+
+    init(replica event: RiverEvent) {
+        let decodedPayload = (try? JSONDecoder().decode(RawEventPayload.self, from: event.payload)) ?? RawEventPayload()
+        self.init(
+            id: event.id,
+            timestamp: event.observedAt,
+            source: RawEventSource(rawValue: event.source) ?? .manual,
+            kind: RawEventKind(rawValue: event.kind) ?? .quickCapture,
+            payload: decodedPayload,
+            sourceHash: event.sourceHash,
+            originDeviceID: event.originDeviceID,
+            originSequence: event.originSequence,
+            recordedAt: event.recordedAt,
+            observedTimeZoneIdentifier: event.observedTimeZoneIdentifier,
+            sourceRawValue: RawEventSource(rawValue: event.source) == nil ? event.source : nil,
+            kindRawValue: RawEventKind(rawValue: event.kind) == nil ? event.kind : nil
+        )
+    }
+
+    func replica() -> RiverEvent? {
+        guard let originDeviceID, originSequence > 0,
+              let payloadData = try? JSONEncoder().encode(payload) else { return nil }
+        return RiverEvent(
+            id: id,
+            originDeviceID: originDeviceID,
+            originSequence: originSequence,
+            observedAt: timestamp,
+            recordedAt: recordedAt,
+            observedTimeZoneIdentifier: observedTimeZoneIdentifier,
+            source: persistedSource,
+            kind: persistedKind,
+            sourceHash: sourceHash,
+            payload: payloadData
+        )
     }
 }

@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import Combine
 import Foundation
+import RiverDiaryCore
 
 // MARK: - Store
 
@@ -41,6 +42,8 @@ final class ActivityStore: ObservableObject {
     private let configuredActivityDirectory: URL?
     private let providedV2Store: V2Store?
     private lazy var v2Store: V2Store = providedV2Store ?? V2Store()
+    lazy var syncSettingsStore: SyncSettingsStore = SyncSettingsStore(database: v2Store)
+    private var syncTimer: Timer?
 
     private let workspaceCenter = NSWorkspace.shared.notificationCenter
     private let appCenter = NotificationCenter.default
@@ -105,6 +108,20 @@ final class ActivityStore: ObservableObject {
         refreshPauseState()
     }
 
+    func startAutomaticSync() {
+        guard syncTimer == nil else { return }
+        syncTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, syncSettingsStore.folderName != nil else { return }
+                syncSettingsStore.synchronize()
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            guard let self, syncSettingsStore.folderName != nil else { return }
+            syncSettingsStore.synchronize()
+        }
+    }
+
     func encryptedV2Snapshot() throws -> Data {
         try v2Store.encryptedSnapshot()
     }
@@ -115,6 +132,82 @@ final class ActivityStore: ObservableObject {
 
     func restoreV2Snapshot(_ snapshot: Data) throws {
         try v2Store.restoreEncryptedSnapshot(snapshot)
+    }
+
+    func replicationDatabase() -> V2Store { v2Store }
+
+    @discardableResult
+    func replicateQuickCapture(_ capture: QuickCapture) -> Bool {
+        if matchingQuickCaptureEvent(for: capture) != nil { return true }
+        let payload = RawEventPayload(text: capture.text)
+        let sourceKey = "quick-capture|\(capture.id.uuidString)|\(capture.createdAt.timeIntervalSince1970.bitPattern)|\(capture.text)"
+        return v2Store.insertRawEvent(RawEvent(
+            id: capture.id,
+            timestamp: capture.createdAt,
+            source: .manual,
+            kind: .quickCapture,
+            payload: payload,
+            sourceHash: SHA256Hex.hash(Data(sourceKey.utf8))
+        ))
+    }
+
+    @discardableResult
+    func tombstoneQuickCapture(_ capture: QuickCapture) -> Bool {
+        guard let event = matchingQuickCaptureEvent(for: capture) else { return false }
+        let id = event.id
+        let targetID = "event:\(id.uuidString)"
+        let operations = v2Store.allStateOperations()
+        if StateOperationResolver.tombstonedObjectIDs(operations).contains(targetID) { return true }
+        guard v2Store.rawEvents(ids: [id]).first != nil,
+              let deviceID = v2Store.localDeviceIdentifier(),
+              let payload = try? JSONEncoder().encode(true) else { return false }
+        let operationID = RiverStableIdentifier.uuid(
+            namespace: "quick-capture.tombstone.\(deviceID.rawValue)",
+            key: id.uuidString.lowercased()
+        )
+        return v2Store.appendStateOperation(
+            id: operationID,
+            targetID: targetID,
+            fieldKey: "deleted",
+            operationType: "object.tombstone",
+            payload: payload
+        ) != nil
+    }
+
+    private func matchingQuickCaptureEvent(for capture: QuickCapture) -> RawEvent? {
+        if let exact = v2Store.rawEvents(ids: [capture.id]).first {
+            let isQuickCapture = ["quickCapture", "manual.quickCapture", "manual.note"].contains(exact.persistedKind)
+            return isQuickCapture && exact.payload.text == capture.text && exact.timestamp == capture.createdAt
+                ? exact : nil
+        }
+        return v2Store.allRawEvents()
+            .filter {
+                ["quickCapture", "manual.quickCapture", "manual.note"].contains($0.persistedKind)
+                    && $0.payload.text == capture.text
+                    && abs($0.timestamp.timeIntervalSince(capture.createdAt)) < 60
+            }
+            .min {
+                let leftDistance = abs($0.timestamp.timeIntervalSince(capture.createdAt))
+                let rightDistance = abs($1.timestamp.timeIntervalSince(capture.createdAt))
+                if leftDistance != rightDistance { return leftDistance < rightDistance }
+                return $0.id.uuidString < $1.id.uuidString
+            }
+    }
+
+    @discardableResult
+    func generateDiagnosticTestEvent() -> Bool {
+        v2Store.insertRawEvent(RawEvent(
+            source: .manual,
+            kind: .quickCapture,
+            payload: RawEventPayload(text: "Developer Diagnostics test event")
+        ))
+    }
+
+    func rebuildDiagnosticProjections() throws -> Int {
+        try v2Store.rebuildDerivedState()
+        let sessionCount = SessionBuilder.build(v2Store.effectiveRawEvents().compactMap { $0.replica() }).count
+        NotificationCenter.default.post(name: .riverCanonicalSyncDidChange, object: nil)
+        return sessionCount
     }
 
     func startTracking(showPermissionPrompt: Bool = true) {
@@ -410,7 +503,92 @@ final class ActivityStore: ObservableObject {
                 result.append(snapshot)
             }
         }
-        return result.filter { ActivityClassifier.isRecordable(appName: $0.appName, bundleID: $0.bundleID) }.sorted { $0.start < $1.start }
+        result.append(contentsOf: synchronizedPhoneSessions(from: start, to: end))
+        return result.filter { ActivityClassifier.isRecordable(appName: $0.appName, bundleID: $0.bundleID) }
+            .sorted { $0.start == $1.start ? $0.id.uuidString < $1.id.uuidString : $0.start < $1.start }
+    }
+
+    func locationMarkers(for date: Date) -> [ActivityTimelinePlaceMarker] {
+        guard let day = Calendar.current.dateInterval(of: .day, for: date) else { return [] }
+        let places = v2Store.places()
+        let meaningfulKinds: Set<String> = [
+            "location.visit.arrival", "location.visit.departure", "location.significant"
+        ]
+        return v2Store.rawEvents(between: day.start, end: day.end).compactMap { event in
+            guard event.timestamp < day.end else { return nil }
+            guard meaningfulKinds.contains(event.persistedKind),
+                  let replica = event.replica(),
+                  let payload = try? JSONDecoder().decode(RiverEventPayload.self, from: replica.payload) else { return nil }
+            let place = nearestPlace(to: payload, in: places)
+            let resolvedName = place?.userDefinedName ?? place?.mapName ?? payload.locationName
+            let name = resolvedName?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let kindLabel: String
+            switch event.persistedKind {
+            case "location.visit.arrival": kindLabel = "到达"
+            case "location.visit.departure": kindLabel = "离开"
+            default: kindLabel = "移动到"
+            }
+            let title = name.map { "\(kindLabel) \($0)" } ?? "\(kindLabel)一个地点"
+            let detail = [
+                place?.semanticType,
+                place?.mapAddress ?? payload.mapAddress,
+                event.originDeviceID.map { "来自 \($0.rawValue)" }
+            ].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .joined(separator: " · ")
+            return ActivityTimelinePlaceMarker(
+                id: event.id,
+                time: event.timestamp,
+                title: title,
+                detail: detail.isEmpty ? "位置事件 · \(event.persistedKind)" : detail,
+                originDeviceID: event.originDeviceID?.rawValue ?? "未知设备"
+            )
+        }
+    }
+
+    private func nearestPlace(to payload: RiverEventPayload, in places: [RiverPlace]) -> RiverPlace? {
+        guard let latitude = payload.latitude, let longitude = payload.longitude else { return nil }
+        return places.compactMap { place -> (RiverPlace, Double)? in
+            let distance = Self.distanceMeters(latitude, longitude, place.latitude, place.longitude)
+            return distance <= max(250, place.radiusMeters + 50) ? (place, distance) : nil
+        }.sorted { lhs, rhs in
+            lhs.1 == rhs.1 ? lhs.0.id < rhs.0.id : lhs.1 < rhs.1
+        }.first?.0
+    }
+
+    private static func distanceMeters(_ lat1: Double, _ lon1: Double, _ lat2: Double, _ lon2: Double) -> Double {
+        let earth = 6_371_000.0
+        let latitude1 = lat1 * .pi / 180
+        let latitude2 = lat2 * .pi / 180
+        let deltaLatitude = (lat2 - lat1) * .pi / 180
+        let deltaLongitude = (lon2 - lon1) * .pi / 180
+        let a = sin(deltaLatitude / 2) * sin(deltaLatitude / 2)
+            + cos(latitude1) * cos(latitude2) * sin(deltaLongitude / 2) * sin(deltaLongitude / 2)
+        return earth * 2 * atan2(sqrt(a), sqrt(max(0, 1 - a)))
+    }
+
+    private func synchronizedPhoneSessions(from start: Date, to end: Date) -> [ActivitySession] {
+        guard let localDevice = v2Store.localDeviceIdentifier() else { return [] }
+        let repairWindowStart = start.addingTimeInterval(-2 * 60 * 60)
+        let events = v2Store.rawEvents(between: repairWindowStart, end: end).compactMap { $0.replica() }
+        return SessionBuilder.build(events)
+            .filter { $0.originDeviceID != localDevice && $0.end != nil && $0.start < end && ($0.end ?? $0.start) > start }
+            .compactMap { session in
+                guard let sessionEnd = session.end else { return nil }
+                let id = UUID(uuidString: session.id.replacingOccurrences(of: "session:", with: "")) ?? UUID()
+                return ActivitySession(
+                    id: id,
+                    appName: session.displayName,
+                    bundleID: session.applicationIdentifier,
+                    windowTitle: nil,
+                    category: ActivityClassifier.category(appName: session.displayName, title: nil),
+                    start: max(session.start, start),
+                    end: min(sessionEnd, end),
+                    originDeviceID: session.originDeviceID.rawValue,
+                    evidenceQuality: String(session.quality.rawValue),
+                    endReason: session.endReason.rawValue
+                )
+            }
     }
 
     /// 审计回归测试专用：直接替换内存会话（不经持久化、不写 V2）。
@@ -861,7 +1039,8 @@ final class ActivityStore: ObservableObject {
             payload: RawEventPayload(
                 appName: session.appName,
                 bundleID: session.bundleID,
-                windowTitle: capturesTitles ? session.windowTitle : nil
+                windowTitle: capturesTitles ? session.windowTitle : nil,
+                sessionEnd: session.end
             ),
             sourceHash: "\(session.bundleID)|\(session.start.timeIntervalSince1970)|\(session.end.timeIntervalSince1970)"
         )

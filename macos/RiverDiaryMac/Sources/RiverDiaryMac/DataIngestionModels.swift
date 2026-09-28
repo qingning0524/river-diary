@@ -35,13 +35,14 @@ struct IngestedUserData: Codable {
     var sleepNights: [IngestedSleepNight]
     var exerciseDays: [IngestedExerciseDay]
     var quickNotes: [IngestedQuickNote]
+    var tombstonedQuickCaptureIDs: [String]? = nil
 
     var isEmpty: Bool {
         moodScores.isEmpty && sleepNights.isEmpty && exerciseDays.isEmpty && quickNotes.isEmpty
+            && (tombstonedQuickCaptureIDs ?? []).isEmpty
     }
 
     var summary: String {
         "评分 \(moodScores.count) 天 · 睡眠 \(sleepNights.count) 晚 · 运动 \(exerciseDays.count) 天 · 快记 \(quickNotes.count) 条"
     }
 }
-

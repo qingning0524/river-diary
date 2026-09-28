@@ -7,13 +7,15 @@ let package = Package(
         .macOS(.v14)
     ],
     dependencies: [
-        .package(url: "https://github.com/sqlcipher/SQLCipher.swift.git", from: "4.10.0")
+        .package(url: "https://github.com/sqlcipher/SQLCipher.swift.git", from: "4.10.0"),
+        .package(path: "../../Packages/RiverDiaryCore")
     ],
     targets: [
         .executableTarget(
             name: "RiverDiaryMac",
             dependencies: [
-                .product(name: "SQLCipher", package: "SQLCipher.swift")
+                .product(name: "SQLCipher", package: "SQLCipher.swift"),
+                .product(name: "RiverDiaryCore", package: "RiverDiaryCore")
             ],
             path: "Sources/RiverDiaryMac",
             resources: [
@@ -30,7 +32,8 @@ let package = Package(
             name: "RiverDiaryMacTests",
             dependencies: [
                 "RiverDiaryMac",
-                .product(name: "SQLCipher", package: "SQLCipher.swift")
+                .product(name: "SQLCipher", package: "SQLCipher.swift"),
+                .product(name: "RiverDiaryCore", package: "RiverDiaryCore")
             ],
             path: "Tests/RiverDiaryMacTests"
         )

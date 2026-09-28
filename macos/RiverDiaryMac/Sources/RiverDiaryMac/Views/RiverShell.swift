@@ -449,6 +449,7 @@ struct RiverShellView: View {
             for: date,
             sessions: activity.liveSessions(for: date),
             captures: store.captures(for: entry),
+            placeMarkers: activity.locationMarkers(for: date),
             annotations: store.timelineAnnotations
         )
         return timeline.items.first { $0.id == itemID }

@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import RiverDiaryCore
 
 enum JournalSaveState: Equatable {
     case idle
@@ -78,6 +79,15 @@ final class DiaryStore: ObservableObject {
     @Published private(set) var monthlyLetters: [String: MonthlyLetter] = [:]
     @Published private(set) var savedQueries: [SavedQuery] = []
     @Published private(set) var timelineAnnotations: [String: TimelineAnnotation] = [:]
+    var onTimelineAnnotationChanged: ((TimelineAnnotation, String) throws -> Void)?
+    var onQuickCaptureSaved: ((QuickCapture) -> Bool)?
+    var onQuickCaptureRemoved: ((QuickCapture) -> Bool)?
+    var onSharedJournalEntryChanged: ((RiverSharedStateRecord) -> Bool)?
+    var onSharedMonthlyLetterChanged: ((RiverSharedStateRecord) -> Bool)?
+    var onMoodScoreChanged: ((String, Int, Date) -> Bool)?
+    var onMoodScoreReset: ((String, Date) -> Bool)?
+    var onDiaryDataReady: (() -> Void)?
+    var loadSharedTimelineAnnotations: (() -> [String: TimelineAnnotation])?
     @Published private(set) var dailyGoals: [String: DailyGoal] = [:]
     @Published private(set) var journalDrafts: [String: JournalDraftRecord] = [:]
     @Published private(set) var dismissedDrafts: Set<String> = []
@@ -181,7 +191,11 @@ final class DiaryStore: ObservableObject {
             try persist(monthlyLetters: updated)
             monthlyLetters = updated
             hasLocalChanges = true
-            saveState = .saved(Date())
+            if let record = Self.sharedRecord(for: letter), onSharedMonthlyLetterChanged?(record) == false {
+                saveState = .failed("河流信已加密保存在本机，但尚未进入复制队列；下次打开应用时会重试。")
+            } else {
+                saveState = .saved(Date())
+            }
         } catch {
             saveState = .failed(UserFacingError.message(for: error))
             throw error
@@ -194,6 +208,7 @@ final class DiaryStore: ObservableObject {
         }
         let updated = TimelineAnnotation.updating(timelineAnnotations, key: key, with: annotation)
         do {
+            try onTimelineAnnotationChanged?(annotation, key)
             try persist(timelineAnnotations: updated)
             timelineAnnotations = updated
             hasLocalChanges = hasPersistentLocalEdits
@@ -202,6 +217,33 @@ final class DiaryStore: ObservableObject {
             saveState = .failed(UserFacingError.message(for: error))
             throw error
         }
+    }
+
+    func reloadSharedTimelineAnnotations() {
+        guard let loadSharedTimelineAnnotations else { return }
+        let shared = loadSharedTimelineAnnotations()
+        guard !shared.isEmpty else { return }
+        var merged = timelineAnnotations
+        for (key, annotation) in shared { merged[key] = annotation }
+        timelineAnnotations = merged
+    }
+
+    @discardableResult
+    func migrateLegacyTimelineAnnotationsToOperations() -> Bool {
+        guard let onTimelineAnnotationChanged, let loadSharedTimelineAnnotations else { return false }
+        let shared = loadSharedTimelineAnnotations()
+        var migratedAny = false
+        for (key, annotation) in timelineAnnotations where shared[key] == nil {
+            do {
+                try onTimelineAnnotationChanged(annotation, key)
+                migratedAny = true
+            } catch {
+                saveState = .failed(UserFacingError.message(for: error))
+                return false
+            }
+        }
+        if migratedAny { reloadSharedTimelineAnnotations() }
+        return migratedAny
     }
 
     func saveSavedQuery(_ query: SavedQuery) throws {
@@ -359,6 +401,10 @@ final class DiaryStore: ObservableObject {
         saveState = .saving
         do {
             try persist()
+            if onQuickCaptureSaved?(capture) == false {
+                saveState = .failed("快记已保存在本机，但还没有进入加密复制队列；下次打开应用时会重试。")
+                return true
+            }
             saveState = .saved(Date())
             return true
         } catch {
@@ -376,11 +422,30 @@ final class DiaryStore: ObservableObject {
             quickCaptures[entry.date] = nil
         }
         hasLocalChanges = hasPersistentLocalEdits
-        do { try persist() } catch {
+        do {
+            try persist()
+            if onQuickCaptureRemoved?(capture) == false {
+                quickCaptures[entry.date] = previousCaptures
+                hasLocalChanges = hasPersistentLocalEdits
+                try persist()
+                saveState = .failed("快记尚未从共享复制状态移除；原记录已保留。")
+                return
+            }
+        } catch {
             quickCaptures[entry.date] = previousCaptures
             hasLocalChanges = hasPersistentLocalEdits
             saveState = .failed(UserFacingError.message(for: error))
         }
+    }
+
+    @discardableResult
+    func migrateLocalQuickCapturesToCanonicalEvents() -> Int {
+        guard let onQuickCaptureSaved else { return 0 }
+        var migrated = 0
+        for capture in quickCaptures.values.flatMap(\.self) where onQuickCaptureSaved(capture) {
+            migrated += 1
+        }
+        return migrated
     }
 
     func setQuickCapturePinned(_ capture: QuickCapture, entry: DiaryEntry, pinned: Bool) {
@@ -487,7 +552,11 @@ final class DiaryStore: ObservableObject {
             journalDrafts = updatedDrafts
             apply(entry: entry.id, override: value)
             hasLocalChanges = true
-            saveState = .saved(Date())
+            let sharedStateSaved = persistSharedJournalEntry(dayKey: entry.date, override: value)
+            let moodSaved = mood.map { onMoodScoreChanged?(entry.date, $0, value.updatedAt) ?? true } ?? true
+            saveState = sharedStateSaved && moodSaved
+                ? .saved(Date())
+                : .failed("日记已保存在本机，但共享状态尚未进入复制队列；下次打开应用时会重试。")
         } catch {
             saveState = .failed(UserFacingError.message(for: error))
             throw error
@@ -515,7 +584,8 @@ final class DiaryStore: ObservableObject {
             output: output,
             category: category,
             tags: normalizedTags,
-            updatedAt: Date()
+            updatedAt: Date(),
+            writtenMood: mood
         )
 
         var updatedOverrides = overrides
@@ -530,7 +600,11 @@ final class DiaryStore: ObservableObject {
             journalDrafts = updatedDrafts
             hasLocalChanges = hasPersistentLocalEdits
             apply(entry: entry.id, override: override)
-            saveState = .saved(Date())
+            let sharedStateSaved = persistSharedJournalEntry(dayKey: entry.date, override: override)
+            let moodSaved = onMoodScoreChanged?(entry.date, mood, override.updatedAt) ?? true
+            saveState = sharedStateSaved && moodSaved
+                ? .saved(Date())
+                : .failed("日记已保存在本机，但共享状态尚未进入复制队列；下次打开应用时会重试。")
         } catch {
             saveState = .failed(UserFacingError.message(for: error))
         }
@@ -554,7 +628,11 @@ final class DiaryStore: ObservableObject {
 
         do {
             try persist()
-            saveState = .saved(Date())
+            let sharedStateSaved = persistSharedJournalEntry(dayKey: entry.date, override: nil)
+            let moodReset = onMoodScoreReset?(entry.date, Date()) ?? true
+            saveState = sharedStateSaved && moodReset
+                ? .saved(Date())
+                : .failed("本机修改已清除，但共享修改尚未进入复制队列。")
         } catch {
             // 恢复内存，避免下一次成功的持久化把这次未落盘的删除悄悄固化。
             overrides[entry.id] = removedOverride
@@ -562,6 +640,154 @@ final class DiaryStore: ObservableObject {
             hasLocalChanges = hasPersistentLocalEdits
             saveState = .failed(UserFacingError.message(for: error))
         }
+    }
+
+    @discardableResult
+    func migrateLocalJournalStateToSharedOperations() -> Int {
+        var migrated = 0
+        if let onSharedJournalEntryChanged {
+            for (key, override) in overrides {
+                guard let dayKey = journalDayKey(for: key),
+                      let record = Self.sharedRecord(dayKey: dayKey, override: override),
+                      onSharedJournalEntryChanged(record) else { continue }
+                migrated += 1
+                if let score = override.writtenMood ?? (override.preservesMetrics == true ? nil : override.mood) {
+                    _ = onMoodScoreChanged?(dayKey, score, override.updatedAt)
+                }
+            }
+        }
+        if let onSharedMonthlyLetterChanged {
+            for letter in monthlyLetters.values {
+                guard let record = Self.sharedRecord(for: letter), onSharedMonthlyLetterChanged(record) else { continue }
+                migrated += 1
+            }
+        }
+        return migrated
+    }
+
+    func applySharedDiaryRecords(_ records: [RiverSharedStateRecord]) {
+        var updatedOverrides = overrides
+        var updatedLetters = monthlyLetters
+        var changed = false
+        for record in records {
+            switch record.kind {
+            case .journalEntry:
+                guard let content = record.journalEntryContent else { continue }
+                let matchingKeys = updatedOverrides.keys.filter { journalDayKey(for: $0) == content.dayKey }
+                if record.status == "deleted" {
+                    for key in matchingKeys { updatedOverrides[key] = nil }
+                    changed = changed || !matchingKeys.isEmpty
+                    continue
+                }
+                guard record.status == "current" else { continue }
+                let key = matchingKeys.first ?? entries.first(where: { $0.date == content.dayKey })?.id ?? "ingested-\(content.dayKey)"
+                for oldKey in matchingKeys where oldKey != key { updatedOverrides[oldKey] = nil }
+                let existing = updatedOverrides[key]
+                let value = EntryOverride(
+                    overview: content.body,
+                    mood: content.moodScore ?? existing?.mood ?? 0,
+                    energy: content.energyScore ?? existing?.energy ?? 0,
+                    focus: content.focusScore ?? existing?.focus ?? 0,
+                    output: content.outputScore ?? existing?.output ?? 0,
+                    category: content.category,
+                    tags: content.tags,
+                    updatedAt: content.updatedAt,
+                    preservesMetrics: true,
+                    writtenMood: content.moodScore
+                )
+                guard updatedOverrides[key] != value else { continue }
+                updatedOverrides[key] = value
+                changed = true
+            case .monthlyLetter:
+                guard record.status == "current", let content = record.monthlyLetterContent else { continue }
+                let letter = MonthlyLetter(
+                    month: content.monthKey, title: content.title, body: content.body,
+                    evidence: content.evidence, createdAt: content.createdAt,
+                    updatedAt: content.updatedAt, isFavorite: content.isFavorite
+                )
+                guard updatedLetters[content.monthKey] != letter else { continue }
+                updatedLetters[content.monthKey] = letter
+                changed = true
+            default:
+                continue
+            }
+        }
+        guard changed else { return }
+        do {
+            try persist(overrides: updatedOverrides, monthlyLetters: updatedLetters)
+            overrides = updatedOverrides
+            monthlyLetters = updatedLetters
+            hasLocalChanges = hasPersistentLocalEdits
+            if let current = data {
+                data = DiaryData(
+                    generated: current.generated, today: current.today, poem: current.poem,
+                    entries: JournalWriting.merging(entries: current.entries, overrides: updatedOverrides)
+                )
+            }
+            saveState = .saved(Date())
+        } catch {
+            saveState = .failed("收到的共享日记没有写入本机状态：\(UserFacingError.message(for: error))")
+        }
+    }
+
+    private func persistSharedJournalEntry(dayKey: String, override: EntryOverride?) -> Bool {
+        guard let onSharedJournalEntryChanged else { return true }
+        let moodScore: Int?
+        if let override {
+            moodScore = override.writtenMood ?? (override.preservesMetrics == true ? nil : override.mood)
+        } else {
+            moodScore = nil
+        }
+        let content = RiverJournalEntryContent(
+            dayKey: dayKey,
+            body: override?.overview ?? "",
+            moodScore: moodScore,
+            energyScore: override?.energy,
+            focusScore: override?.focus,
+            outputScore: override?.output,
+            category: override?.category,
+            tags: override?.tags ?? [],
+            updatedAt: override?.updatedAt ?? Date()
+        )
+        guard let record = RiverSharedStateRecord.journalEntry(content, status: override == nil ? "deleted" : "current") else { return false }
+        return onSharedJournalEntryChanged(record)
+    }
+
+    private func journalDayKey(for overrideKey: String) -> String? {
+        if let entry = entries.first(where: { $0.id == overrideKey }) { return entry.date }
+        for prefix in ["local-", "ingested-"] where overrideKey.hasPrefix(prefix) {
+            return String(overrideKey.dropFirst(prefix.count))
+        }
+        return nil
+    }
+
+    private static func sharedRecord(dayKey: String, override: EntryOverride?) -> RiverSharedStateRecord? {
+        let moodScore: Int?
+        if let override {
+            moodScore = override.writtenMood ?? (override.preservesMetrics == true ? nil : override.mood)
+        } else {
+            moodScore = nil
+        }
+        let content = RiverJournalEntryContent(
+            dayKey: dayKey,
+            body: override?.overview ?? "",
+            moodScore: moodScore,
+            energyScore: override?.energy,
+            focusScore: override?.focus,
+            outputScore: override?.output,
+            category: override?.category,
+            tags: override?.tags ?? [],
+            updatedAt: override?.updatedAt ?? Date()
+        )
+        return RiverSharedStateRecord.journalEntry(content)
+    }
+
+    private static func sharedRecord(for letter: MonthlyLetter) -> RiverSharedStateRecord? {
+        RiverSharedStateRecord.monthlyLetter(RiverMonthlyLetterContent(
+            monthKey: letter.month, title: letter.title, body: letter.body,
+            evidence: letter.evidence, createdAt: letter.createdAt,
+            updatedAt: letter.updatedAt, isFavorite: letter.isFavorite
+        ))
     }
 
     func clearLocalJournal() {
@@ -705,6 +931,13 @@ final class DiaryStore: ObservableObject {
         ingestedScores = ingestion.moodScores
 
         var addedCaptures = false
+        let deletedCaptureIDs = Set((ingestion.tombstonedQuickCaptureIDs ?? []).map(Self.stableImportedCaptureID))
+        for date in Array(quickCaptures.keys) {
+            let beforeCount = quickCaptures[date]?.count ?? 0
+            quickCaptures[date]?.removeAll { deletedCaptureIDs.contains($0.id) }
+            if quickCaptures[date]?.isEmpty == true { quickCaptures[date] = nil }
+            if (quickCaptures[date]?.count ?? 0) != beforeCount { addedCaptures = true }
+        }
         for note in ingestion.quickNotes {
             let dateKey = note.date
             let existing = quickCaptures[dateKey] ?? []
@@ -714,7 +947,8 @@ final class DiaryStore: ObservableObject {
             }
             guard !alreadyExists else { continue }
             quickCaptures[dateKey, default: []].append(
-                QuickCapture(text: note.text, createdAt: createdAt, source: note.source)
+                QuickCapture(id: Self.stableImportedCaptureID(note.id), text: note.text,
+                             createdAt: createdAt, source: note.source)
             )
             addedCaptures = true
         }
@@ -767,7 +1001,8 @@ final class DiaryStore: ObservableObject {
             }
             guard !alreadyExists else { continue }
             quickCaptures[date, default: []].append(
-                QuickCapture(text: note.text, createdAt: createdAt, source: note.source)
+                QuickCapture(id: Self.stableImportedCaptureID(note.id), text: note.text,
+                             createdAt: createdAt, source: note.source)
             )
             hasLocalChanges = true
         }
@@ -786,6 +1021,11 @@ final class DiaryStore: ObservableObject {
                 saveState = .failed(UserFacingError.message(for: error))
             }
         }
+    }
+
+    private static func stableImportedCaptureID(_ noteID: String) -> UUID {
+        UUID(uuidString: noteID)
+            ?? RiverStableIdentifier.uuid(namespace: "ingested.quick-capture", key: noteID)
     }
 
     private func buildIngestedHealth(_ ingestion: IngestedUserData) -> [String: IOSHealthSummary] {
@@ -1140,6 +1380,7 @@ final class DiaryStore: ObservableObject {
             let empty = DiaryData(generated: "", today: "", poem: "情绪会沉淀，日子会向前。", entries: JournalWriting.merging(entries: seeds, overrides: overrides))
             baseData = empty
             data = empty
+            onDiaryDataReady?()
             return
         }
 
@@ -1183,6 +1424,7 @@ final class DiaryStore: ObservableObject {
         data = effective
         loadError = nil
         externalSourceModifiedAt = fileModificationDate(for: url)
+        onDiaryDataReady?()
     }
 
     private func watchExternalSnapshot() {

@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import RiverDiaryCore
 
 // MARK: - 习惯回顾存储与调度
 //
@@ -19,6 +20,7 @@ final class HabitReviewStore: ObservableObject {
     @Published private(set) var rules: [HabitPersonalRule] = []
     @Published private(set) var cards: [HabitReviewCard] = []
     @Published private(set) var batches: [HabitReviewBatch] = []
+    @Published private(set) var pendingConfirmations: [RiverSharedStateRecord] = []
     @Published private(set) var cadence: HabitReviewCadence = .weekly
     @Published private(set) var timePreset: HabitReviewTimePreset = .evening
     @Published private(set) var lastEvaluatedAt: Date?
@@ -29,6 +31,7 @@ final class HabitReviewStore: ObservableObject {
     private let calendar: Calendar
     private var encoder: JSONEncoder
     private var decoder: JSONDecoder
+    private var syncChangeObserver: NSObjectProtocol?
 
     init(v2Store: V2Store, calendar: Calendar = .current) {
         self.v2Store = v2Store
@@ -39,6 +42,18 @@ final class HabitReviewStore: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
         loadCadence()
         load()
+        syncChangeObserver = NotificationCenter.default.addObserver(
+            forName: .riverCanonicalSyncDidChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.loadCadence()
+                self?.load()
+            }
+        }
+    }
+
+    deinit {
+        if let syncChangeObserver { NotificationCenter.default.removeObserver(syncChangeObserver) }
     }
 
     // MARK: Loading
@@ -64,6 +79,22 @@ final class HabitReviewStore: ObservableObject {
         batches = v2Store.habitBatchRows().compactMap { row in
             decode(HabitReviewBatch.self, row.payloadJSON)
         }.sorted { $0.createdAt < $1.createdAt }
+        pendingConfirmations = v2Store.sharedUserRecords()
+            .filter { $0.kind == .pendingConfirmation && $0.status == "pending" }
+            .sorted { $0.createdAt < $1.createdAt }
+    }
+
+    @discardableResult
+    func resolvePendingConfirmation(_ record: RiverSharedStateRecord,
+                                    as resolution: RiverPendingConfirmationResolution,
+                                    correction: String? = nil) -> Bool {
+        guard v2Store.resolvePendingConfirmation(record, as: resolution, correction: correction) else {
+            lastError = v2Store.lastError ?? "待确认事项保存失败"
+            return false
+        }
+        load()
+        lastError = nil
+        return true
     }
 
     private func decode<T: Decodable>(_ type: T.Type, _ json: String) -> T? {
@@ -81,11 +112,13 @@ final class HabitReviewStore: ObservableObject {
     func setCadence(_ value: HabitReviewCadence) {
         cadence = value
         _ = v2Store.setUserPref(key: Self.cadencePrefKey, value: value.rawValue)
+        _ = v2Store.setSharedHabitPreference(key: Self.cadencePrefKey, value: value.rawValue)
     }
 
     func setTimePreset(_ value: HabitReviewTimePreset) {
         timePreset = value
         _ = v2Store.setUserPref(key: Self.timePrefKey, value: value.rawValue)
+        _ = v2Store.setSharedHabitPreference(key: Self.timePrefKey, value: value.rawValue)
     }
 
     /// 节奏面板/空态使用的下一次回顾描述。

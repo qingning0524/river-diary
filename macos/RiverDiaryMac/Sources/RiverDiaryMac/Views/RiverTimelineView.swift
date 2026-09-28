@@ -168,14 +168,14 @@ enum TimelineDisplayList {
     /// 只把时间带定位到实际覆盖这一刻的证据。未被记录的时刻不会跳到邻近行，
     /// 以免把空白误读成已观察到的活动。
     static func scrubTarget(for moment: Date, rows: [Row]) -> ScrubTarget? {
-        let captureRows = rows.filter { $0.item.kind == .capture }
-        if let capture = captureRows.min(by: {
+        let pointRows = rows.filter { $0.item.kind == .capture || $0.item.kind == .place }
+        if let point = pointRows.min(by: {
             abs($0.item.start.timeIntervalSince(moment)) < abs($1.item.start.timeIntervalSince(moment))
-        }), abs(capture.item.start.timeIntervalSince(moment)) <= captureHitTolerance {
-            return ScrubTarget(rowID: capture.id, item: capture.item, expandsRunID: nil)
+        }), abs(point.item.start.timeIntervalSince(moment)) <= captureHitTolerance {
+            return ScrubTarget(rowID: point.id, item: point.item, expandsRunID: nil)
         }
         let covering = rows.filter { row in
-            if row.item.kind == .capture { return false }
+            if row.item.kind == .capture || row.item.kind == .place { return false }
             return row.item.start <= moment && moment < row.item.end
         }
         guard let row = covering.min(by: { $0.item.span < $1.item.span }) else { return nil }
@@ -236,6 +236,7 @@ private struct TimelineRow: View {
     @State private var isHovered = false
 
     private var isGap: Bool { item.kind == .gap }
+    private var isPlace: Bool { item.kind == .place }
     private var isRun: Bool { item.isFragmentRun && !isChild }
     private var isDashedSpine: Bool { isGap || isRun || isChild }
 
@@ -250,6 +251,7 @@ private struct TimelineRow: View {
 
     private var displayTitle: String {
         if let custom = item.annotation?.normalized.title, !custom.isEmpty { return custom }
+        if let placeMarker = item.placeMarker { return placeMarker.title }
         if let capture = item.capture { return capture.text }
         if isGap { return "没有记录的时间" }
         if item.isFragmentRun { return item.title }
@@ -298,6 +300,7 @@ private struct TimelineRow: View {
 
     /// 这一行站在哪条证据上。空串表示没有额外来源可说。
     private var sourceLabel: String? {
+        if let marker = item.placeMarker { return "位置 · \(marker.originDeviceID)" }
         if let place = item.annotation?.normalized.placeName, !place.isEmpty { return "地点 · \(place)" }
         if let activity = item.annotation?.normalized.activityLabel, !activity.isEmpty { return "活动 · \(activity)" }
         if isGap {
@@ -315,7 +318,7 @@ private struct TimelineRow: View {
     private var nodeColor: Color {
         if isGap { return AppTheme.neutral }
         if item.kind == .capture { return Color.ink.opacity(0.55) }
-        return AppTheme.categoryTint(item.category)
+        return AppTheme.accent
     }
 
     /// 悬停是中性水洗，选中是 accent 淡底 + 左侧实色条。
@@ -383,7 +386,8 @@ private struct TimelineRow: View {
     }
 
     private var accessibilityLabel: String {
-        var parts = [item.kind == .capture ? "快记" : (isGap ? "空档" : "活动")]
+        let rowKind = item.kind == .capture ? "快记" : (isGap ? "空档" : (isPlace ? "地点" : "活动"))
+        var parts = [rowKind]
         parts.append(ActivityFormatter.timeRange(item.start, item.end))
         parts.append(displayTitle)
         if isRun { parts.append("\(item.fragments.count) 段碎片，\(isExpandedRun ? "已展开" : "已折叠")") }
@@ -456,7 +460,7 @@ private struct TimelineRow: View {
                 draws ? spineLineColor : .clear,
                 style: StrokeStyle(
                     lineWidth: Self.spineWidth,
-                    lineCap: .butt,
+                    lineCap: .square,
                     dash: isDashedSpine ? Self.spineDash : []
                 )
             )
@@ -465,7 +469,7 @@ private struct TimelineRow: View {
             .frame(maxHeight: height == nil ? .infinity : nil)
     }
 
-    private static let spineWidth: CGFloat = 1.5
+    private static let spineWidth: CGFloat = 2
     private static let spineDash: [CGFloat] = [2.5, 3.5]
 
     /// 脊柱的颜色与虚实分三档：有记录是 accent 实线；碎片带与它的成员是 accent
@@ -502,12 +506,17 @@ private struct TimelineRow: View {
                         Circle().fill(AppTheme.accent).frame(width: 4, height: 4)
                     }
                 }
+        } else if isPlace {
+            Image(systemName: "mappin.circle.fill")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppTheme.accent)
+                .frame(width: 19, height: 19)
         } else if item.kind == .capture {
-            RoundedRectangle(cornerRadius: AppRadius.marker, style: .continuous)
+            Rectangle()
                 .fill(Color.surface)
                 .frame(width: 18, height: 18)
                 .overlay {
-                    RoundedRectangle(cornerRadius: AppRadius.marker, style: .continuous)
+                    Rectangle()
                         .strokeBorder(AppTheme.warning.opacity(0.75), lineWidth: 1.2)
                 }
                 .overlay {
@@ -520,7 +529,7 @@ private struct TimelineRow: View {
                 .fill(Color.surface)
                 .frame(width: 19, height: 19)
                 .overlay(Circle().strokeBorder(Color.timelineSpine, lineWidth: 1.2))
-                .overlay(Circle().fill(nodeColor).frame(width: 10, height: 10))
+                .overlay(Circle().fill(nodeColor).frame(width: 12, height: 12))
         }
     }
 

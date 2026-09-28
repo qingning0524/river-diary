@@ -1,5 +1,6 @@
 import Foundation
 import LocalAuthentication
+import RiverDiaryCore
 import Security
 @MainActor
 final class AIAssistantStore: ObservableObject {
@@ -11,6 +12,9 @@ final class AIAssistantStore: ObservableObject {
     }
     @Published var includePlaceNames: Bool {
         didSet { UserDefaults.standard.set(includePlaceNames, forKey: "ai.footprint.includePlaceNames") }
+    }
+    @Published var allowRemoteAnalysis: Bool {
+        didSet { UserDefaults.standard.set(allowRemoteAnalysis, forKey: "ai.footprint.allowRemoteAnalysis") }
     }
 
     @Published private(set) var profiles: [AIProfile] = [] {
@@ -114,6 +118,10 @@ final class AIAssistantStore: ObservableObject {
         isConfigured
     }
 
+    var canRunAutomaticAnalysis: Bool {
+        analysisReady && (allowRemoteAnalysis || isLocalAIEndpoint)
+    }
+
     var hasVerifiedConnection: Bool {
         guard isConfigured, hasAPIKey, let record = lastRequestRecord else { return false }
         return record.success && record.provider == provider.label && record.model == model
@@ -130,6 +138,7 @@ final class AIAssistantStore: ObservableObject {
         includeTitles = UserDefaults.standard.bool(forKey: "ai.footprint.includeTitles")
         includeBrowserHistory = UserDefaults.standard.bool(forKey: "ai.footprint.includeBrowserHistory")
         includePlaceNames = UserDefaults.standard.bool(forKey: "ai.footprint.includePlaceNames")
+        allowRemoteAnalysis = UserDefaults.standard.bool(forKey: "ai.footprint.allowRemoteAnalysis")
         loadProfiles()
         selectedProfileID = UserDefaults.standard.string(forKey: "ai.footprint.selectedProfile")
             .flatMap { id in profiles.contains { $0.id == id } ? id : nil }
@@ -286,6 +295,12 @@ final class AIAssistantStore: ObservableObject {
     func storedTimelineDigest(for dayKey: String) -> TimelineDigest? {
         if let inMemory = timelineDigest(for: dayKey) { return inMemory }
         let key = "\(RiverTaskKind.timelineDigest.rawValue)|\(ContextAssembler.dayRangeKey(dayKey))"
+        if let artifact = analysisStore.canonicalArtifactRevision(logicalKey: key, kind: .semanticTimeline),
+           let data = String(data: artifact.content, encoding: .utf8)?.data(using: .utf8),
+           let digest = try? JSONDecoder().decode(TimelineDigest.self, from: data),
+           digest.dayKey == dayKey {
+            return digest
+        }
         guard let record = analysisStore.latestAnalysisRun(dedupKey: key),
               let value = record.digestJSON ?? (record.run.outputText.isEmpty ? nil : record.run.outputText),
               !value.hasPrefix(EvidenceReference.unverifiedAnswerPrefix),
@@ -321,24 +336,34 @@ final class AIAssistantStore: ObservableObject {
         // 新结果层（analysis_runs 按任务+范围键 upsert）优先；
         // 旧版本写入的 legacy ai_results 作为回退继续可读，但不再新写。
         let dayKey = startDate
-        let keyed: [(AITask, String, String)] = [
-            (.analysisDaily, "\(RiverTaskKind.dailyOverview.rawValue)|\(ContextAssembler.dayRangeKey(dayKey))", ContextAssembler.dayRangeKey(dayKey)),
-            (.analysisWeekly, "\(RiverTaskKind.weeklyReview.rawValue)|\(ContextAssembler.weekRangeKey(startDate: startDate))", ContextAssembler.weekRangeKey(startDate: startDate)),
-            (.timelineDigest, "\(RiverTaskKind.timelineDigest.rawValue)|\(ContextAssembler.dayRangeKey(dayKey))", ContextAssembler.dayRangeKey(dayKey)),
+        let keyed: [(AITask, String, String, String)] = [
+            (.analysisDaily, RiverCanonicalArtifactKey.dailyReview(dayKey: dayKey), "\(RiverTaskKind.dailyOverview.rawValue)|\(ContextAssembler.dayRangeKey(dayKey))", ContextAssembler.dayRangeKey(dayKey)),
+            (.analysisWeekly, "\(RiverTaskKind.weeklyReview.rawValue)|\(ContextAssembler.weekRangeKey(startDate: startDate))", "\(RiverTaskKind.weeklyReview.rawValue)|\(ContextAssembler.weekRangeKey(startDate: startDate))", ContextAssembler.weekRangeKey(startDate: startDate)),
+            (.timelineDigest, "\(RiverTaskKind.timelineDigest.rawValue)|\(ContextAssembler.dayRangeKey(dayKey))", "\(RiverTaskKind.timelineDigest.rawValue)|\(ContextAssembler.dayRangeKey(dayKey))", ContextAssembler.dayRangeKey(dayKey)),
         ]
-        for (task, dedupKey, rangeKey) in keyed {
-            guard taskStates[task]?.answer == nil,
-                  let record = analysisStore.latestAnalysisRun(dedupKey: dedupKey),
-                  !record.run.outputText.isEmpty else { continue }
+        for (task, artifactKey, runKey, rangeKey) in keyed {
+            guard taskStates[task]?.answer == nil else { continue }
+            let artifactKind: RiverArtifactKind = switch task {
+            case .analysisDaily, .dailyOverview: .dailyReview
+            case .timelineDigest: .semanticTimeline
+            case .analysisWeekly: .weeklyReview
+            default: .insight
+            }
+            let artifact = analysisStore.canonicalArtifactRevision(logicalKey: artifactKey, kind: artifactKind)
+            let savedArtifact = artifact.flatMap { String(data: $0.content, encoding: .utf8) }
+            let record = analysisStore.latestAnalysisRun(dedupKey: runKey)
+            guard let answer = savedArtifact ?? record?.run.outputText,
+                  !answer.isEmpty else { continue }
             taskStates[task] = AITaskState(
                 task: task,
                 isLoading: false,
-                answer: record.run.outputText,
+                answer: answer,
                 error: nil,
-                updatedAt: record.run.createdAt,
+                updatedAt: artifact.map { Date(timeIntervalSince1970: Double($0.clock.physicalMilliseconds) / 1_000) } ?? record?.run.createdAt,
                 isArchived: true,
-                sourceSummary: "已保存的 AI 结果 · \(record.run.model)",
-                model: record.run.model,
+                sourceSummary: artifact.map { "跨设备共享的 AI Artifact · \($0.modelIdentifier) · \($0.status.rawValue)" }
+                    ?? record.map { "已保存的 AI 结果 · \($0.run.model)" },
+                model: artifact?.modelIdentifier ?? record?.run.model,
                 archivedRangeKey: rangeKey
             )
         }
@@ -378,7 +403,8 @@ final class AIAssistantStore: ObservableObject {
         error: String? = nil,
         sourceSummary: String? = nil,
         model: String? = nil,
-        isArchived: Bool = false
+        isArchived: Bool = false,
+        archivedRangeKey: String? = nil
     ) {
         taskStates[task] = AITaskState(
             task: task,
@@ -388,7 +414,8 @@ final class AIAssistantStore: ObservableObject {
             updatedAt: Date(),
             isArchived: isArchived,
             sourceSummary: sourceSummary,
-            model: model
+            model: model,
+            archivedRangeKey: archivedRangeKey
         )
     }
 
@@ -401,6 +428,88 @@ final class AIAssistantStore: ObservableObject {
         case .timelineDigest: .timelineDigest
         case .habitReview: .habitReview
         case .analysisWeekly: .weeklyReview
+        }
+    }
+
+    private func artifactKind(for kind: RiverTaskKind) -> RiverArtifactKind {
+        switch kind {
+        case .dailyOverview: .dailyReview
+        case .timelineDigest: .semanticTimeline
+        case .weeklyReview: .weeklyReview
+        case .monthlyLetter: .monthlyReview
+        case .habitReview: .habitReview
+        case .memoryCandidate: .memory
+        case .namingProposal: .suggestion
+        default: .insight
+        }
+    }
+
+    private func artifactLogicalKey(for task: AITask, dedupKey: String,
+                                    startDate: String?, endDate: String?) -> String {
+        guard (task == .analysisDaily || task == .dailyOverview),
+              let startDate, let endDate, startDate == endDate else { return dedupKey }
+        return RiverCanonicalArtifactKey.dailyReview(dayKey: startDate)
+    }
+
+    private func persistArtifactRevision(
+        run: AnalysisRun,
+        logicalKey: String,
+        evidenceRefs: [String],
+        rangeStart: Date?,
+        rangeEnd: Date?,
+        structuredDigest: String?,
+        inputFrontier: InputFrontier
+    ) -> Bool {
+        guard let deviceID = analysisStore.localDeviceIdentifier() else { return false }
+        do {
+            let stamp = try analysisStore.nextManifestStamp()
+            let artifactText = run.task == .dailyOverview ? run.outputText : (structuredDigest ?? run.outputText)
+            let content = Data(artifactText.utf8)
+            let evidenceKey = evidenceRefs.sorted().joined(separator: "\n")
+            let snapshotHash = SHA256Hex.hash(Data("\(logicalKey)|\(inputFrontier.stableKey)|\(evidenceKey)".utf8))
+            let kind: RiverArtifactKind
+            switch run.task {
+            case .dailyOverview: kind = .dailyReview
+            case .timelineDigest: kind = .semanticTimeline
+            case .habitReview: kind = .habitReview
+            case .weeklyReview: kind = .weeklyReview
+            case .monthlyLetter: kind = .monthlyReview
+            case .memoryCandidate: kind = .memory
+            case .namingProposal: kind = .suggestion
+            default: kind = .insight
+            }
+            let dependencies = evidenceRefs.map { reference -> ArtifactDependency in
+                let parsed = EvidenceReference.parse(reference)
+                let type = parsed.map { $0.kind == .raw ? "event" : $0.kind.rawValue } ?? "evidence"
+                let id = parsed?.value ?? reference
+                return ArtifactDependency(type: type, id: id, rangeStart: rangeStart, rangeEnd: rangeEnd)
+            } + (rangeStart != nil || rangeEnd != nil ? [ArtifactDependency(
+                type: "time_range", id: logicalKey, rangeStart: rangeStart, rangeEnd: rangeEnd
+            )] : [])
+            let revision = RiverArtifactRevision(
+                id: UUID().uuidString.lowercased(),
+                logicalKey: logicalKey,
+                kind: kind,
+                revisionNumber: analysisStore.nextArtifactRevisionNumber(logicalKey: logicalKey, kind: kind),
+                originDeviceID: deviceID,
+                clock: stamp.clock,
+                inputFrontier: inputFrontier,
+                inputSnapshotHash: snapshotHash,
+                pipelineVersion: "1.0",
+                promptVersion: "1",
+                modelProvider: provider.label,
+                modelIdentifier: run.model,
+                content: content,
+                contentHash: SHA256Hex.hash(content),
+                status: try analysisStore.currentInputFrontier() != inputFrontier
+                    ? .stale
+                    : (analysisStore.isCurrentStateVerified() ? .current : .provisional),
+                dependencies: dependencies
+            )
+            return analysisStore.insertArtifactRevision(revision)
+        } catch {
+            errorMessage = "AI Artifact 未能写入：\(error.localizedDescription)"
+            return false
         }
     }
 
@@ -450,7 +559,22 @@ final class AIAssistantStore: ObservableObject {
         let requestID = UUID()
         taskRequestIDs[task] = requestID
         setTask(task, isLoading: true)
+        var persistedJob: RiverAnalysisJob?
         do {
+            let artifactInputFrontier = try analysisStore.currentInputFrontier()
+            let jobKind = artifactKind(for: riverTaskKind(for: task))
+            let rangeKey = runMetadata.rangeKey
+                ?? ContextAssembler.rangeKey(task: task, startDate: archiveStartDate, endDate: archiveEndDate)
+            let dedupKey = runMetadata.dedupKey ?? "\(riverTaskKind(for: task).rawValue)|\(rangeKey)"
+            let artifactKey = artifactLogicalKey(
+                for: task, dedupKey: dedupKey, startDate: archiveStartDate, endDate: archiveEndDate
+            )
+            for job in analysisStore.analysisJobs()
+            where job.logicalKey == artifactKey
+                && (job.status == .queued || job.status == .running)
+                && job.inputFrontier != artifactInputFrontier {
+                _ = analysisStore.saveAnalysisJob(job.transitioning(to: .superseded))
+            }
             let request = InsightRequest(
                 task: task,
                 startDate: archiveStartDate,
@@ -459,6 +583,59 @@ final class AIAssistantStore: ObservableObject {
                 createdAt: Date()
             )
             let requestModel = model
+            guard let deviceID = analysisStore.localDeviceIdentifier() else {
+                throw RiverSyncStoreError.persistence("无法读取本机设备身份，不能创建 AnalysisJob。")
+            }
+            if archiveStartDate != nil, archiveEndDate != nil,
+               let existingArtifact = analysisStore.canonicalArtifactRevision(logicalKey: artifactKey, kind: jobKind),
+               existingArtifact.inputFrontier == artifactInputFrontier,
+               existingArtifact.pipelineVersion == "1.0", existingArtifact.promptVersion == "1",
+               existingArtifact.status != .stale {
+                let savedAnswer = analysisStore.latestAnalysisRun(dedupKey: dedupKey)?.run.outputText
+                    ?? String(data: existingArtifact.content, encoding: .utf8)
+                if let savedAnswer, !savedAnswer.isEmpty {
+                    let jobPipeline = "1.0|\(provider.label)|\(requestModel)"
+                    let jobID = RiverAnalysisJobScheduler.jobID(
+                        deviceID: deviceID,
+                        logicalKey: artifactKey, artifactType: jobKind, inputFrontier: artifactInputFrontier,
+                        pipelineVersion: jobPipeline, promptVersion: "1"
+                    )
+                    if let job = analysisStore.analysisJobs().first(where: { $0.id == jobID }),
+                       job.status == .queued || job.status == .running {
+                        _ = analysisStore.saveAnalysisJob(job.transitioning(to: .succeeded))
+                    }
+                    setTask(task, answer: savedAnswer, sourceSummary: "复用匹配输入的 canonical Artifact", model: existingArtifact.modelIdentifier,
+                            isArchived: true, archivedRangeKey: rangeKey)
+                    return savedAnswer
+                }
+            }
+            let jobPipeline = "1.0|\(provider.label)|\(requestModel)"
+            let jobID = RiverAnalysisJobScheduler.jobID(
+                deviceID: deviceID, logicalKey: artifactKey, artifactType: jobKind,
+                inputFrontier: artifactInputFrontier, pipelineVersion: jobPipeline, promptVersion: "1"
+            )
+            let previousJob = analysisStore.analysisJobs().first { $0.id == jobID }
+            let queuedJob = RiverAnalysisJob(
+                id: jobID,
+                logicalKey: artifactKey,
+                artifactType: jobKind,
+                inputFrontier: artifactInputFrontier,
+                priority: task.isAnalysisSuiteTask ? 100 : 10,
+                status: .queued,
+                createdAt: previousJob?.createdAt ?? Date(),
+                attempt: previousJob?.attempt ?? 0,
+                originDeviceID: deviceID,
+                pipelineVersion: jobPipeline,
+                promptVersion: "1"
+            )
+            guard analysisStore.saveAnalysisJob(queuedJob) else {
+                throw RiverSyncStoreError.persistence("AnalysisJob 无法持久化。")
+            }
+            let runningJob = queuedJob.transitioning(to: .running)
+            guard analysisStore.saveAnalysisJob(runningJob) else {
+                throw RiverSyncStoreError.persistence("AnalysisJob 无法进入 running 状态。")
+            }
+            persistedJob = runningJob
             // 基础格式（日报"概览/上午/下午/晚上"、周报"整体趋势/最佳一天"）
             // 与四段契约并存会让模型收到两套互相矛盾的版式指令，输出形态随
             // 机。版本式收口：日报/周报只保留各自的基础格式 + 引用要求，缺段
@@ -472,11 +649,15 @@ final class AIAssistantStore: ObservableObject {
                 AIChatMessage(role: "user", content: effectivePrompt)
             ]
             let rawAnswer = try await sendChat(messages: messages, temperature: temperature, maxTokens: maxTokens)
-            guard taskRequestIDs[task] == requestID else { return nil }
+            guard taskRequestIDs[task] == requestID else {
+                if let persistedJob { _ = analysisStore.saveAnalysisJob(persistedJob.transitioning(to: .superseded)) }
+                return nil
+            }
             let answer = answerTransform?(rawAnswer) ?? rawAnswer
             if answer.hasPrefix(EvidenceReference.unverifiedAnswerPrefix) {
                 let message = "AI 结果没有引用请求中可核对的本机来源；未保存这条解释。"
                 setTask(task, error: message, sourceSummary: request.sourceSummary, model: requestModel)
+                if let persistedJob { _ = analysisStore.saveAnalysisJob(persistedJob.transitioning(to: .failed, error: message)) }
                 recordRequest(success: false, message: task.title + "缺少可核对来源")
                 return nil
             }
@@ -502,9 +683,6 @@ final class AIAssistantStore: ObservableObject {
                 ).kept
             }
 
-            let rangeKey = runMetadata.rangeKey
-                ?? ContextAssembler.rangeKey(task: task, startDate: archiveStartDate, endDate: archiveEndDate)
-            let dedupKey = runMetadata.dedupKey ?? "\(riverTaskKind(for: task).rawValue)|\(rangeKey)"
             let run = AnalysisRun(
                 task: riverTaskKind(for: task),
                 inputContextReference: contextSnapshotID,
@@ -525,23 +703,59 @@ final class AIAssistantStore: ObservableObject {
             } else {
                 savedRun = analysisStore.insertAnalysisRun(run, evidenceRefs: evidenceRefs, digestJSON: digestJSON)
             }
-            if savedRun {
+            let savedArtifact = savedRun && persistArtifactRevision(
+                run: run,
+                logicalKey: archiveStartDate != nil && archiveEndDate != nil ? artifactKey : "\(run.task.rawValue):\(run.id.uuidString)",
+                evidenceRefs: evidenceRefs,
+                rangeStart: archiveStartDate.flatMap(Self.startOfDay),
+                rangeEnd: archiveEndDate.flatMap { Self.startOfDay($0).flatMap { Calendar.current.date(byAdding: .day, value: 1, to: $0) } },
+                structuredDigest: digestJSON,
+                inputFrontier: artifactInputFrontier
+            )
+            if savedRun && savedArtifact {
+                if let persistedJob {
+                    let currentFrontier = try? analysisStore.currentInputFrontier()
+                    let isCurrent = currentFrontier == artifactInputFrontier
+                    let nextStatus: RiverAnalysisJobStatus = isCurrent ? .succeeded : .superseded
+                    _ = analysisStore.saveAnalysisJob(persistedJob.transitioning(to: nextStatus))
+                    if !isCurrent, let currentFrontier,
+                       let deviceID = analysisStore.localDeviceIdentifier() {
+                        let followUpID = RiverAnalysisJobScheduler.jobID(
+                            deviceID: deviceID, logicalKey: artifactKey, artifactType: jobKind,
+                            inputFrontier: currentFrontier, pipelineVersion: jobPipeline, promptVersion: "1"
+                        )
+                        let followUp = RiverAnalysisJob(
+                            id: followUpID, logicalKey: artifactKey, artifactType: jobKind,
+                            inputFrontier: currentFrontier, priority: persistedJob.priority,
+                            status: .queued, originDeviceID: deviceID,
+                            pipelineVersion: jobPipeline, promptVersion: "1"
+                        )
+                        _ = analysisStore.saveAnalysisJob(followUp)
+                    }
+                }
                 NotificationCenter.default.post(name: .riverAnalysisRunDidChange, object: nil)
             } else {
-                errorMessage = "分析结果未能写入本地事实库：\(analysisStore.lastError ?? "未知错误")"
+                if let persistedJob {
+                    _ = analysisStore.saveAnalysisJob(persistedJob.transitioning(to: .failed, error: analysisStore.lastError ?? "Artifact 未保存"))
+                }
+                errorMessage = "分析结果未能完整写入本地结果层：\(analysisStore.lastError ?? "未知错误")"
             }
             setTask(
                 task,
                 answer: finalAnswer,
                 sourceSummary: request.sourceSummary,
                 model: requestModel,
-                isArchived: archiveStartDate != nil && archiveEndDate != nil
+                isArchived: archiveStartDate != nil && archiveEndDate != nil,
+                archivedRangeKey: archiveStartDate != nil && archiveEndDate != nil ? rangeKey : nil
             )
             recordRequest(success: true, message: task.title + "完成")
             return finalAnswer
         } catch {
             guard taskRequestIDs[task] == requestID else { return nil }
             let message = friendlyError(error)
+            if let persistedJob {
+                _ = analysisStore.saveAnalysisJob(persistedJob.transitioning(to: .failed, error: message))
+            }
             setTask(task, error: message)
             recordRequest(success: false, message: task.title + "失败：" + message)
             return nil
@@ -770,7 +984,7 @@ final class AIAssistantStore: ObservableObject {
                 AIChatMessage(role: "system", content: "Reply with exactly: OK"),
                 AIChatMessage(role: "user", content: "Connection test")
             ]
-            _ = try await sendChat(messages: messages, temperature: 0)
+            _ = try await sendChat(messages: messages, temperature: 0, requiresPersonalDataConsent: false)
             answer = "连接成功，API 已可使用。"
             lastQuestion = "连接测试"
             lastCompletedAt = Date()
@@ -2139,8 +2353,16 @@ final class AIAssistantStore: ObservableObject {
     private func sendChat(
         messages: [AIChatMessage],
         temperature: Double,
-        maxTokens: Int? = nil
+        maxTokens: Int? = nil,
+        requiresPersonalDataConsent: Bool = true
     ) async throws -> String {
+        if requiresPersonalDataConsent && !allowRemoteAnalysis && !isLocalAIEndpoint {
+            throw NSError(
+                domain: "RiverDiaryMac.ai",
+                code: -20,
+                userInfo: [NSLocalizedDescriptionKey: "尚未同意向网络 AI 发送个人数据。请在“设置 → 隐私与备份”中明确开启。"]
+            )
+        }
         let payload = AIChatRequest(
             model: model.trimmingCharacters(in: .whitespacesAndNewlines),
             messages: messages,
@@ -2194,6 +2416,11 @@ final class AIAssistantStore: ObservableObject {
         }
 
         return content
+    }
+
+    private var isLocalAIEndpoint: Bool {
+        guard let host = URLComponents(string: endpoint)?.host?.lowercased() else { return false }
+        return ["localhost", "127.0.0.1", "::1"].contains(host)
     }
 
     private func applyHeaders(to request: inout URLRequest) throws {
@@ -2269,6 +2496,13 @@ final class AIAssistantStore: ObservableObject {
                 domain: "RiverDiaryMac.ai",
                 code: -3,
                 userInfo: [NSLocalizedDescriptionKey: invalidMessage]
+            )
+        }
+        if url.scheme == "http" && !isLocalAIEndpoint {
+            throw NSError(
+                domain: "RiverDiaryMac.ai",
+                code: -4,
+                userInfo: [NSLocalizedDescriptionKey: "网络 AI 必须使用 HTTPS；只有本机或明确配置的本地模型可以使用 HTTP。"]
             )
         }
 

@@ -10,6 +10,10 @@
 		1A00000E2D00000000000001 /* RiverDiary.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RiverDiary.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXBuildFile section */
+		1A0000102D00000000000001 /* RiverDiaryCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000132D00000000000001 /* RiverDiaryCore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1A0000012D00000000000001 /* RiverDiary */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A0000102D00000000000001 /* RiverDiaryCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = RiverDiary;
 			packageProductDependencies = (
+				1A0000132D00000000000001 /* RiverDiaryCore */,
 			);
 			productName = RiverDiary;
 			productReference = 1A00000E2D00000000000001 /* RiverDiary.app */;
@@ -94,6 +100,9 @@
 				en,
 			);
 			mainGroup = 1A0000032D00000000000001;
+			packageReferences = (
+				1A0000122D00000000000001 /* RiverDiaryCore */,
+			);
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
@@ -123,6 +132,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		1A0000122D00000000000001 /* RiverDiaryCore */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Packages/RiverDiaryCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1A0000132D00000000000001 /* RiverDiaryCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000122D00000000000001 /* RiverDiaryCore */;
+			productName = RiverDiaryCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1A00000A2D00000000000001 /* Debug */ = {
@@ -186,11 +210,20 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Z29662632F;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "情绪河流";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "读取睡眠和运动数据，帮助你理解身体状态与情绪变化的关系。";
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "local.riverdiary.app.health-sync";
-				INFOPLIST_KEY_UIBackgroundModes = processing;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录你主动开启位置记录期间的到访和显著移动，并在时间线上提供地点线索。";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "你启用后台位置记录后，系统可在 River Diary 未打开时延迟交付到访和显著移动事件。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "你启用附近设备快速复制后，River Diary 会通过本地网络交换已加密的同步对象。";
+				INFOPLIST_KEY_NSBonjourServices = (
+					"_riverdiary-sync._tcp",
+				);
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = (
+					"local.riverdiary.app.health-sync",
+				);
+				INFOPLIST_KEY_UIBackgroundModes = "location processing";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -222,11 +255,20 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Z29662632F;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "情绪河流";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "读取睡眠和运动数据，帮助你理解身体状态与情绪变化的关系。";
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "local.riverdiary.app.health-sync";
-				INFOPLIST_KEY_UIBackgroundModes = processing;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录你主动开启位置记录期间的到访和显著移动，并在时间线上提供地点线索。";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "你启用后台位置记录后，系统可在 River Diary 未打开时延迟交付到访和显著移动事件。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "你启用附近设备快速复制后，River Diary 会通过本地网络交换已加密的同步对象。";
+				INFOPLIST_KEY_NSBonjourServices = (
+					"_riverdiary-sync._tcp",
+				);
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = (
+					"local.riverdiary.app.health-sync",
+				);
+				INFOPLIST_KEY_UIBackgroundModes = "location processing";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

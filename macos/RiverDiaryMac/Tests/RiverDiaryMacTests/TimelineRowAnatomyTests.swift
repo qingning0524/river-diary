@@ -155,20 +155,21 @@ final class TimelineRowAnatomyTests: XCTestCase {
     func testFragmentRunNodeIsARingWithACore() throws {
         let run = fragmentRun()
         let image = try render(Harness(items: [run]))
-        let centre = (x: Self.nodeAxisX, y: Int((TimelineRowMetrics.topInset - 1 + 4.5) * Self.scale))
+        let centre = (x: Self.nodeAxisX, y: Int((TimelineRowMetrics.topInset - 1 + 9.5) * Self.scale))
 
-        // 节点：9pt 的圆，`strokeBorder` 1.4pt 描边（画在圆内侧），中间一枚 3.5pt 的实心点。
-        // 换算到 scale 2 的像素半径：芯 3.5px，环带 6.2–9.0px，中间 3.5–6.2px 是空的。
-        let core = pixel(image, centre.x, centre.y)
-        XCTAssertGreaterThanOrEqual(core.b, core.r + 30, "碎片带节点的芯应该是 accent")
+        // 19pt 外环内有两个相隔的小 accent 点；两点之间保留空隙。
+        let leftCore = pixel(image, centre.x - 6, centre.y)
+        let rightCore = pixel(image, centre.x + 6, centre.y)
+        XCTAssertGreaterThanOrEqual(leftCore.b, leftCore.r + 30, "左侧碎片标记应为 accent")
+        XCTAssertGreaterThanOrEqual(rightCore.b, rightCore.r + 30, "右侧碎片标记应为 accent")
 
-        let between = pixel(image, centre.x + 5, centre.y)
+        let between = pixel(image, centre.x, centre.y)
         XCTAssertTrue(
             isNearWhite(between),
-            "环与芯之间是满的（rgb(\(between.r),\(between.g),\(between.b))）——碎片带看起来和一个实心活动节点一样"
+            "双点之间应留空（rgb(\(between.r),\(between.g),\(between.b))）"
         )
 
-        let ring = pixel(image, centre.x + 7, centre.y)
+        let ring = pixel(image, centre.x + 18, centre.y)
         XCTAssertFalse(isNearWhite(ring), "碎片带节点没有描边环")
         XCTAssertGreaterThan(ring.b - ring.r, 10, "环应该是 accent 系，而不是中性灰")
     }

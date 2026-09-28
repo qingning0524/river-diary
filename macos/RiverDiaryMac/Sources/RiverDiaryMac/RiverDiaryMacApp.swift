@@ -1,4 +1,5 @@
 import AppKit
+import RiverDiaryCore
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -54,8 +55,39 @@ struct RiverDiaryMacApp: App {
         v2Store = sharedV2
         _restoreRecovery = StateObject(wrappedValue: RestoreRecoveryBootstrap())
         _ingestion = StateObject(wrappedValue: DataIngestionStore(v2Store: sharedV2))
-        _store = StateObject(wrappedValue: DiaryStore())
-        _activity = StateObject(wrappedValue: ActivityStore(v2Store: sharedV2))
+        let diaryStore = DiaryStore()
+        let activityStore = ActivityStore(v2Store: sharedV2)
+        diaryStore.onQuickCaptureSaved = { activityStore.replicateQuickCapture($0) }
+        diaryStore.onQuickCaptureRemoved = { activityStore.tombstoneQuickCapture($0) }
+        diaryStore.onSharedJournalEntryChanged = { sharedV2.saveSharedUserRecord($0) }
+        diaryStore.onSharedMonthlyLetterChanged = { sharedV2.saveSharedUserRecord($0) }
+        diaryStore.onMoodScoreChanged = { day, score, updatedAt in
+            sharedV2.setMoodScore(dayKey: day, score: score, updatedAt: updatedAt)
+        }
+        diaryStore.onMoodScoreReset = { day, updatedAt in
+            sharedV2.resetMoodScore(dayKey: day, updatedAt: updatedAt)
+        }
+        diaryStore.onDiaryDataReady = { [weak diaryStore] in
+            guard let diaryStore else { return }
+            _ = diaryStore.migrateLocalJournalStateToSharedOperations()
+            diaryStore.applySharedDiaryRecords(sharedV2.sharedUserRecords())
+        }
+        diaryStore.onTimelineAnnotationChanged = { annotation, key in
+            let payload = try JSONEncoder().encode(annotation)
+            guard sharedV2.appendStateOperation(
+                targetID: key,
+                fieldKey: "annotation",
+                operationType: "timeline.annotation.set",
+                payload: payload
+            ) != nil else {
+                throw RiverSyncStoreError.persistence(sharedV2.lastError ?? "同步用户修改失败")
+            }
+        }
+        diaryStore.loadSharedTimelineAnnotations = { sharedV2.timelineAnnotationsFromOperations() }
+        diaryStore.reloadSharedTimelineAnnotations()
+        _ = diaryStore.migrateLocalQuickCapturesToCanonicalEvents()
+        _store = StateObject(wrappedValue: diaryStore)
+        _activity = StateObject(wrappedValue: activityStore)
         _ai = StateObject(wrappedValue: AIAssistantStore(v2Store: sharedV2))
         _dateContext = StateObject(wrappedValue: DateContextStore())
         _location = StateObject(wrappedValue: LocationSourceStore(v2Store: sharedV2))
@@ -91,6 +123,49 @@ struct RiverDiaryMacApp: App {
                 }
             }
             .frame(minWidth: 960, minHeight: 640)
+            .onAppear { activity.startAutomaticSync() }
+            .onReceive(NotificationCenter.default.publisher(for: .riverCanonicalSyncDidChange)) { notification in
+                let report = notification.object as? SyncRunReport
+                if (report?.importedEventBatches ?? 0) > 0 || (report?.importedOperationBatches ?? 0) > 0 {
+                    ingestion.captureNow(runsAIAnalysis: false)
+                }
+                let today = DiaryEntry.dateFormatter.string(from: Date())
+                let analysisStore = activity.replicationDatabase()
+                let staleReview = analysisStore.canonicalArtifactRevision(
+                    logicalKey: RiverCanonicalArtifactKey.dailyReview(dayKey: today), kind: .dailyReview
+                )?.status == .stale
+                let currentFrontier = try? analysisStore.currentInputFrontier()
+                let queuedReview = analysisStore.analysisJobs().contains {
+                    $0.logicalKey == RiverCanonicalArtifactKey.dailyReview(dayKey: today) && $0.artifactType == .dailyReview
+                        && $0.inputFrontier == currentFrontier
+                        && ($0.status == .queued || $0.status == .running)
+                }
+                if (staleReview || queuedReview) && ai.canRunAutomaticAnalysis {
+                    Task { @MainActor in
+                        await Task.yield()
+                        guard let date = DiaryEntry.dateFormatter.date(from: today),
+                              let interval = Calendar.current.dateInterval(of: .day, for: date) else { return }
+                        let sessions = activity.sessions(from: interval.start, to: interval.end)
+                        let entries = store.entries.filter { $0.date == today }
+                        let captures = store.quickCaptures[today] ?? []
+                        _ = await ai.runAnalysisDaily(
+                            entries: entries,
+                            sessions: sessions,
+                            captures: captures,
+                            annotations: store.timelineAnnotations,
+                            archiveStartDate: today,
+                            archiveEndDate: today,
+                            sourceSummary: "同步到较新的 Event 后自动更新今日回顾"
+                        )
+                    }
+                }
+                store.reloadSharedTimelineAnnotations()
+                store.applySharedDiaryRecords(v2Store.sharedUserRecords())
+                if store.migrateLegacyTimelineAnnotationsToOperations() {
+                    DispatchQueue.main.async { activity.syncSettingsStore.synchronize() }
+                }
+                ai.restoreAnalysisResults(startDate: today, endDate: today)
+            }
         }
         .defaultSize(width: 1280, height: 820)
         .windowStyle(.hiddenTitleBar)
