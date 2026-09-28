@@ -40,6 +40,7 @@ public struct SyncEncryptionKey: Sendable, Equatable {
 }
 
 public struct EncryptedReplicationObject: Codable, Hashable, Sendable, Identifiable {
+    public static let minimumCompatibleProtocolVersion = 1
     public static let currentProtocolVersion = 1
 
     public let id: String

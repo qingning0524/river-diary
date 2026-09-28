@@ -159,8 +159,12 @@ public final class RiverSyncCoordinator {
         var manifests: [ReplicationManifest] = []
         for file in located {
             let object = file.object
-            if object.protocolVersion > 1 {
+            if object.protocolVersion > EncryptedReplicationObject.currentProtocolVersion {
                 needsUpgrade = true
+                continue
+            }
+            if object.protocolVersion < EncryptedReplicationObject.minimumCompatibleProtocolVersion {
+                integrityFailures.append("\(file.deviceID.rawValue)/\(file.stream)/\(object.id)：复制对象协议版本无效")
                 continue
             }
             let plaintext: Data
@@ -179,8 +183,12 @@ public final class RiverSyncCoordinator {
                     integrityFailures.append("\(object.id)：事件批次结构或所属设备不匹配")
                     continue
                 }
-                if batch.protocolVersion > 1 || batch.schemaVersion > 1 {
+                if batch.protocolVersion > EncryptedReplicationObject.currentProtocolVersion || batch.schemaVersion > 1 {
                     needsUpgrade = true
+                    continue
+                }
+                if batch.protocolVersion < EncryptedReplicationObject.minimumCompatibleProtocolVersion || batch.schemaVersion < 1 {
+                    integrityFailures.append("\(object.id)：事件批次协议或 Schema 版本无效")
                     continue
                 }
                 if try store.importedObjectExists(object.id) {
@@ -214,8 +222,12 @@ public final class RiverSyncCoordinator {
                     integrityFailures.append("\(object.id)：Manifest 结构或所属设备不匹配")
                     continue
                 }
-                if manifest.protocolVersion > 1 || manifest.schemaVersion > 1 {
+                if manifest.protocolVersion > EncryptedReplicationObject.currentProtocolVersion || manifest.schemaVersion > 1 {
                     needsUpgrade = true
+                    continue
+                }
+                if manifest.protocolVersion < EncryptedReplicationObject.minimumCompatibleProtocolVersion || manifest.schemaVersion < 1 {
+                    integrityFailures.append("\(object.id)：Manifest 协议或 Schema 版本无效")
                     continue
                 }
                 manifests.append(manifest)
@@ -227,8 +239,12 @@ public final class RiverSyncCoordinator {
                     integrityFailures.append("\(object.id)：用户状态批次结构或所属设备不匹配")
                     continue
                 }
-                if batch.protocolVersion > 1 {
+                if batch.protocolVersion > EncryptedReplicationObject.currentProtocolVersion {
                     needsUpgrade = true
+                    continue
+                }
+                if batch.protocolVersion < EncryptedReplicationObject.minimumCompatibleProtocolVersion {
+                    integrityFailures.append("\(object.id)：Operation 批次协议版本无效")
                     continue
                 }
                 if try store.importedObjectExists(object.id) {

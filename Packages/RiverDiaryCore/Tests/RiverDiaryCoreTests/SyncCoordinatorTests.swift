@@ -225,6 +225,39 @@ struct SyncCoordinatorTests {
         #expect(!report.isVerified)
     }
 
+    @Test func replicationObjectWithInvalidProtocolVersionCannotImportOrVerify() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let phone = RiverDeviceID(rawValue: "iphone_phone")
+        let mac = RiverDeviceID(rawValue: "mac_desktop")
+        let event = self.event(device: phone, sequence: 1, kind: "app.opened", name: "Safari", at: 100)
+        let batch = try RiverEventBatch(deviceID: phone, events: [event])
+        let key = SyncEncryptionKey()
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let plaintext = try encoder.encode(batch)
+        let validEnvelope = try EncryptedReplicationObject.seal(
+            plaintext, id: batch.id, kind: "event_batch", using: key
+        )
+        let invalidEnvelope = EncryptedReplicationObject(
+            id: validEnvelope.id,
+            kind: validEnvelope.kind,
+            protocolVersion: 0,
+            ciphertext: validEnvelope.ciphertext,
+            ciphertextSHA256: validEnvelope.ciphertextSHA256
+        )
+        let directory = ReplicationDirectory(rootURL: root)
+        _ = try directory.publish(invalidEnvelope, stream: "Events", deviceID: phone)
+
+        let macStore = MemorySyncStore(deviceID: mac, knownDevices: [phone])
+        let report = try RiverSyncCoordinator(store: macStore, directory: directory, key: key).synchronize()
+
+        #expect(report.importedEventBatches == 0)
+        #expect(macStore.events.isEmpty)
+        #expect(report.integrityFailures.contains { $0.contains("协议版本无效") })
+        #expect(!report.isVerified)
+    }
+
     @Test func reinstalledNodeRestoresItsOwnPublishedObjectsFromTheSelectedFolder() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
