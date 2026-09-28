@@ -113,6 +113,32 @@ public struct RiverMoodScoreReset: Codable, Hashable, Sendable {
     public init(day: String) { self.day = day }
 }
 
+/// Codable payload shared with the Mac TimelineAnnotation projection so a
+/// confirmation from iPhone marks the same timeline candidate reviewed.
+public struct RiverTimelineAnnotation: Codable, Hashable, Sendable {
+    public let title: String
+    public let note: String
+    public let placeName: String
+    public let activityLabel: String
+    public let isFavorite: Bool
+    public let isReviewed: Bool
+    public let reviewedAt: Date?
+    public let updatedAt: Date
+
+    public init(title: String = "", note: String = "", placeName: String = "",
+                activityLabel: String = "", isFavorite: Bool = false,
+                isReviewed: Bool = false, reviewedAt: Date? = nil, updatedAt: Date = Date()) {
+        self.title = title
+        self.note = note
+        self.placeName = placeName
+        self.activityLabel = activityLabel
+        self.isFavorite = isFavorite
+        self.isReviewed = isReviewed
+        self.reviewedAt = reviewedAt
+        self.updatedAt = updatedAt
+    }
+}
+
 public enum RiverPendingConfirmationResolution: String, Codable, Hashable, Sendable {
     case confirmed
     case rejected
@@ -125,6 +151,7 @@ public struct RiverPendingConfirmationContent: Codable, Hashable, Sendable {
     public let question: String
     public let detail: String
     public let candidate: String?
+    public let evidenceRefs: [String]?
     public let targetType: String?
     public let targetID: String?
     public let resolution: RiverPendingConfirmationResolution?
@@ -132,6 +159,7 @@ public struct RiverPendingConfirmationContent: Codable, Hashable, Sendable {
     public let resolvedAt: Date?
 
     public init(title: String, question: String, detail: String = "", candidate: String? = nil,
+                evidenceRefs: [String]? = nil,
                 targetType: String? = nil, targetID: String? = nil,
                 resolution: RiverPendingConfirmationResolution? = nil,
                 correction: String? = nil, resolvedAt: Date? = nil) {
@@ -139,6 +167,7 @@ public struct RiverPendingConfirmationContent: Codable, Hashable, Sendable {
         self.question = question
         self.detail = detail
         self.candidate = candidate
+        self.evidenceRefs = evidenceRefs
         self.targetType = targetType
         self.targetID = targetID
         self.resolution = resolution
@@ -149,6 +178,7 @@ public struct RiverPendingConfirmationContent: Codable, Hashable, Sendable {
     public func resolving(_ resolution: RiverPendingConfirmationResolution,
                           correction: String? = nil, at date: Date = Date()) -> Self {
         Self(title: title, question: question, detail: detail, candidate: candidate,
+             evidenceRefs: evidenceRefs,
              targetType: targetType, targetID: targetID, resolution: resolution,
              correction: correction, resolvedAt: date)
     }
@@ -210,6 +240,28 @@ public extension RiverSharedStateRecord {
         return Self(id: id, kind: .pendingConfirmation, status: "pending",
                     logicalKey: "place-confirmation:\(place.id)", payloadJSON: payload,
                     createdAt: place.firstSeen, updatedAt: place.firstSeen)
+    }
+
+    static func timelineClarification(candidateID: String, annotationKey: String? = nil,
+                                      observation: String, opening: String,
+                                      evidenceRefs: [String], createdAt: Date) -> Self? {
+        let content = RiverPendingConfirmationContent(
+            title: "时间线理解",
+            question: opening,
+            detail: observation,
+            candidate: observation,
+            evidenceRefs: evidenceRefs.sorted(),
+            targetType: "timelineCandidate",
+            targetID: annotationKey ?? candidateID
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let bytes = try? encoder.encode(content),
+              let payload = String(data: bytes, encoding: .utf8) else { return nil }
+        let id = RiverStableIdentifier.uuid(namespace: "timeline-confirmation", key: candidateID)
+        return Self(id: id, kind: .pendingConfirmation, status: "pending",
+                    logicalKey: "timeline-confirmation:\(candidateID)", payloadJSON: payload,
+                    createdAt: createdAt, updatedAt: createdAt)
     }
 
     func resolving(_ resolution: RiverPendingConfirmationResolution,

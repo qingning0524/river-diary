@@ -191,6 +191,60 @@ final class AnalysisInterconnectTests: XCTestCase {
         XCTAssertEqual(v2.analysisRuns().count, 1, "stale-frontier snapshot must not be sent")
     }
 
+    func testTimelineDigestClarificationBecomesSharedAndAnnotationClosesIt() throws {
+        let v2 = try makeStore()
+        let ai = AIAssistantStore(v2Store: v2)
+        let device = try XCTUnwrap(v2.localDeviceIdentifier())
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let sessionID = UUID(uuidString: "00000000-0000-0000-0000-000000000321")!
+        let candidateID = "activity-\(sessionID.uuidString)-\(date.timeIntervalSince1970)"
+        let annotationKey = "1700000000|com.example.editor|Editor"
+        XCTAssertTrue(v2.insertRawEvent(RawEvent(
+            id: sessionID, timestamp: date, source: .systemApp, kind: .appForeground,
+            payload: RawEventPayload(appName: "Editor", bundleID: "com.example.editor", sessionEnd: date.addingTimeInterval(1_800))
+        )))
+        let clarification = TimelineDigestClarification(
+            candidateID: candidateID,
+            annotationKey: nil,
+            observation: "这段时间主要使用了编辑器。",
+            opening: "当时在编辑什么内容？",
+            evidenceRefs: ["raw:source-1"]
+        )
+        let digest = TimelineDigest(
+            dayKey: "2026-09-28", sourceFingerprint: "timeline-source-v1",
+            overview: "当天有一段工作活动。", overviewCandidateIDs: [clarification.candidateID],
+            overviewCaptureIDs: [], overviewDiaryDates: [],
+            segments: [TimelineDigestSegment(
+                candidateIDs: [clarification.candidateID], title: "编辑项目", summary: "使用编辑器处理项目内容。",
+                evidenceRefs: clarification.evidenceRefs, start: date, end: date.addingTimeInterval(1_800)
+            )],
+            clarifications: [clarification]
+        )
+        let content = Data(try XCTUnwrap(digest.encodedJSON).utf8)
+        let artifact = RiverArtifactRevision(
+            id: "timeline-digest-recovery-test", logicalKey: "timelineDigest|d-2026-09-28",
+            kind: .semanticTimeline, revisionNumber: 1, originDeviceID: device,
+            clock: HybridLogicalClock(physicalMilliseconds: 1_700_000_000_000, deviceID: device),
+            inputFrontier: try v2.currentInputFrontier(), inputSnapshotHash: "timeline-source-v1",
+            pipelineVersion: "1.0", promptVersion: "1", modelProvider: "test", modelIdentifier: "test-model",
+            content: content, contentHash: SHA256Hex.hash(content), status: .current
+        )
+        XCTAssertTrue(v2.insertArtifactRevision(artifact))
+        XCTAssertEqual(ai.reconcilePendingTimelineConfirmations(), 1)
+        let pending = try XCTUnwrap(v2.sharedUserRecords().first { $0.kind == .pendingConfirmation })
+        XCTAssertEqual(pending.status, "pending")
+        XCTAssertEqual(pending.pendingConfirmationContent?.targetID, annotationKey)
+        XCTAssertEqual(pending.pendingConfirmationContent?.evidenceRefs, ["raw:source-1"])
+
+        let annotation = TimelineAnnotation(title: "编写同步逻辑", note: "用户补充了具体任务", isReviewed: true, reviewedAt: date, updatedAt: date)
+        XCTAssertNotNil(v2.appendStateOperation(
+            targetID: annotationKey, fieldKey: "annotation", operationType: "timeline.annotation.set",
+            payload: try JSONEncoder().encode(annotation)
+        ))
+        XCTAssertEqual(ai.reconcilePendingTimelineConfirmations(), 1)
+        XCTAssertEqual(v2.sharedUserRecords().first { $0.id == pending.id }?.status, "corrected")
+    }
+
     // MARK: B1 结果层
 
     func testKeyedUpsertKeepsOnlyLatestPerDedupKey() throws {

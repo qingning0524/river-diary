@@ -82,6 +82,9 @@ struct RiverDiaryMacApp: App {
             ) != nil else {
                 throw RiverSyncStoreError.persistence(sharedV2.lastError ?? "同步用户修改失败")
             }
+            guard sharedV2.resolvePendingTimelineConfirmation(annotationKey: key, annotation: annotation) else {
+                throw RiverSyncStoreError.persistence(sharedV2.lastError ?? "待确认决定尚未加入共享队列")
+            }
         }
         diaryStore.loadSharedTimelineAnnotations = { sharedV2.timelineAnnotationsFromOperations() }
         diaryStore.reloadSharedTimelineAnnotations()
@@ -125,13 +128,17 @@ struct RiverDiaryMacApp: App {
             .frame(minWidth: 960, minHeight: 640)
             .onAppear {
                 activity.startAutomaticSync()
-                Task { await ai.resumeRecoverableAnalysisJobs() }
+                Task {
+                    await ai.resumeRecoverableAnalysisJobs()
+                    _ = ai.reconcilePendingTimelineConfirmations()
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .riverCanonicalSyncDidChange)) { notification in
                 let report = notification.object as? SyncRunReport
                 if (report?.importedEventBatches ?? 0) > 0 || (report?.importedOperationBatches ?? 0) > 0 {
                     ingestion.captureNow(runsAIAnalysis: false)
                 }
+                _ = ai.reconcilePendingTimelineConfirmations()
                 let today = DiaryEntry.dateFormatter.string(from: Date())
                 let analysisStore = activity.replicationDatabase()
                 let staleReview = analysisStore.canonicalArtifactRevision(

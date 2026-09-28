@@ -59,6 +59,7 @@ struct EvidenceConsoleView: View {
         )
         let clarifications = Dictionary(
             (digest?.sourceFingerprint == currentFingerprint ? digest?.clarifications ?? [] : [])
+                .filter { ai.isTimelineClarificationPending(candidateID: $0.candidateID) }
                 .map { ($0.candidateID, $0) },
             uniquingKeysWith: { first, _ in first }
         )

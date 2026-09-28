@@ -1808,6 +1808,26 @@ final class V2Store {
     }
 
     @discardableResult
+    func resolvePendingTimelineConfirmation(annotationKey: String, annotation: TimelineAnnotation) -> Bool {
+        guard annotation.isReviewed else { return true }
+        guard let record = sharedUserRecords().first(where: {
+            $0.kind == .pendingConfirmation && $0.status == "pending"
+                && $0.pendingConfirmationContent?.targetType == "timelineCandidate"
+                && $0.pendingConfirmationContent?.targetID == annotationKey
+        }) else { return true }
+        let correction = [annotation.title, annotation.activityLabel, annotation.note, annotation.placeName]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
+        let resolution: RiverPendingConfirmationResolution = correction.isEmpty ? .dismissed : .corrected
+        guard let updated = record.resolving(
+            resolution, correction: correction.isEmpty ? nil : correction,
+            at: annotation.reviewedAt ?? annotation.updatedAt
+        ) else { return false }
+        return persistSharedUserRecord(updated)
+    }
+
+    @discardableResult
     func setMoodScore(dayKey: String, score: Int, updatedAt: Date) -> Bool {
         guard (0...100).contains(score), let deviceID = localDeviceIdentifier(),
               let payload = try? JSONEncoder().encode(RiverMoodScoreDecision(day: dayKey, score: score)) else { return false }

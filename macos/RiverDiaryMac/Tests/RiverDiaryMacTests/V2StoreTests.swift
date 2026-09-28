@@ -169,6 +169,48 @@ final class V2StoreTests: XCTestCase {
         XCTAssertEqual(decision.semanticType, "userDefined")
     }
 
+    func testTimelineClarificationConfirmationSharesReviewedAnnotationAndClosesQuestion() throws {
+        let (store, _) = try makeStore()
+        let annotationKey = "1700000000|com.example.editor|Editor"
+        let record = try XCTUnwrap(RiverSharedStateRecord.timelineClarification(
+            candidateID: "activity-candidate", annotationKey: annotationKey,
+            observation: "这段时间主要使用了编辑器。", opening: "当时在编辑什么？",
+            evidenceRefs: ["raw:source-1"], createdAt: Date(timeIntervalSince1970: 1_700_000_000)
+        ))
+        XCTAssertTrue(store.saveSharedUserRecord(record))
+        let reviewedAt = Date(timeIntervalSince1970: 1_700_000_010)
+        let portableAnnotation = RiverTimelineAnnotation(
+            title: "修改 River Diary", note: "确认是项目开发", isReviewed: true,
+            reviewedAt: reviewedAt, updatedAt: reviewedAt
+        )
+        XCTAssertNotNil(store.appendStateOperation(
+            targetID: annotationKey, fieldKey: "annotation",
+            operationType: "timeline.annotation.set", payload: try JSONEncoder().encode(portableAnnotation)
+        ))
+        let localAnnotation = TimelineAnnotation(
+            title: portableAnnotation.title, note: portableAnnotation.note,
+            isReviewed: true, reviewedAt: reviewedAt, updatedAt: reviewedAt
+        )
+        XCTAssertTrue(store.resolvePendingTimelineConfirmation(annotationKey: annotationKey, annotation: localAnnotation))
+
+        let resolved = try XCTUnwrap(store.sharedUserRecords().first { $0.id == record.id })
+        XCTAssertEqual(resolved.status, "corrected")
+        let annotationOperation = try XCTUnwrap(store.allStateOperations().first {
+            $0.operationType == "shared.record.upsert" && $0.targetID == resolved.targetID
+                && (try? JSONDecoder().decode(RiverSharedStateRecord.self, from: $0.payload))?.status == "corrected"
+        })
+        XCTAssertEqual(try JSONDecoder().decode(RiverSharedStateRecord.self, from: annotationOperation.payload), resolved)
+
+        let timelineOperation = try XCTUnwrap(store.allStateOperations().first {
+            $0.operationType == "timeline.annotation.set" && $0.targetID == annotationKey
+        })
+        let restoredPortable = try JSONDecoder().decode(RiverTimelineAnnotation.self, from: timelineOperation.payload)
+        let restoredLocal = try JSONDecoder().decode(TimelineAnnotation.self, from: timelineOperation.payload)
+        XCTAssertTrue(restoredPortable.isReviewed)
+        XCTAssertEqual(restoredLocal.title, "修改 River Diary")
+        XCTAssertEqual(restoredLocal.note, "确认是项目开发")
+    }
+
     func testHandwrittenJournalAndMonthlyLetterUseSharedOperationRecords() throws {
         let (store, _) = try makeStore()
         let updatedAt = Date(timeIntervalSince1970: 1_700_000_000)

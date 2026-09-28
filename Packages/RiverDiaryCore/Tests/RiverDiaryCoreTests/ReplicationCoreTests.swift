@@ -564,4 +564,22 @@ struct ReplicationCoreTests {
         #expect(reencoded.kind.rawValue == "future.semanticConfirmation")
         #expect(reencoded.payloadJSON == record.payloadJSON)
     }
+
+    @Test func timelineClarificationUsesSharedAnnotationIdentityAndEvidence() throws {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let first = try #require(RiverSharedStateRecord.timelineClarification(
+            candidateID: "activity-session-123", annotationKey: "1700000000|com.example.editor|Editor",
+            observation: "这段时间主要使用了编辑器。", opening: "当时在编辑什么内容？",
+            evidenceRefs: ["raw:event-2", "raw:event-1"], createdAt: date
+        ))
+        let second = try #require(RiverSharedStateRecord.timelineClarification(
+            candidateID: "activity-session-123", annotationKey: "1700000000|com.example.editor|Editor",
+            observation: "这段时间主要使用了编辑器。", opening: "当时在编辑什么内容？",
+            evidenceRefs: ["raw:event-1", "raw:event-2"], createdAt: date
+        ))
+        #expect(first == second)
+        #expect(first.pendingConfirmationContent?.targetType == "timelineCandidate")
+        #expect(first.pendingConfirmationContent?.targetID == "1700000000|com.example.editor|Editor")
+        #expect(first.pendingConfirmationContent?.evidenceRefs == ["raw:event-1", "raw:event-2"])
+    }
 }

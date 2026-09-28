@@ -867,6 +867,34 @@ final class RiverLocalDatabase: ObservableObject {
                     payload: try encoder.encode(decision)
                 )
             }
+        } else if content.targetType == "timelineCandidate", let annotationKey = content.targetID {
+            let title: String
+            let note: String
+            switch resolution {
+            case .confirmed:
+                title = content.candidate ?? ""
+                note = "用户确认了这条时间线观察。"
+            case .corrected:
+                guard let value = correction?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+                    throw RiverLocalDatabaseError.sql("请填写时间线说明后再保存。")
+                }
+                title = value
+                note = "用户修正了 AI 的时间线观察。"
+            case .rejected:
+                title = ""
+                note = "用户标记这条时间线观察不准确。"
+            case .dismissed:
+                title = ""
+                note = "用户已查看这段记录，暂不需要补充。"
+            }
+            let now = Date()
+            let annotation = RiverTimelineAnnotation(
+                title: title, note: note, isReviewed: true, reviewedAt: now, updatedAt: now
+            )
+            _ = try appendStateOperation(
+                targetID: annotationKey, fieldKey: "annotation",
+                operationType: "timeline.annotation.set", payload: try encoder.encode(annotation)
+            )
         }
         try saveSharedUserRecord(updated)
         try rebuildPlaces()

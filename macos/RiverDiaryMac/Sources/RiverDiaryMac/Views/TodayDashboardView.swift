@@ -848,7 +848,9 @@ struct TodayDashboardView: View {
             annotations: store.timelineAnnotations
         )
         let clarifications = Dictionary(
-            (digest?.sourceFingerprint == currentFingerprint ? digest?.clarifications ?? [] : []).map { ($0.candidateID, $0) },
+            (digest?.sourceFingerprint == currentFingerprint ? digest?.clarifications ?? [] : [])
+                .filter { ai.isTimelineClarificationPending(candidateID: $0.candidateID) }
+                .map { ($0.candidateID, $0) },
             uniquingKeysWith: { first, _ in first }
         )
         let items = Array(s.timeline.foldedItems

@@ -88,6 +88,7 @@ struct TimelineDigestSegment: Codable, Hashable, Identifiable {
 
 struct TimelineDigestClarification: Codable, Hashable, Identifiable {
     let candidateID: String
+    let annotationKey: String?
     let observation: String
     let opening: String
     let evidenceRefs: [String]
@@ -242,6 +243,7 @@ enum TimelineDigestValidator {
                 .map { "location:\($0.id.uuidString)" })
             return TimelineDigestClarification(
                 candidateID: item.id,
+                annotationKey: item.annotationKey,
                 observation: String(observation.prefix(300)),
                 opening: String(opening.prefix(360)),
                 evidenceRefs: Array(Set(refs)).sorted()

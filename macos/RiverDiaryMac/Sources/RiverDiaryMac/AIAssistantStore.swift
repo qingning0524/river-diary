@@ -434,6 +434,12 @@ final class AIAssistantStore: ObservableObject {
         return digest
     }
 
+    func isTimelineClarificationPending(candidateID: String) -> Bool {
+        let recordID = RiverStableIdentifier.uuid(namespace: "timeline-confirmation", key: candidateID)
+        guard let record = analysisStore.sharedUserRecords().first(where: { $0.id == recordID }) else { return true }
+        return record.status == "pending"
+    }
+
     func storedTimelineDigest(for dayKey: String) -> TimelineDigest? {
         if let inMemory = timelineDigest(for: dayKey) { return inMemory }
         let key = "\(RiverTaskKind.timelineDigest.rawValue)|\(ContextAssembler.dayRangeKey(dayKey))"
@@ -448,6 +454,74 @@ final class AIAssistantStore: ObservableObject {
               !value.hasPrefix(EvidenceReference.unverifiedAnswerPrefix),
               let data = value.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(TimelineDigest.self, from: data)
+    }
+
+    @discardableResult
+    func reconcilePendingTimelineConfirmations() -> Int {
+        let initialRecords = analysisStore.sharedUserRecords().filter { $0.kind == .pendingConfirmation }
+        let annotations = analysisStore.timelineAnnotationsFromOperations()
+        var changed = 0
+        for record in initialRecords where record.status == "pending" {
+            guard let content = record.pendingConfirmationContent,
+                  content.targetType == "timelineCandidate",
+                  let key = content.targetID,
+                  let annotation = annotations[key], annotation.isReviewed else { continue }
+            if analysisStore.resolvePendingTimelineConfirmation(annotationKey: key, annotation: annotation) {
+                changed += 1
+            }
+        }
+        let recordsByID = Dictionary(uniqueKeysWithValues: analysisStore.sharedUserRecords()
+            .filter { $0.kind == .pendingConfirmation }
+            .map { ($0.id, $0) })
+        let digests = analysisStore.canonicalArtifactRevisions().filter {
+            $0.kind == .semanticTimeline && $0.status != .stale
+        }
+        for artifact in digests {
+            guard let raw = String(data: artifact.content, encoding: .utf8),
+                  let digest = try? JSONDecoder().decode(TimelineDigest.self, from: Data(raw.utf8)) else { continue }
+            let createdAt = Date(timeIntervalSince1970: Double(artifact.clock.physicalMilliseconds) / 1_000)
+            for clarification in digest.clarifications ?? [] {
+                guard let annotationKey = clarification.annotationKey
+                    ?? legacyTimelineAnnotationKey(for: clarification.candidateID) else { continue }
+                guard let candidate = RiverSharedStateRecord.timelineClarification(
+                    candidateID: clarification.candidateID,
+                    annotationKey: annotationKey,
+                    observation: clarification.observation,
+                    opening: clarification.opening,
+                    evidenceRefs: clarification.evidenceRefs,
+                    createdAt: createdAt
+                ) else { continue }
+                let existing = recordsByID[candidate.id]
+                if let key = clarification.annotationKey, annotations[key]?.isReviewed == true {
+                    continue
+                }
+                if let existing {
+                    guard existing.status == "pending", existing.payloadJSON != candidate.payloadJSON else { continue }
+                    let revised = RiverSharedStateRecord(
+                        id: existing.id, kind: existing.kind, status: "pending",
+                        logicalKey: candidate.logicalKey, payloadJSON: candidate.payloadJSON,
+                        createdAt: existing.createdAt, updatedAt: createdAt
+                    )
+                    if analysisStore.saveSharedUserRecord(revised) { changed += 1 }
+                } else if analysisStore.saveSharedUserRecord(candidate) {
+                    changed += 1
+                }
+            }
+        }
+        return changed
+    }
+
+    private func legacyTimelineAnnotationKey(for candidateID: String) -> String? {
+        let prefix = "activity-"
+        guard candidateID.hasPrefix(prefix) else { return nil }
+        let body = candidateID.dropFirst(prefix.count)
+        guard let separator = body.range(of: "-", options: .backwards),
+              let eventID = UUID(uuidString: String(body[..<separator.lowerBound])),
+              let startSeconds = Double(body[separator.upperBound...]),
+              let event = analysisStore.rawEvents(ids: [eventID]).first,
+              let appName = event.payload.appName, !appName.isEmpty,
+              let bundleID = event.payload.bundleID, !bundleID.isEmpty else { return nil }
+        return "\(Int(startSeconds))|\(bundleID)|\(appName)"
     }
 
     func hasEnoughHabitEvidence(in dayKeys: [String]) -> Bool {
@@ -953,6 +1027,9 @@ final class AIAssistantStore: ObservableObject {
                         )
                         _ = analysisStore.saveAnalysisJob(followUp)
                     }
+                }
+                if task == .timelineDigest {
+                    _ = reconcilePendingTimelineConfirmations()
                 }
                 NotificationCenter.default.post(name: .riverAnalysisRunDidChange, object: nil)
             } else {
