@@ -97,6 +97,59 @@ final class AccountSessionTests: XCTestCase {
         XCTAssertNotNil(store.lastError)
     }
 
+    func testRestartReusesThePersistedRefreshRequestID() async throws {
+        let server = AccountTestServer()
+        let vault = AccountTestVault()
+        let store = try makeStore(vault: vault, server: server)
+        let first = Task { try? await store.refreshEntitlements() }
+        await server.waitForRequests(1)
+        let firstID = await server.lastRefreshIdempotencyKey
+        XCTAssertNotNil(firstID)
+
+        // 刷新请求发出后立即持久化了请求 ID；重启后必须复用它，刷新才是幂等的。
+        let persisted = try JSONDecoder().decode(
+            RiverAccountSession.self,
+            from: try XCTUnwrap(vault.values["account-session-v1"])
+        )
+        XCTAssertEqual(persisted.pendingRefreshRequestID, firstID)
+
+        let restarted = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated restart", vault: vault,
+            transport: { try await server.send($0) }
+        )
+        let second = Task { try? await restarted.refreshEntitlements() }
+        await server.waitForRequests(2)
+        let secondID = await server.lastRefreshIdempotencyKey
+        XCTAssertEqual(secondID, firstID)
+
+        await server.finishRefreshes()
+        await first.value
+        await second.value
+        XCTAssertEqual(restarted.session?.accessToken, "new-access")
+        XCTAssertNil(restarted.session?.pendingRefreshRequestID)
+    }
+
+    func testLateSuccessfulRefreshCannotOverwriteANewerLogin() async throws {
+        let server = AccountTestServer()
+        let store = try makeStore(server: server)
+        let oldRequest = Task { try? await store.refreshEntitlements() }
+        await server.waitForRequests(1)
+        await store.signOut()
+        try await store.loginWithPassword(
+            email: "test@example.invalid",
+            password: "test-only-password",
+            idempotencyKey: UUID().uuidString
+        )
+
+        // 旧上下文的 200 响应必须被丢弃（并撤销其未采用的令牌），不能覆盖新登录。
+        await server.finishRefreshes(status: 200)
+        await oldRequest.value
+        XCTAssertEqual(store.session?.accessToken, "login-access")
+        XCTAssertEqual(store.session?.refreshToken, "login-refresh")
+        let logouts = await server.logoutCount
+        XCTAssertGreaterThanOrEqual(logouts, 1)
+    }
+
     func testOldUnauthorizedRefreshCannotClearANewerLogin() async throws {
         let server = AccountTestServer()
         let store = try makeStore(server: server)
@@ -131,6 +184,9 @@ private actor AccountTestServer {
     private var entitlementWaiter: CheckedContinuation<Void, Never>?
     private var logoutUnavailable = false
     private(set) var authenticatedLogouts = 0
+    private(set) var logoutCount = 0
+    private(set) var refreshIdempotencyKeys: [String] = []
+    var lastRefreshIdempotencyKey: String? { refreshIdempotencyKeys.last }
 
     func setDelayEntitlements() { delayEntitlements = true }
     func setLogoutUnavailable(_ value: Bool) { logoutUnavailable = value }
@@ -146,6 +202,7 @@ private actor AccountTestServer {
         switch request.url!.path {
         case "/v1/auth/refresh":
             refreshCount += 1
+            refreshIdempotencyKeys.append(request.value(forHTTPHeaderField: "Idempotency-Key") ?? "")
             return try await withCheckedThrowingContinuation { continuation in
                 refreshes.append(continuation)
                 let ready = refreshWaiters.filter { $0.0 <= refreshCount }
@@ -164,6 +221,7 @@ private actor AccountTestServer {
         case "/v1/auth/password/login":
             return result("{\"access_token\":\"login-access\",\"refresh_token\":\"login-refresh\",\"revoke_token\":\"login-revoke\",\"expires_in\":3600,\"user\":{\"id\":\"user-a\"}}")
         case "/v1/auth/logout":
+            logoutCount += 1
             if request.value(forHTTPHeaderField: "Authorization") != nil { authenticatedLogouts += 1 }
             if logoutUnavailable { throw URLError(.notConnectedToInternet) }
             return result("")

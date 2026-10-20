@@ -55,11 +55,11 @@ record() {
   step_names+=("$1")
   step_status+=("$2")
   step_notes+=("$3")
-  if [[ "$2" == "pass" ]]; then
-    print -r -- "PASS  $1${3:+ — $3}"
-  else
-    print -u2 "FAIL  $1${3:+ — $3}"
-  fi
+  case "$2" in
+    pass) print -r -- "PASS        $1${3:+ — $3}" ;;
+    unverified) print -u2 "UNVERIFIED  $1${3:+ — $3}" ;;
+    *) print -u2 "FAIL        $1${3:+ — $3}" ;;
+  esac
 }
 
 run_simple_step() {
@@ -70,7 +70,7 @@ run_simple_step() {
   print -r -- "== $name =="
   if "$@" > "$log" 2>&1; then
     local summary=""
-    summary="$(grep -E 'Executed [0-9]+ tests|# pass [0-9]+|^Ran [0-9]+ tests|Top-level tests passed' "$log" | tail -1 || true)"
+    summary="$(grep -E 'Test run with [0-9]+ tests|Executed [0-9]+ tests|# pass [0-9]+|^Ran [0-9]+ tests|Top-level tests passed' "$log" | tail -1 || true)"
     record "$name" "pass" "$summary"
   else
     tail -15 "$log" >&2
