@@ -31,7 +31,7 @@
 | macOS 测试 | 420 项通过、0 失败 | `scripts/test_macos_isolated.sh --disable-sandbox`，隔离临时用户目录 |
 | macOS Release 打包 | 成功 | 隔离 scratch 目录构建；`make_app.sh` 打包前快照拦截生效 |
 | iOS Release 模拟器构建 | 成功 | 隐私扫描脚本内完成 `-configuration Release -destination generic/platform=iOS Simulator` |
-| iOS 单元测试 | **未运行通过** | `RiverDiaryTests` runner 在模拟器内挂起（`DTServiceHubClient failed to bless service hub`），与 2026-10-19 记录一致；属 T23 环境问题，不能记为通过 |
+| iOS 单元测试 | **未运行通过** | `RiverDiaryTests` runner 在模拟器内挂起（`DTServiceHubClient failed to bless service hub`）。本轮重启 `CoreSimulatorService`、新建并冷启动全新模拟器（`River Gate 2026-10-20`）后仍复现；诊断日志同时报 `xcrun: unable to find utility "simctl"`。根因是 `xcode-select -p` 指向 `/Library/Developer/CommandLineTools`，而 Xcode-beta 位于 `~/Downloads`，注册正式 Xcode 需要管理员权限。属 T23 环境问题，不能记为通过 |
 
 ## 3. 发布隐私合成标记扫描（T18）
 
