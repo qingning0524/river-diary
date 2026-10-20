@@ -67,10 +67,22 @@ T02 让 Mac 在退出登录时 `v2Store.close()`。但 `V2Store.transaction()` �
 
 这证明“退出停止服务”至少对每日采集的定时器生效；AI 恢复任务与 iCloud 同步仍只有代码路径、没有端到端证据。
 
+### 退出后 AI 不再发起新请求
+
+退出登录可能发生在一次 AI 分析循环的中途。此前循环里的下一次请求仍会发出，
+只是写库会因数据库关闭而失败——数据已经离开本机。
+
+- `AIAssistantStore.setAccountActive(false)`：`fetchAvailableModels` 在网络前直接返回，
+  聊天发送在加请求头前抛错；`activateSignedInLibrary()` 重新置为 true；
+- 测试 `AIGateTests.testSignedOutStoreSendsNoRequest` 用注入的 `URLProtocol` 计数：
+  退出状态下调用获取模型列表，**请求数 0**，并提示“账号已退出，已停止后续分析请求”。
+
+限制：已经发出的请求无法撤回；正在执行的 Task 也没有被取消，只是不再发起下一次外发。
+
 ## 3. 结果
 
 - Core：**67 项 Swift Testing + 9 项 XCTest** 通过；
-- macOS：当轮 429 项起通过，当前全量 433 项。
+- macOS：当轮 429 项起通过，当前全量 434 项。
 
 ## 4. 仍未完成
 

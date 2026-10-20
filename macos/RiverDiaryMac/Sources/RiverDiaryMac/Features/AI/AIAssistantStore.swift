@@ -201,6 +201,8 @@ final class AIAssistantStore: ObservableObject {
     private var taskRequestIDs: [AITask: UUID] = [:]
     private let preferences: UserDefaults
     private let urlSession: URLSession
+    /// 退出登录后置为 false：已经在跑的循环必须在发起下一次网络请求前停下。
+    private var accountActive = true
     private let providedAnalysisStore: V2Store?
     private lazy var analysisStore: V2Store = providedAnalysisStore ?? V2Store()
     private static let contextDateTimeFormatter: DateFormatter = {
@@ -1438,6 +1440,21 @@ final class AIAssistantStore: ObservableObject {
             .first?.headline
     }
 
+    /// 账号生命周期门禁：退出登录时调用 false，重新登录时恢复 true。
+    func setAccountActive(_ active: Bool) {
+        accountActive = active
+    }
+
+    private func ensureAccountActive() throws {
+        guard accountActive else {
+            throw NSError(
+                domain: "RiverDiaryMac.ai",
+                code: 401,
+                userInfo: [NSLocalizedDescriptionKey: "账号已退出，已停止后续分析请求。"]
+            )
+        }
+    }
+
     func needsAutomaticAnalysis(for dateKey: String) -> Bool {
         lastAutomaticAnalysisDate != dateKey
     }
@@ -1447,6 +1464,10 @@ final class AIAssistantStore: ObservableObject {
     }
 
     func fetchAvailableModels() async {
+        guard accountActive else {
+            modelMessage = "账号已退出，已停止后续分析请求。"
+            return
+        }
         guard !endpoint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !isLoadingModels else { return }
 
         if providerRequiresAPIKey && !apiKeyInput.isEmpty {
@@ -2907,6 +2928,8 @@ final class AIAssistantStore: ObservableObject {
             stream: false,
             maxTokens: maxTokens
         )
+
+        try ensureAccountActive()
 
         var request = URLRequest(url: try normalizedEndpoint())
         request.httpMethod = "POST"

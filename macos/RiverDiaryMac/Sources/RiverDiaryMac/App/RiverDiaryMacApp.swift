@@ -217,6 +217,7 @@ struct RiverDiaryMacApp: App {
     /// 已有库的用户在启动时就已经打开，这里只是幂等确认。
     private func activateSignedInLibrary() {
         AccountMenuPresence.isSignedIn = true
+        ai.setAccountActive(true)
         v2Store.openIfNeeded()
         store.reloadSharedTimelineAnnotations()
         store.applySharedDiaryRecords(v2Store.sharedUserRecords())
@@ -272,6 +273,7 @@ struct RiverDiaryMacApp: App {
                 if signedIn { activateSignedInLibrary() }
                 else {
                     AccountMenuPresence.isSignedIn = false
+                    ai.setAccountActive(false)
                     pendingDailyRebuild?.cancel()
                     pendingDailyRebuild = nil
                     activity.setAccountServicesActive(false)
