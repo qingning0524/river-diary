@@ -254,7 +254,10 @@ struct RiverDiaryMacApp: App {
                     .environmentObject(feedback)
                     .ignoresSafeArea(.container, edges: .top)
                 } else {
-                    MacAccountLoginView()
+                    MacAccountLoginView(
+                        showsLocalDataNotice: LocalLibraryPresence.databaseFileExists()
+                            || LocalLibraryPresence.legacyStateExists()
+                    )
                 }
             }
             .environmentObject(accountSession)

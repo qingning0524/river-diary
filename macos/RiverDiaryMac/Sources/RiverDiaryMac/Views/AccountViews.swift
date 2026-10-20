@@ -2,6 +2,9 @@ import RiverDiaryCore
 import SwiftUI
 
 struct MacAccountLoginView: View {
+    /// 本机已有日记（正式库或旧版状态）时，登录页要如实说明，避免用户以为数据丢了。
+    var showsLocalDataNotice = false
+
     @EnvironmentObject private var account: RiverAccountSessionStore
     @State private var email = ""
     @State private var code = ""
@@ -25,6 +28,16 @@ struct MacAccountLoginView: View {
                     Text("首次使用请用邮箱验证码创建账号或登录。你的日记仍保存在本机。")
                         .font(AppTypography.secondary())
                         .foregroundStyle(Color.secondaryInk)
+                    if showsLocalDataNotice {
+                        Label(
+                            "这台 Mac 上已有本机日记。登录后会继续使用；退出登录期间不会读取或改动它。",
+                            systemImage: "externaldrive.fill.badge.checkmark"
+                        )
+                        .font(AppTypography.metadata())
+                        .foregroundStyle(Color.secondaryInk)
+                        .labelStyle(.titleAndIcon)
+                        .padding(.top, 2)
+                    }
                 }
 
                 RiverPanel {
