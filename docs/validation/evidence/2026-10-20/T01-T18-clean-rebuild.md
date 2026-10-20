@@ -74,15 +74,32 @@
 
 **环境发现（T23 输入）：** ad-hoc 重新签名的 QA 构建若遇到旧签名创建的 `.qa` 钥匙串条目，会弹系统授权框并卡住启动。脚本因此提供 `--reset-qa-keychain`（只清理 `.qa` 命名空间，不触碰正式密钥）。
 
-## 5. 产物与路径
+## 5. 生产部署核验（T18 剩余项）
+
+只读检查 `root@198.23.189.187`（2026-10-20 13:26–13:30 UTC+8），未改动运行中的站点与账号数据：
+
+| 检查 | 结果 |
+|---|---|
+| `/var/www`、`/var/lib/flowriver`、`/var/backups`、`/srv`、`/opt` 下的 `data.json` / `ios-user-data.json` / `river-diary-user-data.json` | 0 个 |
+| `/var/lib/flowriver/downloads` | 空目录 |
+| 官网根目录 `/var/www/flowriver/site` | 只有当前静态页，无 `downloads/` |
+| 历史包 `RiverDiary-macOS-20261001.zip` | 在 `downloads_disabled/` 与 `site_backup_20261004/downloads/` 各一份，均**不在 Caddy 根目录内**，HTTP 返回 404；SHA-256 与本机记录一致（`0858b982…b0ed`），即同一个含 `data.json` 的包 |
+| 处置 | 两份 ZIP 与校验文件移入 `/var/backups/flowriver/quarantine-2026-10-20/`（目录 700、文件 600），移动后站点仍 200、旧下载路径仍 404 |
+| `https://user.flowriver.xyz/` | 200，CSP / HSTS / Referrer-Policy / nosniff / X-Frame-Options 生效 |
+| `https://user.flowriver.xyz/v1/me` | 401 |
+| `https://flowriver.xyz/` | 200 |
+
+说明：服务端只按文件名扫描并用哈希确认了历史包身份，没有解包扫描所有旧静态资源的正文；`site.before-20261008-neomorphic`、`user-previous-20261009T0505Z` 等历史目录仍保留在主机上，均不在任何 Caddy 根目录内。
+
+## 6. 产物与路径
 
 - 干净重建克隆：`/tmp/river-verify-20261020`（验证后保留在本机临时目录）
 - 隐私报告：本目录 `release-privacy-report.json`
 - Mac 构建指纹：本目录 `macos-release-provenance-clean-5bbe3e4.json`（`revision` = `5bbe3e4e…`，`workingTreeDirty: false`，182 个源文件，`codeDirectoryHash` = `4c96017b82f2a48c…`）；早先的 `macos-release-provenance.json` 仍绑定脏工作树，只作历史对照
 
-## 6. 仍未完成
+## 7. 仍未完成
 
 - iOS 单元测试 runner 连接问题未修复（T23），因此 iOS 仅证明“能构建成包”，未证明“测试通过”。
 - 生产安装包在真实新用户/新 Mac 上的空资料首次启动仍需交互复验；本轮用 QA 变体与临时用户目录代替。
 - PostgreSQL 集成已可本地全跑，但尚未接入 CI 或发布门禁流水线。
-- 生产站点与下载服务的部署后核验（T18 剩余项）。
+- 生产主机已按文件名核验并隔离两份历史包；仍缺对所有旧静态目录的解包级扫描，以及真实新用户的首次启动复验。
