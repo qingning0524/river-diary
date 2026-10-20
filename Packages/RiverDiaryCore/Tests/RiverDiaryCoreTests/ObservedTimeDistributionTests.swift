@@ -47,7 +47,9 @@ extension ObservedTimeDistributionTests {
         #expect(sessions.count == 1)
         #expect(sessions[0].quality == .observed)
         #expect(sessions[0].duration == 1200)
-        #expect(sessions[0].evidenceEventIDs == events.map(\.id))
+        // Evidence IDs are a set persisted in canonical UUID order for
+        // cross-device determinism, not in observation order.
+        #expect(Set(sessions[0].evidenceEventIDs) == Set(events.map(\.id)))
         #expect(events.allSatisfy { $0.source != "manual" })
     }
 }
