@@ -104,10 +104,27 @@ macOS 全量：**423 项测试、0 失败**（原 420 + 新增 3）。
 
 限制：没有在真机 Shortcuts 中实际执行；后台健康同步、照片分析等其他入口仍需逐项核对。
 
+## 4.2 iOS 后台与系统入口核对
+
+逐项只读核对（未做真机执行，结论来自代码路径）：
+
+| 入口 | 未登录时的行为 |
+|---|---|
+| App 启动 | `shouldOpenLibrary` 为 false 时 `RiverNodeStore` 不打开库；RootView 显示登录页 |
+| 后台健康刷新（BGTask） | `schedule()` 与 `sync()` 都先检查 `hasSignedInAccount`；不满足时取消排定并直接返回 |
+| HealthKit 回调 | `onHealthSnapshotChanged` 第一行 `guard account.isSignedIn` |
+| 照片分析 | 分析器只在库打开时创建；`refreshRecentPhotos` 只由登录后的场景调用 |
+| 前台刷新/同步定时器 | `guard scenePhase == .active, account.isSignedIn` |
+| Shortcuts | 已改为“已有库或可用会话”才允许打开（见 4.1） |
+| 草稿落盘 | 只写本机草稿文件，不读写账号资料；未登录时没有写作入口 |
+| QA 入口 | DEBUG 限定，使用 QA bundle 与独立目录 |
+
+仍缺：这些路径没有自动化测试（iOS runner 未修复），也没有真机日志证明后台任务在退出后不再执行。
+
 ## 5. 仍待完成（T02 其余范围）
 
 - iOS 登录后开库缺少自动化测试（runner 待修）；iOS 退出关库、后台/Shortcuts 入口逐项核对仍未做。
-- 后台入口：Shortcuts 已加门禁；iOS 后台健康同步、照片分析、场景刷新在未登录时的行为仍需逐项核对，真机 Shortcuts 未执行。
+- 后台入口：已逐项核对（见表），Shortcuts 已加门禁；但没有自动化或真机证据。
 - 旧安装的显式救援界面：现在保证旧资料可读，还没有“认领/导出/备份”的引导。
 - 真实账号的登录与退出旅程（含 401 刷新、退出后旧回写被拒）未验证；本轮只证明门禁接线。
 - 首次启动仍会写入复制节点身份（`.qa` 命名空间的 `local.riverdiary.node.qa`），虽然不是日记正文，但属于“绑定前就有的持久身份”，应在统一生命周期里决定是否也延迟。
