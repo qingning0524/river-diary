@@ -36,6 +36,39 @@ public struct ObservedSleepInterval: Sendable, Hashable {
     }
 }
 
+/// 睡眠归属口径。规则一旦发布就带上版本号，未来调整不得静默重解释旧数据。
+public struct SleepNightPolicy: Sendable, Equatable {
+    public enum Version: String, Codable, Sendable {
+        /// v1：按醒来日分夜；白天且不超过 3 小时的一段睡眠记为午睡。
+        case v1 = "wake-day-v1"
+    }
+
+    public let version: Version
+    public let napMaximumDuration: TimeInterval
+    public let napEarliestHour: Int
+    public let napLatestStartHour: Int
+
+    public static let current = SleepNightPolicy()
+
+    public init(
+        version: Version = .v1,
+        napMaximumDuration: TimeInterval = 3 * 3600,
+        napEarliestHour: Int = 6,
+        napLatestStartHour: Int = 20
+    ) {
+        self.version = version
+        self.napMaximumDuration = napMaximumDuration
+        self.napEarliestHour = napEarliestHour
+        self.napLatestStartHour = napLatestStartHour
+    }
+
+    public func isNap(start: Date, duration: TimeInterval, calendar: Calendar) -> Bool {
+        guard duration > 0, duration <= napMaximumDuration else { return false }
+        let hour = calendar.component(.hour, from: start)
+        return hour >= napEarliestHour && hour < napLatestStartHour
+    }
+}
+
 /// 按“醒来那天”汇总的一夜睡眠。
 ///
 /// - `asleepSeconds` 是所有睡着区间（含未分期）的**并集**，重叠来源不会重复累加；
@@ -45,24 +78,39 @@ public struct ObservedSleepInterval: Sendable, Hashable {
 ///   不能显示成“睡了 0 小时”。
 public struct ObservedSleepNight: Sendable, Equatable {
     public let day: Date
+    /// 全部睡着时间的并集，包含午睡。
     public let asleepSeconds: TimeInterval
+    /// 其中按当前口径判定为午睡的部分。
+    public let napSeconds: TimeInterval
     public let awakeSeconds: TimeInterval
     public let stageCoverage: [ObservedSleepInterval.Stage: TimeInterval]
     public let hasAsleepSamples: Bool
+    /// 产生这条汇总时使用的归属口径与日历时区，便于解释与迁移。
+    public let policyVersion: SleepNightPolicy.Version
+    public let timeZoneIdentifier: String
 
     public init(
         day: Date,
         asleepSeconds: TimeInterval,
         awakeSeconds: TimeInterval,
         stageCoverage: [ObservedSleepInterval.Stage: TimeInterval],
-        hasAsleepSamples: Bool
+        hasAsleepSamples: Bool,
+        napSeconds: TimeInterval = 0,
+        policyVersion: SleepNightPolicy.Version = .v1,
+        timeZoneIdentifier: String = TimeZone.current.identifier
     ) {
         self.day = day
         self.asleepSeconds = asleepSeconds
+        self.napSeconds = napSeconds
         self.awakeSeconds = awakeSeconds
         self.stageCoverage = stageCoverage
         self.hasAsleepSamples = hasAsleepSamples
+        self.policyVersion = policyVersion
+        self.timeZoneIdentifier = timeZoneIdentifier
     }
+
+    /// 夜间睡眠：总睡眠减去午睡。
+    public var nightSeconds: TimeInterval { max(0, asleepSeconds - napSeconds) }
 
     public func coverage(for stage: ObservedSleepInterval.Stage) -> TimeInterval {
         stageCoverage[stage] ?? 0
@@ -75,10 +123,11 @@ public struct ObservedSleepNight: Sendable, Equatable {
 }
 
 public enum SleepNightAggregator {
-    /// 把观测区间按醒来日期分组。日期归属使用传入的日历与时区，调用方需固定口径。
+    /// 把观测区间按醒来日期分组。日期归属使用传入的日历与时区，口径由 `policy` 固定。
     public static func aggregate(
         _ intervals: [ObservedSleepInterval],
-        calendar: Calendar
+        calendar: Calendar,
+        policy: SleepNightPolicy = .current
     ) -> [ObservedSleepNight] {
         let valid = intervals.filter { $0.end > $0.start }
         guard !valid.isEmpty else { return [] }
@@ -99,12 +148,23 @@ public enum SleepNightAggregator {
                 let seconds = unionSeconds(retained.filter { $0.stage == stage }.map { ($0.start, $0.end) })
                 if seconds > 0 { coverage[stage] = seconds }
             }
+            // 连续睡眠块用于区分“夜间睡眠”和“白天午睡”。
+            let asleepBlocks = mergedRanges(asleep.map { ($0.start, $0.end) })
+            let napSeconds = asleepBlocks.reduce(0) { total, block in
+                let duration = block.1.timeIntervalSince(block.0)
+                return policy.isNap(start: block.0, duration: duration, calendar: calendar)
+                    ? total + duration
+                    : total
+            }
             return ObservedSleepNight(
                 day: day,
-                asleepSeconds: unionSeconds(asleep.map { ($0.start, $0.end) }),
+                asleepSeconds: asleepBlocks.reduce(0) { $0 + $1.1.timeIntervalSince($1.0) },
                 awakeSeconds: unionSeconds(retained.filter { $0.stage == .awake }.map { ($0.start, $0.end) }),
                 stageCoverage: coverage,
-                hasAsleepSamples: !asleep.isEmpty
+                hasAsleepSamples: !asleep.isEmpty,
+                napSeconds: napSeconds,
+                policyVersion: policy.version,
+                timeZoneIdentifier: calendar.timeZone.identifier
             )
         }
         .sorted { $0.day > $1.day }
@@ -139,7 +199,7 @@ public enum SleepNightAggregator {
                 }
             }
             // 这一层完整认领，即使部分已被更高优先级覆盖也不影响后续裁剪。
-            claimed = mergeRanges(claimed + group.map { ($0.start, $0.end) })
+            claimed = mergedRanges(claimed + group.map { ($0.start, $0.end) })
         }
         return retained
     }
@@ -148,7 +208,7 @@ public enum SleepNightAggregator {
     static func subtract(_ covered: [(Date, Date)], from interval: (Date, Date)) -> [(Date, Date)] {
         var pieces: [(Date, Date)] = []
         var cursor = interval.0
-        for (start, end) in mergeRanges(covered) where end > interval.0 && start < interval.1 {
+        for (start, end) in mergedRanges(covered) where end > interval.0 && start < interval.1 {
             if start > cursor {
                 pieces.append((cursor, min(start, interval.1)))
             }
@@ -161,7 +221,7 @@ public enum SleepNightAggregator {
         return pieces.filter { $0.1 > $0.0 }
     }
 
-    private static func mergeRanges(_ ranges: [(Date, Date)]) -> [(Date, Date)] {
+    static func mergedRanges(_ ranges: [(Date, Date)]) -> [(Date, Date)] {
         let sorted = ranges.filter { $0.1 > $0.0 }.sorted { $0.0 < $1.0 }
         var merged: [(Date, Date)] = []
         for range in sorted {

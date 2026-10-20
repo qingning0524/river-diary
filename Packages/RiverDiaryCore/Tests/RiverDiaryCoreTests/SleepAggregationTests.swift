@@ -154,6 +154,85 @@ struct SleepAggregationTests {
         #expect(nights[0].coverage(for: .deep) == 2 * 3600)
     }
 
+    private var shanghaiCalendar: Calendar {
+        var value = Calendar(identifier: .gregorian)
+        value.timeZone = TimeZone(identifier: "Asia/Shanghai")!
+        return value
+    }
+
+    @Test func afternoonNapIsSeparatedFromNightSleep() {
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(20, 23), end: date(21, 7), stage: .core),
+            .init(start: date(21, 13), end: date(21, 13, 30), stage: .unspecified)
+        ], calendar: calendar)
+
+        #expect(nights.count == 1)
+        #expect(nights[0].asleepSeconds == 8.5 * 3600)
+        #expect(nights[0].napSeconds == 0.5 * 3600)
+        #expect(nights[0].nightSeconds == 8 * 3600)
+    }
+
+    @Test func shortEarlyMorningSleepIsNotANap() {
+        // 凌晨 3 点的两小时是夜间睡眠，不会因为“短”就被算成午睡。
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(21, 3), end: date(21, 5), stage: .core)
+        ], calendar: calendar)
+
+        #expect(nights[0].napSeconds == 0)
+        #expect(nights[0].nightSeconds == 2 * 3600)
+    }
+
+    @Test func longDaytimeSleepIsNotANap() {
+        // 白天超过 3 小时的连续睡眠按夜间睡眠口径处理。
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(21, 13), end: date(21, 17, 30), stage: .core)
+        ], calendar: calendar)
+
+        #expect(nights[0].napSeconds == 0)
+    }
+
+    @Test func multipleNapsAddUpWithoutDoubleCounting() {
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(21, 13), end: date(21, 13, 20), stage: .unspecified),
+            .init(start: date(21, 16), end: date(21, 16, 40), stage: .unspecified)
+        ], calendar: calendar)
+
+        #expect(nights[0].asleepSeconds == 3600)
+        #expect(nights[0].napSeconds == 3600)
+    }
+
+    @Test func napThresholdComesFromThePolicy() {
+        let samples = [ObservedSleepInterval(start: date(21, 13), end: date(21, 15), stage: .core)]
+        let defaultNight = SleepNightAggregator.aggregate(samples, calendar: calendar)[0]
+        #expect(defaultNight.napSeconds == 2 * 3600)
+
+        let strict = SleepNightPolicy(napMaximumDuration: 3600)
+        let strictNight = SleepNightAggregator.aggregate(samples, calendar: calendar, policy: strict)[0]
+        #expect(strictNight.napSeconds == 0)
+    }
+
+    @Test func policyVersionAndTimeZoneAreRecorded() {
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(20, 23), end: date(21, 7), stage: .core)
+        ], calendar: shanghaiCalendar)
+
+        #expect(nights[0].policyVersion == .v1)
+        #expect(nights[0].timeZoneIdentifier == "Asia/Shanghai")
+    }
+
+    @Test func sameSampleBucketsByTheCallerTimeZone() {
+        // 结束于 UTC 20:00：UTC 归 20 日，东八区已是 21 日凌晨，归到 21 日。
+        let end = Date(timeIntervalSince1970: 1_792_526_400) // 2026-10-20T20:00:00Z
+        let sample = ObservedSleepInterval(
+            start: end.addingTimeInterval(-2 * 3600), end: end, stage: .core
+        )
+        let utcNight = SleepNightAggregator.aggregate([sample], calendar: calendar)[0]
+        let shanghaiNight = SleepNightAggregator.aggregate([sample], calendar: shanghaiCalendar)[0]
+
+        #expect(utcNight.day != shanghaiNight.day)
+        #expect(shanghaiNight.timeZoneIdentifier == "Asia/Shanghai")
+    }
+
     @Test func unionHandlesNestedAndAdjacentIntervals() {
         let base = date(20, 0)
         let total = SleepNightAggregator.unionSeconds([

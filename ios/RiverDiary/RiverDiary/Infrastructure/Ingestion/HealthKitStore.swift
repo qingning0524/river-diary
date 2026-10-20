@@ -13,6 +13,8 @@ struct SleepNight: Identifiable, Hashable {
     var unspecified: TimeInterval = 0
     /// 这一夜至少有一条睡着样本。false 表示只有清醒/在床记录，属于“未知”，不是 0 小时。
     var hasAsleepSamples: Bool = true
+    /// 按 Core 口径判定为午睡的部分（含在 total 内）。
+    var nap: TimeInterval = 0
 
     var id: Date { date }
     var total: TimeInterval { core + deep + rem + unspecified }
@@ -279,7 +281,8 @@ final class HealthKitStore: ObservableObject {
                 rem: night.coverage(for: .rem),
                 awake: night.awakeSeconds,
                 unspecified: night.coverage(for: .unspecified),
-                hasAsleepSamples: night.hasAsleepSamples
+                hasAsleepSamples: night.hasAsleepSamples,
+                nap: night.napSeconds
             )
         }
     }
