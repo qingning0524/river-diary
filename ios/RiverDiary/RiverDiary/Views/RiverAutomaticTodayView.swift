@@ -47,7 +47,12 @@ struct RiverAutomaticTodayView: View {
     }
     private var automaticEventCount: Int { capturedEvents.filter { $0.source != "manual" && !$0.kind.hasPrefix("manual.") }.count }
     private var observedMetrics: [RiverEventMetrics] { capturedEvents.sorted { $0.observedAt > $1.observedAt }.compactMap { (try? JSONDecoder().decode(RiverEventPayload.self, from: $0.payload))?.metrics } }
-    private var sleep: Double? { observedMetrics.compactMap(\.sleepHours).first ?? health.nights.first { Calendar.current.isDate($0.date, inSameDayAs: date) }?.totalHours ?? legacy?.health?.sleepHours }
+    private var sleep: Double? {
+        observedMetrics.compactMap(\.sleepHours).first
+            ?? health.nights.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+                .flatMap { $0.hasAsleepSamples ? $0.totalHours : nil }
+            ?? legacy?.health?.sleepHours
+    }
     private var steps: Int? { observedMetrics.compactMap(\.steps).first ?? legacy?.health?.steps.map { Int($0) } }
     private var calories: Double? { observedMetrics.compactMap(\.activeEnergyKcal).first ?? legacy?.health?.activeEnergyKilocalories }
     private var pendingCount: Int { (node.database?.sharedUserRecords ?? []).filter { ($0.kind == .pendingConfirmation && $0.status == "pending") || ($0.kind == .habitCard && ["bundled", "shown"].contains($0.status)) }.count }

@@ -1,5 +1,6 @@
 import Foundation
 import HealthKit
+import RiverDiaryCore
 import SwiftUI
 
 struct SleepNight: Identifiable, Hashable {
@@ -8,9 +9,13 @@ struct SleepNight: Identifiable, Hashable {
     var deep: TimeInterval
     var rem: TimeInterval
     var awake: TimeInterval
+    /// 来源只说明“睡着了”、没有分期时的时长。老设备和部分来源都只有这一种。
+    var unspecified: TimeInterval = 0
+    /// 这一夜至少有一条睡着样本。false 表示只有清醒/在床记录，属于“未知”，不是 0 小时。
+    var hasAsleepSamples: Bool = true
 
     var id: Date { date }
-    var total: TimeInterval { core + deep + rem }
+    var total: TimeInterval { core + deep + rem + unspecified }
     var totalHours: Double { total / 3600 }
 }
 
@@ -57,8 +62,10 @@ final class HealthKitStore: ObservableObject {
 
     var latestNight: SleepNight? { nights.first }
     var averageSleepHours: Double? {
-        guard !nights.isEmpty else { return nil }
-        return nights.map(\.totalHours).reduce(0, +) / Double(nights.count)
+        // 只有清醒/在床记录的夜晚不算“睡了 0 小时”，不能拉低平均值。
+        let measured = nights.filter(\.hasAsleepSamples)
+        guard !measured.isEmpty else { return nil }
+        return measured.map(\.totalHours).reduce(0, +) / Double(measured.count)
     }
 
     var latestExerciseDay: ExerciseDay? { exerciseDays.first }
@@ -249,28 +256,43 @@ final class HealthKitStore: ObservableObject {
         .sorted { $0.date > $1.date }
     }
 
+    /// HealthKit 样本先映射成平台无关的睡眠区间，再交给 Core 的聚合器：
+    /// 重叠来源取并集、未分期计入总睡眠、只有清醒/在床记录保持“未知”。
     private nonisolated static func aggregate(samples: [HKSample]?) -> [SleepNight] {
         let calendar = Calendar.current
-        var nights: [Date: SleepNight] = [:]
-
-        for sample in samples ?? [] {
-            guard let categorySample = sample as? HKCategorySample else { continue }
-            let state = HKCategoryValueSleepAnalysis(rawValue: categorySample.value)
-            let day = calendar.startOfDay(for: categorySample.endDate)
-            var night = nights[day] ?? SleepNight(date: day, core: 0, deep: 0, rem: 0, awake: 0)
-            let duration = categorySample.endDate.timeIntervalSince(categorySample.startDate)
-
-            switch state {
-            case .asleepCore: night.core += duration
-            case .asleepDeep: night.deep += duration
-            case .asleepREM: night.rem += duration
-            case .some(.awake): night.awake += duration
-            default: break
-            }
-            nights[day] = night
+        let intervals: [ObservedSleepInterval] = (samples ?? []).compactMap { sample in
+            guard let categorySample = sample as? HKCategorySample,
+                  let stage = sleepStage(for: categorySample.value) else { return nil }
+            return ObservedSleepInterval(
+                start: categorySample.startDate,
+                end: categorySample.endDate,
+                stage: stage
+            )
         }
 
-        return nights.values.sorted { $0.date > $1.date }
+        return SleepNightAggregator.aggregate(intervals, calendar: calendar).map { night in
+            SleepNight(
+                date: night.day,
+                core: night.coverage(for: .core),
+                deep: night.coverage(for: .deep),
+                rem: night.coverage(for: .rem),
+                awake: night.awakeSeconds,
+                unspecified: night.coverage(for: .unspecified),
+                hasAsleepSamples: night.hasAsleepSamples
+            )
+        }
+    }
+
+    private nonisolated static func sleepStage(for value: Int) -> ObservedSleepInterval.Stage? {
+        switch HKCategoryValueSleepAnalysis(rawValue: value) {
+        case .asleepCore: .core
+        case .asleepDeep: .deep
+        case .asleepREM: .rem
+        case .asleepUnspecified: .unspecified
+        case .awake: .awake
+        case .inBed: .inBed
+        default: nil
+        }
     }
 
     private nonisolated static func aggregateExerciseIntervals(collected: [HKQuantityType: [Date: Double]]) -> [ExerciseInterval] {

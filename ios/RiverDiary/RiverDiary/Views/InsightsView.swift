@@ -35,6 +35,8 @@ struct InsightsView: View {
 
     private var sleepMoodPairs: [(night: SleepNight, score: Double)] {
         health.nights.compactMap { night in
+            // 未知睡眠不能当成 0 小时参与对照。
+            guard night.hasAsleepSamples else { return nil }
             let key = DiaryEntry.dateFormatter.string(from: night.date)
             guard let entry = store.entries.first(where: { $0.date == key }),
                   let score = entry.score else { return nil }

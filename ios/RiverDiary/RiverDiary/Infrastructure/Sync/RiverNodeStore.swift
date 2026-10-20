@@ -159,7 +159,8 @@ final class RiverNodeStore: ObservableObject {
         }
         var insertedHealthEvents: [RiverEvent] = []
         do {
-            for night in nights {
+            // 只有清醒/在床记录的夜晚是“未知”，不能写成 0 小时睡眠。
+            for night in nights where night.hasAsleepSamples {
                 let metrics = RiverEventMetrics(
                     sleepHours: night.totalHours,
                     coreSleepMinutes: Int((night.core / 60).rounded()),
