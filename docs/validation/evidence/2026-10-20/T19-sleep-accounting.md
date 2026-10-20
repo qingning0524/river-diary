@@ -1,7 +1,7 @@
 # T19 睡眠汇总口径：未分期、重叠与“未知≠0”
 
 日期：2026-10-20（Asia/Shanghai）
-状态：**T19 睡眠汇总、来源优先级、午睡与归属口径版本化已落地；来源状态、界面呈现与真机样本仍待。**
+状态：**T19 睡眠口径与健康来源状态已落地并有确定性测试；午睡界面呈现与真机样本仍待。**
 
 ## 1. 修复前的问题
 
@@ -69,7 +69,7 @@ iOS `HealthKitStore.aggregate(samples:)` 直接按样本累加：
 
 结果：
 
-- `swift test --package-path Packages/RiverDiaryCore`：Swift Testing **74 项通过**（4 suite），XCTest **15 项通过**；
+- `swift test --package-path Packages/RiverDiaryCore`：Swift Testing **85 项通过**（5 suite），XCTest **15 项通过**；
 - iOS Debug 模拟器构建成功（新增 Core 依赖的 `import RiverDiaryCore` 已补）。
 
 ## 3.5 归属口径版本化：午睡与旅行时区
@@ -89,10 +89,37 @@ iOS `HealthKitStore.aggregate(samples:)` 直接按样本累加：
 
 iOS `SleepNight` 已带 `nap` 字段（总睡眠仍包含午睡）；界面展示尚未改动。
 
+## 3.6 健康来源状态：未知 ≠ 无样本 ≠ 陈旧 ≠ 失败
+
+新增 `HealthSourceStatusEvaluator`（RiverDiaryCore），状态：
+
+| 状态 | 含义 |
+|---|---|
+| `unsupported` | 设备/系统没有该来源 |
+| `unknown` | 无法确认权限或状态（如 HealthKit 读权限不可查询） |
+| `notAuthorized` | 明确被拒绝 |
+| `noSamples` | 已确认可用但没有样本（不是“零”，也不是失败） |
+| `healthy` | 最近样本在阈值内 |
+| `stale` | 有样本，但最近一次已超过阈值（默认 36 小时） |
+| `failed` | 最近一次读取的真实错误，优先于授权判断 |
+
+关键规则：
+
+- 失败永远优先：请求已经失败时不再宣称“已授权”；
+- `unknown` 与 `noSamples` 分开；只有明确知道“可用但没样本”才报 `noSamples`；
+- 有样本时以数据说话：即使授权未知，也能得到 `healthy`/`stale`；
+- 有样本却没有时间戳 → `unknown`，不猜新旧；
+- 阈值由 `HealthSourcePolicy` 控制，边界为“超过才陈旧”。
+
+测试：`HealthSourceStatusTests`（11 项）覆盖不支持、失败优先、明确拒绝、正常、陈旧、边界、无样本、
+HealthKit 式未知授权、样本优先、缺时间戳、自定义阈值。
+
+iOS `HealthKitStore` 已暴露 `sourceStatus`：授权状态固定传 `nil`（读权限不可查询），
+由样本/失败决定；界面尚未展示。
+
 ## 4. 仍未完成
 
-- **界面呈现**：午睡已计算但还没有在今日卡/回顾里单独展示；跨时区飞行的历史数据仍按当前时区分桶，需要 UI 解释“按哪个时区”。
-- **健康来源状态**：已连接/无样本/失败/陈旧/未支持仍未在聚合层区分，只有空数组与错误码。
+- **界面呈现**：午睡与来源状态都已有数据，但还没有在今日卡/回顾/设置里展示；跨时区飞行的历史数据仍按当前时区分桶，需要 UI 解释“按哪个时区”。
 - **界面文案**：未知夜晚不再显示 0，但还没有“未记录睡眠”的明确文案与引导。
 - **真机样本与测试**：iOS 单元测试 runner 仍不可用（T23），本轮只有编译验证；真实 Watch/iPhone 双来源样本未测。
 - **历史数据**：已经写入的 0 小时健康事件不会被自动改写；是否需要追溯标记为未知需单独迁移设计。

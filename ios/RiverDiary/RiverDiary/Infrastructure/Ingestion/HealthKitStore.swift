@@ -62,6 +62,20 @@ final class HealthKitStore: ObservableObject {
         }
     }
 
+    /// 健康来源的当前状态。HealthKit 读权限无法查询，所以授权状态永远传 nil：
+    /// 能用样本/失败如实说明，不会因为“请求成功过”就宣称已授权。
+    var sourceStatus: HealthSourceStatus {
+        let samples = nights.map(\.date) + exerciseDays.map(\.date)
+        return HealthSourceStatusEvaluator.evaluate(
+            isSupported: HKHealthStore.isHealthDataAvailable(),
+            isAuthorized: nil,
+            hasSamples: !samples.isEmpty,
+            lastSampleAt: samples.max(),
+            failure: errorMessage,
+            now: Date()
+        )
+    }
+
     var latestNight: SleepNight? { nights.first }
     var averageSleepHours: Double? {
         // 只有清醒/在床记录的夜晚不算“睡了 0 小时”，不能拉低平均值。
