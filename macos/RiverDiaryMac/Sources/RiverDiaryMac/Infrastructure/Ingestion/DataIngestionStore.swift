@@ -278,6 +278,9 @@ final class DataIngestionStore: ObservableObject {
         captureNow(runsAIAnalysis: shouldRunMissedAnalysis)
     }
 
+    /// 是否仍有排定的每日采集（供生命周期诊断与测试确认“停止服务”真的生效）。
+    var isScheduled: Bool { checkTimer != nil }
+
     func stop() {
         checkTimer?.invalidate()
         checkTimer = nil

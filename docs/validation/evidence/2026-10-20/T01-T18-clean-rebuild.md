@@ -91,6 +91,23 @@
 
 说明：服务端只按文件名扫描并用哈希确认了历史包身份，没有解包扫描所有旧静态资源的正文；`site.before-20261008-neomorphic`、`user-previous-20261009T0505Z` 等历史目录仍保留在主机上，均不在任何 Caddy 根目录内。
 
+## 5.1 生产复检（2026-10-20 22:45）
+
+控制台重新部署后只读复检：
+
+| 检查 | 结果 |
+|---|---|
+| `https://user.flowriver.xyz/` | 200；CSP / HSTS / Referrer-Policy / nosniff / X-Frame-Options 均存在 |
+| `https://user.flowriver.xyz/v1/me` | 401 |
+| `https://flowriver.xyz/` | 200 |
+| 旧包 `downloads/RiverDiary-macOS-20261001.zip` | 404 |
+| `https://flowriver.xyz/downloads/` | 404 |
+| Web/下载/备份目录中的快照文件名 | 0 个 |
+| `/var/www/flowriver/site/downloads/` | 不存在 |
+| 隔离区 `quarantine-2026-10-20` | 两份 ZIP 与校验文件仍在，权限 600 |
+
+结论：上一轮的隔离没有因为部署被回滚，生产仍不提供含个人快照的历史包。
+
 ## 6. 产物与路径
 
 - 干净重建克隆：`/tmp/river-verify-20261020`（验证后保留在本机临时目录）

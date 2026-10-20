@@ -58,10 +58,19 @@ T02 让 Mac 在退出登录时 `v2Store.close()`。但 `V2Store.transaction()` �
 3. 断言会话数据仍在（读失败不能顺手删除）；
 4. 恢复读取：再次启动仍是已登录，令牌未变。
 
+### 退出时停止采集排定
+
+`IngestionLifecycleTests.testStopCancelsTheScheduledCapture`
+
+- `DataIngestionStore.start()` 后 `isScheduled == true`；
+- 调用退出路径使用的 `stop()` 后 `isScheduled == false`，状态为“定时采集已停止”。
+
+这证明“退出停止服务”至少对每日采集的定时器生效；AI 恢复任务与 iCloud 同步仍只有代码路径、没有端到端证据。
+
 ## 3. 结果
 
 - Core：**67 项 Swift Testing + 9 项 XCTest** 通过；
-- macOS：**429 项通过**（新增 1 项关库用例，原 428 项）。
+- macOS：当轮 429 项起通过，当前全量 433 项。
 
 ## 4. 仍未完成
 
