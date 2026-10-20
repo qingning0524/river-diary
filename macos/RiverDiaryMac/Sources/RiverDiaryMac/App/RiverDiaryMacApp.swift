@@ -96,16 +96,24 @@ struct RiverDiaryMacApp: App {
             preconditionFailure(isolationError)
         }
 
-        #if DEBUG
-        let sharedV2 = MacSoftVisualSession.isActive
-            ? V2Store(testDeviceID: RiverDeviceID(rawValue: "mac_isolated_visual_preview"))
-            : V2Store()
-        #else
-        let sharedV2 = V2Store()
-        #endif
-        v2Store = sharedV2
         let account = RiverAccountSessionStore(platform: .macos, deviceName: ProcessInfo.processInfo.hostName, loadPersistedSession: !MacSoftVisualSession.isActive)
         _accountSession = StateObject(wrappedValue: account)
+
+        // 资料生命周期：首次未绑定账号时不创建正式库。已有库、旧安装的救援资料
+        // 或已登录时才打开；否则等登录（或显式认领）后由 openIfNeeded() 建库。
+        let shouldOpenLibrary = LibraryOpenPolicy.shouldOpenLocalLibrary(
+            hasDatabaseFile: LocalLibraryPresence.databaseFileExists(),
+            hasLegacyLocalState: LocalLibraryPresence.legacyStateExists(),
+            isSignedIn: account.isSignedIn
+        )
+        #if DEBUG
+        let sharedV2 = MacSoftVisualSession.isActive
+            ? V2Store(testDeviceID: RiverDeviceID(rawValue: "mac_isolated_visual_preview"), opensImmediately: true)
+            : V2Store(opensImmediately: shouldOpenLibrary)
+        #else
+        let sharedV2 = V2Store(opensImmediately: shouldOpenLibrary)
+        #endif
+        v2Store = sharedV2
         _restoreRecovery = StateObject(wrappedValue: RestoreRecoveryBootstrap())
         _ingestion = StateObject(wrappedValue: DataIngestionStore(v2Store: sharedV2))
         let diaryStore = DiaryStore()
@@ -195,6 +203,15 @@ struct RiverDiaryMacApp: App {
         RiverAppearance(rawValue: settingsAppearanceRaw) ?? .system
     }
 
+    /// 登录完成后才打开此前被延迟的正式库，并让已存在的 store 重新读一次共享状态。
+    /// 已有库的用户在启动时就已经打开，这里只是幂等确认。
+    private func activateSignedInLibrary() {
+        v2Store.openIfNeeded()
+        store.reloadSharedTimelineAnnotations()
+        store.applySharedDiaryRecords(v2Store.sharedUserRecords())
+        startSignedInServices()
+    }
+
     private func startSignedInServices() {
         activity.setAccountServicesActive(true)
         Task {
@@ -238,16 +255,18 @@ struct RiverDiaryMacApp: App {
                     dateContext.setSelectedDate(MacSoftVisualSession.date)
                 }
                 #endif
-                if accountSession.isSignedIn { startSignedInServices() }
+                if accountSession.isSignedIn { activateSignedInLibrary() }
             }
             .onChange(of: accountSession.isSignedIn) { _, signedIn in
-                if signedIn { startSignedInServices() }
+                if signedIn { activateSignedInLibrary() }
                 else {
                     pendingDailyRebuild?.cancel()
                     pendingDailyRebuild = nil
                     activity.setAccountServicesActive(false)
                     ingestion.stop()
                     location.disconnect()
+                    // 主动退出后关闭数据库上下文：登录页面上不再有可用的本机事实库。
+                    v2Store.close()
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .riverCanonicalSyncDidChange)) { notification in

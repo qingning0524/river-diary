@@ -105,15 +105,26 @@ final class V2Store {
 
     // MARK: Location
 
-    private static func defaultDatabaseURL() -> URL? {
+    /// 正式库所在目录，只计算路径、不创建任何东西。
+    /// 未绑定账号的首次启动要先用它判断库是否存在。
+    nonisolated static func databaseDirectoryURL() -> URL? {
         guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
-        let directory = base
+        return base
             .appendingPathComponent("RiverDiaryMac", isDirectory: true)
             .appendingPathComponent("Database", isDirectory: true)
             .appendingPathComponent("V2", isDirectory: true)
+    }
+
+    /// 正式库文件的预期路径（无副作用，供启动门禁与诊断使用）。
+    nonisolated static func defaultDatabaseFileURL() -> URL? {
+        databaseDirectoryURL()?.appendingPathComponent("river-v2.db")
+    }
+
+    private static func defaultDatabaseURL() -> URL? {
+        guard let directory = databaseDirectoryURL() else { return nil }
         do {
             try LocalStorageProtection.ensurePrivateDirectory(
-                at: base.appendingPathComponent("RiverDiaryMac", isDirectory: true)
+                at: directory.deletingLastPathComponent().deletingLastPathComponent()
             )
             try LocalStorageProtection.ensurePrivateDirectory(
                 at: directory.deletingLastPathComponent()
@@ -125,12 +136,27 @@ final class V2Store {
         }
     }
 
-    init(databaseURL: URL? = nil, testDeviceID: RiverDeviceID? = nil) {
+    /// `opensImmediately: false` 用于首次未绑定账号的启动：只记住路径，不创建库文件。
+    /// 绑定账号或需要救援旧资料后再调用 `openIfNeeded()`。
+    init(databaseURL: URL? = nil, testDeviceID: RiverDeviceID? = nil, opensImmediately: Bool = true) {
         self.databaseURL = databaseURL ?? Self.defaultDatabaseURL()
         self.testDeviceID = testDeviceID
+        if opensImmediately {
+            open()
+            createSchema()
+        }
+        Self.liveInstances.add(self)
+    }
+
+    var isOpen: Bool { db != nil }
+
+    /// 幂等地打开正式库并建表；返回是否可用。
+    @discardableResult
+    func openIfNeeded() -> Bool {
+        guard db == nil else { return true }
         open()
         createSchema()
-        Self.liveInstances.add(self)
+        return db != nil
     }
 
     deinit {
@@ -146,6 +172,7 @@ final class V2Store {
     // MARK: Open
 
     private func open() {
+        lastError = nil
         guard let url = databaseURL else {
             lastError = "V2 数据库路径不可用"
             return

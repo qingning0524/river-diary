@@ -26,6 +26,7 @@ wait_seconds=15
 keep=0
 reset_qa_keychain=0
 production_mode=0
+expect_no_library=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -35,8 +36,9 @@ while [[ $# -gt 0 ]]; do
     --keep) keep=1; shift ;;
     --reset-qa-keychain) reset_qa_keychain=1; shift ;;
     --production) production_mode=1; shift ;;
+    --expect-no-library) expect_no_library=1; shift ;;
     --help|-h)
-      print -r -- "usage: $0 <app bundle> [--report <json>] [--screenshot <png>] [--wait 15] [--reset-qa-keychain] [--production] [--keep]"
+      print -r -- "usage: $0 <app bundle> [--report <json>] [--screenshot <png>] [--wait 15] [--reset-qa-keychain] [--production] [--expect-no-library] [--keep]"
       exit 0 ;;
     -*) print -u2 "unknown argument: $1"; exit 64 ;;
     *) app_path="$1"; shift ;;
@@ -44,7 +46,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$app_path" || ! -d "$app_path" ]]; then
-  print -u2 "usage: $0 <app bundle> [--report <json>] [--screenshot <png>] [--wait 15] [--reset-qa-keychain] [--production] [--keep]"
+  print -u2 "usage: $0 <app bundle> [--report <json>] [--screenshot <png>] [--wait 15] [--reset-qa-keychain] [--production] [--expect-no-library] [--keep]"
   exit 65
 fi
 
@@ -207,17 +209,20 @@ elif [[ -n "$crash_reports" ]]; then
 elif [[ -z "$window_id" ]]; then
   verdict="fail"
   reason="no on-screen window appeared within ${wait_seconds}s (possible keychain authorization prompt)"
+elif [[ "$expect_no_library" -eq 1 && "$db_created" -eq 1 ]]; then
+  verdict="fail"
+  reason="a local V2 library was created before the account was bound"
 fi
 
 if [[ -n "$report_path" ]]; then
   mkdir -p "$(dirname "$report_path")"
   python3 - "$report_path" "$app_path" "$qa_launched" "$alive" "$db_created" "$crash_reports" \
-    "$created_files" "$windows" "$screenshot_path" "$wait_seconds" "$verdict" "$reason" "$log_tail" <<'PY'
+    "$created_files" "$windows" "$screenshot_path" "$wait_seconds" "$expect_no_library" "$verdict" "$reason" "$log_tail" <<'PY'
 import json, sys
 from datetime import datetime, timezone
 
 (path, app, qa, alive, db_created, crashes, files, windows, screenshot,
- wait_seconds, verdict, reason, log_tail) = sys.argv[1:14]
+ wait_seconds, expect_no_library, verdict, reason, log_tail) = sys.argv[1:15]
 
 report = {
     "reportSchema": 1,
@@ -230,6 +235,7 @@ report = {
     "crashReports": [line for line in crashes.splitlines() if line],
     "createdFiles": [line for line in files.splitlines() if line],
     "createdLocalDatabaseBeforeSignIn": db_created == "1",
+    "expectation": "no-library-before-binding" if expect_no_library == "1" else "none",
     "windows": [line for line in windows.splitlines() if line],
     "screenshot": screenshot if screenshot else None,
     "verdict": verdict,
@@ -267,4 +273,8 @@ if [[ "$verdict" != "pass" ]]; then
   print -u2 "FAIL: $reason"
   exit 1
 fi
-print -r -- "PASS: app started with an empty profile, created its empty local store and showed a window."
+if [[ "$expect_no_library" -eq 1 ]]; then
+  print -r -- "PASS: app started with an empty profile, showed a window and created no formal library before binding."
+else
+  print -r -- "PASS: app started with an empty profile and showed a window."
+fi
