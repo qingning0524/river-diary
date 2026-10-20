@@ -190,8 +190,12 @@ final class AuditFixRegressionTests: XCTestCase {
     // MARK: P2-活动：sessions(from:to:) 裁剪
 
     func testSessionsRangeQueryClipsBoundarySessions() throws {
+        let activityDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("river-audit-activity-\(UUID().uuidString)", isDirectory: true)
+        try LocalStorageProtection.ensurePrivateDirectory(at: activityDirectory)
+        defer { try? FileManager.default.removeItem(at: activityDirectory) }
         let store = ActivityStore(
-            activityDirectory: nil,
+            activityDirectory: activityDirectory,
             userDefaults: UserDefaults(suiteName: "audit-\(UUID().uuidString)")!,
             v2Store: try makeV2()
         )

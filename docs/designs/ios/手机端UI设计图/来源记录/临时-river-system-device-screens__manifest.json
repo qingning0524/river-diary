@@ -1,0 +1,59 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008120-001445AC1EB8201E",
+        "deviceName" : "清宁’s iPhone",
+        "exportedFileName" : "764AC571-91A0-472D-BE3B-035C06E4F547.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Records on the selected historical day_0_F636DDDD-1CE1-490A-85B0-A8FCD439BD79.png",
+        "timestamp" : 1791059781.026
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008120-001445AC1EB8201E",
+        "deviceName" : "清宁’s iPhone",
+        "exportedFileName" : "1AB00BFD-C200-4ECC-8B4D-4CDC4A0122D4.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Saved fact detail_0_4FE8423B-6662-4FE5-9447-0E1C38C051F0.png",
+        "timestamp" : 1791059778.023
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008120-001445AC1EB8201E",
+        "deviceName" : "清宁’s iPhone",
+        "exportedFileName" : "DF84C0D6-652E-42FA-9986-53402919E390.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Today with saved facts and no analysis_0_FA548434-77A8-40CA-A8BC-2F4108EFD792.png",
+        "timestamp" : 1791059774.202
+      }
+    ],
+    "testIdentifier" : "RiverSystemRedesignUITests/testFactsAreReadableBeforeAIAnalysisAndDatesStayConnected()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverSystemRedesignUITests/testFactsAreReadableBeforeAIAnalysisAndDatesStayConnected"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008120-001445AC1EB8201E",
+        "deviceName" : "清宁’s iPhone",
+        "exportedFileName" : "EAAA9E06-C479-4498-8FE4-2ECDCB2EEB15.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · River OS password login_0_E21FD109-D53A-40E3-8669-8011B2CF2ED5.png",
+        "timestamp" : 1791059790.666
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "00008120-001445AC1EB8201E",
+        "deviceName" : "清宁’s iPhone",
+        "exportedFileName" : "B0351B4A-EBAC-42CB-95C3-A308343C0BA4.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · River OS email login_0_162814F1-F777-4509-8322-06A00D9B02AE.png",
+        "timestamp" : 1791059787.42
+      }
+    ],
+    "testIdentifier" : "RiverSystemRedesignUITests/testLoginHasOneBrandAndSupportsBothIdentityMethods()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverSystemRedesignUITests/testLoginHasOneBrandAndSupportsBothIdentityMethods"
+  }
+]

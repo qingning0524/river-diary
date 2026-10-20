@@ -17,6 +17,14 @@ struct SettingsRedesignView: View {
     @ObservedObject var ai: AIAssistantStore
     @ObservedObject var ingestion: DataIngestionStore
 
+    var databaseStore: V2Store? = nil
+    var initialCategory: SettingsCategory = .recording
+    var inspectionDate = Date()
+    var initiallyShowsDatabase = false
+    @State private var databaseDate = Date()
+    @State private var databaseInspection: DatabaseInspectionRequest?
+    @State private var didApplyInitialNavigation = false
+
     @State private var settingsSection: SettingsCategory = .recording
     @AppStorage("appearance.mode") private var appearanceModeRaw = RiverAppearance.system.rawValue
     /// 密度必须从 `@AppStorage` 读，而不是用环境注入进来的那份：
@@ -49,6 +57,30 @@ struct SettingsRedesignView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.workspace)
+        .onAppear {
+            guard !didApplyInitialNavigation else { return }
+            didApplyInitialNavigation = true
+            settingsSection = initialCategory
+            databaseDate = inspectionDate
+            if initiallyShowsDatabase && databaseStore != nil {
+                databaseInspection = DatabaseInspectionRequest(date: inspectionDate)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .riverSettingsNavigate)) { note in
+            if let raw = note.userInfo?["category"] as? String, let category = SettingsCategory(rawValue: raw) {
+                settingsSection = category
+            }
+            let date = note.userInfo?["date"] as? Date ?? databaseDate
+            databaseDate = date
+            if note.userInfo?["database"] as? Bool == true, databaseStore != nil {
+                databaseInspection = DatabaseInspectionRequest(date: date)
+            }
+        }
+        .sheet(item: $databaseInspection) { request in
+            if let databaseStore {
+                DatabaseInspectionSheet(store: databaseStore, date: request.date, dailyGoal: store.dailyGoal(for: request.date))
+            }
+        }
         .background(WindowSurfaceColor(paletteID: paletteController.palette.rawValue))
         // 密度与显示模式由本视图自己派生并往下传，而不是沿用开窗时注入的那一份：
         // 否则"在设置里改密度/切深色"要关掉重开才看得到。
@@ -79,7 +111,7 @@ struct SettingsRedesignView: View {
 
             // 品牌身份直接用主侧栏那一个组件：设置窗口不是"另一个应用"，
             // 顶上不该只有光秃秃的"设置"两个字。
-            SidebarIdentity()
+            SidebarIdentity(compact: true)
 
             RiverRule()
 
@@ -220,6 +252,8 @@ struct SettingsRedesignView: View {
     @ViewBuilder
     private var settingsContent: some View {
         switch settingsSection {
+        case .account:
+            MacAccountSettingsView()
         case .ai:
             AISettingsView(store: store, activity: activity, ai: ai, ingestion: ingestion)
         case .privacy:
@@ -227,7 +261,8 @@ struct SettingsRedesignView: View {
         case .appearance:
             AppearanceSettingsView(appearanceModeRaw: $appearanceModeRaw)
         case .recording:
-            RecordingSettingsView(store: store, activity: activity, ai: ai, ingestion: ingestion)
+            RecordingSettingsView(store: store, activity: activity, ai: ai, ingestion: ingestion,
+                                  onInspectDatabase: databaseStore == nil ? nil : { databaseInspection = DatabaseInspectionRequest(date: databaseDate) })
         }
     }
 }
@@ -369,3 +404,29 @@ private struct WindowControls: View {
     }
 }
 
+extension Notification.Name {
+    static let riverSettingsNavigate = Notification.Name("river.settings.navigate")
+}
+
+private struct DatabaseInspectionSheet: View {
+    let store: V2Store
+    let date: Date
+    let dailyGoal: DailyGoal?
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("本地数据检查").font(AppTypography.rowTitle()).foregroundStyle(Color.ink)
+                Spacer()
+                Button("完成") { dismiss() }.secondaryCTA().keyboardShortcut(.cancelAction)
+            }.padding(.horizontal, AppSpacing.page).padding(.vertical, 16)
+            RiverRule()
+            DatabaseOverviewView(store: store, selectedDate: date, dailyGoal: dailyGoal)
+        }.frame(width: 840, height: 620).background(Color.workspace)
+    }
+}
+
+private struct DatabaseInspectionRequest: Identifiable {
+    let id = UUID()
+    let date: Date
+}

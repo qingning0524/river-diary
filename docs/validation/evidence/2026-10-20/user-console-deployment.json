@@ -1,0 +1,66 @@
+{
+  "kind": "user-console-static-deployment",
+  "deployed_at_shanghai": "2026-10-20T10:54:00+08:00",
+  "deployed_at_utc": "2026-10-20T02:54:00Z",
+  "url": "https://user.flowriver.xyz/",
+  "preview_url": "https://user.flowriver.xyz/?preview=1",
+  "server": {
+    "hostname": "racknerd-fb6eba5",
+    "arch": "x86_64",
+    "target": "/var/www/flowriver/user",
+    "owner": "root:root",
+    "dir_mode": "755",
+    "file_mode": "644"
+  },
+  "artifact": {
+    "name": "river-console-deploy-20261020-v2.tar.gz",
+    "sha256": "ae26c9b9bca8b89a7651f8845ec1faaab666b42c971ec6f0ce2a596741237f71"
+  },
+  "backups": [
+    {
+      "path": "/var/backups/flowriver/user-console-before-20261020T024810Z",
+      "content": "previous account console",
+      "sha256_manifest": "SHA256SUMS"
+    },
+    {
+      "path": "/var/backups/flowriver/user-console-before-20261020T025826Z-v2",
+      "content": "first deployment of the new console before the command-dialog Escape fix",
+      "sha256_manifest": "SHA256SUMS"
+    }
+  ],
+  "deployed_files_sha256": {
+    "index.html": "7078bcdcae5eee7bcc205f691883c9501d1a8241d3da5166f93b004a59cefa48",
+    "assets/app.js": "378a3f6fe5b90513e253c3a957da31259fd25d0ffc623580c42f08a94e005218",
+    "assets/style.css": "8943c340c15f5caa6b60c0315caff8f7f4b0d6d2849c94c9810e5edcee0c467b",
+    "assets/memory-core.js": "acec927cdcf71e3b3f1bb95dbfe9f48af6249355d82d8dbd52ca1e27000e33ac",
+    "assets/account-core.js": "4eadf46cb81346f103d49e8030af8eb657b59c0475dc45a5aa62590f34a98b4c",
+    "assets/demo-data.js": "09ae3908c662d6a3572e5edb6a611d647851f0d1a52417aaf7b401b3885286b0",
+    "assets/glyphs.svg": "77d62b291d13216d69f4c1492e1315fdfd5db054a70776268468a445810d4cdf"
+  },
+  "caddy": {
+    "config_path": "/etc/caddy/Caddyfile",
+    "sha256": "289ef804cc35deba2070a65cefc36710bfa7f2c94b1eab3b6b4bef7eef839e57",
+    "changed": false,
+    "service_active": true
+  },
+  "public_checks": {
+    "html_title": "记忆控制台 · 河流日记",
+    "html_status": 200,
+    "assets_status": 200,
+    "api_me_anonymous_status": 401,
+    "guest_root_redirect": "https://login.flowriver.xyz/",
+    "csp_present": true,
+    "referrer_policy": "strict-origin-when-cross-origin",
+    "preview_playwright_console_errors": 0,
+    "preview_session_storage_archive": null,
+    "mobile_width": 390,
+    "mobile_horizontal_overflow": false
+  },
+  "not_tested": [
+    "real signed-in account against production API",
+    "real native memory mirror export",
+    "Safari/WebKit",
+    "VoiceOver and largest accessibility text",
+    "physical iPhone/Mac"
+  ]
+}

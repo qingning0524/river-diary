@@ -1,0 +1,22 @@
+{
+  "platform": "iPhone 17 Pro / iOS 27 Simulator",
+  "themeScenes": 70,
+  "contrastChecks": 300,
+  "minimumContrast": 4.52,
+  "releaseBuild": "passed",
+  "uiChecks": [
+    "ten themes light",
+    "ten themes dark across four tabs and two preview scenes",
+    "preview isolation and saved journal",
+    "maximum accessibility size recording flow"
+  ],
+  "sourceSHA256": {
+    "Managers/RiverThemeStore.swift": "f5b17ab82a7ffb869f2bd64e581feea4898a7dc273b6e7d2a5e914f43f2f977b",
+    "Views/IOSExperience.swift": "3d58730d8a647f7f5208b6002ff8cdc2077ad784cb8a0c53ef05c1b861b8db9b",
+    "Views/RiverThemeDayOverview.swift": "59ddb87f4c342a8148f7b09dafe4534f0bad0171d4a740503976f75cbf7f9bb7",
+    "Views/RiverThemeSettingsView.swift": "c1e0fa3574e59a938ad0738827ec16252397a257560c3de08d3bbfa231d7fff6",
+    "Views/RiverTimelineHomeView.swift": "fcc483c6caaa036f8109557a09ad34c28d3fb4f0cd8274d966a8b7f548a16e52",
+    "Views/RootView.swift": "3aae0848a980b8424a6029c0ba8f99ca5fc46b9453fc97440221c37f385bb92c",
+    "Theme.swift": "f7f3543f6a0ea438c8bdce3a6e5617c0615c1abed704320d0e653097323e27b9"
+  }
+}

@@ -512,13 +512,18 @@ public enum StateOperationResolver {
         var current: [String: StateOperation] = [:]
         var conflicts: [[StateOperation]] = []
         for (key, values) in groups {
+            let priorities = Dictionary(values.map { ($0.id, authorityPriority(for: $0)) }, uniquingKeysWith: { first, _ in first })
             let ordered = values.sorted {
+                let leftAuthority = priorities[$0.id, default: 0]
+                let rightAuthority = priorities[$1.id, default: 0]
+                if leftAuthority != rightAuthority { return leftAuthority > rightAuthority }
                 if $0.clock != $1.clock { return $0.clock > $1.clock }
                 return $0.id.uuidString < $1.id.uuidString
             }
             if let winner = ordered.first { current[key] = winner }
             let concurrent = ordered.filter { candidate in
                 guard let winner = ordered.first, candidate.id != winner.id else { return false }
+                guard priorities[candidate.id, default: 0] == priorities[winner.id, default: 0] else { return false }
                 return !candidate.causalFrontier.dominates(winner.causalFrontier)
                     && !winner.causalFrontier.dominates(candidate.causalFrontier)
                     && candidate.payload != winner.payload
@@ -533,6 +538,48 @@ public enum StateOperationResolver {
             return left < right
         }
         return StateResolution(currentByField: current, conflicts: conflicts)
+    }
+
+    /// Returns only effective operations that alter analytical state. Losing
+    /// concurrent values remain available for conflict reporting, but must not
+    /// stale artifacts after a different, higher-authority value has won.
+    public static func currentAnalyticalOperations(_ operations: [StateOperation]) -> [StateOperation] {
+        let canonicalIDs = Set(resolve(operations).currentByField.values.map(\.id))
+        return operations.filter {
+            canonicalIDs.contains($0.id) && RiverStateOperationFreshness.changesAnalyticalState($0)
+        }
+    }
+
+    /// Imported legacy journal text is migration evidence. A real journal edit
+    /// or deletion has higher authority even when the devices wrote offline and
+    /// the migration operation happens to carry a later hybrid clock.
+    private static func authorityPriority(for operation: StateOperation) -> Int {
+        guard operation.operationType == "shared.record.upsert",
+              operation.fieldKey == "record",
+              let record = try? JSONDecoder().decode(RiverSharedStateRecord.self, from: operation.payload) else { return 0 }
+        switch record.kind {
+        case .journalEntry:
+            return record.status == "current" && record.journalEntryContent?.source == "legacy-data.json" ? 1 : 4
+        case .pendingConfirmation:
+            if record.pendingConfirmationContent?.userReopenedAt != nil { return 5 }
+            if record.status == "pending" { return 1 }
+            return ["confirmed", "rejected", "corrected", "dismissed"].contains(record.status) ? 4 : 0
+        case .habitCard:
+            if RiverStateOperationFreshness.isUserReopenedHabitCard(record) { return 5 }
+            switch record.status {
+            case "bundled", "shown": return 1
+            case "expired": return 3
+            case "answered", "skipped": return 4
+            default: return 0
+            }
+        case .habitRule:
+            return ["active", "retired", "challenged"].contains(record.status) ? 4 : 1
+        case .memory:
+            if record.status == "deleted" { return 5 }
+            return record.status == "confirmed" ? 4 : 1
+        case .habitBatch, .monthlyLetter, .monthlyLetterDraft, .quickCaptureMetadata, .unknown(_):
+            return 0
+        }
     }
 
     public static func tombstonedObjectIDs(_ operations: [StateOperation]) -> Set<String> {

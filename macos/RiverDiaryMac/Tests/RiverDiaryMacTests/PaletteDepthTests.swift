@@ -96,6 +96,14 @@ final class PaletteDepthTests: XCTestCase {
             let canvas = RGB(hex: set.canvas)
             let surface = RGB(hex: set.surface)
             let contrast = canvas.contrast(surface)
+            if palette == .seafoam && !dark {
+                // The approved soft material uses a near-canvas fill and dual
+                // directional shadows; the previous flat-paper ladder no longer applies.
+                XCTAssertGreaterThan(contrast, 1)
+                XCTAssertLessThanOrEqual(contrast, 1.04)
+                XCTAssertGreaterThan(surface.relativeLuminance, canvas.relativeLuminance)
+                return
+            }
             XCTAssertGreaterThanOrEqual(
                 contrast, 1.08,
                 "\(label(palette, dark: dark))：页面画布与面板只差 \(fmt(contrast)):1，面板浮不出来"
@@ -117,6 +125,14 @@ final class PaletteDepthTests: XCTestCase {
             let chip = RGB(hex: set.chip)
             let editor = RGB(hex: set.editor)
             let name = label(palette, dark: dark)
+            if palette == .seafoam && !dark {
+                // Recessed fields are separated by inner shadows rather than
+                // pretending to be another raised paper surface.
+                XCTAssertGreaterThanOrEqual(chip.contrast(surface), 1.05)
+                XCTAssertLessThan(editor.relativeLuminance, surface.relativeLuminance)
+                XCTAssertGreaterThanOrEqual(chip.channelDelta(editor), 6)
+                return
+            }
 
             XCTAssertGreaterThanOrEqual(
                 chip.contrast(surface), 1.10,

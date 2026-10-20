@@ -22,6 +22,7 @@ public protocol RiverSyncLocalStore: AnyObject {
     func mergeDeviceRegistrations(_ registrations: [DeviceRegistration]) throws
     func reconcileDeviceRegistryFromOperations() throws
     func rebuildDerivedState() throws
+    func reconcileDerivedStateIfNeeded() throws
     func canonicalStateDigest() throws -> String
     func nextManifestStamp(after revision: UInt64, observing clock: HybridLogicalClock?) throws -> (revision: UInt64, clock: HybridLogicalClock)
     func lastPublishedManifestKey(for directoryID: String) throws -> String?
@@ -31,6 +32,7 @@ public protocol RiverSyncLocalStore: AnyObject {
 
 public extension RiverSyncLocalStore {
     func sequenceGaps(expectedFrontiers: [String: StreamFrontier]) throws -> [SyncSequenceGap] { [] }
+    func reconcileDerivedStateIfNeeded() throws { try rebuildDerivedState() }
 }
 
 public enum RiverSyncCoordinatorError: Error, Equatable {
@@ -102,6 +104,57 @@ public struct SyncSequenceGap: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
+private struct SyncLocalSnapshot: Sendable {
+    let eventBatches: [RiverEventBatch]
+    let operationBatches: [StateOperationBatch]
+    let artifactRevisions: [RiverArtifactRevision]
+    let eventsByID: [UUID: RiverEvent]
+    let operationsByID: [UUID: StateOperation]
+    let artifactsByID: [String: RiverArtifactRevision]
+}
+
+private struct SyncPublishCounts: Sendable {
+    let eventBatches: Int
+    let operationBatches: Int
+    let artifactRevisions: Int
+}
+
+private struct SyncFileExchange: Sendable {
+    let counts: SyncPublishCounts
+    let located: [LocatedEncryptedReplicationObject]
+}
+
+private struct PendingManifestPublication: Sendable {
+    let manifest: ReplicationManifest
+    let objectID: String
+    let stableKey: String
+}
+
+private struct SyncExecutionResult {
+    let report: SyncRunReport
+    let pendingManifest: PendingManifestPublication?
+}
+
+private func publishLocalReplicationObjects(
+    _ snapshot: SyncLocalSnapshot,
+    using transport: EncryptedFileReplication
+) throws -> SyncPublishCounts {
+    for batch in snapshot.eventBatches {
+        try transport.publish(batch, objectID: batch.id, kind: "event_batch", stream: "Events")
+    }
+    for batch in snapshot.operationBatches {
+        try transport.publish(batch, objectID: batch.id, kind: "state_operation_batch", stream: "Operations")
+    }
+    for revision in snapshot.artifactRevisions {
+        try transport.publish(revision, objectID: revision.id, kind: "artifact_revision", stream: "Artifacts")
+    }
+    return SyncPublishCounts(
+        eventBatches: snapshot.eventBatches.count,
+        operationBatches: snapshot.operationBatches.count,
+        artifactRevisions: snapshot.artifactRevisions.count
+    )
+}
+
 @MainActor
 public final class RiverSyncCoordinator {
     private let store: any RiverSyncLocalStore
@@ -122,9 +175,62 @@ public final class RiverSyncCoordinator {
     }
 
     public func synchronize() throws -> SyncRunReport {
-        var exported = 0
-        var exportedOperations = 0
-        var exportedArtifacts = 0
+        let snapshot = try makeLocalSnapshot()
+        let counts = try publishLocalReplicationObjects(snapshot, using: transport)
+        let located = try transport.directory.scanFiles()
+        let result = try process(snapshot: snapshot, counts: counts, located: located)
+        if let publication = result.pendingManifest {
+            try transport.publish(publication.manifest, objectID: publication.objectID, kind: "manifest", stream: "Manifest")
+            try store.savePublishedManifestKey(publication.stableKey, for: directoryID)
+        }
+        return result.report
+    }
+
+    /// Keeps coordinated iCloud File Provider access off the main actor.
+    public func synchronizeAsynchronously() async throws -> SyncRunReport {
+        let snapshot = try makeLocalSnapshot()
+        let transport = self.transport
+        let exchange = try await Task.detached(priority: .utility) {
+            let counts = try publishLocalReplicationObjects(snapshot, using: transport)
+            let located = try transport.directory.scanFiles()
+            return SyncFileExchange(counts: counts, located: located)
+        }.value
+        let result = try process(snapshot: snapshot, counts: exchange.counts, located: exchange.located)
+        if let publication = result.pendingManifest {
+            _ = try await Task.detached(priority: .utility) {
+                try transport.publish(publication.manifest, objectID: publication.objectID, kind: "manifest", stream: "Manifest")
+            }.value
+            try store.savePublishedManifestKey(publication.stableKey, for: directoryID)
+        }
+        return result.report
+    }
+
+    private func makeLocalSnapshot() throws -> SyncLocalSnapshot {
+        try store.reconcileDerivedStateIfNeeded()
+        let events = try store.localEventBatches()
+        let operations = try store.localStateOperationBatches()
+        let artifacts = try store.localArtifactRevisions()
+        return SyncLocalSnapshot(
+            eventBatches: events,
+            operationBatches: operations,
+            artifactRevisions: artifacts,
+            eventsByID: Dictionary(uniqueKeysWithValues: events.flatMap(\.events).map { ($0.id, $0) }),
+            operationsByID: Dictionary(uniqueKeysWithValues: operations.flatMap(\.operations).map { ($0.id, $0) }),
+            artifactsByID: Dictionary(uniqueKeysWithValues: artifacts.map { ($0.id, $0) })
+        )
+    }
+
+    private func process(
+        snapshot: SyncLocalSnapshot,
+        counts: SyncPublishCounts,
+        located: [LocatedEncryptedReplicationObject]
+    ) throws -> SyncExecutionResult {
+        let exported = counts.eventBatches
+        let exportedOperations = counts.operationBatches
+        let exportedArtifacts = counts.artifactRevisions
+        let localEventsByID = snapshot.eventsByID
+        let localOperationsByID = snapshot.operationsByID
+        let localArtifactsByID = snapshot.artifactsByID
         var importedBatchCount = 0
         var importedOperationCount = 0
         var importedArtifactCount = 0
@@ -133,29 +239,7 @@ public final class RiverSyncCoordinator {
         var ignored = 0
         var integrityFailures: [String] = []
         var needsUpgrade = false
-
-        try store.rebuildDerivedState()
-        let localEventBatches = try store.localEventBatches()
-        let localOperationBatches = try store.localStateOperationBatches()
-        let localArtifactRevisions = try store.localArtifactRevisions()
-        let localEventsByID = Dictionary(uniqueKeysWithValues: localEventBatches.flatMap(\.events).map { ($0.id, $0) })
-        let localOperationsByID = Dictionary(uniqueKeysWithValues: localOperationBatches.flatMap(\.operations).map { ($0.id, $0) })
-        let localArtifactsByID = Dictionary(uniqueKeysWithValues: localArtifactRevisions.map { ($0.id, $0) })
-
-        for batch in localEventBatches {
-            try transport.publish(batch, objectID: batch.id, kind: "event_batch", stream: "Events")
-            exported += 1
-        }
-        for batch in localOperationBatches {
-            try transport.publish(batch, objectID: batch.id, kind: "state_operation_batch", stream: "Operations")
-            exportedOperations += 1
-        }
-        for revision in localArtifactRevisions {
-            try transport.publish(revision, objectID: revision.id, kind: "artifact_revision", stream: "Artifacts")
-            exportedArtifacts += 1
-        }
-
-        let located = try transport.directory.scanFiles()
+        var pendingManifest: PendingManifestPublication?
         var manifests: [ReplicationManifest] = []
         for file in located {
             let object = file.object
@@ -302,7 +386,7 @@ public final class RiverSyncCoordinator {
         }
 
         try store.reconcileDeviceRegistryFromOperations()
-        try store.rebuildDerivedState()
+        try store.reconcileDerivedStateIfNeeded()
         let latestManifests = ManifestResolver.latestByDevice(manifests)
         let knownDevices = latestManifests.values.flatMap(\.knownDevices)
         let knownIDs = Set(knownDevices.map(\.id))
@@ -344,8 +428,7 @@ public final class RiverSyncCoordinator {
         )
         if stableKey != priorKey {
             let objectID = "manifest_\(deviceID.rawValue)_\(stamp.revision)"
-            try transport.publish(localManifest, objectID: objectID, kind: "manifest", stream: "Manifest")
-            try store.savePublishedManifestKey(stableKey, for: directoryID)
+            pendingManifest = PendingManifestPublication(manifest: localManifest, objectID: objectID, stableKey: stableKey)
         }
 
         let allManifests = Array(latestManifests.values.filter { $0.deviceID != deviceID }) + [localManifest]
@@ -363,7 +446,7 @@ public final class RiverSyncCoordinator {
                                            devicesWithSequenceGaps: gaps)
         try store.recordVerification(isVerified: verified, digest: digest)
 
-        return SyncRunReport(
+        let report = SyncRunReport(
             exportedEventBatches: exported,
             exportedOperationBatches: exportedOperations,
             importedEventBatches: importedBatchCount,
@@ -380,6 +463,7 @@ public final class RiverSyncCoordinator {
             isVerified: verified,
             canonicalStateDigest: digest
         )
+        return SyncExecutionResult(report: report, pendingManifest: pendingManifest)
     }
 
     private static func manifestKey(deviceID: RiverDeviceID, owned: StreamFrontier,

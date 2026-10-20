@@ -7,29 +7,17 @@ source "../../scripts/select_xcode.sh"
 CONFIG="${RIVER_BUILD_CONFIG:-release}"
 VERSION="${RIVER_APP_VERSION:-1.0.0}"
 SIGN_IDENTITY="${CODESIGN_IDENTITY:--}"
-RESOURCE="Sources/RiverDiaryMac/Resources/data.json"
-if [[ -f "../../data/data.json" ]]; then
-  mkdir -p "$(dirname "$RESOURCE")"
-  cp "../../data/data.json" "$RESOURCE"
-elif [[ ! -f "$RESOURCE" ]]; then
-  echo "No project data.json found; using the existing bundled snapshot." >&2
-fi
+APP_DIR="${RIVER_APP_OUTPUT_DIR:-../../dist/River Diary.app}"
 
+BUILD_ROOT="$(mktemp -d "${TMPDIR%/}/riverdiary-release-build.XXXXXX")"
+trap 'rm -rf "$BUILD_ROOT"' EXIT
 export SWIFTPM_CACHE_PATH=".build/spm-cache"
 export CLANG_MODULE_CACHE_PATH=".build/clang-module-cache"
 export SWIFT_MODULE_CACHE_PATH=".build/swift-module-cache"
-BIN_DIR=".build/out/Products/$CONFIG"
-rm -f "$BIN_DIR/RiverDiaryMac"
-
-if ! "$RIVER_SWIFT_EXECUTABLE" build -c "$CONFIG" --disable-sandbox; then
-  if [[ ! -x "$BIN_DIR/RiverDiaryMac" ]]; then
-    exit 1
-  fi
-  echo "Build completed without debug-symbol bundle; packaging executable."
-fi
-BINARY="$BIN_DIR/RiverDiaryMac"
+BIN_DIR="$("$RIVER_SWIFT_EXECUTABLE" build --show-bin-path -c "$CONFIG" --scratch-path "$BUILD_ROOT")"
 RESOURCE_BUNDLE="$BIN_DIR/RiverDiaryMac_RiverDiaryMac.bundle"
-APP_DIR="../../dist/River Diary.app"
+"$RIVER_SWIFT_EXECUTABLE" build -c "$CONFIG" --scratch-path "$BUILD_ROOT" --disable-sandbox
+BINARY="$BIN_DIR/RiverDiaryMac"
 
 if [[ ! -x "$BINARY" ]]; then
   echo "Missing executable: $BINARY" >&2
@@ -42,6 +30,12 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources" "$APP_DIR/Conte
 cp "$BINARY" "$APP_DIR/Contents/MacOS/RiverDiary"
 cp -R "$RESOURCE_BUNDLE" "$APP_DIR/Contents/Resources/"
 cp "Sources/RiverDiaryMac/Resources/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
+if /usr/bin/find "$APP_DIR/Contents" -type f \
+  \( -name data.json -o -name ios-user-data.json -o -name river-diary-user-data.json \) \
+  -print -quit | /usr/bin/grep -q .; then
+  echo "Refusing to package a personal diary snapshot or user-data export." >&2
+  exit 67
+fi
 if [[ -d "$BIN_DIR/SQLCipher.framework" ]]; then
   cp -R "$BIN_DIR/SQLCipher.framework" "$APP_DIR/Contents/Frameworks/SQLCipher.framework"
 else
@@ -74,6 +68,16 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
     <key>NSAllowsLocalNetworking</key><true/>
   </dict>
   <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key><string>studio.riverdiary.mac.backup</string>
+      <key>UTTypeDescription</key><string>River Diary Encrypted Backup</string>
+      <key>UTTypeConformsTo</key><array><string>public.data</string></array>
+      <key>UTTypeTagSpecification</key>
+      <dict><key>public.filename-extension</key><array><string>riverbackup</string></array></dict>
+    </dict>
+  </array>
 </dict>
 </plist>
 PLIST
@@ -85,5 +89,7 @@ if [[ -n "${NOTARY_PROFILE:-}" ]]; then
   xcrun notarytool submit "$APP_DIR" --keychain-profile "$NOTARY_PROFILE" --wait
   xcrun stapler staple "$APP_DIR"
 fi
+
+python3 ../../scripts/write_build_provenance.py "$APP_DIR" "${APP_DIR}.provenance.json"
 
 echo "Created $APP_DIR"

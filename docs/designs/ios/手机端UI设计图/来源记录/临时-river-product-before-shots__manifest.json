@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "541AE4A8-EFE5-4E70-A1CF-0084B4C7F151.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River before keyboard_0_92D4AB2E-AEE3-4C4E-900B-5FD8627FE452.png",
+        "timestamp" : 1791040746.401
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "FCEA564F-4BA8-40C1-A3D2-C5DA59EFB07C",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Synthesized Event 2026-10-03 at 11.19.03 下午",
+        "timestamp" : 1791040743.793
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "EF5C9C82-EC8C-4E38-9F60-C2B6185FBD2A.mp4",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Screen Recording 2026-10-03 at 11.18.49 下午.mp4",
+        "timestamp" : 1791040729.519
+      }
+    ],
+    "testIdentifier" : "RiverProductPolishUITests/testRiverComposerRemainsVisibleAboveKeyboard()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverProductPolishUITests/testRiverComposerRemainsVisibleAboveKeyboard"
+  }
+]

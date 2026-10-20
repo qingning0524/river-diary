@@ -41,37 +41,45 @@ struct AskRedesignView: View {
     }
 
     var body: some View {
-        RiverPage(topPadding: AppSpacing.sm) {
-            header
-                .riverAppear(index: 0)
-            inputBar
-                .riverAppear(index: 1)
-            if let currentAnswer = answer,
-               aiEvidenceQuery == currentAnswer.query,
-               let aiAnswer = ai.state(for: .memorySearch)?.answer {
-                aiAnswerView(aiAnswer)
-                    .riverAppear(index: 2)
-            }
-            if let answer {
-                answerView(answer)
-                    .riverAppear(index: 2)
-                recentQuestions
-                    .riverAppear(index: 3)
-            } else {
-                suggestions
-                    .riverAppear(index: 2)
-                if !history.isEmpty {
-                    recentQuestions
-                        .riverAppear(index: 3)
+        GeometryReader { geometry in
+            RiverPage {
+                header
+                HStack(alignment: .top, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if answer == nil { suggestions }
+                        if let currentAnswer = answer {
+                            HStack {
+                                Spacer(minLength: 36)
+                                Text(currentAnswer.query).font(AppTypography.secondary()).foregroundStyle(Color.white)
+                                    .padding(17).background(Color.ctaBackground, in: RoundedRectangle(cornerRadius: 19))
+                            }
+                            if aiEvidenceQuery == currentAnswer.query,
+                               let aiAnswer = ai.state(for: .memorySearch)?.answer {
+                                aiAnswerView(aiAnswer)
+                            }
+                            answerView(currentAnswer)
+                            recentQuestions
+                        }
+                        if !savedQueries.isEmpty { savedQueryRow }
+                    }.frame(maxWidth: .infinity, alignment: .topLeading)
+                    if geometry.size.width >= 980 {
+                        scopeCard.frame(width: 250)
+                    }
                 }
             }
-            if !savedQueries.isEmpty {
-                savedQueryRow
-                    .riverAppear(index: 4)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 9) {
+                inputBar
+                Text(ai.hasVerifiedConnection ? "可检索本机记忆 · AI 结果会附带依据" : "本机记忆检索可用 · 可以在设置连接 AI 模型")
+                    .font(AppTypography.micro()).foregroundStyle(Color.secondaryInk)
             }
+            .padding(.horizontal, AppSpacing.page).padding(.top, 12).padding(.bottom, 16)
+            .frame(maxWidth: .infinity).background(Color.workspace)
+            .overlay(alignment: .top) { RiverRule() }
         }
         .overlay(alignment: .top) {
-            Button("聚焦询问搜索") { searchFocused = true }
+            Button("聚焦 River 搜索") { searchFocused = true }
                 .keyboardShortcut("f", modifiers: .command)
                 .opacity(0)
                 .accessibilityHidden(true)
@@ -86,33 +94,54 @@ struct AskRedesignView: View {
     }
 
     private var header: some View {
-        PageHeader("询问", context: "询问你的过去，答案会回到证据。")
+        PageHeader("River", context: "从你留下的记录里找答案，随时查看依据。")
     }
 
     private var inputBar: some View {
-        RiverPanel(padding: AppSpacing.md) {
-            HStack(spacing: density.spacing(AppSpacing.sm)) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.tertiaryInk)
-                TextField("问问你的过去…", text: $query)
-                    .textFieldStyle(.plain)
-                    .font(AppTypography.secondary())
-                    .focused($searchFocused)
-                    .onSubmit(run)
-                    .help("按 ⌘F 聚焦搜索")
-                if !query.isEmpty {
-                    Button { query = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.tertiaryInk)
-                    }
-                    .buttonStyle(.plain)
-                    .help("清除")
-                }
-                Button(isSearching ? "查找中…" : "查找", action: run)
-                    .primaryCTA()
-                    .disabled(isSearching || query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        HStack(spacing: 13) {
+            Image(systemName: "water.waves").foregroundStyle(AppTheme.accent)
+            TextField("问问 River，关于你的生活与回忆…", text: $query)
+                .textFieldStyle(.plain).font(AppTypography.secondary())
+                .focused($searchFocused).onSubmit(run)
+                .help("按 ⌘F 聚焦输入")
+            if !query.isEmpty {
+                Button { query = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(Color.tertiaryInk)
+                }.buttonStyle(.plain).help("清除")
+            }
+            Button(action: run) {
+                Image(systemName: isSearching ? "ellipsis" : "arrow.up")
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.white)
+                    .frame(width: 35, height: 35)
+                    .background(Color.ctaBackground, in: Circle())
+            }.buttonStyle(.plain).disabled(isSearching || query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityLabel("向 River 提问")
+        }
+        .padding(16).riverSoftInset(radius: 20)
+    }
+
+    private var scopeCard: some View {
+        RiverPanel(title: "这次，聊些什么", systemImage: "square.3.layers.3d", accent: AppTheme.accent) {
+            VStack(alignment: .leading, spacing: 18) {
+                Text("资料范围").font(AppTypography.rowTitle()).foregroundStyle(Color.ink)
+                Text(selectedDate.formatted(.dateTime.year().month().day()))
+                    .font(AppTypography.secondary()).foregroundStyle(Color.secondaryInk)
+                RiverRule()
+                HStack {
+                    Text("日期档案").foregroundStyle(Color.secondaryInk)
+                    Spacer()
+                    Text("\(library.archiveDays.count) 天")
+                }.font(AppTypography.metadata())
+                HStack {
+                    Text("手动快记").foregroundStyle(Color.secondaryInk)
+                    Spacer()
+                    Text("\(allCaptures.count) 条")
+                }.font(AppTypography.metadata())
+                RiverRule()
+                Text("答案有出处").font(AppTypography.rowTitle()).foregroundStyle(Color.ink)
+                Text("每段回答都可以回到原始片刻。事实、推测和你自己的感受，分别保留各自的位置。")
+                    .font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk).lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -142,13 +171,25 @@ struct AskRedesignView: View {
     }
 
     private var suggestions: some View {
-        RiverPanel(title: "建议提问", systemImage: "lightbulb", accent: AppTheme.neutral) {
-            VStack(spacing: 0) {
-                suggestionRow("今天做了什么？", icon: "sun.max")
-                suggestionRow("上周主要做了什么？", icon: "calendar")
-                suggestionRow("本月提到工作了吗？", icon: "briefcase")
-                suggestionRow("哪天去了图书馆？", icon: "books.vertical")
-                suggestionRow("哪天主要在学习？", icon: "graduationcap", showsDivider: false)
+        RiverPanel(title: "我是 River，陪你把生活理清楚。", systemImage: "water.waves", accent: AppTheme.accent) {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("从写下的文字和留下的活动里，找回你想知道的片刻。可以问一个具体的问题，也可以回看这段时间的生活。")
+                    .font(AppTypography.secondary()).foregroundStyle(Color.secondaryInk).lineSpacing(5)
+                ChipFlow(spacing: 10) {
+                    ForEach(["今天有哪些专注时段？", "上周主要做了什么？", "哪天去了图书馆？", "哪天主要在学习？"], id: \.self) { prompt in
+                        Button {
+                            query = prompt
+                            run()
+                        } label: {
+                            HStack(spacing: 7) {
+                                Text(prompt)
+                                Image(systemName: "arrow.up.right").font(.system(size: 10))
+                            }.font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+                                .padding(.horizontal, 12).padding(.vertical, 9)
+                                .riverSoftSurface(radius: 12, compact: true)
+                        }.buttonStyle(.plain)
+                    }
+                }
             }
         }
     }

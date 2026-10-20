@@ -137,7 +137,7 @@ struct SyncCoordinatorTests {
         let key = SyncEncryptionKey()
         let entry = try #require(RiverSharedStateRecord.journalEntry(RiverJournalEntryContent(
             dayKey: "2026-09-28", body: "两台设备最终会看到同一段日记", moodScore: 81,
-            tags: ["跨设备"], updatedAt: Date(timeIntervalSince1970: 100)
+            tags: ["跨设备"], source: "legacy-data.json", updatedAt: Date(timeIntervalSince1970: 100)
         )))
         let letter = try #require(RiverSharedStateRecord.monthlyLetter(RiverMonthlyLetterContent(
             monthKey: "2026-09", title: "九月", body: "这封信来自同一份共享状态。",
@@ -176,10 +176,112 @@ struct SyncCoordinatorTests {
         let report = try RiverSyncCoordinator(store: macStore, directory: directory, key: key).synchronize()
         #expect(report.importedOperationBatches == 1)
         let received = macStore.operations.values.sorted { $0.originSequence < $1.originSequence }
-        #expect(try JSONDecoder().decode(RiverSharedStateRecord.self, from: received[0].payload) == entry)
+        let receivedEntry = try JSONDecoder().decode(RiverSharedStateRecord.self, from: received[0].payload)
+        #expect(receivedEntry == entry)
+        #expect(receivedEntry.journalEntryContent?.source == "legacy-data.json")
         #expect(try JSONDecoder().decode(RiverSharedStateRecord.self, from: received[1].payload) == letter)
         let receivedDraft = try JSONDecoder().decode(RiverSharedStateRecord.self, from: received[2].payload)
         #expect(receivedDraft.monthlyLetterDraftContent?.body == "这份信还没有正式保存。")
+    }
+
+    @Test func userJournalEditOutranksConcurrentLegacyDiaryMigration() throws {
+        let phone = RiverDeviceID(rawValue: "iphone_journal_authority")
+        let mac = RiverDeviceID(rawValue: "mac_journal_authority")
+        let dayKey = "2026-09-28"
+        let migrated = try #require(RiverSharedStateRecord.journalEntry(RiverJournalEntryContent(
+            dayKey: dayKey, body: "legacy snapshot", source: "legacy-data.json",
+            updatedAt: Date(timeIntervalSince1970: 400)
+        )))
+        let edited = try #require(RiverSharedStateRecord.journalEntry(RiverJournalEntryContent(
+            dayKey: dayKey, body: "user's newer journal", updatedAt: Date(timeIntervalSince1970: 100)
+        )))
+        let frontier = try InputFrontier()
+        let legacyOperation = StateOperation(
+            actorDeviceID: mac, originSequence: 1,
+            clock: HybridLogicalClock(physicalMilliseconds: 4_000, deviceID: mac),
+            causalFrontier: frontier, targetID: migrated.targetID, fieldKey: "record",
+            operationType: "shared.record.upsert", payload: try JSONEncoder().encode(migrated)
+        )
+        let userOperation = StateOperation(
+            actorDeviceID: phone, originSequence: 1,
+            clock: HybridLogicalClock(physicalMilliseconds: 1_000, deviceID: phone),
+            causalFrontier: frontier, targetID: edited.targetID, fieldKey: "record",
+            operationType: "shared.record.upsert", payload: try JSONEncoder().encode(edited)
+        )
+        #expect(RiverStateOperationFreshness.defersAnalyticalInvalidation(legacyOperation))
+        #expect(!RiverStateOperationFreshness.defersAnalyticalInvalidation(userOperation))
+        #expect(StateOperationResolver.currentAnalyticalOperations([legacyOperation]) == [legacyOperation])
+        #expect(StateOperationResolver.currentAnalyticalOperations([legacyOperation, userOperation]) == [userOperation])
+
+        for operations in [[legacyOperation, userOperation], [userOperation, legacyOperation]] {
+            let resolution = StateOperationResolver.resolve(operations)
+            let winner = try #require(resolution.currentByField["\(edited.targetID)\u{1f}record"])
+            #expect(try JSONDecoder().decode(RiverSharedStateRecord.self, from: winner.payload) == edited)
+            #expect(resolution.conflicts.isEmpty, "migration data is lower authority, not a competing user edit")
+        }
+    }
+
+    @Test func explicitConfirmationAndHabitAnswerOutrankLaterGeneratedRecords() throws {
+        let phone = RiverDeviceID(rawValue: "iphone_user_authority")
+        let mac = RiverDeviceID(rawValue: "mac_generated_authority")
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        // placeCandidate 的证据门槛：停留 ≥180 秒、附近 ≥2 个商户候选、
+        // 最近候选 ≤120m 且与次近的差距 ≤ max(45, 最近水平精度×0.6)。
+        let closestCandidate = RiverPlaceCandidate(
+            name: "学校", address: "上海市黄浦区", category: "school", provider: "MapKit",
+            resultIdentifier: "school-c1", distanceMeters: 30, horizontalAccuracyMeters: 50
+        )
+        let nextCandidate = RiverPlaceCandidate(
+            name: "隔壁书屋", address: "上海市黄浦区", category: "book_store", provider: "MapKit",
+            resultIdentifier: "school-c2", distanceMeters: 70, horizontalAccuracyMeters: 50
+        )
+        let place = RiverPlace(
+            id: "place:school-authority", latitude: 31.2, longitude: 121.4, radiusMeters: 20,
+            mapName: "学校", mapAddress: nil, poiCategory: "school", mapProvider: "MapKit",
+            mapResultIdentifier: nil, userDefinedName: nil, semanticType: nil,
+            isUserConfirmed: false, confidence: 0.8, firstSeen: date, lastSeen: date,
+            visitCount: 2, totalDurationSeconds: 240,
+            mapCandidates: [closestCandidate, nextCandidate]
+        )
+        let pendingPlace = try #require(RiverSharedStateRecord.placeCandidate(place))
+        let confirmedPlace = try #require(pendingPlace.resolving(.confirmed, at: date.addingTimeInterval(10)))
+
+        let cardID = UUID()
+        let generatedCard = RiverSharedStateRecord(
+            id: cardID, kind: .habitCard, status: "shown", logicalKey: "weekly|stable-card",
+            payloadJSON: "{}", createdAt: date, updatedAt: date
+        )
+        let answeredCard = RiverSharedStateRecord(
+            id: cardID, kind: .habitCard, status: "answered", logicalKey: generatedCard.logicalKey,
+            payloadJSON: "{\"answer\":\"user confirmed\"}", createdAt: date,
+            updatedAt: date.addingTimeInterval(10)
+        )
+
+        func operation(_ record: RiverSharedStateRecord, actor: RiverDeviceID, milliseconds: UInt64) throws -> StateOperation {
+            try StateOperation(
+                actorDeviceID: actor,
+                originSequence: 1,
+                clock: HybridLogicalClock(physicalMilliseconds: milliseconds, deviceID: actor),
+                causalFrontier: InputFrontier(),
+                targetID: record.targetID,
+                fieldKey: "record",
+                operationType: "shared.record.upsert",
+                payload: JSONEncoder().encode(record)
+            )
+        }
+
+        let resolutions = [
+            (try operation(pendingPlace, actor: mac, milliseconds: 9_000), try operation(confirmedPlace, actor: phone, milliseconds: 1_000), confirmedPlace),
+            (try operation(generatedCard, actor: mac, milliseconds: 9_000), try operation(answeredCard, actor: phone, milliseconds: 1_000), answeredCard)
+        ]
+        for (generated, userDecision, expected) in resolutions {
+            for operations in [[generated, userDecision], [userDecision, generated]] {
+                let resolved = StateOperationResolver.resolve(operations)
+                let winner = try #require(resolved.currentByField["\(expected.targetID)\u{1f}record"])
+                #expect(try JSONDecoder().decode(RiverSharedStateRecord.self, from: winner.payload) == expected)
+                #expect(resolved.conflicts.isEmpty, "a generated duplicate must not undo a user decision")
+            }
+        }
     }
 
     @Test func corruptedArtifactFileCannotImportOrReportVerified() throws {

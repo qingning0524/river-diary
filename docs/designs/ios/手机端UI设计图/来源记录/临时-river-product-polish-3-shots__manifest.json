@@ -1,0 +1,191 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "26DD2243-4F39-4862-AED7-5BAD712349D1.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Footprints real map_0_925AB491-7592-48F7-9870-B77F3E4C0E52.png",
+        "timestamp" : 1791042523.593
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "DDDDB403-18E6-430E-8D63-5A3F9D41F823.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Map controls inspection_0_E2800E80-D8FF-4D5F-B370-23F1C1D51988.png",
+        "timestamp" : 1791042523.472
+      }
+    ],
+    "testIdentifier" : "RiverProductPolishUITests/testFootprintMapHasRealStopsAndUsefulControls()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverProductPolishUITests/testFootprintMapHasRealStopsAndUsefulControls"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "E980CD9C-23B2-48A3-A552-A79FF5E1FBF9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River sent question_0_3F493EE0-311C-4205-9E24-C1326CBDBADB.png",
+        "timestamp" : 1791042538.035
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "41729506-DCCA-4B18-B835-532AC97CDB76.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River with keyboard_0_A395B8E7-86C2-4DAB-AFC7-1E8D290F7EEA.png",
+        "timestamp" : 1791042536.091
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "FF860BCF-ECF9-40DC-8BB6-D09D137EF855.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River before keyboard_0_7F91E69B-3BCD-4BAE-A87E-25C1D5205564.png",
+        "timestamp" : 1791042532.675
+      }
+    ],
+    "testIdentifier" : "RiverProductPolishUITests/testRiverComposerRemainsVisibleAboveKeyboard()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverProductPolishUITests/testRiverComposerRemainsVisibleAboveKeyboard"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "A6D3AA25-7686-4449-B022-0058388EA099.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "App UI hierarchy for studio.riverdiary.ios_0_28643014-95EF-4571-8B71-921456CF4FEC.qa",
+        "timestamp" : 1791042554.426
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "5334BE1A-85E0-47AF-8BA7-50B7B8D07F9C",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "UI Snapshot 2026-10-03 at 11.49.14 下午",
+        "timestamp" : 1791042554.426
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "802D2957-1DD8-4A3D-8ABE-A40A21F766B5.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_1411A742-3DF3-41A4-BF01-33D1B510FB7D.txt",
+        "timestamp" : 1791042554.378
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "BD1FD0FD-530B-4D5D-AEE0-1DD59DA67B37.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_DFBA76C2-2B35-41CB-9EF0-D003921CE7B7.txt",
+        "timestamp" : 1791042553.376
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "10546F25-6B22-4DD0-AB12-1E4323430DDE.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_89B8D2CD-24CB-4CF4-B814-64B453892A50.txt",
+        "timestamp" : 1791042552.419
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "B3A0CBDB-AF30-41B8-B9C2-69F027FB6550.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_3BE9DCA4-A5A6-4F7F-BFB8-2604D1220E3D.txt",
+        "timestamp" : 1791042551.471
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "2C8DF792-2D76-4D00-9470-7D56C988207F.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_62B4745A-2FDB-40B0-8A0E-5942D7B00B13.txt",
+        "timestamp" : 1791042550.407
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "4EC728CD-54F0-421B-A9C1-6846584B82A3.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_8A2D7276-24EA-440B-9D33-CEF5B0CB6BDD.txt",
+        "timestamp" : 1791042549.456
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "A371D3D6-B694-4A86-BBDC-4D01C5C6C95D.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_33F730DE-3FA7-4A7C-9743-799BC06494A9.txt",
+        "timestamp" : 1791042548.393
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "1F66E3E0-58F0-44A4-8D07-BF7AE657413E.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_110EBDBC-0935-492B-8ACA-828EE640C5C6.txt",
+        "timestamp" : 1791042547.428
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "A21CA133-3C5A-4135-A413-CCAF1044CD6C.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_4A12737F-A1A4-4467-B81C-A97936C678D4.txt",
+        "timestamp" : 1791042546.363
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "A27A3D39-A962-4EDE-AD7B-4313915B36BF.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Debug description for `\"river.day.analysis.overview\" StaticText`_0_1299553A-267B-41A8-8858-AA1F42311F4F.txt",
+        "timestamp" : 1791042545.407
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "97BEE838-6843-4E9B-8C16-579E2C3ABDEC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Today initial state_0_F00831FC-3592-44DB-A05D-0F9E28F6CAE7.png",
+        "timestamp" : 1791042544.344
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "5C74AE5C-5E63-4E3E-90D5-3472DB652FAD.mp4",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Screen Recording 2026-10-03 at 11.48.58 下午.mp4",
+        "timestamp" : 1791042538.428
+      }
+    ],
+    "testIdentifier" : "RiverProductPolishUITests/testTodayShowsEvidenceBasedAIAndNoDuplicateWritingOrMoodBlock()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverProductPolishUITests/testTodayShowsEvidenceBasedAIAndNoDuplicateWritingOrMoodBlock"
+  }
+]

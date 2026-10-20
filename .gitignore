@@ -4,16 +4,22 @@ __pycache__/
 .simbuild/
 .build/
 .swiftpm/
-backups/
+node_modules/
+.zcode/
+archive/backups/
+archive/releases/
+archive/personal/
 dist/
+output/
+tmp/
 data/raw.json
 data/data.json
 data/raw.json.bak_notion_migrate
 data/ios-user-data.json
 data/.build-state.json
 data/.ios-sync-hash
-js/app.js
-css/style.css
+web-preview/js/app.js
+web-preview/css/style.css
 *.bak*
 *副本*
 .build.log
@@ -26,6 +32,10 @@ css/style.css
 ios/.devicebuild/
 ios/.simrelease/
 ios/.simbuild/
+ios/.signedbuild/
+ios/.auditbuild/
+ios/.auditdevice/
+ios/.auditunit/
 *.xcodebuild
 xcuserdata/
 # iOS 内置数据快照（含个人日记，不进 git）

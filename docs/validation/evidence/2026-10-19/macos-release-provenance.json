@@ -1,0 +1,772 @@
+{
+  "provenanceSchema": 1,
+  "generatedAtUTC": "2026-10-19T07:32:48.312529+00:00",
+  "app": {
+    "name": "River Diary",
+    "bundleIdentifier": "studio.riverdiary.mac",
+    "version": "1.0.0",
+    "build": "1.0.0",
+    "minimumOS": "14.0"
+  },
+  "build": {
+    "configuration": "release",
+    "swiftVersion": "Apple Swift version 6.4 (swiftlang-6.4.0.33.1 clang-2100.3.33.1)",
+    "sdk": "MacOSX27.0.sdk",
+    "signingMode": "ad-hoc",
+    "codeDirectoryHash": "14cd726c276e5122d387dda2a54168eb7538ed3f",
+    "bundledDiarySnapshot": false
+  },
+  "source": {
+    "revision": "628aa249931ccba67e3cd07454f349e2baa86f19",
+    "workingTreeDirty": true,
+    "workingTreeStatusEntryCount": 8478,
+    "fileCount": 182,
+    "fingerprintSHA256": "0e4659729992d9f3fc68236eca87d1552209dadeb8f40cd3bcbb35e46d29e0cf",
+    "files": [
+      {
+        "path": "Packages/RiverDiaryCore/Package.swift",
+        "sha256": "6aa8ab30c4966b1f1d9676f0f652b1b4ba491b81e6d78272d9a90611b32d0881"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/AccountService.swift",
+        "sha256": "4902f90957dcf9c0425ff40b491d7c0fa48cff6e7d1dc521adbfc1b276c19295"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/AnalysisFingerprints.swift",
+        "sha256": "fc7a062c0b0401b4ce2ce9f1a1224b6d52832b2a6dfb859cfe60ff99f68fdcf0"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/AnalysisJobs.swift",
+        "sha256": "c6538fcd5a81bfcea067ad5328ca6a475c50f42ab164e0eb60ff65d1c217b8bc"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/IdentityAndEvents.swift",
+        "sha256": "82d95c6730853f2bcacb1c75979b5c13cba46add9820e8bbb1c5947fcee36fd1"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/LANReplication.swift",
+        "sha256": "ba21afd10609d16883d5b9399ad46dce17de5222695a095be41e4489288beda3"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/LocalBackup.swift",
+        "sha256": "11bc6f9dc080ea13b56cf773551c729179f5120a88932be0798a9f52015ae8e6"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/ObservedTimeDistribution.swift",
+        "sha256": "ea9f6a2ab09a817e27814b32cd431615f6904c58b1c75a22c50193802c53725b"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/PlaceResolver.swift",
+        "sha256": "aba47640eac4e24ec6a20eb602a02ccb62680371cb0feebee9f12696d426b2b9"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/ReplicationCrypto.swift",
+        "sha256": "bbb77881188f686542757f0e58fb7ea6fde4cb64a728b725f2e626548ae7b356"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/ReplicationTransport.swift",
+        "sha256": "ccff4807ea58a8d9efcc1f99b275580c9bf0595055ca280b2fc459dc9df5d87b"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/SecureReplicationIO.swift",
+        "sha256": "1f33ffade08c1a92d2c3751e273c3586302cad6cbd427fd3ae5c5fb147307853"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/SessionBuilder.swift",
+        "sha256": "aa4fd8f18ae6fd127ae6e70b927f8b45b5f5780377eccc13f3ca3cdd60e012c0"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/SessionFusion.swift",
+        "sha256": "42718496439fb8d5b2109774cf024c07a419177f41d74ece37ba03448e78f1ad"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/SharedUserState.swift",
+        "sha256": "7f6ae6bf25b7358d3aeac571b9905d48d7ff01ba45bba1a33e8230addcfa04df"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/StableIdentifier.swift",
+        "sha256": "5e8d2d3dec35282024659d00639cf593c2e806dfc4e45fd35f172c0204eb73a3"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/StateAndArtifacts.swift",
+        "sha256": "23e279874c59b301646beba18b627bb1c7f49fae00adddb6cf6df51f82671125"
+      },
+      {
+        "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/SyncCoordinator.swift",
+        "sha256": "e225a8d05b18ecd3908e8c249bebe9f98bf59a3298f42a04acd0b246ff3d7699"
+      },
+      {
+        "path": "ios/RiverDiary/Info.plist",
+        "sha256": "32f70c16eefd6b86915a6ee8c35e27fea018e001a3c7e1885f025e37b04958c0"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary.xcodeproj/project.pbxproj",
+        "sha256": "b0609f15d48ecf7c5f90f0bde61bbaedd457b5d2eac4cee2bb02410cdd804562"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/App/RiverDiaryApp.swift",
+        "sha256": "c0b74498e83d13771ac6b20938b27c9b39056c6285897f1a57085df9a4c61460"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Design/Theme.swift",
+        "sha256": "bb30a24a96190e18a520879552192c91b46e4339c151184268c88d90fd3c1364"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Domain/Models.swift",
+        "sha256": "fe6befabb2cd35a957074fea68dd2f8339f7a1afe60b668ed4692ce9273fd710"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Features/Diary/DiaryStore.swift",
+        "sha256": "9a3a4722b99c57f02bcadcd1bbc6a602f6bc4fa1170cacbeb706aad3e562dcac"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Features/Diary/Scoring.swift",
+        "sha256": "fbf85cfa2f04df7e9c1ed5614ce972184b669caaea62de6e4c14879a13965c2a"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/AI/IPhoneAIStore.swift",
+        "sha256": "ade82491085d210d3a96b3afb8d94a317957fa9b4d1a08a67805100d87d9326c"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Database/RiverLocalDatabase.swift",
+        "sha256": "a688750ce35073f5738ff943490b6a737d6220dc9af9ee4b321a47b6f01cbca9"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Drafts/RiverLocalDraftStore.swift",
+        "sha256": "f58107e196cee348ec8a817cd9a7106bb798e4f24e21bd317e6eda1a89ff04ce"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/AppleMapPlaceProvider.swift",
+        "sha256": "ec062283fb2878fff1f7fe2f51c686dd8c51aef1e44dc191243ed434538d0432"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/BackgroundHealthSyncManager.swift",
+        "sha256": "b67df0242bf2574511dfa120479f2e4ab5b0789e36c8f649bac784c205ea7ba5"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/HealthKitStore.swift",
+        "sha256": "d6f678196f5f445bf4159e6c19241dfa515cf8bbbc3008bf87bf5defad8e4238"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/HealthRefreshBatch.swift",
+        "sha256": "87258f9170cbab006a7663c04e20bb1c94b85ece973bda56ddfeb08f79f3553c"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/IPhoneLocationCollector.swift",
+        "sha256": "2a44ab18c6a43187314a2294bf14367a60cd6ec73e38cc45a1f0e63e2b23ac4b"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/IPhoneMotionCollector.swift",
+        "sha256": "53732fac20e882cae4fbb70c892bd908f1f8b4dc5065eed15e713bed0ec08dd0"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/IPhonePhotoAnalyzer.swift",
+        "sha256": "b522e71dd06c0e343e324d5f09f71eaea0cb42b3db2060d4a7850133b8a61f0d"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/LogAppActivityIntent.swift",
+        "sha256": "f8bf901bb98dfb3f0bb44e7a7707048c533401250433aa6d833bc4a2a667eb17"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/ScreenTimeStore.swift",
+        "sha256": "73a1b2d0b4417615a2ac2ac4ac593926f108d37fd5a4daf4a6793f4d59997f25"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Notifications/RiverReminderStore.swift",
+        "sha256": "f4c52acd40467d4d09e87f7a595395d420f7db1848260b0ee2fbfffa4641b5fd"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Preferences/RiverThemeStore.swift",
+        "sha256": "3abddad5956e1d5efb4bdfc3c182f824a9154dc4aa0c239eb3acd3d928f43744"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/QA/RiverModernQAFixtures.swift",
+        "sha256": "6d131bc8d0a6b6f003adb4eed0d3d1d9665d24b0364c595d09be5793661dcfa8"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Sync/ICloudDriveStore.swift",
+        "sha256": "d9585be6f87e8a317fee9e9390b221b3a8cc3ba418d61cc0f7587e84538f1843"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Infrastructure/Sync/RiverNodeStore.swift",
+        "sha256": "179ccf4967b33211a5f28d33a0dc695b55fdf34b17fe164fccff87827bb66633"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/AccountViews.swift",
+        "sha256": "bd93e8a1c685c83c6f560536271cbee194f446d14e59ace6385f5dc46166ae45"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/EntryDetailView.swift",
+        "sha256": "57a17b1171af674cd94144facdcb4bb6922278fe210348ca5a02b9b3271fc62f"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/IOSExperience.swift",
+        "sha256": "f6a8e676878ddd7cef400b0bc46508762790dc0fb7a891b245c671528e947847"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/InsightsView.swift",
+        "sha256": "569dfaae4ec4529d488ee06a80d84c8b077b7a4cb7855374c36e147cc036ae86"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/JournalView.swift",
+        "sha256": "d0be40327eece3e2d3445c1c2fcd018623586862068368c438a340f203c9f356"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverActivityDetailView.swift",
+        "sha256": "598aaa6d12752fdc9f722c6cc59477ad02fcd7f1696f2a487ae8f4940cf4ad07"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverAutomaticTodayView.swift",
+        "sha256": "238bea9e09b4dbcc6aae36668a61ef1d4fba6166d07813961e1dba5a34de61a2"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverConfirmationsView.swift",
+        "sha256": "6ea3f2e35db5fc419be44c268ba062bbc70c64a92359bedfdd42195c6c0877c8"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverDayAnalysis.swift",
+        "sha256": "4e2484d5fff8fa5555030c0eb89ab55530e0f2b65fd66192e772974fabc1e4ed"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverDayReadingData.swift",
+        "sha256": "f8cc0a94ab18c9a279359874874ff47577a7ee08293d8a56895f4b6a064ca29c"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverDesignSystem.swift",
+        "sha256": "21df630e1ea0f171adb518b294b91675fa4af67c2b1edc55cff65d892fdff4e4"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverFootprintPresentation.swift",
+        "sha256": "d722421631d9e63cec962e0043bb322ffd037c8328906a298bfb9c6caef2bd79"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverFootprintTimelineView.swift",
+        "sha256": "11daede038757f81f33a1a6259d9ba3c78ee10043383ba8bc36c9de82a0c1aa8"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverFootprintsView.swift",
+        "sha256": "954a23d4c760f3c0b18473475f269ae1f460ef841227a19b5a9d712384f2a62f"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverJournalComposerView.swift",
+        "sha256": "ac03345a8333e84502e1a661a28bbb8676946088fa37769bedaf02df8884512d"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverMemoryHomeView.swift",
+        "sha256": "fb4e989ee2f557bda16f15a3c0b6d711d593036b21b10b3d9c813995fbe77245"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverMotion.swift",
+        "sha256": "819a7b24465f4658d05e79d9662af07ba59488aabbd2ffa161dc3a8f166cf741"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverNeumorphicSurface.swift",
+        "sha256": "891efb68dfd50c5cae56fd30b3c2749e5643cc9d74b530d1b0f4807fd3bd0849"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverPasswordRecoveryView.swift",
+        "sha256": "c2de1b180c5a0c0fe6d540872b2c07ae80025c767ffb164f2f542ca024955cba"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverThemeDayComposition.swift",
+        "sha256": "f48d94e878d98527c65d3e0a4693227ea729d7c462b2bfbddfe480db8607ac8b"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverThemeSettingsView.swift",
+        "sha256": "5cbc980b8370a69f0ee08de56ce01bea9ec8656e265745e72c4b9d93c3c7623c"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RiverUnderstandingView.swift",
+        "sha256": "91da55c861d496af1be5667e763e710861b6dadac580a97721ee5244ed45fb67"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/RootView.swift",
+        "sha256": "903dd4afd013b3e8d9a2e973fde2c781f60bdc7dbda1c74f479deadf42b4e6fb"
+      },
+      {
+        "path": "ios/RiverDiary/RiverDiary/Views/SettingsView.swift",
+        "sha256": "c95edf262bdc5acf86933d6ffd1ad1ccf0458b22c4ea280fc95bce7d92fbac1f"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Package.resolved",
+        "sha256": "842009841d30d4705750aabb64d86160a5cdd26d600662914445b5a811f2b1be"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Package.swift",
+        "sha256": "3f48a2f6971036122a5a19dcf89cb352e4cc100758e6e23abc64662e3d369e5c"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/App/RiverDiaryMacApp.swift",
+        "sha256": "1937874eeed536781b03611cc87ce2f4c486605b7631e9c3f66a13666701b4c5"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/App/SettingsWindow.swift",
+        "sha256": "0fbcec7e37a77c79e490f2a365941dc2402ea2e1071b0a5171be933231dc3518"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/App/UserFacingError.swift",
+        "sha256": "46c7d344ddb414f2a8286347b9db8133b4571d0a3de0ccea84db0eb107697476"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Design/DesignSystem.swift",
+        "sha256": "06b0309dce47f7bc186dc8084c97499498df313020d0c6bc15398c9171303bd9"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Design/Palettes.swift",
+        "sha256": "4fe3d65b1ac29f43faec4a99f20cc6ae671c552a964241b6faa1fb22b422e5e2"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Design/RiverSoftStyle.swift",
+        "sha256": "d0b1e7eb8addec4d1bc1a2a5b44b788f73a08c0dd1027eb627569f6deba42eea"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Design/Theme.swift",
+        "sha256": "0782ba206031796f52a4e093120c9411c46d553fb1011317442b858a9be1fa2f"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Domain/Activity.swift",
+        "sha256": "c95a26a0f461f5c822bf770a091be0fe869c790ff1cf2c21f976a66552f4a77e"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Domain/AnalysisRun.swift",
+        "sha256": "fa71fa3344a4bddb5f038635c5b94fc8587f44c7a95f1ad6fcb839f0271fa8ce"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Domain/Episode.swift",
+        "sha256": "afc3ad24b7ffcb081a0651db073bfb7467ca098760dcca36555cc2a28791057b"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Domain/LifeRhythm.swift",
+        "sha256": "6014d1340d55f9e723530ea3f53c2195dc0ade9465f9b542649596e3da86ccd5"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Domain/Memory.swift",
+        "sha256": "46c8c5e9b4a2ef238403a12a5588d00c86fe33f7f9425525c26cf687ce70c359"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Domain/RawEvent.swift",
+        "sha256": "5dad3e5a18a6769b99e70d2894a8903787caa4fdfd27d0d8ab3a8ed0727966c7"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/AI/AIAssistantStore.swift",
+        "sha256": "f6ab87b63e94bfec82694f48e7826461642b5de80a7b93fe67fe2f1e0954a3fd"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/AI/AIModels.swift",
+        "sha256": "f2997d5c9c068d17f50cda6100231b8def33fb1b44251960485058bf2dc2ebe8"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/AI/AIProvider.swift",
+        "sha256": "4da2407880a64a4c6ab9f2a626bcfb27a6159e605019d9620ebc863e74d7a7a3"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/AI/AnalysisContext.swift",
+        "sha256": "0530560d58fa03afc17c4cd473980434d6595d1542443f8a72755fa8fe27e2da"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Activity/ActivityClassifier.swift",
+        "sha256": "88a47eb4b24b0c54ff1d2e6541079196d521e8b2d95840d01f354ff075c11e33"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Activity/ActivityConfidenceEngine.swift",
+        "sha256": "e3a43646b8c0c625c7a1df343434ee903eb14a5a35e09c712c6a3d8e195d08e8"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Activity/ActivityFusionEngine.swift",
+        "sha256": "c46f0a9888e5013ee76a194754e5dde2807fae5923f3c833e98a27fe3f51cf6f"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Activity/ActivityLifecycle.swift",
+        "sha256": "ffdd44ec873c3e049519c17788cae9b97dd88c7add7d9347182f9e281811e9ce"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Activity/ActivityModels.swift",
+        "sha256": "647c0589d846171990224bc64de6cf17074b55d438a1c211a701d136fa0bc821"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Activity/ActivityStore.swift",
+        "sha256": "c3be922c522512052186ad62be00c9685f6c400c8df61bcef8afbc5cb20c8f0f"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Activity/ActivityV2Projection.swift",
+        "sha256": "20dd9fd2586e1ee3fa9136d53228a26b654c4c45ad822d162da7fae1da580e83"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Diary/DiaryStore.swift",
+        "sha256": "d3cf62abcea7c16849d2569121a3468e3590a095e9b298cf49d371262d4aa075"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Diary/EveningReminderStore.swift",
+        "sha256": "4b5d49eeb403b5f4112a2c05ebb08dc0aa90bf64a69becd95a53578ab3bf3799"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Diary/JournalWriting.swift",
+        "sha256": "ea2a21082d9dd47859feb2d8ed9b22cb1012f5cb79ae53e70c773b833029b596"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Diary/Models.swift",
+        "sha256": "b8baab21646e5c6b696e1a36138ef0014dff1723a80ac9c04320d2c2d2e15c27"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Diary/MonthlyLetter.swift",
+        "sha256": "31d432a29894b45d0a287ebf1205c1b0a930a1d6bdf31c3576d30913f923efb5"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Health/MoodInsight.swift",
+        "sha256": "1ddc890bbd7df2482fa0ed8b6c27e0660d930208002cd6c471a510ae715db9fb"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Memory/MemoryArchive.swift",
+        "sha256": "1eeb65fc92f38dcdc7f721535b0a71b9792677bce29fb1d9570974cfae8169e0"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Memory/MemoryLibrary.swift",
+        "sha256": "2a406c66de03c0a836fe50fd5273b87e92046abd3f2e5737eed9ea57883d94cd"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Memory/MemoryPresentation.swift",
+        "sha256": "c89f6dab4764f1de24f140f1d58393dafd2c2218043d33b87c6e5b57d04e10af"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Memory/MemorySearch.swift",
+        "sha256": "3206ebc0c0dbe8dfeed3f75f24e3785c4bf4115893b18d7c6cafbd7bf57762c2"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Review/HabitCandidateEngine.swift",
+        "sha256": "6b86b27663ffe3d8f0ad0aeceaa897f1a191209a002f7fda105282fc6cf181db"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Review/HabitReviewModels.swift",
+        "sha256": "52d6ea8fac070bdcaefa2e134ee90fdc115af3dc33875a910da102465085830c"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Review/HabitReviewStore.swift",
+        "sha256": "bc87b0a9db38e7347e99b20880b3a035958387c2db804267d28f8bba782f3e9d"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Review/LocalDayReport.swift",
+        "sha256": "5548bf373aef27d77efceda5b16f4f3e1e97ebdc80c02ffdea282ad72f82500d"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Review/LocalReview.swift",
+        "sha256": "6df24b837878d16406992318857a3a2d27b101f7d3d78615036c50163bacaa7e"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Review/ProgressComparison.swift",
+        "sha256": "4bd93890a65bfaf913d8decdfdeb1862f85cac290bf9d245b0a847c2019b6661"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Timeline/ActivityTimeline.swift",
+        "sha256": "a0788c9bc4f4931bf9b7ce2bd8e191e22c96355e738124dbfea0590f09fed571"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Timeline/EvidenceReference.swift",
+        "sha256": "9dd6331e4b7740e94f835a770e9b919008e640e12f5de59cfcbec495bae2e66e"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Timeline/TimelineAnalysis.swift",
+        "sha256": "98d6eb2703340343c0d4033f5122e4b82e8da90a3459a8adaaa01af4af7b84c4"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Timeline/TimelineAnnotation.swift",
+        "sha256": "ca3d56530bb94184cc2c255989f6d5d3d1febe510f507765be808f26ed08f0e1"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Timeline/TimelineDigest.swift",
+        "sha256": "a577ff8e9d0205b8faad89aec4f79f7c6f98f30f2e5343aa8fba2ae88099e69e"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Timeline/TimelineSegment.swift",
+        "sha256": "60bb9a024a95b6e138008d7c9037529dfec67acf8f3ef913af32856f08033936"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Timeline/TimelineSegmentNames.swift",
+        "sha256": "136f7b8e5ff9503d288c08f0caea487dde86757c7ea9fc21263a60cefe5db9ab"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Database/AppDatabase.swift",
+        "sha256": "b9789bc83bdde0a5c039629062c718049e0b810689024ce8865838f94e0379ec"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Database/AppDatabaseHistoricalImport.swift",
+        "sha256": "4e1b0c5ab54f71b7548881aab719dc0b862b65375e124226c6c2684c7030b375"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Database/DatabaseCipher.swift",
+        "sha256": "ec3533402dae0a1e33e68a98dcf8530a9881814ccb88f6f63f953dd4dd242324"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Database/DatabaseModels.swift",
+        "sha256": "6eef3ae158e7e9d29e8a8b9ac1c0e8f915db52cdac1b2659e288b95702b71c66"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Database/DatabaseTime.swift",
+        "sha256": "0b1a0458a72441736b9c9c5dfc28484093b40b89babb2d0cf964fb4a3430db16"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Database/V2Store.swift",
+        "sha256": "8d78c73535f0d9a87bf04db19100e61e7c8a8acd65d28cebe47f544de9ed1ba4"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Ingestion/AppleNotesReader.swift",
+        "sha256": "a88ab9bf009a39d7b4df890171770330442cd9423d708303792e6b89e0736f22"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Ingestion/ChromeHistoryReader.swift",
+        "sha256": "f5b09452e2ab3dbe32f89ad8c1a37864a6aca449fc81dce01011170f1fa1c736"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Ingestion/DailyCaptureModels.swift",
+        "sha256": "0841b740aa967fb80f6c55c99243ed6fc102af366fdadc835c21f532605a8901"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Ingestion/DataIngestionModels.swift",
+        "sha256": "cb6fab6a66f9161a2df1149706100774c61a516a4a1b077809ffa2afd6562e93"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Ingestion/DataIngestionStore.swift",
+        "sha256": "0a6659b3208dfe7d9ff316e34855c61dc53356fe241a31e0ad93cedca1fbadbf"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Ingestion/LocationSourceStore.swift",
+        "sha256": "2eb0dba633f3fd7c3ac33a0de6bf62dbbe1e8b8a3e6f239cdf8b43afcf732f03"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Ingestion/WindowTitleSampling.swift",
+        "sha256": "dd317faf8624f41f736b4767be80ad60e8d983bc43ce46e78a274213bb0bb821"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/QA/MacQAStorageIsolation.swift",
+        "sha256": "6501d1916d3f47ab69f9d2d76695f553a743d1763c419f0963c42124f47d1866"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/QA/MacSoftVisualSession.swift",
+        "sha256": "141adec8c0d6e7cea6c3f341080887452fd2195f08527d0b069ab8aa42d6fff9"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Recovery/RestoreRecoveryJournal.swift",
+        "sha256": "25ba713bb4d65d5f0cf81088ccd6dfe9770b2e0817ee3fcb3cac0e18331ed987"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Security/AIKeychain.swift",
+        "sha256": "7d9c12ade5ee6c32e9e50a0c4c9bcb517f31997e81c1dae691cce276efbc42e9"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Security/LocalStorageProtection.swift",
+        "sha256": "ac71a8eb1a5dac34150610fb12fe1586b2c671c9be46991df6474f82306118f3"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Security/SHA256Hex.swift",
+        "sha256": "8dad54f83199b67b25388913f42aa2cd8cb2fd46c0740f9213cdfea92e7d36ce"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Security/StateEncryption.swift",
+        "sha256": "792053cbbc934e498e97af9dae053a8f10e71e242a44f949195e17a837a219ec"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/Sync/SyncSettingsStore.swift",
+        "sha256": "d88c0320cbbc7f401610f72dccf2fba727a58a42940654443c76df3f848fb444"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Resources/AppIcon.icns",
+        "sha256": "4883b4715e83b3354f21db6963d7f24c6e8e3e08798547d7a89c4610a9898bab"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Resources/ThirdPartyNotices.md",
+        "sha256": "be245c078135ab11d3c91539ecc895a2f1e12309b2c2cd9c22486124343cdc7d"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/AIConnectionCard.swift",
+        "sha256": "9768844dec85b8a914c51dfc7a4470a00237343edf4b4f2eb1af845145483f25"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/AccountViews.swift",
+        "sha256": "0258bb513dacf377cbd16236f3b2ee8944a7f36e76a9040f494c13d91b68ccde"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/AppLockGate.swift",
+        "sha256": "3c8de27a1bfea86efba88cbe6e52fad20bca4e2d7838677fcfa61b63b6ca757f"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/AskRedesignView.swift",
+        "sha256": "2e5f68aa55b8866972cc50f768daf386750b1091690f34b0edfdf7cf7400c632"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/CommandPalette.swift",
+        "sha256": "38a0a1489e92ee86cee5f6cc8c740b502e7980d67d92dbba246b8a922679fc54"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/DailyGoalControl.swift",
+        "sha256": "9c439294be3b7199f4fbec20690321c4c0cc2fd3b9f93651e4f15630235d8586"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/DatabaseOverviewView.swift",
+        "sha256": "250cfad7c1c5ce37b6985d837ea7c60ee4170e3ca3833f3da7802015beee7063"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/DateNavigator.swift",
+        "sha256": "76704733b69d98b7153b3da9ba91a49d526ae84a8443a84562e9db220b2e4b00"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/DayReviewQueue.swift",
+        "sha256": "e31bfc076bbf63186e0500ffc699b71eb14d8b6d0a7dc4cae16b65318d954e85"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/EvidenceConsoleView.swift",
+        "sha256": "11f7c231732f2045f8dafc6890c5da9b7aa76d9fe3e718aae99f974c1be03866"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/FootprintMoments.swift",
+        "sha256": "9d68af31654efb126c834c6ab0ba39a72245439ec20563fb2d9e12091bda070a"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/FootprintsWorkspaceView.swift",
+        "sha256": "778f17b6026524cb7710251c4962c7dde83886eda2f0ba84e5199db30df648bc"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/HabitReviewView.swift",
+        "sha256": "0962ec37eff68f0f0275b65a18ce38d3c543975282d55e5dde9c5457262209ed"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/HealthWorkspaceView.swift",
+        "sha256": "51bacd96e4dbc4cf460bbc211dc97df7270b305005e5af7479e4b9f03bf6e438"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/InspectorPanel.swift",
+        "sha256": "65e23ca819f0e91905703a014ca260f0da19bad4f5d8aa53040c2eee7be569e7"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/InteractionFeedback.swift",
+        "sha256": "416e9679c008be4f963cd35ea257178ada0f4cdb0893d325313db04a7018dbc1"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/MemoryRedesignView.swift",
+        "sha256": "acdce71ceaa32f47aca1bf5aa74c9746110d9d06f3b666acd9007a87dac30e8e"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/Panels.swift",
+        "sha256": "6c7b060b99da17f4c7b8fc63504017ca13b96a5f4b99528664ddff2160edc58b"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/ProgressWorkspaceView.swift",
+        "sha256": "68cb19996427aacf40b32e6edf6f86021a30921bff0c5cf70eab5b657dc276f1"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/QuickCaptureView.swift",
+        "sha256": "78b8e05e8e2a017f7b0cd7ac2419ba743cab623a1b4e48a867ef1e987cd0f52e"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/RestoreRecoveryGateView.swift",
+        "sha256": "f4ccbaee470a44492c3e3047e0a2723678985541b69961baace42b2deaa5a430"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/ReviewRedesignView.swift",
+        "sha256": "0c363c07dbd6c2cdf6b6552008d917626f4c59ceadc08c5144301d1dd58afc70"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/RiverNavigation.swift",
+        "sha256": "a3bad3a8a39bce7a78c87ad8a75229411ad5c1273be643c0de5921076c35ce28"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/RiverScrollIndicator.swift",
+        "sha256": "595cb3de802fa22abcd9d8186faadc98e4538a855ce6322986b17bc26221edf9"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/RiverShell.swift",
+        "sha256": "30e7aa8525680c31f18105aac97e9e687c995115894f6d2d627eea7307723e46"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/RiverTimelineView.swift",
+        "sha256": "791a03dbc61775e3da35143cf874fe2fc265aecad24e89914e357812b27dfdbc"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/Settings/AISettingsView.swift",
+        "sha256": "4aac48a50aced28822d5d729124c7ce108f9b5dfb63a9224f8442cc2c235f443"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/Settings/AppearanceSettingsView.swift",
+        "sha256": "d097e768df1a22e65b71f1c000280dd1745a185b0ebe27d7f42c7319a7cb889e"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/Settings/PrivacyBackupSettingsView.swift",
+        "sha256": "ae500e3b19f031a01f85e91e4ce2e1838646d98a6261642fe3a8189b48ae01c1"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/Settings/RecordingSettingsView.swift",
+        "sha256": "259bb4b19d1db05d97fa4eb07fa648fcce8f98b7e19c8dec010ea6a00d3401ec"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/SettingsPresentation.swift",
+        "sha256": "adb91dfa1f10602f506697ac5878792c699b5b15303023e5e88057bbe56d1ec8"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/SettingsRedesignView.swift",
+        "sha256": "f88fbcb3fa94027c3e5432fadf94235f85b9a4b60068c0103143678996b64158"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/SharedUI.swift",
+        "sha256": "42fbade8f49ca70093368e78acea9b29bc02c0516203ac41587f94066124f4d7"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/ShellComponents.swift",
+        "sha256": "8aa363fb5072e8447107c0237596e0ac9e00f38cec279bcfc34b5b701977cc60"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/SourceHealth.swift",
+        "sha256": "68850ba21eb0ac297c725d4fa052096735cbfdf98972f584f251fee1b2e70d0a"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/SourcesOverviewView.swift",
+        "sha256": "daba7d65ced536f2ff6e926c13523feb08edd9c9d668e3d8e0120a2bae595142"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/TimelineAIDigestView.swift",
+        "sha256": "e4caeba2db40cc675dfa5ec3fd85643568dc64e0f1c5c51867836754d8144790"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/TimelineRibbon.swift",
+        "sha256": "6a84bcd456ab2eeb02070d6d579300cfa04560096a3e03878caa7833ac19aee7"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/TimelineWorkspaceView.swift",
+        "sha256": "54b4dba4bbf3ac4a81b2d4e5677e91eb254c10607ad42e558c57ed3e1a060751"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/TodayDashboardView.swift",
+        "sha256": "edc2ae4d170287822b874d17e652aab3ae2a01d9a63d386255e49b8109aba325"
+      },
+      {
+        "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/WorkLearnWorkspaceView.swift",
+        "sha256": "ced8992c02725402f53972492843b006f714ab2086767ec1c25c7981f3a8bd29"
+      },
+      {
+        "path": "macos/RiverDiaryMac/make_app.sh",
+        "sha256": "6bb255704652d1dbdcf4bfa06cacf9c4eb17d7216142585ac2d1abc00e56ac28"
+      },
+      {
+        "path": "scripts/select_xcode.sh",
+        "sha256": "828e5e93cc2e71c0c09a853bb6eb1e5eb862bda567910673e6fc49015dcc917b"
+      },
+      {
+        "path": "scripts/write_build_provenance.py",
+        "sha256": "defb3bf721be88ce24d9e578b0b452241535deeb4602bdf6851f4207f7e463e2"
+      }
+    ],
+    "packageLockSHA256": "842009841d30d4705750aabb64d86160a5cdd26d600662914445b5a811f2b1be"
+  },
+  "schemas": {
+    "macDatabase": 2,
+    "iosDatabase": 7,
+    "replicationProtocolMinimum": 1,
+    "replicationProtocolCurrent": 1,
+    "backupProtocol": 1,
+    "backupSchema": 1
+  },
+  "privacy": {
+    "diarySnapshotPolicy": "excluded from packaged resources; connect/import explicitly after install",
+    "excludedSnapshotPaths": [
+      "data/data.json",
+      "macos/RiverDiaryMac/Sources/RiverDiaryMac/Resources/data.json"
+    ]
+  }
+}

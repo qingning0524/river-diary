@@ -1,0 +1,101 @@
+# FlowRiver 统一网关 — flowriver.xyz 全域
+# 部署:sudo cp Caddyfile /etc/caddy/Caddyfile && sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile && sudo systemctl reload caddy
+# 2026-10-04:新增官网(@ / www)、登录页、用户中心;api / admin 保持原行为不变。
+
+{
+	email account@mail.flowriver.xyz
+}
+
+(fweb) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+	# HTML always checks for new releases; versioned assets keep their cache.
+	@html path / /index.html *.html
+	header @html Cache-Control "no-cache, max-age=0, must-revalidate"
+	header /assets/* Cache-Control "max-age=604800"
+	header /downloads/* Cache-Control "no-store"
+}
+
+# ===== 官网(裸域为规范域名) =====
+flowriver.xyz {
+	import fweb
+	root * /var/www/flowriver/site
+	handle /v1/site-status {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /v1/announcements/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /v1/changelog {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /v1/feedback {
+		reverse_proxy 127.0.0.1:8080
+	}
+	# 安装包由 API 按后台开放状态提供，暂停后旧链接也无法继续下载。
+	handle /downloads/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	redir /terms /terms.html permanent
+	redir /privacy /privacy.html permanent
+	file_server
+}
+
+# www 统一跳转裸域
+www.flowriver.xyz {
+	import fweb
+	redir https://flowriver.xyz{uri} permanent
+}
+
+# ===== 登录页(静态)+ 同源 /v1 API 代理(免 CORS) =====
+login.flowriver.xyz {
+	import fweb
+	root * /var/www/flowriver/login
+	handle /v1/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		file_server
+	}
+}
+
+# ===== 用户中心(静态)+ 同源 /v1 API 代理(免 CORS) =====
+user.flowriver.xyz {
+	import fweb
+	root * /var/www/flowriver/user
+	handle /v1/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		file_server
+	}
+}
+
+# ===== 账号 API(iOS / macOS 原生客户端入口,保持原有行为) =====
+api.flowriver.xyz {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	header X-Content-Type-Options "nosniff"
+	reverse_proxy 127.0.0.1:8080 {
+		header_up X-Forwarded-For {http.request.remote.host}
+	}
+}
+
+# ===== 管理后台(保持原有行为) =====
+admin.flowriver.xyz {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
+	header X-Content-Type-Options "nosniff"
+	header Referrer-Policy "no-referrer"
+	header X-Robots-Tag "noindex, nofollow"
+	reverse_proxy 127.0.0.1:8081 {
+		header_up X-Real-IP {http.request.remote.host}
+	}
+}

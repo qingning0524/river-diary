@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly encrypted FlowRiver account database backup
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=5m
+Persistent=true
+Unit=flowriver-backup.service
+
+[Install]
+WantedBy=timers.target

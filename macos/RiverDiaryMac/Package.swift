@@ -18,8 +18,12 @@ let package = Package(
                 .product(name: "RiverDiaryCore", package: "RiverDiaryCore")
             ],
             path: "Sources/RiverDiaryMac",
+            // Keep the developer's ignored personal snapshot out of every
+            // package product. Runtime data is connected explicitly in Settings.
+            exclude: ["Resources/data.json"],
             resources: [
-                .process("Resources")
+                .copy("Resources/AppIcon.icns"),
+                .copy("Resources/ThirdPartyNotices.md")
             ],
             swiftSettings: [
                 .unsafeFlags(["-Xcc", "-DSQLITE_HAS_CODEC"])

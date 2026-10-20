@@ -1,0 +1,17 @@
+Command: RiverDiaryQA test-without-building; approved five-page UI tests; new iPhone 17e simulator.
+Result: TEST EXECUTE FAILED; exit 65. No UI assertions completed.
+2026-10-19 00:58:48.960 xcodebuild[68297:3867778]  iOSSimulator: 📱<DVTiPhoneSimulator (0x783d84ee00), River Product Audit 2026-10-19, unknown class, 27.0 (24A5423a), D42BC019-A539-431C-8512-B8CD980FBD40> unable to connect to "com.apple.instruments.deviceservice.lockdown" (Error Domain=DVTiPhoneSimulatorErrorDomain Code=-1 "DTServiceHubClient failed to bless service hub for simulator River Product Audit 2026-10-19 (D42BC019-A539-431C-8512-B8CD980FBD40)" UserInfo={NSLocalizedDescription=DTServiceHubClient failed to bless service hub for simulator River Product Audit 2026-10-19 (D42BC019-A539-431C-8512-B8CD980FBD40), NSUnderlyingError=0x783d09d2c0 {Error Domain=DTServiceHubClient Code=1 "'localDeviceConnectionWithError:' failed but didn't provide an error." UserInfo={NSLocalizedDescription='localDeviceConnectionWithError:' failed but didn't provide an error.}}})
+
+2026-10-19 01:04:24.740 xcodebuild[68297:3867618] [MT] IDETestOperationsObserverDebug: 379.393 elapsed -- Testing started completed.
+2026-10-19 01:04:24.740 xcodebuild[68297:3867618] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-19 01:04:24.740 xcodebuild[68297:3867618] [MT] IDETestOperationsObserverDebug: 379.393 sec, +379.393 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/river-audit-ios-ui-fresh-20261019.xcresult
+
+Testing failed:
+	RiverDiaryUITests-Runner (68453) encountered an error (The test runner hung before establishing connection.)
+
+** TEST EXECUTE FAILED **
+
+Testing started

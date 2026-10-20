@@ -8,7 +8,7 @@ final class UIArchitectureTests: XCTestCase {
         // 避免"两处入口、一个视图、两种行为"。
         XCTAssertEqual(
             RiverDestination.allCases.map(\.rawValue),
-            ["today", "timeline", "dailyReview", "habitReview", "health", "footprints", "workLearn", "memory", "ask", "progress", "database", "sources"]
+            ["today", "timeline", "confirmations", "dailyReview", "habitReview", "health", "footprints", "workLearn", "memory", "ask", "progress", "database", "sources"]
         )
         XCTAssertFalse(
             RiverDestination.allCases.contains { $0.rawValue == "settings" },
@@ -20,7 +20,7 @@ final class UIArchitectureTests: XCTestCase {
         let shortcuts = RiverDestination.allCases.map(\.navigationShortcut.label)
         XCTAssertEqual(
             shortcuts,
-            ["⌘1", "⌘4", "⌘5", "⌘⇧R", "⌘6", "⌘7", "⌘8", "⌘2", "⌘3", "⌘9", "⌘0", "⌘⇧D"]
+            ["⌘1", "⌘2", "⌘3", "⌘⇧5", "⌘⇧R", "⌘6", "⌘7", "⌘8", "⌘5", "⌘4", "⌘9", "⌘0", "⌘⇧S"]
         )
         XCTAssertEqual(Set(shortcuts).count, RiverDestination.allCases.count)
     }
@@ -30,7 +30,7 @@ final class UIArchitectureTests: XCTestCase {
         XCTAssertEqual(AppSpacing.sm, 8)
         XCTAssertEqual(AppSpacing.md, 12)
         XCTAssertEqual(AppRadius.marker, 3)
-        XCTAssertEqual(AppRadius.control, 9)
+        XCTAssertEqual(AppRadius.control, 13)
         XCTAssertLessThan(AppRadius.marker, AppRadius.control)
         XCTAssertLessThan(AppRadius.control, AppRadius.row)
         XCTAssertLessThan(AppRadius.row, AppRadius.panel)
@@ -127,7 +127,7 @@ final class UIArchitectureTests: XCTestCase {
     }
 
     func testSettingsCategoriesHaveStableRoutes() {
-        XCTAssertEqual(SettingsCategory.allCases.map(\.rawValue), ["记录与采集", "AI 与模型", "隐私与备份", "外观与应用"])
+        XCTAssertEqual(SettingsCategory.allCases.map(\.rawValue), ["账号与权益", "记录与采集", "AI 与模型", "隐私与备份", "外观与应用"])
     }
 
     func testAIConnectionIsClearlyOptionalAndNeverBlocksStartup() {

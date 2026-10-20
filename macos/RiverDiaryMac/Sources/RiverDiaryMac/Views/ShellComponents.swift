@@ -133,6 +133,7 @@ struct RiverHeaderBand<Content: View>: View {
 
 struct PageHeader<Trailing: View>: View {
     @Environment(\.riverDensity) private var density
+    @Environment(\.riverWorkspaceEmbedded) private var embedded
     let title: String
     var context: String?
     /// Optional capsule badge rendered beside the title (e.g. 今天).
@@ -157,7 +158,10 @@ struct PageHeader<Trailing: View>: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: density.spacing(AppSpacing.md)) {
-            VStack(alignment: .leading, spacing: density.spacing(3)) {
+            VStack(alignment: .leading, spacing: density.spacing(8)) {
+                if !embedded {
+                Text("河流日记")
+                    .font(AppTypography.micro()).tracking(1.8).foregroundStyle(Color.secondaryInk)
                 HStack(alignment: .firstTextBaseline, spacing: density.spacing(AppSpacing.sm)) {
                     Text(title)
                         .font(emphasis ? AppTypography.pageTitleLarge() : AppTypography.pageTitle())
@@ -170,6 +174,7 @@ struct PageHeader<Trailing: View>: View {
                             .padding(.vertical, density.spacing(3))
                             .background(AppTheme.accentSoft, in: Capsule())
                     }
+                }
                 }
                 if let context, !context.isEmpty {
                     Text(context)
@@ -199,6 +204,7 @@ extension PageHeader where Trailing == EmptyView {
 // leading accent rule.
 
 struct SidebarNavRow: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.riverHighContrast) private var highContrast
@@ -211,18 +217,20 @@ struct SidebarNavRow: View {
     /// 数字徽标用强调色胶囊（如习惯回顾的待确认题数）；
     /// 默认文字徽标保持警示色（如"未保存"）。
     var badgeIsCount = false
+    var compact = false
     let isSelected: Bool
     let action: () -> Void
 
     @State private var isHovered = false
 
     private var foreground: Color {
-        if isSelected || isHovered || highContrast { return Color.ink }
+        if isSelected { return AppTheme.accent }
+        if isHovered || highContrast { return Color.ink }
         return Color.secondaryInk
     }
 
     private var fill: Color {
-        if isSelected { return AppTheme.accentSoft }
+        if isSelected { return Color.surface }
         if isHovered { return reduceTransparency ? Color.surface : Color.ink.opacity(0.05) }
         return .clear
     }
@@ -234,6 +242,8 @@ struct SidebarNavRow: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(isSelected ? AppTheme.accent : foreground)
                     .frame(width: 18)
+                    .accessibilityHidden(true)
+                if !compact {
                 Text(title)
                     .font(AppTypography.rowTitle().weight(isSelected ? .semibold : .regular))
                     .foregroundStyle(foreground)
@@ -254,16 +264,25 @@ struct SidebarNavRow: View {
                             .foregroundStyle(AppTheme.warning)
                     }
                 }
-                if let shortcut, isSelected {
+                if let shortcut, (isSelected || isHovered), badge == nil {
                     Text(shortcut)
                         .font(AppTypography.kicker())
                         .foregroundStyle(Color.tertiaryInk)
                 }
+                }
             }
-            .padding(.horizontal, density.spacing(10))
-            .frame(minHeight: 28)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(fill, in: RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous))
+            .padding(.horizontal, compact ? 0 : density.spacing(14))
+            .frame(minHeight: 38)
+            .frame(maxWidth: .infinity, alignment: compact ? .center : .leading)
+            .background {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 13).fill(Color.surface)
+                        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.25 : 0.075), radius: 5, x: 3, y: 3)
+                        .shadow(color: Color.white.opacity(colorScheme == .dark ? 0.035 : 0.4), radius: 5, x: -3, y: -3)
+                } else {
+                    RoundedRectangle(cornerRadius: 13).fill(fill)
+                }
+            }
             .overlay(alignment: .leading) {
                 if isSelected {
                     Capsule()
@@ -271,6 +290,13 @@ struct SidebarNavRow: View {
                         .frame(width: 2.5)
                         .padding(.vertical, density.spacing(6))
                         .padding(.leading, density.spacing(1))
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if compact, badge != nil {
+                    Circle().fill(badgeIsCount ? AppTheme.accent : AppTheme.warning)
+                        .frame(width: 6, height: 6).padding(5)
+                        .accessibilityHidden(true)
                 }
             }
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.row, style: .continuous))
@@ -281,7 +307,7 @@ struct SidebarNavRow: View {
         .animation(reduceMotion ? nil : .easeOut(duration: AppMotion.quick), value: isHovered)
         .animation(reduceMotion ? nil : .easeOut(duration: AppMotion.standard), value: isSelected)
         .accessibilityLabel(title)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityValue(isSelected ? "当前页面" : "")
     }
 }
 
@@ -292,7 +318,7 @@ struct SidebarGroup<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: density.spacing(1)) {
+        VStack(alignment: .leading, spacing: density.spacing(8)) {
             RiverGroupLabel(text: title)
                 .padding(.horizontal, density.spacing(AppSpacing.panelPadding))
                 .padding(.top, density.spacing(10))
@@ -305,24 +331,21 @@ struct SidebarGroup<Content: View>: View {
 /// App identity at the top of the rail.
 struct SidebarIdentity: View {
     @Environment(\.riverDensity) private var density
+    var compact = false
 
     var body: some View {
-        HStack(spacing: density.spacing(9)) {
-            BrandMark(size: 26)
-            VStack(alignment: .leading, spacing: density.spacing(1)) {
-                Text("河流日记")
-                    .font(AppTypography.rowTitle().weight(.semibold))
-                    .foregroundStyle(Color.ink)
-                Text("本机证据库")
-                    .font(AppTypography.micro())
-                    .foregroundStyle(Color.secondaryInk)
+        HStack(spacing: 11) {
+            RiverSignatureMark().stroke(AppTheme.accent, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                .frame(width: compact ? 22 : 26, height: compact ? 32 : 38).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                (Text("River").foregroundColor(Color.ink) + Text(".").foregroundColor(AppTheme.accent))
+                    .font(compact ? AppTypography.briefLead() : AppTypography.brand()).tracking(-1.5)
+                Text("让生活，慢慢成河").font(AppTypography.micro()).foregroundStyle(Color.secondaryInk).tracking(1)
             }
             Spacer(minLength: 0)
-        }
-        .padding(.horizontal, density.spacing(AppSpacing.panelPadding))
-        .padding(.top, density.spacing(AppSpacing.md))
-        .padding(.bottom, density.spacing(10))
+        }.padding(.horizontal, compact ? 16 : 28).padding(.vertical, 12)
     }
+
 }
 
 /// One glanceable source status line for the sidebar footer.

@@ -149,8 +149,10 @@ struct RawEvent: Identifiable, Codable, Hashable, Sendable {
     }
 
     func replica() -> RiverEvent? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
         guard let originDeviceID, originSequence > 0,
-              let payloadData = try? JSONEncoder().encode(payload) else { return nil }
+              let payloadData = try? encoder.encode(payload) else { return nil }
         return RiverEvent(
             id: id,
             originDeviceID: originDeviceID,

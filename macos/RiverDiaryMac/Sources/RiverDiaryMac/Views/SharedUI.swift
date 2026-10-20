@@ -220,11 +220,7 @@ struct RiverSearchField: View {
         }
         .padding(.horizontal, density.spacing(11))
         .padding(.vertical, density.spacing(7))
-        .background(Color.editor, in: RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
-                .strokeBorder(Color.border, lineWidth: 1)
-        )
+        .riverSoftInset(radius: AppRadius.control)
     }
 
     @ViewBuilder

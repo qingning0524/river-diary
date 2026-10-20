@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: flowriver
+      POSTGRES_PASSWORD: local-only-change-this
+      POSTGRES_DB: flowriver_test
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - flowriver-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowriver -d flowriver"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+
+volumes:
+  flowriver-postgres:

@@ -304,7 +304,7 @@ struct ReviewContentView: View {
                         Button("保存河流信") { saveLetter() }
                             .primaryCTA()
                         Button(letter.isFavorite ? "取消收藏" : "收藏") {
-                            editingLetter?.isFavorite.toggle()
+                            toggleFavorite()
                         }
                         .buttonStyle(.plain)
                         .smallAction()
@@ -395,6 +395,31 @@ struct ReviewContentView: View {
             } else {
                 letterMessage = "已保存到加密本地状态并加入跨设备复制队列。"
                 feedbackCenter.show("已保存河流信", kind: .success)
+            }
+        } catch {
+            let message = UserFacingError.message(for: error)
+            letterMessage = message
+            feedbackCenter.show("保存失败：\(message)", kind: .error)
+        }
+    }
+
+    /// 收藏/取消收藏立即持久化：之前只改内存里的 isFavorite，
+    /// 不点"保存河流信"就切页/切月的话收藏会静默丢失。
+    private func toggleFavorite() {
+        guard var letter = editingLetter ?? activeLetter else { return }
+        letter.isFavorite.toggle()
+        editingLetter = letter
+        do {
+            try store.saveMonthlyLetter(letter)
+            loadedLetterBody = letter.body
+            store.discardLetterDraft(for: letter.month)
+            library.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
+            if case .failed(let message) = store.saveState {
+                letterMessage = message
+                feedbackCenter.show(message, kind: .error)
+            } else {
+                letterMessage = nil
+                feedbackCenter.show(letter.isFavorite ? "已收藏河流信" : "已取消收藏", kind: .success)
             }
         } catch {
             let message = UserFacingError.message(for: error)

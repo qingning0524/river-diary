@@ -66,6 +66,19 @@ public struct RiverEventPayload: Codable, Hashable, Sendable {
     public var poiCategory: String?
     public var mapProvider: String?
     public var mapResultIdentifier: String?
+    public var mapCandidates: [RiverPlaceCandidate]?
+    public var movementMode: String?
+    public var movementConfidence: String?
+    public var intervalEnd: Date?
+    public var mediaSummary: String?
+    public var mediaCategory: String?
+    public var mediaGroupID: String?
+    public var mediaSourceTokens: [String]?
+    public var mediaAnalysisFingerprint: String?
+    public var photoCount: Int?
+    public var mealCaloriesLowerBound: Int?
+    public var mealCaloriesUpperBound: Int?
+    public var mealEstimateNote: String?
     public var metrics: RiverEventMetrics?
 
     public init(appName: String? = nil, bundleID: String? = nil, windowTitle: String? = nil,
@@ -73,7 +86,13 @@ public struct RiverEventPayload: Codable, Hashable, Sendable {
                 longitude: Double? = nil, horizontalAccuracy: Double? = nil, sessionEnd: Date? = nil,
                 locationName: String? = nil, mapAddress: String? = nil,
                 poiCategory: String? = nil, mapProvider: String? = nil,
-                mapResultIdentifier: String? = nil,
+                mapResultIdentifier: String? = nil, mapCandidates: [RiverPlaceCandidate]? = nil,
+                movementMode: String? = nil, movementConfidence: String? = nil,
+                intervalEnd: Date? = nil, mediaSummary: String? = nil, mediaCategory: String? = nil,
+                mediaGroupID: String? = nil, mediaSourceTokens: [String]? = nil,
+                mediaAnalysisFingerprint: String? = nil,
+                photoCount: Int? = nil, mealCaloriesLowerBound: Int? = nil,
+                mealCaloriesUpperBound: Int? = nil, mealEstimateNote: String? = nil,
                 metrics: RiverEventMetrics? = nil) {
         self.appName = appName
         self.bundleID = bundleID
@@ -89,7 +108,62 @@ public struct RiverEventPayload: Codable, Hashable, Sendable {
         self.poiCategory = poiCategory
         self.mapProvider = mapProvider
         self.mapResultIdentifier = mapResultIdentifier
+        self.mapCandidates = mapCandidates
+        self.movementMode = movementMode
+        self.movementConfidence = movementConfidence
+        self.intervalEnd = intervalEnd
+        self.mediaSummary = mediaSummary
+        self.mediaCategory = mediaCategory
+        self.mediaGroupID = mediaGroupID
+        self.mediaSourceTokens = mediaSourceTokens
+        self.mediaAnalysisFingerprint = mediaAnalysisFingerprint
+        self.photoCount = photoCount
+        self.mealCaloriesLowerBound = mealCaloriesLowerBound
+        self.mealCaloriesUpperBound = mealCaloriesUpperBound
+        self.mealEstimateNote = mealEstimateNote
         self.metrics = metrics
+    }
+}
+
+/// A sync-safe nearby business candidate attached to one location observation.
+public struct RiverPlaceCandidate: Codable, Hashable, Sendable, Identifiable {
+    public let name: String
+    public let address: String?
+    public let category: String?
+    public let provider: String
+    public let resultIdentifier: String?
+    public let distanceMeters: Double
+    public let horizontalAccuracyMeters: Double
+
+    public var id: String {
+        if let resultIdentifier, !resultIdentifier.isEmpty { return "\(provider)|\(resultIdentifier)" }
+        return "\(provider)|\(name.lowercased())|\(category ?? "")"
+    }
+
+    public var suggestedKind: String? {
+        let value = "\(name) \(category ?? "")".lowercased()
+        if ["网吧", "电竞", "pc bang", "internet cafe"].contains(where: value.contains) { return "网吧" }
+        if ["蜜雪冰城", "奶茶", "茶饮", "bubble tea"].contains(where: value.contains) { return "奶茶店" }
+        if ["理发", "发廊", "美发", "barber", "hair salon"].contains(where: value.contains) { return "理发店" }
+        if ["restaurant", "food", "餐饮", "食堂"].contains(where: value.contains) { return "餐饮" }
+        return nil
+    }
+
+    public var choiceLabel: String {
+        guard let kind = suggestedKind, !name.localizedCaseInsensitiveContains(kind) else { return name }
+        return "\(name) · \(kind)"
+    }
+
+    public init(name: String, address: String? = nil, category: String? = nil,
+                provider: String, resultIdentifier: String? = nil,
+                distanceMeters: Double, horizontalAccuracyMeters: Double) {
+        self.name = name
+        self.address = address
+        self.category = category
+        self.provider = provider
+        self.resultIdentifier = resultIdentifier
+        self.distanceMeters = distanceMeters
+        self.horizontalAccuracyMeters = horizontalAccuracyMeters
     }
 }
 

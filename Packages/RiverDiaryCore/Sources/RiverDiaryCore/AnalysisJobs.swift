@@ -125,6 +125,25 @@ public enum RiverAnalysisJobScheduler {
             && job.requestFingerprint == requestFingerprint
     }
 
+    /// A queued request with obsolete inputs must be reconstructed by its
+    /// domain pipeline, never replayed verbatim. This predicate lets that
+    /// pipeline distinguish an interrupted request from a completed result.
+    public static func needsCurrentInputRebuild(
+        _ jobs: [RiverAnalysisJob],
+        logicalKey: String,
+        currentFrontier: InputFrontier,
+        pipelineVersion: String,
+        hasCurrentArtifact: Bool
+    ) -> Bool {
+        guard !hasCurrentArtifact else { return false }
+        return jobs.contains { job in
+            job.logicalKey == logicalKey
+                && job.pipelineVersion == pipelineVersion
+                && (job.status == .queued || job.status == .running)
+                && job.inputFrontier != currentFrontier
+        }
+    }
+
     public static func nextQueuedJob(from jobs: [RiverAnalysisJob]) -> RiverAnalysisJob? {
         jobs.filter { $0.status == .queued }.sorted {
             if $0.priority != $1.priority { return $0.priority > $1.priority }

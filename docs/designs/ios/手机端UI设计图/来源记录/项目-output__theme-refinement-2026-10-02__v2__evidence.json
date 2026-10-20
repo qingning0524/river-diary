@@ -1,0 +1,536 @@
+{
+  "themes": [
+    {
+      "id": "river_journal",
+      "name": "河流手记",
+      "benefit": "读回一本属于自己的手记。"
+    },
+    {
+      "id": "city_roamer",
+      "name": "城市漫游",
+      "benefit": "以地点为线索，重走当天的生活。"
+    },
+    {
+      "id": "time_film",
+      "name": "时光胶片",
+      "benefit": "逐帧翻看光影、文字与片段。"
+    },
+    {
+      "id": "light_everyday",
+      "name": "轻盈日常",
+      "benefit": "清楚的时间流，让一天一眼可读。"
+    },
+    {
+      "id": "life_constellation",
+      "name": "生活星图",
+      "benefit": "点选一颗记录星，回到那个瞬间。"
+    },
+    {
+      "id": "day_garden",
+      "name": "日子花园",
+      "benefit": "翻过晨午晚夜，读回日常的四幕。"
+    },
+    {
+      "id": "life_weekly",
+      "name": "生活周刊",
+      "benefit": "把一天编成自己的私人刊物。"
+    },
+    {
+      "id": "tidal_clock",
+      "name": "潮汐时钟",
+      "benefit": "选择一个时段，看看那时发生了什么。"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "name": "随身剪贴簿",
+      "benefit": "把照片与自己的文字贴成一页收藏。"
+    },
+    {
+      "id": "pure_life",
+      "name": "纯净生活",
+      "benefit": "用两段重点，留住一天的轮廓。"
+    }
+  ],
+  "screens": [
+    {
+      "id": "pure_life",
+      "scene": "empty light",
+      "url": "screenshots/pure_life--empty-light.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "empty light",
+      "url": "screenshots/pocket_scrapbook--empty-light.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "empty light",
+      "url": "screenshots/tidal_clock--empty-light.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "empty light",
+      "url": "screenshots/life_weekly--empty-light.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "empty light",
+      "url": "screenshots/day_garden--empty-light.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "empty light",
+      "url": "screenshots/life_constellation--empty-light.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "empty light",
+      "url": "screenshots/light_everyday--empty-light.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "empty light",
+      "url": "screenshots/time_film--empty-light.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "empty light",
+      "url": "screenshots/city_roamer--empty-light.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "empty light",
+      "url": "screenshots/river_journal--empty-light.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "me dark",
+      "url": "screenshots/pure_life--me-dark.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "river dark",
+      "url": "screenshots/pure_life--river-dark.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "footprints dark",
+      "url": "screenshots/pure_life--footprints-dark.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "timeline dark",
+      "url": "screenshots/pure_life--timeline-dark.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "detail dark",
+      "url": "screenshots/pure_life--detail-dark.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "preview light",
+      "url": "screenshots/pure_life--preview-light.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "me dark",
+      "url": "screenshots/pocket_scrapbook--me-dark.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "river dark",
+      "url": "screenshots/pocket_scrapbook--river-dark.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "footprints dark",
+      "url": "screenshots/pocket_scrapbook--footprints-dark.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "timeline dark",
+      "url": "screenshots/pocket_scrapbook--timeline-dark.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "detail dark",
+      "url": "screenshots/pocket_scrapbook--detail-dark.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "preview light",
+      "url": "screenshots/pocket_scrapbook--preview-light.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "me dark",
+      "url": "screenshots/tidal_clock--me-dark.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "river dark",
+      "url": "screenshots/tidal_clock--river-dark.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "footprints dark",
+      "url": "screenshots/tidal_clock--footprints-dark.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "timeline dark",
+      "url": "screenshots/tidal_clock--timeline-dark.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "detail dark",
+      "url": "screenshots/tidal_clock--detail-dark.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "preview light",
+      "url": "screenshots/tidal_clock--preview-light.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "me dark",
+      "url": "screenshots/life_weekly--me-dark.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "river dark",
+      "url": "screenshots/life_weekly--river-dark.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "footprints dark",
+      "url": "screenshots/life_weekly--footprints-dark.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "timeline dark",
+      "url": "screenshots/life_weekly--timeline-dark.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "detail dark",
+      "url": "screenshots/life_weekly--detail-dark.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "preview light",
+      "url": "screenshots/life_weekly--preview-light.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "me dark",
+      "url": "screenshots/day_garden--me-dark.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "river dark",
+      "url": "screenshots/day_garden--river-dark.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "footprints dark",
+      "url": "screenshots/day_garden--footprints-dark.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "timeline dark",
+      "url": "screenshots/day_garden--timeline-dark.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "detail dark",
+      "url": "screenshots/day_garden--detail-dark.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "preview light",
+      "url": "screenshots/day_garden--preview-light.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "me dark",
+      "url": "screenshots/life_constellation--me-dark.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "river dark",
+      "url": "screenshots/life_constellation--river-dark.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "footprints dark",
+      "url": "screenshots/life_constellation--footprints-dark.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "timeline dark",
+      "url": "screenshots/life_constellation--timeline-dark.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "detail dark",
+      "url": "screenshots/life_constellation--detail-dark.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "preview light",
+      "url": "screenshots/life_constellation--preview-light.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "me dark",
+      "url": "screenshots/light_everyday--me-dark.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "river dark",
+      "url": "screenshots/light_everyday--river-dark.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "footprints dark",
+      "url": "screenshots/light_everyday--footprints-dark.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "timeline dark",
+      "url": "screenshots/light_everyday--timeline-dark.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "detail dark",
+      "url": "screenshots/light_everyday--detail-dark.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "preview light",
+      "url": "screenshots/light_everyday--preview-light.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "me dark",
+      "url": "screenshots/time_film--me-dark.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "river dark",
+      "url": "screenshots/time_film--river-dark.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "footprints dark",
+      "url": "screenshots/time_film--footprints-dark.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "timeline dark",
+      "url": "screenshots/time_film--timeline-dark.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "detail dark",
+      "url": "screenshots/time_film--detail-dark.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "preview light",
+      "url": "screenshots/time_film--preview-light.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "me dark",
+      "url": "screenshots/city_roamer--me-dark.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "river dark",
+      "url": "screenshots/city_roamer--river-dark.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "footprints dark",
+      "url": "screenshots/city_roamer--footprints-dark.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "timeline dark",
+      "url": "screenshots/city_roamer--timeline-dark.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "detail dark",
+      "url": "screenshots/city_roamer--detail-dark.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "preview light",
+      "url": "screenshots/city_roamer--preview-light.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "me dark",
+      "url": "screenshots/river_journal--me-dark.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "river dark",
+      "url": "screenshots/river_journal--river-dark.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "footprints dark",
+      "url": "screenshots/river_journal--footprints-dark.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "timeline dark",
+      "url": "screenshots/river_journal--timeline-dark.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "detail dark",
+      "url": "screenshots/river_journal--detail-dark.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "preview light",
+      "url": "screenshots/river_journal--preview-light.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "filled dark",
+      "url": "screenshots/pure_life--filled-dark.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "filled light",
+      "url": "screenshots/pure_life--filled-light.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "filled dark",
+      "url": "screenshots/pocket_scrapbook--filled-dark.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "opened cover record",
+      "url": "screenshots/pocket_scrapbook--opened-cover-record.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "filled light",
+      "url": "screenshots/pocket_scrapbook--filled-light.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "filled dark",
+      "url": "screenshots/tidal_clock--filled-dark.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "selected recorded time",
+      "url": "screenshots/tidal_clock--selected-recorded-time.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "filled light",
+      "url": "screenshots/tidal_clock--filled-light.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "filled dark",
+      "url": "screenshots/life_weekly--filled-dark.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "opened cover record",
+      "url": "screenshots/life_weekly--opened-cover-record.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "filled light",
+      "url": "screenshots/life_weekly--filled-light.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "filled dark",
+      "url": "screenshots/day_garden--filled-dark.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "night chapter",
+      "url": "screenshots/day_garden--night-chapter.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "filled light",
+      "url": "screenshots/day_garden--filled-light.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "filled dark",
+      "url": "screenshots/life_constellation--filled-dark.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "selected photo",
+      "url": "screenshots/life_constellation--selected-photo.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "filled light",
+      "url": "screenshots/life_constellation--filled-light.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "filled dark",
+      "url": "screenshots/light_everyday--filled-dark.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "filled light",
+      "url": "screenshots/light_everyday--filled-light.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "filled dark",
+      "url": "screenshots/time_film--filled-dark.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "selected first frame",
+      "url": "screenshots/time_film--selected-first-frame.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "filled light",
+      "url": "screenshots/time_film--filled-light.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "filled dark",
+      "url": "screenshots/city_roamer--filled-dark.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "filled light",
+      "url": "screenshots/city_roamer--filled-light.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "filled dark",
+      "url": "screenshots/river_journal--filled-dark.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "filled light",
+      "url": "screenshots/river_journal--filled-light.png"
+    }
+  ]
+}

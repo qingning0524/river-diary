@@ -8,7 +8,7 @@ import SwiftUI
 
 /// How far a surface floats above the page canvas.
 enum RiverPanelLevel: Hashable {
-    /// Sits in a scrolling page column. Flat: outline only.
+    /// A softly raised surface in a scrolling page.
     case inline
     /// A panel on a panel, or a toolbar strip. Barely lifted.
     case raised
@@ -19,7 +19,8 @@ enum RiverPanelLevel: Hashable {
 /// The panel chrome: fill, outline, radius and elevation for one level.
 /// 柔和景深: `.raised` and `.floating` float with a two-tier shadow — a tight
 /// contact shadow plus a wide, low-opacity ambient shadow. `.inline` carries no
-/// shadow at all, by design: dozens of shadowed panels in one scroll view is
+/// The approved soft material now uses two opposed background shadows; the old flat rule is superseded.
+/// Historically dozens of shadowed panels in one scroll view was
 /// slow to render and visually noisy; page depth comes from the canvas/panel
 /// colour step instead.
 struct RiverPanelSurface: ViewModifier {
@@ -28,69 +29,14 @@ struct RiverPanelSurface: ViewModifier {
     let radius: CGFloat
     var tint: Color?
 
-    @ViewBuilder
     func body(content: Content) -> some View {
-        let base = content
-            .background(fill, in: shape)
-            .overlay(shape.strokeBorder(Color.border, lineWidth: 1))
-        if level == .inline {
-            base
-        } else {
-            base
-                .shadow(color: contactShadow, radius: contactRadius, y: contactY)
-                .shadow(color: ambientShadow, radius: ambientRadius, y: ambientY)
-        }
+        content.riverSoftSurface(
+            radius: radius,
+            compact: false,
+            floating: level == .floating
+        )
     }
 
-    private var shape: RoundedRectangle {
-        RoundedRectangle(cornerRadius: radius, style: .continuous)
-    }
-
-    private var dark: Bool { colorScheme == .dark }
-
-    private var fill: AnyShapeStyle {
-        guard let tint else {
-            return AnyShapeStyle(level == .inline ? Color.surface : Color.strongSurface)
-        }
-        return AnyShapeStyle(LinearGradient(
-            colors: [
-                tint.opacity(dark ? 0.20 : 0.11),
-                Color(hex: PaletteStore.colorSet(dark: dark).surface),
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottom
-        ))
-    }
-
-    private var contactShadow: Color {
-        if level == .floating { return .black.opacity(dark ? 0.32 : 0.07) }
-        return .black.opacity(dark ? 0.24 : 0.04)
-    }
-
-    private var contactRadius: CGFloat {
-        if level == .floating { return 6 }
-        return 3
-    }
-
-    private var contactY: CGFloat {
-        if level == .floating { return 3 }
-        return 1
-    }
-
-    private var ambientShadow: Color {
-        if level == .floating { return .black.opacity(dark ? 0.45 : 0.18) }
-        return .black.opacity(dark ? 0.28 : 0.08)
-    }
-
-    private var ambientRadius: CGFloat {
-        if level == .floating { return 38 }
-        return 24
-    }
-
-    private var ambientY: CGFloat {
-        if level == .floating { return 14 }
-        return 9
-    }
 }
 
 extension View {
@@ -115,7 +61,7 @@ struct RiverPanelTitle: View {
     var body: some View {
         HStack(spacing: density.spacing(10)) {
             if let systemImage {
-                RiverIconWell(systemImage: systemImage, tint: accent ?? AppTheme.neutral)
+                RiverIconWell(systemImage: systemImage, tint: accent ?? AppTheme.accent)
             } else if let accent {
                 Capsule()
                     .fill(accent)

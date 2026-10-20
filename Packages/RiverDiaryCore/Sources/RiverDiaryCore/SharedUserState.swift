@@ -65,11 +65,14 @@ public struct RiverJournalEntryContent: Codable, Hashable, Sendable {
     public let outputScore: Int?
     public let category: String?
     public let tags: [String]
+    /// Identifies an imported compatibility source so migrations can refresh
+    /// only their own records without replacing a user's newer journal entry.
+    public let source: String?
     public let updatedAt: Date
 
     public init(dayKey: String, body: String, moodScore: Int? = nil, energyScore: Int? = nil,
                 focusScore: Int? = nil, outputScore: Int? = nil, category: String? = nil,
-                tags: [String] = [], updatedAt: Date = Date()) {
+                tags: [String] = [], source: String? = nil, updatedAt: Date = Date()) {
         self.dayKey = dayKey
         self.body = body
         self.moodScore = moodScore
@@ -78,6 +81,7 @@ public struct RiverJournalEntryContent: Codable, Hashable, Sendable {
         self.outputScore = outputScore
         self.category = category
         self.tags = tags
+        self.source = source
         self.updatedAt = updatedAt
     }
 }
@@ -189,12 +193,16 @@ public struct RiverPendingConfirmationContent: Codable, Hashable, Sendable {
     public let resolution: RiverPendingConfirmationResolution?
     public let correction: String?
     public let resolvedAt: Date?
+    public let userReopenedAt: Date?
+    public let choices: [RiverPlaceCandidate]?
+    public let selectedCandidateID: String?
 
     public init(title: String, question: String, detail: String = "", candidate: String? = nil,
                 evidenceRefs: [String]? = nil,
                 targetType: String? = nil, targetID: String? = nil,
                 resolution: RiverPendingConfirmationResolution? = nil,
-                correction: String? = nil, resolvedAt: Date? = nil) {
+                correction: String? = nil, resolvedAt: Date? = nil, userReopenedAt: Date? = nil,
+                choices: [RiverPlaceCandidate]? = nil, selectedCandidateID: String? = nil) {
         self.title = title
         self.question = question
         self.detail = detail
@@ -205,14 +213,26 @@ public struct RiverPendingConfirmationContent: Codable, Hashable, Sendable {
         self.resolution = resolution
         self.correction = correction
         self.resolvedAt = resolvedAt
+        self.userReopenedAt = userReopenedAt
+        self.choices = choices
+        self.selectedCandidateID = selectedCandidateID
     }
 
     public func resolving(_ resolution: RiverPendingConfirmationResolution,
-                          correction: String? = nil, at date: Date = Date()) -> Self {
+                          correction: String? = nil, selectedCandidateID: String? = nil,
+                          at date: Date = Date()) -> Self {
         Self(title: title, question: question, detail: detail, candidate: candidate,
              evidenceRefs: evidenceRefs,
              targetType: targetType, targetID: targetID, resolution: resolution,
-             correction: correction, resolvedAt: date)
+             correction: correction, resolvedAt: date, userReopenedAt: userReopenedAt,
+             choices: choices, selectedCandidateID: selectedCandidateID)
+    }
+
+    public func reopening(at date: Date = Date()) -> Self {
+        Self(title: title, question: question, detail: detail, candidate: candidate,
+             evidenceRefs: evidenceRefs, targetType: targetType, targetID: targetID,
+             resolution: resolution, correction: correction, resolvedAt: resolvedAt,
+             userReopenedAt: date, choices: choices, selectedCandidateID: selectedCandidateID)
     }
 }
 
@@ -285,16 +305,25 @@ public extension RiverSharedStateRecord {
     }
 
     static func placeCandidate(_ place: RiverPlace) -> Self? {
-        guard !place.isUserConfirmed, place.visitCount >= 2,
-              let candidate = place.mapName?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !candidate.isEmpty else { return nil }
+        var seen = Set<String>()
+        let options = (place.mapCandidates ?? [])
+            .sorted { $0.distanceMeters < $1.distanceMeters }
+            .filter { seen.insert($0.id).inserted }
+            .prefix(4)
+        guard !place.isUserConfirmed, place.visitCount >= 1,
+              place.totalDurationSeconds >= 180, options.count >= 2,
+              let closest = options.first, let next = options.dropFirst().first,
+              closest.distanceMeters <= 120,
+              next.distanceMeters - closest.distanceMeters <= max(45, closest.horizontalAccuracyMeters * 0.6) else { return nil }
+        let candidates = Array(options)
         let content = RiverPendingConfirmationContent(
-            title: "地点候选",
-            question: "这里是「\(candidate)」吗？",
-            detail: place.mapAddress ?? "你已经多次到访这个地点。",
-            candidate: candidate,
+            title: "这次停留在哪家？",
+            question: "附近有几家商户，选一个最符合的就行。",
+            detail: closest.address ?? place.mapAddress ?? "同一位置附近识别到多个商户。",
+            candidate: closest.name,
             targetType: "place",
-            targetID: place.id
+            targetID: place.id,
+            choices: candidates
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -329,14 +358,30 @@ public extension RiverSharedStateRecord {
     }
 
     func resolving(_ resolution: RiverPendingConfirmationResolution,
-                   correction: String? = nil, at date: Date = Date()) -> Self? {
+                   correction: String? = nil, selectedCandidateID: String? = nil,
+                   at date: Date = Date()) -> Self? {
         guard kind == .pendingConfirmation, status == "pending",
               let content = pendingConfirmationContent else { return nil }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        guard let bytes = try? encoder.encode(content.resolving(resolution, correction: correction, at: date)),
+        guard let bytes = try? encoder.encode(content.resolving(
+            resolution, correction: correction, selectedCandidateID: selectedCandidateID, at: date
+        )),
               let payload = String(data: bytes, encoding: .utf8) else { return nil }
         return Self(id: id, kind: kind, status: resolution.rawValue, logicalKey: logicalKey,
+                    payloadJSON: payload, createdAt: createdAt, updatedAt: date,
+                    batchID: batchID, shownAt: shownAt)
+    }
+
+    func reopened(at date: Date = Date()) -> Self? {
+        guard kind == .pendingConfirmation,
+              ["confirmed", "rejected", "corrected", "dismissed"].contains(status),
+              let content = pendingConfirmationContent else { return nil }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let bytes = try? encoder.encode(content.reopening(at: date)),
+              let payload = String(data: bytes, encoding: .utf8) else { return nil }
+        return Self(id: id, kind: kind, status: "pending", logicalKey: logicalKey,
                     payloadJSON: payload, createdAt: createdAt, updatedAt: date,
                     batchID: batchID, shownAt: shownAt)
     }
@@ -357,6 +402,32 @@ public struct RiverMemoryConfirmation: Codable, Hashable, Sendable {
 }
 
 public enum RiverStateOperationFreshness {
+    public static func isUserReopened(_ record: RiverSharedStateRecord) -> Bool {
+        record.kind == .pendingConfirmation && record.status == "pending"
+            && record.pendingConfirmationContent?.userReopenedAt != nil
+    }
+
+    public static func isUserReopenedHabitCard(_ record: RiverSharedStateRecord) -> Bool {
+        guard record.kind == .habitCard,
+              let data = record.payloadJSON.data(using: .utf8),
+              let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let timestamp = payload["userReopenedAt"] as? String else { return false }
+        return !timestamp.isEmpty
+    }
+
+    /// Legacy journal imports are ranked below user edits. Their impact is
+    /// reconciled after all operations for a sync batch have been resolved.
+    public static func defersAnalyticalInvalidation(_ operation: StateOperation) -> Bool {
+        guard operation.operationType == "shared.record.upsert",
+              operation.fieldKey == "record",
+              let record = try? JSONDecoder().decode(RiverSharedStateRecord.self, from: operation.payload) else {
+            return false
+        }
+        return record.kind == .journalEntry
+            && record.status == "current"
+            && record.journalEntryContent?.source == "legacy-data.json"
+    }
+
     /// Distinguishes new analytical results from user decisions that invalidate
     /// the inputs behind already-published generated Artifacts.
     public static func changesAnalyticalState(_ operation: StateOperation) -> Bool {
@@ -371,15 +442,17 @@ public enum RiverStateOperationFreshness {
             guard let record = try? JSONDecoder().decode(RiverSharedStateRecord.self, from: operation.payload) else { return true }
             switch record.kind {
             case .memory:
-                return record.status == "confirmed"
+                return record.status == "confirmed" || record.status == "deleted"
             case .habitRule:
                 return record.status == "active" || record.status == "retired" || record.status == "challenged"
             case .habitCard:
                 return record.status == "answered" || record.status == "skipped" || record.status == "expired"
+                    || isUserReopenedHabitCard(record)
             case .habitBatch:
                 return false
             case .pendingConfirmation:
                 return ["confirmed", "rejected", "corrected", "dismissed"].contains(record.status)
+                    || isUserReopened(record)
             case .journalEntry:
                 return record.status == "current" || record.status == "deleted"
             case .monthlyLetter:

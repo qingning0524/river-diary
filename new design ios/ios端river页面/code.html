@@ -1,0 +1,377 @@
+<!DOCTYPE html><html class="h-full" lang="zh-CN" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>河流日记 · River 伴随助手 (拟态设计版)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+    * {
+      -webkit-font-smoothing: antialiased;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #EEF2F6;
+      color: #334155;
+    }
+
+    /* 经典双向柔和拟态设计体系 (Neumorphism / Soft UI) */
+    .neu-flat {
+      background: #EEF2F6;
+      box-shadow: 6px 6px 14px rgba(166, 180, 200, 0.42),
+                 -6px -6px 14px rgba(255, 255, 255, 0.95);
+    }
+
+    .neu-flat-sm {
+      background: #EEF2F6;
+      box-shadow: 3.5px 3.5px 9px rgba(166, 180, 200, 0.38),
+                 -3.5px -3.5px 9px rgba(255, 255, 255, 0.95);
+    }
+
+    .neu-inset {
+      background: #EEF2F6;
+      box-shadow: inset 3.5px 3.5px 7px rgba(166, 180, 200, 0.38),
+                 inset -3.5px -3.5px 7px rgba(255, 255, 255, 0.95);
+    }
+
+    .neu-inset-sm {
+      background: #EEF2F6;
+      box-shadow: inset 2px 2px 5px rgba(166, 180, 200, 0.35),
+                 inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+    }
+
+    .neu-button {
+      background: #EEF2F6;
+      box-shadow: 4px 4px 10px rgba(166, 180, 200, 0.42),
+                 -4px -4px 10px rgba(255, 255, 255, 0.95);
+      transition: all 0.15s ease;
+    }
+    .neu-button:active {
+      box-shadow: inset 2.5px 2.5px 5px rgba(166, 180, 200, 0.45),
+                 inset -2.5px -2.5px 5px rgba(255, 255, 255, 0.95);
+      transform: scale(0.97);
+    }
+
+    .neu-primary-button {
+      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+      box-shadow: 4px 4px 12px rgba(37, 99, 235, 0.35),
+                 -3px -3px 8px rgba(255, 255, 255, 0.85);
+      transition: all 0.15s ease;
+    }
+    .neu-primary-button:active {
+      box-shadow: inset 2px 2px 5px rgba(15, 23, 42, 0.4);
+      transform: scale(0.95);
+    }
+
+    .chat-bubble-user {
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+      box-shadow: 5px 5px 13px rgba(37, 99, 235, 0.32),
+                 -3px -3px 9px rgba(255, 255, 255, 0.7);
+    }
+
+    .neu-tab-active {
+      background: #EEF2F6;
+      box-shadow: inset 3px 3px 6px rgba(166, 180, 200, 0.45),
+                 inset -3px -3px 6px rgba(255, 255, 255, 0.95);
+    }
+
+    /* 滚动条隐藏 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Noto+Sans+SC:wght@300;400;500;600;700&amp;display=swap" data-snapdom="injected-import"></head>
+<body class="h-full w-full bg-[#EEF2F6] flex justify-center overflow-hidden">
+<!-- 移动端视口根容器 (标准 390px 宽度，撑满移动屏高) -->
+<div class="w-full max-w-[390px] h-full flex flex-col relative bg-[#EEF2F6] overflow-hidden">
+<!-- 顶部固定区域 (Fixed Header: 状态栏 + 顶栏 + 全局日期胶囊) -->
+<header class="shrink-0 z-30 bg-[#EEF2F6]/95 backdrop-blur-md pt-2 pb-2.5 px-4 space-y-2 border-b border-slate-200/40">
+<!-- iOS 状态栏 -->
+<div class="px-2 pt-1 flex justify-between items-center text-xs font-semibold tracking-tight text-slate-700">
+<span class="text-[14px]">09:41</span>
+<div class="flex items-center space-x-2 text-slate-700 text-[13px]">
+<i class="fa-solid fa-signal text-[11px]"></i>
+<i class="fa-solid fa-wifi text-[12px]"></i>
+<i class="fa-solid fa-battery-full text-[14px]"></i>
+</div>
+</div>
+<!-- 品牌栏与状态 -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center space-x-2">
+<span class="text-[15px] font-black tracking-wider text-blue-600">RIVER AI</span>
+<span class="text-slate-300 text-xs">·</span>
+<span class="text-xs font-semibold text-slate-600">记忆伴随引擎</span>
+<div class="neu-inset-sm px-2 py-0.5 rounded-full flex items-center space-x-1 ml-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-[10.5px] font-medium text-emerald-600">实时在线</span>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<button class="w-7 h-7 rounded-full neu-button flex items-center justify-center text-slate-600 text-[11px]">
+<i class="fa-solid fa-clock-rotate-left"></i>
+</button>
+<button class="w-7 h-7 rounded-full neu-button flex items-center justify-center text-slate-600 text-[11px]">
+<i class="fa-solid fa-sliders"></i>
+</button>
+</div>
+</div>
+<!-- 全局日期切换胶囊与记忆连接状态 -->
+<div class="flex items-center justify-between pt-0.5">
+<div class="neu-button px-3 py-1.5 rounded-full flex items-center space-x-1.5 cursor-pointer">
+<i class="fa-regular fa-calendar-check text-blue-500 text-xs"></i>
+<span class="text-xs font-bold text-slate-700">5月16日 · 今天 周四</span>
+<i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
+</div>
+<div class="neu-inset-sm px-2.5 py-1.5 rounded-full flex items-center space-x-1.5">
+<i class="fa-solid fa-sparkles text-blue-500 text-[10px]"></i>
+<span class="text-[11px] font-semibold text-blue-600">42天生活记忆已连接</span>
+</div>
+</div>
+</header>
+<!-- 中间独立滚动对话内容区 (padding-bottom 设为 210px，完全防止被底部双层操作区遮挡) -->
+<main class="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-56 space-y-4">
+<!-- 模块 1: River 伴随迎新主卡片 -->
+<div class="neu-flat p-4 rounded-[26px] relative">
+<div class="flex items-start space-x-3">
+<!-- 拟态双环助手图标 -->
+<div class="w-10 h-10 rounded-2xl neu-flat-sm flex items-center justify-center text-blue-600 shrink-0 relative">
+<i class="fa-solid fa-water text-base"></i>
+<span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#EEF2F6] flex items-center justify-center">
+<span class="w-1 h-1 rounded-full bg-white"></span>
+</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center space-x-1.5">
+<span class="text-sm font-bold text-slate-800">River 今日智能伴随</span>
+<span class="neu-inset-sm text-[10px] font-semibold text-blue-600 px-1.5 py-0.5 rounded-md">随身搭子</span>
+</div>
+<span class="text-[10px] text-slate-400">随时对话</span>
+</div>
+<!-- 内陷式对话承托框 -->
+<div class="neu-inset p-3 rounded-2xl text-[12.5px] leading-relaxed text-slate-600 mt-2">
+              嗨，今天在专注与散步间节奏很舒服。我是 River，已经整理好你 <span class="neu-flat-sm px-1.5 py-0.5 rounded-md text-blue-600 font-bold">42 天</span> 的生活轨迹。想了解什么，随时问我。
+            </div>
+<!-- 今日身心状态拟态标签组 -->
+<div class="flex flex-wrap gap-1.5 mt-2.5">
+
+<span class="neu-flat-sm px-2 py-0.5 rounded-full text-[10.5px] font-medium text-emerald-600 flex items-center space-x-1">
+<i class="fa-solid fa-shoe-prints text-[8px]"></i>
+<span class="">步数 8,420 达标</span>
+</span>
+<span class="neu-flat-sm px-2 py-0.5 rounded-full text-[10.5px] font-medium text-purple-600 flex items-center space-x-1">
+<i class="fa-solid fa-seedling text-[8px]"></i>
+<span class="">习惯持续进化</span>
+</span>
+</div>
+</div>
+</div>
+<!-- 拟态快捷灵感问句胶囊推荐 -->
+<div class="mt-3 pt-2.5 border-t border-slate-300/40">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[11px] font-semibold text-slate-500 flex items-center space-x-1">
+<i class="fa-regular fa-lightbulb text-amber-500"></i>
+<span class="">你可以试着这样问我：</span>
+</span>
+<span class="text-[10px] text-slate-400">点击填入</span>
+</div>
+<div class="flex space-x-2 overflow-x-auto no-scrollbar py-0.5">
+<button class="neu-button px-3 py-1.5 rounded-xl text-xs text-slate-700 shrink-0 flex items-center space-x-1">
+<span class="">☕ 上周哪几天去了咖啡馆？</span>
+</button>
+<button class="neu-button px-3 py-1.5 rounded-xl text-xs text-slate-700 shrink-0 flex items-center space-x-1">
+<span class="">📖 统计最近专注时间</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 时间分隔节点 -->
+<div class="flex items-center justify-center my-1">
+<span class="neu-inset-sm px-3 py-0.5 rounded-full text-[10px] font-medium text-slate-400">上午 09:28</span>
+</div>
+<!-- 用户提问气泡 (蓝色微凸拟态) -->
+<div class="flex justify-end">
+<div class="max-w-[85%] chat-bubble-user text-white px-4 py-2.5 rounded-[20px] rounded-br-sm text-[13px] font-medium leading-relaxed tracking-wide shadow-sm">
+          我这周哪几天有在专注学习或深度创作？
+        </div>
+</div>
+<!-- River 深度检索回答大卡片 (拟态大卡片) -->
+<div class="neu-flat p-4 rounded-[26px] space-y-3">
+<!-- 头部检索状态 -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<div class="w-7 h-7 rounded-xl neu-flat-sm flex items-center justify-center text-blue-600 text-xs">
+<i class="fa-solid fa-water"></i>
+</div>
+<div class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+<span class="">深度记忆检索</span>
+<span class="neu-inset-sm text-[10px] font-semibold text-emerald-600 px-1.5 py-0.5 rounded-md">匹配 4 处生活轨迹</span>
+</div>
+</div>
+<span class="text-[10px] text-slate-400 font-medium">耗时 0.4s</span>
+</div>
+<!-- 总结回答文本 -->
+<p class="text-[12.5px] leading-relaxed text-slate-600">
+          为你梳理了本周的专注与创作轨迹，共 <span class="neu-inset-sm px-1.5 py-0.5 rounded-md text-blue-600 font-bold mx-0.5">4 天</span> 保持高密度投入：
+        </p>
+<!-- 4 天专注轨迹内嵌明细列表 -->
+<div class="space-y-2">
+<!-- 周一 -->
+<div class="neu-flat-sm p-2.5 rounded-2xl flex items-center justify-between">
+<div class="space-y-0.5">
+<div class="flex items-center space-x-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+<span class="text-xs font-bold text-slate-700">周一 (5月13日)</span>
+<span class="neu-inset-sm px-1.5 py-0.5 rounded-md text-[9.5px] text-slate-500 font-medium">浅水湾公园长椅</span>
+</div>
+<div class="text-[11px] text-slate-400 pl-3">随手便签与构思</div>
+</div>
+<div class="text-right pl-2">
+<div class="text-xs font-extrabold text-slate-800">2.5 小时</div>
+<div class="neu-inset-sm w-14 h-1.5 rounded-full mt-1 overflow-hidden">
+<div class="bg-emerald-500 h-full rounded-full" style="width: 70%"></div>
+</div>
+</div>
+</div>
+<!-- 周二 -->
+<div class="neu-flat-sm p-2.5 rounded-2xl flex items-center justify-between">
+<div class="space-y-0.5">
+<div class="flex items-center space-x-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+<span class="text-xs font-bold text-slate-700">周二 (5月14日)</span>
+<span class="neu-inset-sm px-1.5 py-0.5 rounded-md text-[9.5px] text-amber-700 font-medium">Corner Coffee</span>
+</div>
+<div class="text-[11px] text-slate-400 pl-3">晨间大纲梳理</div>
+</div>
+<div class="text-right pl-2">
+<div class="text-xs font-extrabold text-slate-800">3.2 小时</div>
+<div class="neu-inset-sm w-14 h-1.5 rounded-full mt-1 overflow-hidden">
+<div class="bg-amber-500 h-full rounded-full" style="width: 88%"></div>
+</div>
+</div>
+</div>
+<!-- 周三 -->
+<div class="neu-flat-sm p-2.5 rounded-2xl flex items-center justify-between">
+<div class="space-y-0.5">
+<div class="flex items-center space-x-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+<span class="text-xs font-bold text-slate-700">周三 (5月15日)</span>
+<span class="neu-inset-sm px-1.5 py-0.5 rounded-md text-[9.5px] text-indigo-700 font-medium">书房</span>
+</div>
+<div class="text-[11px] text-slate-400 pl-3">夜间深度阅读 · 资料沉淀</div>
+</div>
+<div class="text-right pl-2">
+<div class="text-xs font-extrabold text-slate-800">1.8 小时</div>
+<div class="neu-inset-sm w-14 h-1.5 rounded-full mt-1 overflow-hidden">
+<div class="bg-indigo-500 h-full rounded-full" style="width: 52%"></div>
+</div>
+</div>
+</div>
+<!-- 今天 (高亮激活拟态框) -->
+<div class="neu-inset p-2.5 rounded-2xl flex items-center justify-between border border-blue-400/30">
+<div class="space-y-0.5">
+<div class="flex items-center space-x-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
+<span class="text-xs font-bold text-blue-700">今天 (5月16日)</span>
+<span class="neu-flat-sm px-1.5 py-0.5 rounded-md text-[9.5px] text-blue-600 font-bold">进行中 ✨</span>
+</div>
+<div class="text-[11px] text-slate-500 pl-3">状态极佳 · 目标达成 88%</div>
+</div>
+<div class="text-right pl-2">
+<div class="text-xs font-extrabold text-blue-700">3.5 小时</div>
+<div class="neu-inset-sm w-14 h-1.5 rounded-full mt-1 overflow-hidden">
+<div class="bg-blue-600 h-full rounded-full" style="width: 95%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- River 智能洞察小贴士 -->
+<div class="neu-inset p-3 rounded-2xl flex items-start space-x-2">
+<i class="fa-solid fa-lightbulb text-purple-600 text-xs mt-0.5 shrink-0"></i>
+<p class="text-[11.5px] leading-relaxed text-slate-600">
+<span class="font-bold text-purple-700">River 洞察：</span>周四上午你的心流节律最稳定，外界打扰最少，继续保持从容节奏哦 ✨
+          </p>
+</div>
+<!-- 快捷操作按钮组 -->
+<div class="flex items-center space-x-2 pt-1">
+<button class="flex-1 neu-button py-2 px-2.5 rounded-xl text-xs font-semibold text-blue-600 flex items-center justify-center space-x-1">
+<span class="">查看足迹日记</span>
+<i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+</button>
+<button class="flex-1 neu-button py-2 px-2.5 rounded-xl text-xs font-semibold text-slate-700 flex items-center justify-center space-x-1">
+<span class="">生成手账卡片</span>
+</button>
+</div>
+</div>
+</main>
+<!-- 底部固定停靠区 (Fixed Dock: 猜你想问 + 拟态输入条 + 5栏胶囊导航 + Home Bar) -->
+<footer class="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-[#EEF2F6] via-[#EEF2F6]/95 to-transparent pt-3 pb-2 px-4 space-y-2 pointer-events-auto">
+<!-- 猜你想问快捷胶囊提示条 -->
+<div class="neu-button px-3.5 py-1.5 rounded-full flex items-center justify-between text-[11px] text-slate-600 cursor-pointer">
+<div class="flex items-center space-x-2 truncate">
+<i class="fa-regular fa-compass text-blue-500 shrink-0"></i>
+<span class="truncate">猜你想问：“今天晚餐后适合散步吗？”</span>
+</div>
+<i class="fa-solid fa-arrow-right text-[9px] text-slate-400 ml-1 shrink-0"></i>
+</div>
+<!-- 拟态输入框操作栏 -->
+<div class="neu-flat p-1.5 rounded-full flex items-center space-x-2 border border-white/60">
+<!-- 语音录入按钮 -->
+<button class="w-8 h-8 rounded-full neu-button flex items-center justify-center text-slate-600 shrink-0 text-xs">
+<i class="fa-solid fa-microphone"></i>
+</button>
+<!-- 拟态内嵌输入凹槽 -->
+<div class="flex-1 neu-inset-sm px-3.5 py-1.5 rounded-full flex items-center">
+<input class="w-full bg-transparent text-xs text-slate-700 placeholder-slate-400 focus:outline-none border-none p-0" placeholder="问问 River 关于你的任何习惯与回忆..." type="text">
+</div>
+<!-- 发送提问主按钮 -->
+<button class="w-8 h-8 rounded-full neu-primary-button flex items-center justify-center text-white shrink-0 text-xs shadow-md">
+<i class="fa-solid fa-arrow-up"></i>
+</button>
+</div>
+<!-- 全局经典拟态悬浮底部导航栏 (5 栏结构) -->
+<nav class="neu-flat px-3 py-1.5 rounded-[26px] flex items-center justify-between border border-white/70">
+<!-- Tab 1: 今天 -->
+<button class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 active:scale-95 transition-all">
+<i class="fa-regular fa-sun text-sm"></i>
+<span class="text-[9.5px] font-medium mt-0.5">今天</span>
+</button>
+<!-- Tab 2: 足迹 -->
+<button class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 active:scale-95 transition-all">
+<i class="fa-solid fa-route text-sm"></i>
+<span class="text-[9.5px] font-medium mt-0.5">足迹</span>
+</button>
+<!-- Tab 3: 待确认 (带红点 3) -->
+<button class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 relative active:scale-95 transition-all">
+<div class="relative inline-block">
+<i class="fa-regular fa-calendar-check text-sm"></i>
+<span class="absolute -top-1 -right-2 bg-blue-600 text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">3</span>
+</div>
+<span class="text-[9.5px] font-medium mt-0.5">待确认</span>
+</button>
+<!-- Tab 4: River (当前激活状态) -->
+<button class="neu-tab-active flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl text-blue-600 transition-all">
+<i class="fa-solid fa-water text-sm"></i>
+<span class="text-[9.5px] font-bold mt-0.5">River</span>
+<span class="w-1 h-1 rounded-full bg-blue-600 mt-0.5"></span>
+</button>
+<!-- Tab 5: 我的 -->
+<button class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 active:scale-95 transition-all">
+<i class="fa-regular fa-user text-sm"></i>
+<span class="text-[9.5px] font-medium mt-0.5">我的</span>
+</button>
+</nav>
+<!-- iOS Home Indicator 指示条 -->
+<div class="w-32 h-1 bg-slate-400/40 rounded-full mx-auto mt-1 mb-0.5"></div>
+</footer>
+</div>
+</body></html>

@@ -34,12 +34,16 @@ struct CommandPaletteView: View {
     var onNavigate: (RiverDestination) -> Void
     var onWriteNote: () -> Void
     var onRefresh: () -> Void
-    var onOpenSource: () -> Void
+    var onImport: () -> Void
+    var onOpenSettings: () -> Void
+    var entries: [DiaryEntry] = []
+    var onOpenDay: (DiaryEntry) -> Void = { _ in }
     @Environment(\.dismiss) private var dismiss
 
     @State private var query = ""
     @State private var selection = CommandPaletteSelection()
     @FocusState private var focused: Bool
+    @State private var hoverIndex: Int?
 
     private struct CommandItem: Identifiable {
         let id: String
@@ -52,30 +56,45 @@ struct CommandPaletteView: View {
     }
 
     private var all: [CommandItem] {
-        [
-            .init(id: "today", title: "前往今日", symbol: "book.closed", keywords: "today 今天 首页", shortcutText: RiverDestination.today.navigationShortcut.label) { onNavigate(.today) },
-            .init(id: "timeline", title: "打开时间线", symbol: "timeline.selection", keywords: "timeline 时间线 足迹", shortcutText: RiverDestination.timeline.navigationShortcut.label) { onNavigate(.timeline) },
-            .init(id: "daily-review", title: "打开每日复盘", symbol: "checklist", keywords: "review 复盘 回顾", shortcutText: RiverDestination.dailyReview.navigationShortcut.label) { onNavigate(.dailyReview) },
-            .init(id: "habit-review", title: "打开习惯回顾", symbol: "sparkles", keywords: "habit review 习惯 回顾 确认 规律", shortcutText: RiverDestination.habitReview.navigationShortcut.label) { onNavigate(.habitReview) },
-            .init(id: "health", title: "查看健康", symbol: "heart.text.square", keywords: "health 健康 睡眠 心情 运动", shortcutText: RiverDestination.health.navigationShortcut.label) { onNavigate(.health) },
-            .init(id: "footprints", title: "查看足迹", symbol: "mappin.and.ellipse", keywords: "footprints 足迹 地点 位置", shortcutText: RiverDestination.footprints.navigationShortcut.label) { onNavigate(.footprints) },
-            .init(id: "work-learn", title: "查看学习与工作", symbol: "hammer.fill", keywords: "work learn 学习 工作 项目", shortcutText: RiverDestination.workLearn.navigationShortcut.label) { onNavigate(.workLearn) },
-            .init(id: "memory", title: "前往记忆", symbol: "archivebox", keywords: "memory 记忆 搜索", shortcutText: RiverDestination.memory.navigationShortcut.label) { onNavigate(.memory) },
-            .init(id: "ask", title: "前往询问", symbol: "questionmark.circle", keywords: "ask 询问 提问", shortcutText: RiverDestination.ask.navigationShortcut.label) { onNavigate(.ask) },
-            .init(id: "progress", title: "查看进展", symbol: "chart.line.uptrend.xyaxis", keywords: "progress 进展 对比 趋势", shortcutText: RiverDestination.progress.navigationShortcut.label) { onNavigate(.progress) },
-            .init(id: "database", title: "打开数据库", symbol: "cylinder.split.1x2", keywords: "database 数据库 原始数据 证据", shortcutText: RiverDestination.database.navigationShortcut.label) { onNavigate(.database) },
-            .init(id: "sources", title: "查看数据源", symbol: "antenna.radiowaves.left.and.right", keywords: "sources 数据源 权限 采集", shortcutText: RiverDestination.sources.navigationShortcut.label) { onNavigate(.sources) },
+        let navigation = RiverNavigationGroup.allCases.flatMap(\.destinations).map { destination in
+            CommandItem(
+                id: destination.rawValue, title: "前往 " + destination.title,
+                symbol: destination.symbol,
+                keywords: destination.title + " " + destination.group.title + " " + destination.searchKeywords,
+                shortcutText: destination.navigationShortcut.label
+            ) { onNavigate(destination) }
+        }
+        let sections = [RiverDestination.footprints, .health, .confirmations, .habitReview, .progress].map { item in
+            CommandItem(id: item.rawValue, title: item.workspaceRoot.title + " · " + item.sectionTitle,
+                        symbol: item.symbol, keywords: item.searchKeywords + " " + item.title,
+                        shortcutText: item.navigationShortcut.label) { onNavigate(item) }
+        }
+        let commands: [CommandItem] = navigation + sections + [
+            .init(id: "sources", title: "设置 · 数据源与采集", symbol: "gearshape", keywords: "sources 数据源 权限 采集", shortcutText: "⌘⇧S") { onNavigate(.sources) },
+            .init(id: "database", title: "设置 · 本地数据库", symbol: "externaldrive", keywords: "database 数据库 原始记录", shortcutText: "⌘0") { onNavigate(.database) },
             .init(id: "note", title: "写一句快记", symbol: "square.and.pencil", keywords: "note 快记 写", shortcutText: "⌘N") { onWriteNote() },
-            .init(id: "refresh", title: "立即采集", symbol: "arrow.clockwise", keywords: "refresh 采集 刷新", shortcutText: nil) { onRefresh() },
-            .init(id: "source", title: "打开数据源…", symbol: "folder", keywords: "source 数据 导入", shortcutText: nil) { onOpenSource() },
+            .init(id: "refresh", title: "立即采集", symbol: "arrow.clockwise", keywords: "refresh 采集 刷新", shortcutText: "⌘R") { onRefresh() },
+            .init(id: "import", title: "导入数据文件…", symbol: "folder.badge.plus", keywords: "import 数据 导入 ios", shortcutText: nil) { onImport() },
+            .init(id: "settings", title: "打开设置", symbol: "gearshape", keywords: "settings 设置 偏好", shortcutText: "⌘,") { onOpenSettings() },
         ]
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty else { return commands }
+        let matches = CommandPaletteArchiveSearch.matches(entries: entries, query: needle).prefix(8).map { entry in
+            CommandItem(
+                id: "archive-" + entry.id,
+                title: entry.shortDate + " · " + String(entry.displayOverview.prefix(34)),
+                symbol: "book", keywords: CommandPaletteArchiveSearch.searchText(entry),
+                shortcutText: "日记"
+            ) { onOpenDay(entry) }
+        }
+        return Array(matches) + commands
     }
 
     private var filtered: [CommandItem] {
         let n = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if n.isEmpty { return all }
         return all.filter {
-            $0.title.lowercased().contains(n) || $0.keywords.lowercased().contains(n)
+            $0.title.localizedStandardContains(n) || $0.keywords.localizedStandardContains(n)
         }
     }
 
@@ -85,7 +104,7 @@ struct CommandPaletteView: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color.tertiaryInk)
-                TextField("命令…", text: $query)
+                TextField("搜索记忆、日期，或功能…", text: $query)
                     .textFieldStyle(.plain)
                     .font(AppTypography.primary())
                     .focused($focused)
@@ -124,6 +143,7 @@ struct CommandPaletteView: View {
                 ScrollView {
                     LazyVStack(spacing: AppSpacing.xxs) {
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { index, item in
+                            let isHighlighted = index == selection.index || index == hoverIndex
                             Button {
                                 dismiss()
                                 item.run()
@@ -131,31 +151,37 @@ struct CommandPaletteView: View {
                                 HStack(spacing: AppSpacing.sm) {
                                     Image(systemName: item.symbol)
                                         .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(index == selection.index ? Color.ctaText : AppTheme.accent)
+                                        .foregroundStyle(isHighlighted ? Color.ctaText : AppTheme.accent)
                                         .frame(width: 20)
+                                        .accessibilityHidden(true)
                                     Text(item.title)
                                         .font(AppTypography.primary())
-                                        .foregroundStyle(index == selection.index ? Color.ctaText : Color.ink)
+                                        .foregroundStyle(isHighlighted ? Color.ctaText : Color.ink)
                                     Spacer(minLength: 0)
                                     if let shortcutText = item.shortcutText {
                                         Text(shortcutText)
                                             .font(AppTypography.kicker())
-                                            .foregroundStyle(index == selection.index ? Color.ctaText.opacity(0.8) : Color.tertiaryInk)
+                                            .foregroundStyle(isHighlighted ? Color.ctaText.opacity(0.8) : Color.tertiaryInk)
                                     }
                                 }
                                 .padding(.horizontal, AppSpacing.sm)
                                 .frame(minHeight: AppSpacing.rowHeight)
                                 .contentShape(Rectangle())
                                 .background(
-                                    index == selection.index ? AppTheme.accent : Color.clear,
+                                    isHighlighted ? AppTheme.accent : Color.clear,
                                     in: RoundedRectangle(cornerRadius: AppRadius.control, style: .continuous)
                                 )
                             }
                             .buttonStyle(.plain)
+                            // 键盘高亮之外补鼠标悬停：指针用户悬停行没有任何反馈会显得"死"。
+                            .onHover { hovering in
+                                hoverIndex = hovering ? index : (hoverIndex == index ? nil : hoverIndex)
+                            }
                         }
                     }
                     .padding(AppSpacing.xs)
                 }
+                .frame(maxHeight: 320)
                 .riverScrollIndicators()
             }
 
@@ -183,5 +209,16 @@ struct CommandPaletteView: View {
         guard let index = selection.selectedIndex(itemCount: filtered.count) else { return }
         dismiss()
         filtered[index].run()
+    }
+}
+
+enum CommandPaletteArchiveSearch {
+    static func searchText(_ entry: DiaryEntry) -> String {
+        ([entry.date, entry.displayOverview, entry.daily ?? ""] + (entry.memos ?? []) + (entry.tags ?? [])).joined(separator: " ")
+    }
+    static func matches(entries: [DiaryEntry], query: String) -> [DiaryEntry] {
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty else { return [] }
+        return entries.filter { searchText($0).localizedStandardContains(needle) }
     }
 }

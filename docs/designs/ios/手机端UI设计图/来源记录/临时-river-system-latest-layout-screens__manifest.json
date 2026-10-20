@@ -1,0 +1,86 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F5DF30D3-B218-4E95-91DB-CB96E99E3C23",
+        "deviceName" : "River System Unit QA",
+        "exportedFileName" : "730FC1C4-E8CE-4A35-99C6-3DC452C17546.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Writing at largest text with keyboard_0_1ACC08E9-5E27-4CC9-9293-D979F211EDAB.png",
+        "timestamp" : 1791061110.59
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F5DF30D3-B218-4E95-91DB-CB96E99E3C23",
+        "deviceName" : "River System Unit QA",
+        "exportedFileName" : "637B0EFE-C51B-4673-B065-E49170C26927.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Largest text after opening writing_0_E6B11B21-74E1-4BA9-8A10-609F4B5FC191.png",
+        "timestamp" : 1791061100.406
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F5DF30D3-B218-4E95-91DB-CB96E99E3C23",
+        "deviceName" : "River System Unit QA",
+        "exportedFileName" : "698E6E74-53EE-4785-9C0D-7E5BC4DEAB12.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Largest text before opening writing_0_DCE5D130-CFA4-4751-869E-3001EE1AB943.png",
+        "timestamp" : 1791061093.96
+      }
+    ],
+    "testIdentifier" : "RiverSystemRedesignUITests/testLargestTextWritingCanSaveAndReturnToTheDay()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverSystemRedesignUITests/testLargestTextWritingCanSaveAndReturnToTheDay"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F5DF30D3-B218-4E95-91DB-CB96E99E3C23",
+        "deviceName" : "River System Unit QA",
+        "exportedFileName" : "78BD28D6-F5F4-44DB-B193-26C1255560EF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · System settings at largest accessibility text_0_3911D020-2103-4387-AE70-EC2E63535339.png",
+        "timestamp" : 1791061156.594
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F5DF30D3-B218-4E95-91DB-CB96E99E3C23",
+        "deviceName" : "River System Unit QA",
+        "exportedFileName" : "57777423-D3BC-42F7-846A-F86EB72F5B12.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · me at largest accessibility text_0_FFC00A3C-313F-46CB-A1FB-23FEE2D28036.png",
+        "timestamp" : 1791061149.873
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F5DF30D3-B218-4E95-91DB-CB96E99E3C23",
+        "deviceName" : "River System Unit QA",
+        "exportedFileName" : "D407D27B-C258-4892-A35E-DF77BBD2A276.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · river at largest accessibility text_0_960BE628-BD5A-4E11-93E7-6C59291302E0.png",
+        "timestamp" : 1791061147.643
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F5DF30D3-B218-4E95-91DB-CB96E99E3C23",
+        "deviceName" : "River System Unit QA",
+        "exportedFileName" : "7BDD0F73-C702-4BF8-935C-63D7579EA289.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · footprints at largest accessibility text_0_E9576845-3847-4403-93AF-AD0BB79D76EE.png",
+        "timestamp" : 1791061144.574
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "F5DF30D3-B218-4E95-91DB-CB96E99E3C23",
+        "deviceName" : "River System Unit QA",
+        "exportedFileName" : "77F05A63-EB2B-4FAA-A8B6-459C0376B85B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Today at largest accessibility text_0_5520B41F-38FC-4A75-A92A-0A5A35676920.png",
+        "timestamp" : 1791061138.551
+      }
+    ],
+    "testIdentifier" : "RiverSystemRedesignUITests/testSystemWorkspacesAndAppearanceAtLargestTextSize()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverSystemRedesignUITests/testSystemWorkspacesAndAppearanceAtLargestTextSize"
+  }
+]

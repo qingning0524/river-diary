@@ -1,0 +1,12 @@
+Test Suite 'MacQAStorageIsolationTests' started at 2026-10-19 00:54:25.151.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testProductionBundleDoesNotRequireQAEnvironment]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testProductionBundleDoesNotRequireQAEnvironment]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleAcceptsAnExplicitIsolatedTemporaryHome]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleAcceptsAnExplicitIsolatedTemporaryHome]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleFailsClosedWithoutIsolationEnvironment]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleFailsClosedWithoutIsolationEnvironment]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleRejectsAProductionApplicationSupportPath]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleRejectsAProductionApplicationSupportPath]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleRejectsProductionUserHome]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleRejectsProductionUserHome]' passed (0.000 seconds).
+Test Suite 'MacQAStorageIsolationTests' passed at 2026-10-19 00:54:25.152.

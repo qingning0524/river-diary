@@ -1,6 +1,49 @@
 import XCTest
 @testable import RiverDiaryMac
 
+private final class HabitReviewRecoveryURLProtocol: URLProtocol {
+    private static let lock = NSLock()
+    private static var storedResponseBody = Data()
+    private static var storedRequestCount = 0
+
+    static func reset(responseBody: Data) {
+        lock.lock()
+        storedResponseBody = responseBody
+        storedRequestCount = 0
+        lock.unlock()
+    }
+
+    static var requestCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return storedRequestCount
+    }
+
+    private static func recordRequest() -> Data {
+        lock.lock()
+        defer { lock.unlock() }
+        storedRequestCount += 1
+        return storedResponseBody
+    }
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        guard let url = request.url,
+              let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"]) else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        let body = Self.recordRequest()
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: body)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() {}
+}
+
 @MainActor
 final class HabitReviewTests: XCTestCase {
     // MARK: Fixtures
@@ -261,6 +304,9 @@ final class HabitReviewTests: XCTestCase {
         XCTAssertNotNil(store.rules[0].validTo)
         XCTAssertEqual(store.pendingCards.count, 1, "撤销后卡片回到待答")
         XCTAssertEqual(store.pendingCards[0].answerKind, nil)
+        let reopenedRecord = try XCTUnwrap(v2.sharedUserRecords().first { $0.id == card.id && $0.kind == .habitCard })
+        XCTAssertEqual(reopenedRecord.status, "shown")
+        XCTAssertTrue(reopenedRecord.payloadJSON.contains("\"userReopenedAt\""), "撤销标记必须在跨设备权威仲裁中保留高于旧回答。")
 
         let reloaded = HabitReviewStore(v2Store: v2, calendar: calendar)
         XCTAssertEqual(reloaded.rules[0].status, .retired)
@@ -359,6 +405,136 @@ final class HabitReviewTests: XCTestCase {
         let saturday = gregorian.date(from: DateComponents(year: 2026, month: 9, day: 26, hour: 12))!
         let threeDay = HabitReviewCadence.everyThreeDays.currentPeriod(now: saturday, time: time, calendar: gregorian)
         XCTAssertEqual(threeDay.dueDate, gregorian.date(from: DateComponents(year: 2026, month: 9, day: 25, hour: 20))!)
+    }
+
+    func testInterruptedAIGeneratedBatchRecoversFromSavedArtifactWithoutAnotherRequest() async throws {
+        let v2 = try makeStore()
+        XCTAssertTrue(v2.setUserPref(key: HabitReviewStore.cadencePrefKey, value: HabitReviewCadence.manual.rawValue))
+
+        var stableCalendar = calendar
+        stableCalendar.timeZone = TimeZone.current
+        let now = stableCalendar.startOfDay(for: Date()).addingTimeInterval(21 * 3_600)
+        let periodKey = HabitReviewCadence.manual.currentPeriod(now: now, time: .evening, calendar: stableCalendar).key
+        let windowStart = try XCTUnwrap(stableCalendar.date(byAdding: .day, value: -14, to: stableCalendar.startOfDay(for: now)))
+        let dayKeys = (0..<14).compactMap { offset -> String? in
+            guard let day = stableCalendar.date(byAdding: .day, value: offset, to: windowStart) else { return nil }
+            return DiaryEntry.dateFormatter.string(from: day)
+        }
+
+        var referencesByDay: [String: String] = [:]
+        for offset in [-2, -4, -6] {
+            let day = try XCTUnwrap(stableCalendar.date(byAdding: .day, value: offset, to: stableCalendar.startOfDay(for: now)))
+            let dayKey = DiaryEntry.dateFormatter.string(from: day)
+            let reference = "raw:\(UUID().uuidString.lowercased())"
+            referencesByDay[dayKey] = reference
+            let digest = TimelineDigest(
+                dayKey: dayKey,
+                sourceFingerprint: "habit-recovery-\(dayKey)",
+                overview: "某个个人项目持续推进。",
+                overviewCandidateIDs: [],
+                overviewCaptureIDs: [],
+                overviewDiaryDates: [],
+                segments: [TimelineDigestSegment(
+                    candidateIDs: ["candidate-\(dayKey)"],
+                    title: "个人项目",
+                    summary: "在不同日期继续处理同一项目。",
+                    evidenceRefs: [reference],
+                    start: day.addingTimeInterval(10 * 3_600),
+                    end: day.addingTimeInterval(11 * 3_600)
+                )]
+            )
+            let digestJSON = try XCTUnwrap(digest.encodedJSON)
+            let rangeKey = ContextAssembler.dayRangeKey(dayKey)
+            XCTAssertTrue(v2.upsertAnalysisRun(
+                AnalysisRun(task: .timelineDigest, outputText: digestJSON, model: "fixture"),
+                dedupKey: "timelineDigest|\(rangeKey)",
+                rangeKey: rangeKey,
+                evidenceRefs: [reference],
+                digestJSON: digestJSON
+            ))
+        }
+
+        let sortedDayKeys = referencesByDay.keys.sorted()
+        let firstPair = [referencesByDay[sortedDayKeys[0]]!, referencesByDay[sortedDayKeys[1]]!]
+        let secondPair = [referencesByDay[sortedDayKeys[1]]!, referencesByDay[sortedDayKeys[2]]!]
+        let modelAnswer = """
+        {"conversations":[
+          {"topic":"个人项目","observation":"你在多个日期持续推进同一个项目。","opening":"这些项目活动通常希望我以后如何理解？","suggestedReplies":["算作长期项目"],"evidenceRefs":["\(firstPair[0])","\(firstPair[1])"]},
+          {"topic":"时间安排","observation":"项目活动分布在不同日期。","opening":"你更希望我怎样整理这些安排？","suggestedReplies":[],"evidenceRefs":["\(secondPair[0])","\(secondPair[1])"]}
+        ]}
+        """
+        let responseBody = try JSONSerialization.data(withJSONObject: [
+            "choices": [["message": ["content": modelAnswer]]]
+        ])
+        HabitReviewRecoveryURLProtocol.reset(responseBody: responseBody)
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [HabitReviewRecoveryURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        defer { session.invalidateAndCancel() }
+
+        let suiteName = "river-habit-recovery-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let ai = AIAssistantStore(v2Store: v2, userDefaults: defaults, urlSession: session)
+        ai.provider = .ollama
+        ai.endpoint = "http://localhost:11434/v1/chat/completions"
+        ai.model = "fixture-model"
+        XCTAssertTrue(ai.canRunAutomaticAnalysis)
+
+        let generatedBeforeInterruption = await ai.generateHabitReviewProposals(
+            periodKey: periodKey,
+            dayKeys: dayKeys,
+            previousCards: []
+        )
+        let initialProposals = try XCTUnwrap(generatedBeforeInterruption)
+        XCTAssertEqual(initialProposals.count, 2)
+        XCTAssertEqual(HabitReviewRecoveryURLProtocol.requestCount, 1)
+
+        // Simulate process death after the old code saved a batch and one card,
+        // but before it saved the batch's second card.
+        let interruptedID = UUID()
+        let interruptedBatch = HabitReviewBatch(
+            id: interruptedID,
+            periodKey: periodKey,
+            cadence: .manual,
+            createdAt: now.addingTimeInterval(-60),
+            cardIDs: initialProposals.map(\.id),
+            introTitle: "正在恢复的问题包"
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let batchJSON = try String(decoding: encoder.encode(interruptedBatch), as: UTF8.self)
+        XCTAssertTrue(v2.upsertHabitBatch(
+            id: interruptedBatch.id,
+            periodKey: periodKey,
+            payloadJSON: batchJSON,
+            createdAt: interruptedBatch.createdAt,
+            shownAt: nil
+        ))
+        var partiallyPersistedCard = initialProposals[0]
+        partiallyPersistedCard.id = interruptedBatch.cardIDs[0]
+        let cardJSON = try String(decoding: encoder.encode(partiallyPersistedCard), as: UTF8.self)
+        XCTAssertTrue(v2.upsertHabitCard(
+            id: partiallyPersistedCard.id,
+            batchID: interruptedBatch.id,
+            dedupKey: partiallyPersistedCard.dedupKey,
+            status: partiallyPersistedCard.status.rawValue,
+            payloadJSON: cardJSON,
+            updatedAt: now
+        ))
+
+        let habit = HabitReviewStore(v2Store: v2, calendar: stableCalendar)
+        XCTAssertTrue(habit.batches.isEmpty, "不完整批次不应被当作已完成周期")
+        XCTAssertTrue(habit.cards.isEmpty, "不完整批次里的孤立卡片不应显示")
+
+        await habit.evaluateWithAIIfNeeded(ai: ai, now: now, allowManualGeneration: true)
+
+        XCTAssertEqual(HabitReviewRecoveryURLProtocol.requestCount, 1, "完全相同的 AI 输入应复用已保存 Artifact")
+        XCTAssertEqual(habit.batches.count, 1)
+        XCTAssertEqual(habit.batches[0].id, interruptedID, "恢复应补齐原批次，而不是创建第二个批次")
+        XCTAssertEqual(habit.cards.count, 2)
+        XCTAssertTrue(habit.batches[0].cardIDs.allSatisfy { id in habit.cards.contains(where: { $0.id == id }) })
+        XCTAssertNil(habit.lastError)
     }
 
     // MARK: Helpers

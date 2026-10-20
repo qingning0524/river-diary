@@ -12,8 +12,13 @@ struct EvidenceConsoleView: View {
     @ObservedObject var store: DiaryStore
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore
+    @ObservedObject var habitReview: HabitReviewStore
     let selectedDate: Date
+    let pendingConfirmationCount: Int
+    var excludedConfirmationTargetIDs: Set<String> = []
     var onSelectTimelineItem: (ActivityTimelineItem, String) -> Void
+    var onOpenJournal: () -> Void = {}
+    var onOpenConfirmations: () -> Void = {}
 
     private var entry: DiaryEntry { store.entry(for: selectedDate) }
 
@@ -30,7 +35,10 @@ struct EvidenceConsoleView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
+                journalContextCard
+                if pendingConfirmationCount > 0 { pendingConfirmationCard }
                 reviewQueueCard
+                rhythmSummaryCard()
             }
             .padding(.leading, density.spacing(AppSpacing.md))
             .padding(.trailing, density.spacing(AppSpacing.page))
@@ -41,6 +49,119 @@ struct EvidenceConsoleView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.workspace)
         .overlay(alignment: .leading) { RiverRule().frame(width: 1) }
+    }
+
+    private var journalContextCard: some View {
+        let dateKey = DiaryEntry.dateFormatter.string(from: selectedDate)
+        let entry = store.entry(for: selectedDate)
+        let draft = store.journalDrafts[dateKey]?.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let memo = entry.memos?.first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+        let savedWriting = store.hasOverride(entry) ? entry.displayOverview : memo
+        let text = draft?.isEmpty == false ? draft : savedWriting
+
+        return RiverPanel(
+            title: Calendar.current.isDateInToday(selectedDate) ? "留给今天的文字" : "留给这一天的文字",
+            systemImage: "square.and.pencil",
+            accent: AppTheme.accent,
+            level: .raised
+        ) {
+            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
+                Text(selectedDate.formatted(.dateTime.month().day().weekday()))
+                    .font(AppTypography.micro()).foregroundStyle(Color.secondaryInk)
+                if let text, !text.isEmpty {
+                    Text(text)
+                        .font(AppTypography.primary())
+                        .foregroundStyle(Color.ink)
+                        .lineLimit(5)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if draft?.isEmpty == false {
+                        Text("草稿已加密保存在本机")
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.secondaryInk)
+                    }
+                } else {
+                    Text("这一天还没有留下一段文字。几句话就好。")
+                        .font(AppTypography.secondary())
+                        .foregroundStyle(Color.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Button(text == nil ? "写一笔" : "继续写") {
+                    onOpenJournal()
+                }
+                .linkAction()
+                .font(AppTypography.metadata())
+            }
+        }
+    }
+
+    private var pendingConfirmationCard: some View {
+        RiverPanel(
+            title: "等你点个头",
+            systemImage: "checkmark.bubble",
+            detail: pendingConfirmationCount > 0 ? "\(pendingConfirmationCount) 项" : "暂时没有",
+            accent: AppTheme.warning,
+            level: .raised
+        ) {
+            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
+                Text(pendingConfirmationCount > 0
+                     ? "所有日期的地点、时间线和习惯线索，确认后才会收录。"
+                     : "事实与观察会分开保存，有新的待确认项时会显示在这里。")
+                    .font(AppTypography.secondary())
+                    .foregroundStyle(Color.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                if pendingConfirmationCount > 0 {
+                    Button("查看待确认") { onOpenConfirmations() }
+                        .linkAction()
+                        .font(AppTypography.metadata())
+                }
+            }
+        }
+    }
+
+    private func rhythmSummaryCard() -> some View {
+        let timeline = buildTimeline()
+        let categories = timeline.categoryUsage.prefix(3)
+        let total = timeline.totalDuration
+
+        return RiverPanel(title: "时间，去了哪里", systemImage: "clock", level: .raised) {
+            if categories.isEmpty {
+                Text("暂时没有可统计的活动片段。空白时间仍是未知。")
+                    .font(AppTypography.secondary())
+                    .foregroundStyle(Color.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
+                    HStack(spacing: 3) {
+                        ForEach(Array(categories.enumerated()), id: \.element.name) { index, item in
+                            GeometryReader { geometry in
+                                Capsule()
+                                    .fill(AppTheme.categoryTint(item.name))
+                                    .frame(width: max(4, geometry.size.width * min(item.duration / total, 1)))
+                            }
+                            .frame(height: 6)
+                            .opacity(index == 0 ? 1 : 0.58)
+                        }
+                    }
+                    ForEach(categories, id: \.name) { item in
+                        HStack(spacing: density.spacing(AppSpacing.xs)) {
+                            Circle()
+                                .fill(AppTheme.categoryTint(item.name))
+                                .frame(width: 5, height: 5)
+                            Text(item.name)
+                                .font(AppTypography.metadata())
+                                .foregroundStyle(Color.secondaryInk)
+                            Spacer(minLength: 4)
+                            Text(ActivityFormatter.time(item.duration))
+                                .font(AppTypography.numeric())
+                                .foregroundStyle(Color.ink)
+                        }
+                    }
+                    Text("仅汇总已有记录的时段。")
+                        .font(AppTypography.micro())
+                        .foregroundStyle(Color.tertiaryInk)
+                }
+            }
+        }
     }
 
     // MARK: - 待确认
@@ -63,16 +184,17 @@ struct EvidenceConsoleView: View {
                 .map { ($0.candidateID, $0) },
             uniquingKeysWith: { first, _ in first }
         )
-        let items = Array(timeline.foldedItems
-            .filter { $0.needsReview || clarifications[$0.id] != nil }
-            .sorted { $0.reviewSpan > $1.reviewSpan }
-            .prefix(4))
+        let items = DayReviewQueue.items(in: timeline, clarificationIDs: Set(clarifications.keys),
+                                         excluding: excludedConfirmationTargetIDs)
 
-        return RiverPanel(
-            title: "需要你确认",
+        return Group {
+            if !items.isEmpty {
+                RiverPanel(
+            title: "当天还需补充的线索",
             systemImage: "questionmark.circle",
             detail: items.isEmpty ? "没有待确认项" : "\(items.count) 段活动需要补充理解",
-            accent: AppTheme.warning
+            accent: AppTheme.warning,
+            level: .raised
         ) {
             if items.isEmpty {
                 HStack(spacing: density.spacing(AppSpacing.sm)) {
@@ -96,6 +218,8 @@ struct EvidenceConsoleView: View {
                     .foregroundStyle(Color.tertiaryInk)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, density.spacing(AppSpacing.sm))
+            }
+        }
             }
         }
     }

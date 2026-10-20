@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "33C5384E-ACCB-4105-B70A-36D61D3314F6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "10-dark-large-text-settings_0_B1AEF748-C8B5-4489-92F2-0F05D83E1581.png",
+        "timestamp" : 1790998374.306
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "DCA97F5C-4D46-4C44-8BA2-EF2D5285900E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "09-dark-large-text-today_0_5AEB5BC9-87EC-4FB8-ACA3-BB7F274EE18D.png",
+        "timestamp" : 1790998370.913
+      }
+    ],
+    "testIdentifier" : "RiverDiaryUITests/testDarkAppearanceAndLargeText()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverDiaryUITests/testDarkAppearanceAndLargeText"
+  }
+]

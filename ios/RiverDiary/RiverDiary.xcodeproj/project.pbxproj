@@ -6,18 +6,83 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXFileReference section */
-		1A00000E2D00000000000001 /* RiverDiary.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RiverDiary.app; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
-
 /* Begin PBXBuildFile section */
 		1A0000102D00000000000001 /* RiverDiaryCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000132D00000000000001 /* RiverDiaryCore */; };
+		2B0000102D00000000000001 /* RiverDiaryCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2B0000132D00000000000001 /* RiverDiaryCore */; };
+		3C0000102D00000000000001 /* RiverDiaryCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3C0000132D00000000000001 /* RiverDiaryCore */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2B00000A2D00000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A0000082D00000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A0000042D00000000000001;
+			remoteInfo = RiverDiary;
+		};
+		4D00000A2D00000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1A0000082D00000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3C0000042D00000000000001;
+			remoteInfo = RiverDiaryQA;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		1A00000E2D00000000000001 /* RiverDiary.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RiverDiary.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B00000E2D00000000000001 /* RiverDiaryTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RiverDiaryTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3C00000E2D00000000000001 /* RiverDiaryQA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RiverDiaryQA.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4D00000E2D00000000000001 /* RiverDiaryUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RiverDiaryUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+			7A0000022D00000000000001 /* Exclude local snapshot from RiverDiary app target */ = {
+				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+				membershipExceptions = (
+					Resources/data.json,
+				);
+				target = 1A0000042D00000000000001 /* RiverDiary */;
+			};
+		5E0000022D00000000000001 /* Exceptions for "RiverDiary" folder in "RiverDiaryQA" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resources/data.json,
+			);
+			target = 3C0000042D00000000000001 /* RiverDiaryQA */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1A0000012D00000000000001 /* RiverDiary */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+				exceptions = (
+					7A0000022D00000000000001 /* Exclude local snapshot from RiverDiary app target */,
+				);
 			path = RiverDiary;
+			sourceTree = "<group>";
+		};
+		2B0000012D00000000000001 /* RiverDiaryTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = RiverDiaryTests;
+			sourceTree = "<group>";
+		};
+		4D0000012D00000000000001 /* RiverDiaryUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = RiverDiaryUITests;
+			sourceTree = "<group>";
+		};
+		5E0000012D00000000000001 /* RiverDiary */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5E0000022D00000000000001 /* Exceptions for "RiverDiary" folder in "RiverDiaryQA" target */,
+			);
+			path = RiverDiary;
+			sourceTree = "<group>";
+		};
+		6F0000012D00000000000001 /* RiverDiaryQAResources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = RiverDiaryQAResources;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +96,29 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2B0000022D00000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2B0000102D00000000000001 /* RiverDiaryCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3C0000022D00000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3C0000102D00000000000001 /* RiverDiaryCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4D0000022D00000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -38,6 +126,10 @@
 			isa = PBXGroup;
 			children = (
 				1A0000012D00000000000001 /* RiverDiary */,
+				2B0000012D00000000000001 /* RiverDiaryTests */,
+				4D0000012D00000000000001 /* RiverDiaryUITests */,
+				5E0000012D00000000000001 /* RiverDiary */,
+				6F0000012D00000000000001 /* RiverDiaryQAResources */,
 				1A00000F2D00000000000001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,6 +138,9 @@
 			isa = PBXGroup;
 			children = (
 				1A00000E2D00000000000001 /* RiverDiary.app */,
+				2B00000E2D00000000000001 /* RiverDiaryTests.xctest */,
+				3C00000E2D00000000000001 /* RiverDiaryQA.app */,
+				4D00000E2D00000000000001 /* RiverDiaryUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -76,6 +171,77 @@
 			productReference = 1A00000E2D00000000000001 /* RiverDiary.app */;
 			productType = "com.apple.product-type.application";
 		};
+		2B0000042D00000000000001 /* RiverDiaryTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2B0000052D00000000000001 /* Build configuration list for PBXNativeTarget "RiverDiaryTests" */;
+			buildPhases = (
+				2B0000062D00000000000001 /* Sources */,
+				2B0000022D00000000000001 /* Frameworks */,
+				2B0000072D00000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2B00000B2D00000000000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2B0000012D00000000000001 /* RiverDiaryTests */,
+			);
+			name = RiverDiaryTests;
+			packageProductDependencies = (
+				2B0000132D00000000000001 /* RiverDiaryCore */,
+			);
+			productName = RiverDiaryTests;
+			productReference = 2B00000E2D00000000000001 /* RiverDiaryTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		3C0000042D00000000000001 /* RiverDiaryQA */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3C0000052D00000000000001 /* Build configuration list for PBXNativeTarget "RiverDiaryQA" */;
+			buildPhases = (
+				3C0000062D00000000000001 /* Sources */,
+				3C0000022D00000000000001 /* Frameworks */,
+				3C0000072D00000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5E0000012D00000000000001 /* RiverDiary */,
+				6F0000012D00000000000001 /* RiverDiaryQAResources */,
+			);
+			name = RiverDiaryQA;
+			packageProductDependencies = (
+				3C0000132D00000000000001 /* RiverDiaryCore */,
+			);
+			productName = RiverDiaryQA;
+			productReference = 3C00000E2D00000000000001 /* RiverDiaryQA.app */;
+			productType = "com.apple.product-type.application";
+		};
+		4D0000042D00000000000001 /* RiverDiaryUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4D0000052D00000000000001 /* Build configuration list for PBXNativeTarget "RiverDiaryUITests" */;
+			buildPhases = (
+				4D0000062D00000000000001 /* Sources */,
+				4D0000022D00000000000001 /* Frameworks */,
+				4D0000072D00000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4D00000B2D00000000000001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4D0000012D00000000000001 /* RiverDiaryUITests */,
+			);
+			name = RiverDiaryUITests;
+			packageProductDependencies = (
+			);
+			productName = RiverDiaryUITests;
+			productReference = 4D00000E2D00000000000001 /* RiverDiaryUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -87,6 +253,17 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					1A0000042D00000000000001 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 2B0000042D00000000000001;
+					};
+					2B0000042D00000000000001 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					3C0000042D00000000000001 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 4D0000042D00000000000001;
+					};
+					4D0000042D00000000000001 = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -100,21 +277,45 @@
 				en,
 			);
 			mainGroup = 1A0000032D00000000000001;
-			packageReferences = (
-				1A0000122D00000000000001 /* RiverDiaryCore */,
-			);
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1A0000122D00000000000001 /* XCLocalSwiftPackageReference "../../Packages/RiverDiaryCore" */,
+			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				1A0000042D00000000000001 /* RiverDiary */,
+				2B0000042D00000000000001 /* RiverDiaryTests */,
+				3C0000042D00000000000001 /* RiverDiaryQA */,
+				4D0000042D00000000000001 /* RiverDiaryUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		1A0000072D00000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2B0000072D00000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3C0000072D00000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4D0000072D00000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -131,22 +332,41 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		2B0000062D00000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3C0000062D00000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4D0000062D00000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		1A0000122D00000000000001 /* RiverDiaryCore */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../Packages/RiverDiaryCore;
+/* Begin PBXTargetDependency section */
+		2B00000B2D00000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1A0000042D00000000000001 /* RiverDiary */;
+			targetProxy = 2B00000A2D00000000000001 /* PBXContainerItemProxy */;
 		};
-/* End XCLocalSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		1A0000132D00000000000001 /* RiverDiaryCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1A0000122D00000000000001 /* RiverDiaryCore */;
-			productName = RiverDiaryCore;
+		4D00000B2D00000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3C0000042D00000000000001 /* RiverDiaryQA */;
+			targetProxy = 4D00000A2D00000000000001 /* PBXContainerItemProxy */;
 		};
-/* End XCSwiftPackageProductDependency section */
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1A00000A2D00000000000001 /* Debug */ = {
@@ -207,25 +427,21 @@
 				CODE_SIGN_ENTITLEMENTS = RiverDiary/RiverDiary.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Z29662632F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "情绪河流";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "读取睡眠和运动数据，帮助你理解身体状态与情绪变化的关系。";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录你主动开启位置记录期间的到访和显著移动，并在时间线上提供地点线索。";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "你启用后台位置记录后，系统可在 River Diary 未打开时延迟交付到访和显著移动事件。";
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "local.riverdiary.app.health-sync";
+				INFOPLIST_KEY_CFBundleDisplayName = "河流日记";
+				INFOPLIST_KEY_NSBonjourServices = "_riverdiary-sync._tcp";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "在你开启健康连接后读取睡眠和运动摘要，用于查看当天身体记录与生活时间线的关系。";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "你启用附近设备快速复制后，River Diary 会通过本地网络交换已加密的同步对象。";
-				INFOPLIST_KEY_NSBonjourServices = (
-					"_riverdiary-sync._tcp",
-				);
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = (
-					"local.riverdiary.app.health-sync",
-				);
-				INFOPLIST_KEY_UIBackgroundModes = "location processing";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "你启用后台位置记录后，系统可在 River Diary 未打开时延迟交付到访和显著移动事件。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录你主动开启位置记录期间的到访和显著移动，并在时间线上提供地点线索。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "location processing";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -234,7 +450,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = local.riverdiary.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -252,25 +468,21 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = RiverDiary/RiverDiary.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Z29662632F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "情绪河流";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "读取睡眠和运动数据，帮助你理解身体状态与情绪变化的关系。";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录你主动开启位置记录期间的到访和显著移动，并在时间线上提供地点线索。";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "你启用后台位置记录后，系统可在 River Diary 未打开时延迟交付到访和显著移动事件。";
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "local.riverdiary.app.health-sync";
+				INFOPLIST_KEY_CFBundleDisplayName = "河流日记";
+				INFOPLIST_KEY_NSBonjourServices = "_riverdiary-sync._tcp";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "在你开启健康连接后读取睡眠和运动摘要，用于查看当天身体记录与生活时间线的关系。";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "你启用附近设备快速复制后，River Diary 会通过本地网络交换已加密的同步对象。";
-				INFOPLIST_KEY_NSBonjourServices = (
-					"_riverdiary-sync._tcp",
-				);
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = (
-					"local.riverdiary.app.health-sync",
-				);
-				INFOPLIST_KEY_UIBackgroundModes = "location processing";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "你启用后台位置记录后，系统可在 River Diary 未打开时延迟交付到访和显著移动事件。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "用于记录你主动开启位置记录期间的到访和显著移动，并在时间线上提供地点线索。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "location processing";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -279,7 +491,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = local.riverdiary.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -287,6 +499,140 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		2B00000C2D00000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Z29662632F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.riverdiary.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RiverDiary.app/RiverDiary";
+			};
+			name = Debug;
+		};
+		2B00000D2D00000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Z29662632F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.riverdiary.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RiverDiary.app/RiverDiary";
+			};
+			name = Release;
+		};
+		3C00000C2D00000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = RiverDiary/RiverDiary.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = Z29662632F;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "RiverDiary QA";
+				INFOPLIST_KEY_NSBonjourServices = "_riverdiary-sync._tcp";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "QA 仅用于隔离验收；未经同意不会读取健康数据。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "仅在启用 QA 附近设备复制时交换加密测试对象。";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "QA 仅在授权后测试后台位置事件。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "QA 仅在授权后记录验收所需的位置线索。";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.riverdiary.ios.qa;
+				PRODUCT_NAME = RiverDiaryQA;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3C00000D2D00000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = RiverDiary/RiverDiary.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = Z29662632F;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "RiverDiary QA";
+				INFOPLIST_KEY_NSBonjourServices = "_riverdiary-sync._tcp";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "QA 仅用于隔离验收；未经同意不会读取健康数据。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "仅在启用 QA 附近设备复制时交换加密测试对象。";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "QA 仅在授权后测试后台位置事件。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "QA 仅在授权后记录验收所需的位置线索。";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.riverdiary.ios.qa;
+				PRODUCT_NAME = RiverDiaryQA;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		4D00000C2D00000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Z29662632F;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "RiverDiaryUITests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.riverdiary.ios.qa.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RiverDiaryQA;
+			};
+			name = Debug;
+		};
+		4D00000D2D00000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Z29662632F;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "RiverDiaryUITests-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.riverdiary.ios.qa.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RiverDiaryQA;
 			};
 			name = Release;
 		};
@@ -311,7 +657,59 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		2B0000052D00000000000001 /* Build configuration list for PBXNativeTarget "RiverDiaryTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2B00000C2D00000000000001 /* Debug */,
+				2B00000D2D00000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3C0000052D00000000000001 /* Build configuration list for PBXNativeTarget "RiverDiaryQA" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3C00000C2D00000000000001 /* Debug */,
+				3C00000D2D00000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4D0000052D00000000000001 /* Build configuration list for PBXNativeTarget "RiverDiaryUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4D00000C2D00000000000001 /* Debug */,
+				4D00000D2D00000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		1A0000122D00000000000001 /* XCLocalSwiftPackageReference "../../Packages/RiverDiaryCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Packages/RiverDiaryCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1A0000132D00000000000001 /* RiverDiaryCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000122D00000000000001 /* XCLocalSwiftPackageReference "../../Packages/RiverDiaryCore" */;
+			productName = RiverDiaryCore;
+		};
+		2B0000132D00000000000001 /* RiverDiaryCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000122D00000000000001 /* XCLocalSwiftPackageReference "../../Packages/RiverDiaryCore" */;
+			productName = RiverDiaryCore;
+		};
+		3C0000132D00000000000001 /* RiverDiaryCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1A0000122D00000000000001 /* XCLocalSwiftPackageReference "../../Packages/RiverDiaryCore" */;
+			productName = RiverDiaryCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1A0000082D00000000000001 /* Project object */;
 }

@@ -1,0 +1,33 @@
+[Unit]
+Description=FlowRiver account API
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=flowriver
+Group=flowriver
+WorkingDirectory=/opt/flowriver
+StateDirectory=flowriver
+StateDirectoryMode=0700
+EnvironmentFile=/etc/flowriver/server.env
+Environment=GOMEMLIMIT=256MiB
+ExecStart=/opt/flowriver/bin/flowriver-api
+Restart=on-failure
+RestartSec=2s
+TimeoutStopSec=15s
+MemoryMax=384M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

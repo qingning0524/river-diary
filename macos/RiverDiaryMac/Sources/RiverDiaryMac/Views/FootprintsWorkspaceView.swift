@@ -18,22 +18,20 @@ struct FootprintsWorkspaceView: View {
         let timeline = ActivityTimelineEngine.build(
             for: selectedDate,
             sessions: activity.liveSessions(for: selectedDate),
+            placeMarkers: activity.locationMarkers(for: selectedDate),
             annotations: store.timelineAnnotations
         )
-        let placeItems = timeline.items.filter { item in
-            guard let place = item.annotation?.normalized.placeName else { return false }
-            return !place.isEmpty
-        }
+        let placeItems = FootprintMoments.places(in: timeline).map(\.item)
         let placeStatus: String
         if !placeItems.isEmpty {
-            placeStatus = "\(location.statusDetail) · 已有 \(placeItems.count) 段足迹由你人工标注地点。"
+            placeStatus = "这一天有 \(placeItems.count) 条地点记录；点击查看时间和来源。"
         } else {
-            placeStatus = "\(location.statusDetail)。电脑活动统一在时间线展示，足迹页只展示地点和停留。"
+            placeStatus = "\(location.statusDetail)。电脑活动统一在时间线展示，地点页只展示地点和停留。"
         }
 
         return RiverPage {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
-                PageHeader("足迹", context: selectedDate.formatted(.dateTime.year().month().day())) {
+                PageHeader(RiverDestination.footprints.title, context: selectedDate.formatted(.dateTime.year().month().day())) {
                     HStack(spacing: 6) {
                         Button(location.isConnected ? "停止位置记录" : "连接位置") {
                             if location.isConnected { location.disconnect() }
@@ -92,13 +90,15 @@ struct FootprintsWorkspaceView: View {
                                             .foregroundStyle(Color.secondaryInk)
                                             .frame(width: 58, alignment: .leading)
                                         VStack(alignment: .leading, spacing: density.spacing(3)) {
-                                            Text(item.annotation?.normalized.placeName ?? "未知地点")
+                                            Text(FootprintMoments.place(item) ?? "未知地点")
                                                 .font(AppTypography.rowTitle())
                                                 .foregroundStyle(Color.ink)
-                                            Text(item.annotation?.normalized.activityLabel ?? "未标注活动")
+                                            Text(item.placeMarker?.detail ?? item.annotation?.normalized.activityLabel ?? "未标注活动")
                                                 .font(AppTypography.secondary())
                                                 .foregroundStyle(Color.secondaryInk)
-                                            Text("\(item.start.formatted(date: .omitted, time: .shortened))–\(item.end.formatted(date: .omitted, time: .shortened)) · \(ActivityFormatter.time(item.duration))")
+                                            Text(item.kind == .place
+                                                 ? item.start.formatted(date: .omitted, time: .shortened)
+                                                 : "\(item.start.formatted(date: .omitted, time: .shortened))–\(item.end.formatted(date: .omitted, time: .shortened)) · \(ActivityFormatter.time(item.duration))")
                                                 .font(AppTypography.metadata())
                                                 .foregroundStyle(AppTheme.accent)
                                         }

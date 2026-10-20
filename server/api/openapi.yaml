@@ -1,0 +1,833 @@
+openapi: 3.1.0
+info:
+  title: FlowRiver Account API
+  version: 1.0.0
+  description: >-
+    Apple authentication, linking, reauthentication, and notification endpoints require
+    ACCOUNT_AUTH_MODE=email_and_apple and APPLE_ENABLED=true. In email_only mode Apple endpoints respond unavailable.
+servers:
+  - url: https://api.flowriver.xyz/v1
+security: []
+paths:
+  /feedback:
+    post:
+      summary: Submit anonymous website feedback
+      description: Optional retry identity is scoped to source IP and canonical content for 24 hours. Anonymous feedback is not attached to an account by matching its contact email.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string, minLength: 8, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                contact_email: { type: string, maxLength: 320 }
+                subject: { type: string, maxLength: 200 }
+                body: { type: string, minLength: 5, maxLength: 4000 }
+      responses:
+        '202': { description: Accepted, including an identical replay with an unexpired key. }
+        '400': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /me/sessions:
+    get:
+      summary: Recent own login sessions (up to 200), including current and active flags
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Scoped session records, with no bearer or refresh tokens. }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/sessions/{id}/revoke:
+    post:
+      summary: Revoke an own session; an unowned ID is indistinguishable from a missing ID
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Own session revoked immediately. }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /me/activity:
+    get:
+      summary: Recent 100 own account service audit events, without request IDs or administrator private metadata
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Scoped events. }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/redemptions:
+    get:
+      summary: Recent 100 own activation redemptions, showing only code suffixes
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Scoped redemption history. }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/feedback:
+    get:
+      summary: Recent 100 authenticated own feedback records and replies
+      description: Ownership is the submitting user's ID. Unauthenticated public feedback is never claimed by matching a contact email.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Scoped feedback messages. }
+        '401': { $ref: '#/components/responses/Error' }
+    post:
+      summary: Submit authenticated feedback with stable retry identity
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                subject: { type: string, maxLength: 200 }
+                body: { type: string, minLength: 5, maxLength: 4000 }
+      responses:
+        '202': { description: Persisted feedback ID and acknowledgement; identical retries do not insert again. }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+
+  /auth/email/start:
+    post:
+      operationId: startEmailLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email, maxLength: 320 }
+      responses:
+        '202':
+          description: If delivery is available, a one-time code will arrive. The opaque challenge ID is returned for any valid email address, whether registered or new.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message, challenge_id]
+                properties:
+                  message: { type: string }
+                  challenge_id: { type: string, format: uuid }
+        '400': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/email/verify:
+    post:
+      operationId: verifyEmailLogin
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [challenge_id, code, client_instance_id, platform, accept_terms]
+              properties:
+                challenge_id: { type: string, format: uuid }
+                code: { type: string, pattern: '^[0-9]{8}$' }
+                client_instance_id: { type: string, format: uuid }
+                platform: { type: string, enum: [ios, macos, other] }
+                device_name: { type: string, maxLength: 80 }
+                accept_terms: { type: boolean }
+      responses:
+        '200':
+          description: FlowRiver account and session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /auth/password/login:
+    post:
+      operationId: loginWithPassword
+      description: Existing verified email accounts only. Unknown email and incorrect password return the same invalid_credentials error. Passwords use NFC normalization without trimming.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, client_instance_id, platform]
+              properties:
+                email: { type: string, format: email, maxLength: 320 }
+                password: { type: string, maxLength: 128 }
+                client_instance_id: { type: string, format: uuid }
+                platform: { type: string, enum: [ios, macos, other] }
+                device_name: { type: string, maxLength: 80 }
+      responses:
+        '200': { description: Account and session., content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/password/reset/start:
+    post:
+      operationId: startPasswordReset
+      description: Request an independent eight-digit email proof for password setup or recovery. The response does not reveal account existence. Proofs expire after ten minutes and cannot create an account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email, maxLength: 320 }
+      responses:
+        '202':
+          description: Verification requested.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message, challenge_id]
+                properties:
+                  message: { type: string }
+                  challenge_id: { type: string, format: uuid }
+        '400': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/password/reset/complete:
+    post:
+      operationId: completePasswordReset
+      description: Set or replace a password for the account bound to the email proof. Proofs allow five attempts, are single use, and become invalid when the credential version changes. Revokes existing sessions and issues a new current-device session. New passwords are NFC-normalized, 15–128 Unicode characters, at most 512 UTF-8 bytes, and may contain spaces. Common passwords and the email address itself are rejected.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [challenge_id, code, new_password, client_instance_id, platform]
+              properties:
+                challenge_id: { type: string, format: uuid }
+                code: { type: string, pattern: '^[0-9]{8}$' }
+                new_password: { type: string, minLength: 15, maxLength: 128 }
+                client_instance_id: { type: string, format: uuid }
+                platform: { type: string, enum: [ios, macos, other] }
+                device_name: { type: string, maxLength: 80 }
+      responses:
+        '200': { description: Password saved and current-device session issued., content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /me/password:
+    get:
+      operationId: getPasswordStatus
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Whether this account has a password credential.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [password_enabled]
+                properties:
+                  password_enabled: { type: boolean }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/apple/start:
+    post:
+      operationId: startAppleLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: false }
+      responses:
+        '200':
+          description: One-time attempt and raw nonce. Native clients hash the nonce using SHA-256 when building the Apple authorization request.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [attempt_id, nonce, client_ids, expires_in]
+                properties:
+                  attempt_id: { type: string, format: uuid }
+                  nonce: { type: string }
+                  client_ids: { type: array, items: { type: string } }
+                  expires_in: { type: integer }
+        '503': { $ref: '#/components/responses/Error' }
+  /auth/apple/complete:
+    post:
+      operationId: completeAppleLogin
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attempt_id, identity_token, authorization_code, client_instance_id, platform, accept_terms]
+              properties:
+                attempt_id: { type: string, format: uuid }
+                identity_token: { type: string, maxLength: 16384 }
+                authorization_code: { type: string, maxLength: 4096 }
+                client_instance_id: { type: string, format: uuid }
+                platform: { type: string, enum: [ios, macos, other] }
+                device_name: { type: string, maxLength: 80 }
+                accept_terms: { type: boolean }
+      responses:
+        '200': { description: FlowRiver account and session., content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+  /auth/refresh:
+    post:
+      operationId: refreshSession
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token, revoke_token, client_instance_id]
+              properties:
+                refresh_token: { type: string }
+                revoke_token: { type: string }
+                client_instance_id: { type: string, format: uuid }
+      responses:
+        '200': { description: Rotated session., content: { application/json: { schema: { $ref: '#/components/schemas/TokenResponse' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /auth/logout:
+    post:
+      operationId: logoutSession
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revoke_token: { type: string }
+      responses:
+        '204': { description: Session revoked or already expired. }
+        '503': { $ref: '#/components/responses/Error' }
+  /me:
+    get:
+      operationId: getMe
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Account status and linked login identities. }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/entitlements:
+    get:
+      operationId: getEntitlements
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Effective product rights for the current account.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [entitlements]
+                properties:
+                  entitlements:
+                    type: array
+                    items:
+                      type: object
+                      required: [product_code, active, starts_at, permanent]
+                      properties:
+                        product_code: { type: string }
+                        active: { type: boolean }
+                        starts_at: { type: string, format: date-time }
+                        expires_at: { type: [string, 'null'], format: date-time }
+                        permanent: { type: boolean }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/activation-codes/redeem:
+    post:
+      operationId: redeemActivationCode
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, minLength: 12, maxLength: 40 }
+      responses:
+        '200': { description: The code was redeemed and the account entitlement was updated idempotently. }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '422': { description: The code is unknown, expired, revoked, or already redeemed. }
+        '429': { $ref: '#/components/responses/Error' }
+  /me/devices:
+    get:
+      operationId: listDevices
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Devices linked to the current account. }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/devices/{id}/revoke:
+    post:
+      operationId: revokeDevice
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Device service sessions revoked. }
+        '404': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/reauth/email/start:
+    post:
+      operationId: startSensitiveEmailVerification
+      security: [{ bearerAuth: [] }]
+      responses:
+        '202': { description: A one-time code will arrive if an active email identity is linked. }
+        '409': { $ref: '#/components/responses/Error' }
+  /me/reauth/email/verify:
+    post:
+      operationId: verifySensitiveEmailChallenge
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [challenge_id, code, purpose]
+              properties:
+                challenge_id: { type: string, format: uuid }
+                code: { type: string, pattern: '^[0-9]{8}$' }
+                purpose: { type: string, enum: [account_delete, identity_change] }
+      responses:
+        '200': { description: Five-minute, single-purpose reauthentication token. }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/reauth/apple/start:
+    post:
+      operationId: startAppleReauthentication
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200': { description: One-time Apple nonce bound to the active session. }
+        '503': { $ref: '#/components/responses/Error' }
+  /me/reauth/apple/complete:
+    post:
+      operationId: completeAppleReauthentication
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attempt_id, identity_token, authorization_code, purpose]
+              properties:
+                attempt_id: { type: string, format: uuid }
+                identity_token: { type: string, maxLength: 16384 }
+                authorization_code: { type: string, maxLength: 4096 }
+                purpose: { type: string, enum: [account_delete, identity_change] }
+      responses:
+        '200': { description: Single-purpose reauthentication token or identity link confirmation. }
+        '401': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /me/identities/email/start:
+    post:
+      operationId: startEmailIdentityLink
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, reauth_token]
+              properties:
+                email: { type: string, format: email, maxLength: 320 }
+                reauth_token: { type: string }
+      responses:
+        '202': { description: Email ownership challenge. }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/identities/email/complete:
+    post:
+      operationId: completeEmailIdentityLink
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [challenge_id, code, reauth_token]
+              properties:
+                challenge_id: { type: string, format: uuid }
+                code: { type: string, pattern: '^[0-9]{8}$' }
+                reauth_token: { type: string }
+      responses:
+        '204': { description: Email identity linked or already linked to this account. }
+        '409': { $ref: '#/components/responses/Error' }
+  /me/identities/apple/start:
+    post:
+      operationId: startAppleIdentityLink
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reauth_token]
+              properties:
+                reauth_token: { type: string }
+      responses:
+        '200': { description: Apple nonce bound to the existing account and reauthentication proof. }
+        '409': { $ref: '#/components/responses/Error' }
+  /me/identities/apple/complete:
+    post:
+      operationId: completeAppleIdentityLink
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attempt_id, identity_token, authorization_code, reauth_token]
+              properties:
+                attempt_id: { type: string, format: uuid }
+                identity_token: { type: string, maxLength: 16384 }
+                authorization_code: { type: string, maxLength: 4096 }
+                reauth_token: { type: string }
+      responses:
+        '204': { description: Apple identity linked. }
+        '409': { $ref: '#/components/responses/Error' }
+  /me/identities/{id}:
+    delete:
+      operationId: revokeLoginIdentity
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reauth_token]
+              properties:
+                reauth_token: { type: string }
+      responses:
+        '202': { description: Identity removal waits for the off-host security journal. }
+        '409': { $ref: '#/components/responses/Error' }
+  /me/security-changes/{id}:
+    get:
+      operationId: getSecurityChangeStatus
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Pending or completed server-side identity change. }
+        '404': { $ref: '#/components/responses/Error' }
+  /me/deletion:
+    post:
+      operationId: requestAccountDeletion
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reauth_token]
+              properties:
+                reauth_token: { type: string }
+      responses:
+        '202': { description: Deletion is pending the off-host security journal., content: { application/json: { schema: { $ref: '#/components/schemas/DeletionReceipt' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+  /me/deletion-status:
+    get:
+      operationId: getDeletionStatus
+      parameters:
+        - name: X-Deletion-Status-Token
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Server data removal and Apple token revocation status. }
+        '404': { $ref: '#/components/responses/Error' }
+  /provider/apple/notifications:
+    post:
+      operationId: receiveAppleNotification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [signedPayload]
+              properties:
+                signedPayload: { type: string, maxLength: 32768 }
+      responses:
+        '200': { description: Verified event stored and handled idempotently. }
+        '401': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+  /health/live:
+    get:
+      operationId: live
+      servers: [{ url: 'https://api.flowriver.xyz' }]
+      responses:
+        '200': { description: Process is alive. }
+  /health/ready:
+    get:
+      operationId: ready
+      servers: [{ url: 'https://api.flowriver.xyz' }]
+      responses:
+        '200': { description: Database is reachable. }
+        '503': { $ref: '#/components/responses/Error' }
+  /downloads/{filename}:
+    servers: [{ url: 'https://flowriver.xyz' }]
+    parameters:
+      - in: path
+        name: filename
+        required: true
+        schema: { type: string, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,180}\.zip$' }
+    get:
+      operationId: downloadPublishedArtifact
+      summary: Download an active installer, with Range and conditional request support.
+      description: Publication is checked before every response. Paused or unpublished files return 404; responses use Cache-Control no-store.
+      responses:
+        '200': { description: ZIP archive., content: { application/zip: { schema: { type: string, format: binary } } } }
+        '206': { description: Requested byte range. }
+        '304': { description: Published archive matches the supplied validator. }
+        '404': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+    head:
+      operationId: inspectPublishedArtifact
+      summary: Inspect headers for an active installer without receiving the archive.
+      responses:
+        '200': { description: ZIP archive headers. }
+        '404': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+  /announcements/active:
+    get:
+      summary: Active public announcements (no auth)
+      responses: { '200': { description: OK } }
+  /site-status:
+    get:
+      summary: Public site status - announcements plus per-platform download availability (no auth)
+      responses: { '200': { description: OK } }
+  /changelog:
+    get:
+      summary: Published changelog entries, newest first (no auth)
+      responses: { '200': { description: OK } }
+  /me/memory-mirror/meta:
+    get:
+      summary: Whether the user has an encrypted cloud memory mirror, without downloading its ciphertext
+      description: >-
+        Returns only public envelope metadata. The service stores ciphertext and
+        KDF parameters; it never receives the passphrase or plaintext memory.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: exists is false when the user has not enabled cloud space.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemoryMirrorMeta' }
+        '401': { $ref: '#/components/responses/Error' }
+  /me/memory-mirror:
+    get:
+      summary: Download the user's own encrypted cloud mirror
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Ciphertext and public encryption parameters. Only the user's passphrase can decrypt it.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemoryMirrorEnvelope' }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      summary: Create or replace the user's encrypted cloud mirror
+      description: >-
+        The browser encrypts the memory mirror with AES-GCM-256 derived from a
+        user passphrase with PBKDF2-SHA-256. The service stores only ciphertext
+        and public metadata. Preconditions prevent silent multi-device overwrites.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          description: Use * only when creating the first cloud mirror.
+          schema: { type: string, enum: ['*'] }
+        - name: If-Match
+          in: header
+          required: false
+          description: Current revision when replacing an existing cloud mirror.
+          schema: { type: string, pattern: '^"?[1-9][0-9]*"?$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MemoryMirrorUpload' }
+      responses:
+        '200': { description: Existing mirror replaced; revision incremented. }
+        '201': { description: First mirror created. }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { description: A mirror already exists when If-None-Match was used., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '412': { description: Revision changed on another device., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '413': { $ref: '#/components/responses/Error' }
+        '428': { description: If-Match or If-None-Match is required., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    delete:
+      summary: Delete the user's encrypted cloud mirror
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema: { type: string, pattern: '^"?[1-9][0-9]*"?$' }
+      responses:
+        '204': { description: Deleted; local and native copies are unchanged. }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '412': { $ref: '#/components/responses/Error' }
+        '428': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer }
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 8, maxLength: 128 }
+  schemas:
+    TokenResponse:
+      type: object
+      required: [token_type, access_token, refresh_token, revoke_token, expires_in, user, device, created]
+      properties:
+        token_type: { const: Bearer }
+        access_token: { type: string }
+        refresh_token: { type: string }
+        revoke_token: { type: string }
+        expires_in: { type: integer }
+        user: { type: object }
+        device: { type: object }
+        created: { type: boolean }
+    DeletionReceipt:
+    MemoryMirrorKDF:
+      type: object
+      required: [name, iterations, salt]
+      properties:
+        name: { const: PBKDF2-SHA-256 }
+        iterations: { type: integer, minimum: 100000, maximum: 2000000 }
+        salt: { type: string, contentEncoding: base64, minLength: 24, maxLength: 24 }
+    MemoryMirrorCipher:
+      type: object
+      required: [name, iv]
+      properties:
+        name: { const: AES-GCM-256 }
+        iv: { type: string, contentEncoding: base64, minLength: 16, maxLength: 16 }
+    MemoryMirrorSummary:
+      type: object
+      additionalProperties: true
+      properties:
+        entries: { type: integer }
+        days: { type: integer }
+        places: { type: integer }
+        collections: { type: integer }
+        understandings: { type: integer }
+        first: { type: string }
+        last: { type: string }
+    MemoryMirrorMeta:
+      type: object
+      required: [exists]
+      properties:
+        exists: { type: boolean }
+        revision: { type: integer }
+        size_bytes: { type: integer }
+        format: { const: river.cloud-mirror }
+        version: { const: 1 }
+        kdf: { $ref: '#/components/schemas/MemoryMirrorKDF' }
+        cipher: { $ref: '#/components/schemas/MemoryMirrorCipher' }
+        client_updated_at: { type: string, format: date-time }
+        summary: { $ref: '#/components/schemas/MemoryMirrorSummary' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    MemoryMirrorEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/MemoryMirrorMeta'
+        - type: object
+          required: [ciphertext]
+          properties:
+            ciphertext: { type: string, contentEncoding: base64, maxLength: 22369624 }
+    MemoryMirrorUpload:
+      type: object
+      required: [format, version, kdf, cipher, ciphertext]
+      properties:
+        format: { const: river.cloud-mirror }
+        version: { const: 1 }
+        kdf: { $ref: '#/components/schemas/MemoryMirrorKDF' }
+        cipher: { $ref: '#/components/schemas/MemoryMirrorCipher' }
+        ciphertext: { type: string, contentEncoding: base64, maxLength: 22369624 }
+        client_updated_at: { type: string, format: date-time }
+        summary: { $ref: '#/components/schemas/MemoryMirrorSummary' }
+      type: object
+      required: [job_id, status_token, status, status_expires_at]
+      properties:
+        job_id: { type: string, format: uuid }
+        status_token: { type: string }
+        status: { const: pending }
+        status_expires_at: { type: string, format: date-time }
+    Error:
+      description: Stable error code and request identifier.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error, request_id]
+            properties:
+              error: { type: string }
+              request_id: { type: string }

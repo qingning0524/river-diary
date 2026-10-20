@@ -9,6 +9,7 @@ struct PrivacyBackupSettingsView: View {
     @ObservedObject var ai: AIAssistantStore
     @ObservedObject var ingestion: DataIngestionStore
     @StateObject private var sync: SyncSettingsStore
+    @StateObject private var eveningReminder = EveningReminderStore()
     @State private var syncKeyInput = ""
     @State private var showsSyncKey = false
     @State private var showsClearConfirmation = false
@@ -80,62 +81,62 @@ struct PrivacyBackupSettingsView: View {
         let frontier = try? database.ownedFrontier()
         let canonical = database.canonicalArtifactRevisions()
         let sessionCount = SessionBuilder.build(events.compactMap { $0.replica() }).count
-        return SettingsGroup(title: "Developer Diagnostics", detail: "开发者模式开启时显示。报告只包含计数、状态和摘要，不包含 Event 正文、坐标或密钥。") {
+        return SettingsGroup(title: "开发者诊断", detail: "开发者模式开启时显示。报告只包含计数、状态和摘要，不包含事件正文、坐标或密钥。") {
             RiverPanel {
-                RiverValueRow(title: "Device ID", value: database.localDeviceIdentifier()?.rawValue ?? "不可用")
-                RiverValueRow(title: "Database version", value: "\(database.databaseSchemaVersion)")
-                RiverValueRow(title: "Event / Session / Place", value: "\(database.countRows(in: .rawEvents)) / \(sessionCount) / \(database.places().count)")
-                RiverValueRow(title: "State Operations", value: "\(database.countRows(in: .stateOperations))")
-                RiverValueRow(title: "Artifact / Canonical / Stale", value: "\(database.countRows(in: .artifacts)) / \(canonical.count) / \(database.staleArtifactRevisionCount())")
+                RiverValueRow(title: "设备 ID", value: database.localDeviceIdentifier()?.rawValue ?? "不可用")
+                RiverValueRow(title: "数据库版本", value: "\(database.databaseSchemaVersion)")
+                RiverValueRow(title: "事件 / 会话 / 地点", value: "\(database.countRows(in: .rawEvents)) / \(sessionCount) / \(database.places().count)")
+                RiverValueRow(title: "状态操作", value: "\(database.countRows(in: .stateOperations))")
+                RiverValueRow(title: "产物 / 正本 / 过期", value: "\(database.countRows(in: .artifacts)) / \(canonical.count) / \(database.staleArtifactRevisionCount())")
                 let pendingHabitCount = database.habitCardRows().filter { $0.status == "bundled" || $0.status == "shown" }.count
                 let pendingMemoryCount = database.memories().filter { database.memoryConfirmation(for: $0.id)?.confirmed != true }.count
                 let pendingSharedCount = database.sharedUserRecords().filter {
                     $0.kind == .pendingConfirmation && $0.status == "pending"
                 }.count
-                RiverValueRow(title: "Pending confirmations", value: "通用 \(pendingSharedCount) · 习惯卡 \(pendingHabitCount) · 记忆 \(pendingMemoryCount)")
-                RiverValueRow(title: "Imported objects", value: "\(database.countRows(in: .syncImports))")
-                RiverValueRow(title: "最近导出 / 导入", value: "E \(sync.lastReport?.exportedEventBatches ?? 0)/\(sync.lastReport?.importedEventBatches ?? 0) · O \(sync.lastReport?.exportedOperationBatches ?? 0)/\(sync.lastReport?.importedOperationBatches ?? 0) · A \(sync.lastReport?.exportedArtifactRevisions ?? 0)/\(sync.lastReport?.importedArtifactRevisions ?? 0)")
-                RiverValueRow(title: "Event / Operation frontier", value: "\(frontier?.events ?? 0) / \(frontier?.operations ?? 0)")
-                RiverValueRow(title: "Selected iCloud directory", value: sync.folderName ?? "未选择")
-                RiverValueRow(title: "Bookmark", value: sync.folderName == nil ? "未配置" : (sync.lastError == nil ? "已保存；同步时重验" : "需要检查授权"))
-                RiverValueRow(title: "LAN transport", value: sync.isLANReplicating ? sync.lanSyncStatus : "未启用")
-                RiverValueRow(title: "Last export / import", value: "\(sync.lastSuccessfulExportAt?.formatted(date: .abbreviated, time: .shortened) ?? "—") / \(sync.lastImportAt?.formatted(date: .abbreviated, time: .shortened) ?? "—")")
-                RiverValueRow(title: "Last reconciliation / verified", value: "\(sync.lastRunAt?.formatted(date: .abbreviated, time: .shortened) ?? "—") / \(sync.lastVerifiedAt?.formatted(date: .abbreviated, time: .shortened) ?? "—")")
-                RiverValueRow(title: "Canonical digest", value: (try? database.canonicalStateDigest()) ?? "不可用")
-                RiverValueRow(title: "Missing sequences", value: sync.lastReport.map { report in
+                RiverValueRow(title: "待确认项", value: "通用 \(pendingSharedCount) · 习惯卡 \(pendingHabitCount) · 记忆 \(pendingMemoryCount)")
+                RiverValueRow(title: "已导入对象", value: "\(database.countRows(in: .syncImports))")
+                RiverValueRow(title: "同步批次（导出 / 导入）", value: "E \(sync.lastReport?.exportedEventBatches ?? 0)/\(sync.lastReport?.importedEventBatches ?? 0) · O \(sync.lastReport?.exportedOperationBatches ?? 0)/\(sync.lastReport?.importedOperationBatches ?? 0) · A \(sync.lastReport?.exportedArtifactRevisions ?? 0)/\(sync.lastReport?.importedArtifactRevisions ?? 0)")
+                RiverValueRow(title: "事件 / 操作水位", value: "\(frontier?.events ?? 0) / \(frontier?.operations ?? 0)")
+                RiverValueRow(title: "选定的 iCloud 目录", value: sync.folderName ?? "未选择")
+                RiverValueRow(title: "目录授权", value: sync.folderName == nil ? "未配置" : (sync.lastError == nil ? "已保存；同步时重验" : "需要检查授权"))
+                RiverValueRow(title: "局域网同步", value: sync.isLANReplicating ? sync.lanSyncStatus : "未启用")
+                RiverValueRow(title: "最近导出 / 导入时间", value: "\(sync.lastSuccessfulExportAt?.formatted(date: .abbreviated, time: .shortened) ?? "—") / \(sync.lastImportAt?.formatted(date: .abbreviated, time: .shortened) ?? "—")")
+                RiverValueRow(title: "最近核对 / 校验", value: "\(sync.lastRunAt?.formatted(date: .abbreviated, time: .shortened) ?? "—") / \(sync.lastVerifiedAt?.formatted(date: .abbreviated, time: .shortened) ?? "—")")
+                RiverValueRow(title: "正本摘要", value: (try? database.canonicalStateDigest()) ?? "不可用")
+                RiverValueRow(title: "缺失序号", value: sync.lastReport.map { report in
                     report.missingSequenceGaps.isEmpty
                         ? "无"
                         : report.missingSequenceGaps.map { "\($0.deviceID.rawValue)/\($0.stream) \($0.first)-\($0.last)" }.joined(separator: ", ")
                 } ?? "最近一次扫描未运行")
-                RiverValueRow(title: "Integrity failures", value: sync.lastReport?.integrityFailures.isEmpty == false ? sync.lastReport!.integrityFailures.joined(separator: "\n") : "无")
-                RiverValueRow(title: "Location authorization", value: "Mac 位置采集器尚未实现")
-                RiverValueRow(title: "Last location event", value: events.filter { $0.source == .location }.max { $0.timestamp < $1.timestamp }?.timestamp.formatted(date: .abbreviated, time: .shortened) ?? "—")
-                RiverValueRow(title: "Last geocode", value: events.filter { $0.source == .location && $0.payload.mapProvider != nil }.max { $0.recordedAt < $1.recordedAt }?.recordedAt.formatted(date: .abbreviated, time: .shortened) ?? "—")
-                RiverValueRow(title: "Map candidate records", value: "\(events.filter { $0.source == .location && $0.payload.mapProvider != nil }.count)")
-                RiverValueRow(title: "Last App Activity Intent", value: events.filter { $0.persistedSource == "shortcuts" }.max { $0.recordedAt < $1.recordedAt }?.recordedAt.formatted(date: .abbreviated, time: .shortened) ?? "—")
+                RiverValueRow(title: "完整性问题", value: sync.lastReport?.integrityFailures.isEmpty == false ? sync.lastReport!.integrityFailures.joined(separator: "\n") : "无")
+                RiverValueRow(title: "位置授权", value: sync.locationAuthorizationProvider?() ?? "未接入")
+                RiverValueRow(title: "最近位置事件", value: events.filter { $0.source == .location }.max { $0.timestamp < $1.timestamp }?.timestamp.formatted(date: .abbreviated, time: .shortened) ?? "—")
+                RiverValueRow(title: "最近逆地理编码", value: events.filter { $0.source == .location && $0.payload.mapProvider != nil }.max { $0.recordedAt < $1.recordedAt }?.recordedAt.formatted(date: .abbreviated, time: .shortened) ?? "—")
+                RiverValueRow(title: "地图候选记录", value: "\(events.filter { $0.source == .location && $0.payload.mapProvider != nil }.count)")
+                RiverValueRow(title: "最近快捷指令记录", value: events.filter { $0.persistedSource == "shortcuts" }.max { $0.recordedAt < $1.recordedAt }?.recordedAt.formatted(date: .abbreviated, time: .shortened) ?? "—")
                 let latestJob = database.latestAnalysisJob().map { "\($0.status.rawValue) · \($0.logicalKey) · attempt \($0.attempt)" } ?? "暂无已记录任务"
-                RiverValueRow(title: "AI job", value: [latestJob, ai.recoveredAnalysisStatus].compactMap { $0 }.joined(separator: " · "))
+                RiverValueRow(title: "AI 任务", value: [latestJob, ai.recoveredAnalysisStatus].compactMap { $0 }.joined(separator: " · "))
 
                 HStack(spacing: AppSpacing.sm) {
-                    Button("Generate Test Event") {
-                        sync.setDiagnosticActionMessage(activity.generateDiagnosticTestEvent() ? "已写入一条本机测试 Event。" : "测试 Event 写入失败。")
+                    Button("写入测试事件") {
+                        sync.setDiagnosticActionMessage(activity.generateDiagnosticTestEvent() ? "已写入一条本机测试事件。" : "测试事件写入失败。")
                     }.buttonStyle(.plain).smallAction()
-                    Button("Flush Event Batch") { sync.runDiagnosticSyncAction("Flush Event Batch") }
+                    Button("强制导出事件批次") { sync.runDiagnosticSyncAction("强制导出事件批次") }
                         .buttonStyle(.plain).smallAction()
-                    Button("Flush State Operations") { sync.runDiagnosticSyncAction("Flush State Operations") }
+                    Button("强制导出状态操作") { sync.runDiagnosticSyncAction("强制导出状态操作") }
                         .buttonStyle(.plain).smallAction()
-                    Button("Scan / Import / Reconcile / Verify") { sync.runDiagnosticSyncAction("Directory Scan and Reconciliation") }
+                    Button("扫描 / 导入 / 核对 / 校验") { sync.runDiagnosticSyncAction("扫描 / 导入 / 核对 / 校验") }
                         .buttonStyle(.plain).smallAction()
                     Spacer()
                 }
                 HStack(spacing: AppSpacing.sm) {
-                    Button("Rebuild Sessions / Places / Timeline") { sync.rebuildDiagnosticProjections(activity: activity) }
+                    Button("重建会话 / 地点 / 时间线") { sync.rebuildDiagnosticProjections(activity: activity) }
                         .buttonStyle(.plain).smallAction()
-                    Button("Invalidate AI Artifacts") { sync.invalidateArtifactsForDiagnostics() }
+                    Button("作废 AI 产物") { sync.invalidateArtifactsForDiagnostics() }
                         .buttonStyle(.plain).smallAction()
-                    Button("Recompute Canonical State") { sync.runDiagnosticSyncAction("Recompute Canonical State") }
+                    Button("重算正本状态") { sync.runDiagnosticSyncAction("重算正本状态") }
                         .buttonStyle(.plain).smallAction()
-                    Button("Export Diagnostics Report") {
+                    Button("导出诊断报告") {
                         guard let data = sync.makeDiagnosticsReport(activity: activity) else {
                             sync.setDiagnosticActionMessage("无法读取诊断快照。")
                             return
@@ -353,6 +354,22 @@ struct PrivacyBackupSettingsView: View {
                         .labelsHidden()
                 }
 
+                // 与 iPhone 端同一时刻、同一文案的晚间提醒；此前 Mac 完全没有通知能力。
+                RiverPanelRow(
+                    title: "晚间提醒（21:30）",
+                    detail: eveningReminder.message ?? "每天晚上温和地提醒一句：今天有什么想记下的。"
+                ) {
+                    Toggle("晚间提醒", isOn: Binding(
+                        get: { eveningReminder.isEnabled },
+                        set: { newValue in
+                            Task { await eveningReminder.setEnabled(newValue) }
+                        }
+                    ))
+                    .toggleStyle(.switch)
+                    .tint(AppTheme.accent)
+                    .labelsHidden()
+                }
+
                 RiverPanelRow(title: "导出加密备份", detail: "包含日记、修改、快记与两个事实库的加密快照") {
                     HStack(spacing: AppSpacing.sm) {
                         Button { exportBackup() } label: {
@@ -543,8 +560,8 @@ struct PrivacyBackupSettingsView: View {
 
     private func exportBackup() {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [.data]
-        panel.nameFieldStringValue = "RiverDiaryBackup-\(DiaryEntry.dateFormatter.string(from: Date())).riverbackup"
+        panel.allowedContentTypes = [UTType(exportedAs: "studio.riverdiary.mac.backup", conformingTo: .data)]
+        panel.nameFieldStringValue = "RiverDiaryBackup-\(DiaryEntry.dateFormatter.string(from: Date()))"
         panel.canCreateDirectories = true
 
         guard panel.runModal() == .OK, let url = panel.url else { return }

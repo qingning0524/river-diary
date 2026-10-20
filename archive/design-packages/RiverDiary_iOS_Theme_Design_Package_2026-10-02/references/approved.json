@@ -1,0 +1,18 @@
+{
+  "approved_variants": [
+    "01",
+    "02",
+    "03",
+    "04",
+    "05",
+    "06",
+    "07",
+    "08",
+    "09",
+    "10"
+  ],
+  "feedback": "这十版我全要了，作为用户的「主题」功能，用户可以自由切换到自己想要的主题风格，请帮我生成设计文稿",
+  "date": "2026-10-02",
+  "scope": "All ten visual directions accepted as iOS theme feature; implementation not yet started",
+  "design_document": "docs/IOS_THEME_SYSTEM_DESIGN_2026-10-02.md"
+}

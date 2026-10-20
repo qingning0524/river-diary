@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>local.riverdiary.app.health-sync</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>zh-Hans</string>
 	<key>CFBundleExecutable</key>
@@ -20,27 +24,22 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSHealthShareUsageDescription</key>
-	<string>读取睡眠和运动数据，帮助你理解身体状态与情绪变化的关系。</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>用于记录你主动开启位置记录期间的到访和显著移动，并在时间线上提供地点线索。</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>你启用后台位置记录后，系统可在 River Diary 未打开时延迟交付到访和显著移动事件。</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>你启用附近设备快速复制后，River Diary 会通过本地网络交换已加密的同步对象。</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_riverdiary-sync._tcp</string>
 	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>local.riverdiary.app.health-sync</string>
-	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>location</string>
-		<string>processing</string>
-	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>在你开启健康连接后读取睡眠和运动摘要，用于查看当天身体记录与生活时间线的关系。</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>你启用附近设备快速复制后，River Diary 会通过本地网络交换已加密的同步对象。</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>你启用后台位置记录后，系统可在 River Diary 未打开时延迟交付到访和显著移动事件。</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>用于记录你主动开启位置记录期间的到访和显著移动，并在时间线上提供地点线索。</string>
+	<key>NSMotionUsageDescription</key>
+	<string>在你开启出行识别后读取系统活动类型，用于区分步行、骑行和车辆移动片段。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>在你选择开启照片线索后读取最近照片，在本机识别食物、景点等内容并关联到生活片段。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -50,6 +49,11 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>processing</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>
@@ -63,5 +67,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>RiverDesignBaseline</key>
+	<string>ios-neumorphic-five-page-2026-10-15</string>
 </dict>
 </plist>

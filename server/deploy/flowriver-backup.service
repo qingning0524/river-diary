@@ -1,0 +1,23 @@
+[Unit]
+Description=Encrypted off-host FlowRiver account database backup
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=flowriver
+Group=flowriver
+StateDirectory=flowriver
+StateDirectoryMode=0700
+EnvironmentFile=/etc/flowriver/backup.env
+Environment=RCLONE_CONFIG=/etc/flowriver/rclone.conf
+ExecStartPre=/usr/bin/install -d -m 0700 /var/lib/flowriver/tmp
+ExecStart=/opt/flowriver/bin/backup.sh
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/flowriver/tmp
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

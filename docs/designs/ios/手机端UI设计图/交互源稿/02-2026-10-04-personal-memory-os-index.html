@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>河流日记 · River OS 界面验收</title>
+<style>
+:root{color-scheme:light;--paper:#f7f8f4;--ink:#20332e;--sub:#63746b;--river:#24685e;--rule:#dae3dc}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}header,main,footer{max-width:1460px;margin:auto;padding:32px}header{padding-top:54px;border-bottom:1px solid var(--rule)}.wordmark{font-size:12px;letter-spacing:3px;color:var(--river);font-weight:600}h1{font-family:"Songti SC",serif;font-size:clamp(28px,4vw,46px);font-weight:400;line-height:1.3;margin:20px 0 12px}header p{max-width:700px;color:var(--sub);margin:0}nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}button{font:inherit;min-height:44px;border:1px solid var(--rule);border-radius:8px;background:transparent;color:var(--ink);padding:8px 18px;cursor:pointer}button[aria-pressed=true]{background:var(--river);border-color:var(--river);color:white}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:36px 24px}figure{margin:0;max-width:340px}figure[hidden]{display:none}figcaption{display:flex;align-items:baseline;gap:8px;justify-content:space-between;margin-bottom:12px;font-weight:600}small{font-weight:400;color:var(--sub)}img{display:block;width:100%;height:auto;border:1px solid var(--rule);border-radius:18px;background:white}a:focus-visible,button:focus-visible{outline:3px solid var(--river);outline-offset:5px}footer{color:var(--sub);border-top:1px solid var(--rule);font-size:13px}p{margin:8px 0}@media(max-width:560px){header,main,footer{padding:24px}main{grid-template-columns:1fr}figure{max-width:none}}
+</style>
+<header>
+  <div class="wordmark">RIVER OS / PERSONAL MEMORY OS</div>
+  <h1>河流日记 · 个人记忆 OS</h1>
+  <p>重构后的实际运行界面。账号、日常、记录、理解和记忆共用一套品牌与交互语言。所有内容均来自独立 QA 环境的隔离测试资料。</p>
+  <nav aria-label="查看截图类别">
+    <button aria-pressed="true" data-filter="all">全部界面</button>
+    <button aria-pressed="false" data-filter="core">核心工作空间</button>
+    <button aria-pressed="false" data-filter="writing">写作与依据</button>
+    <button aria-pressed="false" data-filter="large">最大辅助字号</button>
+  </nav>
+</header>
+<main>
+  <figure data-category="core"><figcaption>进入 River<small>iPhone 14 Pro 真机</small></figcaption><a href="../02-个人记忆OS-2026-10-04/River OS · River OS email login--5d85528a.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/River OS · River OS email login--5d85528a.png" alt="River OS 邮箱登录页"></a></figure>
+  <figure data-category="core"><figcaption>今天<small>iPhone 14 Pro 真机</small></figcaption><a href="../02-个人记忆OS-2026-10-04/River OS · Today with saved facts and no analysis--599a3aba.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/River OS · Today with saved facts and no analysis--599a3aba.png" alt="写作与真实事实优先的今天页"></a></figure>
+  <figure data-category="core"><figcaption>记录<small>时间线与查找</small></figcaption><a href="../02-个人记忆OS-2026-10-04/River OS · Record search with no matching facts--72681379.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/River OS · Record search with no matching facts--72681379.png" alt="记录工作空间的搜索无结果状态"></a></figure>
+  <figure data-category="core"><figcaption>River<small>有资料范围的理解层</small></figcaption><a href="../02-个人记忆OS-2026-10-04/Modern · clear_life · river--61d212cb.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/Modern · clear_life · river--61d212cb.png" alt="River 理解工作空间"></a></figure>
+  <figure data-category="core"><figcaption>记忆<small>分类与检索</small></figcaption><a href="../02-个人记忆OS-2026-10-04/Modern · clear_life · archive--671b2ccd.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/Modern · clear_life · archive--671b2ccd.png" alt="个人记忆档案空间"></a></figure>
+  <figure data-category="core"><figcaption>系统设置<small>身份与记忆连接</small></figcaption><a href="../02-个人记忆OS-2026-10-04/Modern · clear_life · settings--d750f8ec.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/Modern · clear_life · settings--d750f8ec.png" alt="真实账号和同步状态的系统设置"></a></figure>
+  <figure data-category="writing"><figcaption>写作<small>共享编辑器</small></figcaption><a href="../02-个人记忆OS-2026-10-04/shared-editor--afc78621.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/shared-editor--afc78621.png" alt="从 River 设置进入共享写作编辑器"></a></figure>
+  <figure data-category="writing"><figcaption>事实依据<small>iPhone 14 Pro 真机</small></figcaption><a href="../02-个人记忆OS-2026-10-04/fact-iphone14pro--64450e85.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/fact-iphone14pro--64450e85.png" alt="保存事实的详情与来源"></a></figure>
+  <figure data-category="large"><figcaption>记忆 · 大字号<small>纵向阅读</small></figcaption><a href="../02-个人记忆OS-2026-10-04/memory-large--10d10928.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/memory-large--10d10928.png" alt="最大辅助字号下的记忆档案"></a></figure>
+  <figure data-category="large"><figcaption>账户 · 大字号<small>完整身份与连接状态</small></figcaption><a href="../02-个人记忆OS-2026-10-04/settings-large--44234be2.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/settings-large--44234be2.png" alt="最大字号下纵向排列的账户与记忆状态"></a></figure>
+  <figure data-category="large"><figcaption>写作 · 大字号<small>键盘与保存</small></figcaption><a href="../02-个人记忆OS-2026-10-04/writing-large--71cc34ea.png" target="_blank"><img src="../02-个人记忆OS-2026-10-04/writing-large--71cc34ea.png" alt="最大辅助字号下输入与保存"></a></figure>
+</main>
+<footer>点击截图可以查看原始分辨率。账号登录与跨设备记忆同步分别显示各自的真实状态；此预览没有发送登录邮件或真实 AI 请求。</footer>
+<script>
+document.querySelectorAll('nav button').forEach(button=>button.addEventListener('click',()=>{
+  document.querySelectorAll('nav button').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));
+  document.querySelectorAll('figure').forEach(figure=>figure.hidden=button.dataset.filter!=='all'&&figure.dataset.category!==button.dataset.filter);
+}));
+</script>
+</html>

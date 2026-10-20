@@ -20,9 +20,14 @@ struct TimelineWorkspaceView: View {
     var onShowCapture: () -> Void
     var onOpenAsk: (String) -> Void
     var onOpenSettings: () -> Void
+    var pendingConfirmationTargets: Set<String> = []
+    var onOpenPlaces: () -> Void = {}
 
     @EnvironmentObject private var feedbackCenter: FeedbackCenter
 
+    @State private var showsMoments = true
+    @State private var momentScope: FootprintMomentScope = .all
+    @State private var showsDayOverview = false
     @State private var selectedItemID: String?
     @State private var pendingFocusItemID: String?
     @State private var pendingFocusID: String?
@@ -73,9 +78,16 @@ struct TimelineWorkspaceView: View {
     var body: some View {
         let timeline = buildTimeline()
         let displayed = displayedItems(timeline)
-        return VStack(spacing: 0) {
-            pinnedHeader(timeline, displayed: displayed)
-            pageBody(timeline, displayed: displayed)
+        return GeometryReader { geometry in
+            VStack(spacing: 0) {
+                if showsMoments {
+                    momentsHeader(timeline)
+                    momentsBody(timeline, showsPlacesRail: geometry.size.width >= 1040)
+                } else {
+                    pinnedHeader(timeline, displayed: displayed)
+                    pageBody(timeline, displayed: displayed)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
@@ -138,6 +150,156 @@ struct TimelineWorkspaceView: View {
         }
     }
 
+    // MARK: Sample-style footprints
+
+    private func showMomentCards() {
+        digestDebounceTask?.cancel()
+        showsMoments = true
+    }
+
+    private var momentViewMenu: some View {
+        Menu {
+            Button("片刻卡片", systemImage: "rectangle.stack", action: showMomentCards)
+            Button("AI 整理", systemImage: "sparkles") {
+                showsMoments = false
+                showsRawTimeline = false
+                restoreAndRefreshDigest()
+            }
+            Button("原始时间线", systemImage: "list.bullet") {
+                digestDebounceTask?.cancel()
+                showsMoments = false
+                showsRawTimeline = true
+            }
+        } label: {
+            Label("片刻卡片", systemImage: "rectangle.stack")
+                .font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .riverSoftSurface(radius: AppRadius.control, compact: true)
+        }.menuStyle(.borderlessButton).fixedSize().help("切换片刻卡片、AI 整理或原始时间线")
+    }
+
+    private func visibleMoments(_ timeline: ActivityTimeline) -> [ActivityTimelineItem] {
+        FootprintMoments.items(in: timeline, scope: momentScope, query: query,
+                              favoritesOnly: timelineFavoritesOnly, pendingOnly: timelineNeedsReviewOnly,
+                              pendingTargets: pendingConfirmationTargets)
+    }
+
+    private func momentsHeader(_ timeline: ActivityTimeline) -> some View {
+        let items = visibleMoments(timeline)
+        return RiverHeaderBand(spacing: 16) {
+            HStack {
+                Text("把时间线拉开，看见这一天是怎样度过的。")
+                    .font(AppTypography.secondary()).foregroundStyle(Color.secondaryInk)
+                Spacer(minLength: 12)
+                momentViewMenu
+            }
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 16) {
+                    momentScopePicker.fixedSize()
+                    Spacer(minLength: 8)
+                    momentSearch.frame(width: 230)
+                    momentExtraFilters
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    momentScopePicker
+                    HStack(spacing: 12) { momentSearch; momentExtraFilters }
+                }
+            }
+            Text("\(items.count) 个片刻 · 按时间倒序" + (timelineFavoritesOnly ? " · 仅收藏" : "") + (timelineNeedsReviewOnly ? " · 仅待确认" : ""))
+                .font(AppTypography.micro()).foregroundStyle(Color.secondaryInk)
+        }
+    }
+
+    private var momentScopePicker: some View {
+        RiverSegmentedPicker(title: "按记录类型筛选", selection: $momentScope,
+                             options: FootprintMomentScope.allCases, label: { $0.title })
+    }
+
+    private var momentSearch: some View {
+        RiverSearchField(placeholder: "搜索片刻、文字或应用…", text: $query)
+    }
+
+    private var momentExtraFilters: some View {
+        Menu {
+            Toggle("只看收藏", isOn: $timelineFavoritesOnly)
+            Toggle("只看待确认", isOn: $timelineNeedsReviewOnly)
+            Divider()
+            Button("清除全部筛选") {
+                momentScope = .all
+                clearFilters()
+            }
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(.system(size: 13)).foregroundStyle(AppTheme.accent)
+                .frame(width: 28, height: 30)
+        }.menuStyle(.borderlessButton).fixedSize().accessibilityLabel("更多片刻筛选")
+    }
+
+    private func momentsBody(_ timeline: ActivityTimeline, showsPlacesRail: Bool) -> some View {
+        let items = visibleMoments(timeline)
+        let stops = FootprintMoments.places(in: timeline)
+        return HStack(alignment: .top, spacing: 0) {
+            RiverPageBody(spacing: 22, topPadding: 8, lazy: false, scrollContent: { proxy in
+                LazyVStack(alignment: .leading, spacing: 22) {
+                if isJournalExpanded || editor.buffer(for: entry).isDirty {
+                    journalCard.id(ScrollTarget.journal)
+                }
+                HStack(spacing: 14) {
+                    Text(selectedDate.formatted(.dateTime.month().day().weekday(.wide)))
+                        .font(AppTypography.micro()).foregroundStyle(Color.secondaryInk)
+                    RiverRule()
+                }
+                if items.isEmpty {
+                    EmptyStateView(
+                        title: momentScope == .movement ? "还没有标为运动的片刻" : "没有符合条件的片刻",
+                        message: timeline.recordedNodeCount == 0
+                            ? "当天已有的活动、地点与快记会出现在这里。你也可以先写下一句。"
+                            : momentScope == .movement ? "明确分类为运动的记录、活动标注或快记标签会显示在这里。" : "换个关键词或清除筛选，看看这一天的其他记录。",
+                        symbol: momentScope == .movement ? "figure.walk" : "rectangle.stack",
+                        actionTitle: timeline.recordedNodeCount == 0 ? "写一句" : "清除筛选",
+                        action: {
+                            if timeline.recordedNodeCount == 0 { onShowCapture() }
+                            else { momentScope = .all; clearFilters() }
+                        }
+                    ).padding(23).frame(maxWidth: .infinity, alignment: .leading).riverSoftSurface()
+                }
+                ForEach(items) { item in
+                    let focusID = "moment:\(item.id)"
+                    FootprintMomentCard(item: item,
+                                        pending: FootprintMoments.isPending(item, targets: pendingConfirmationTargets),
+                                        selected: selectedItemID == item.id) {
+                        selectTimelineItem(item, focusID: focusID)
+                    }
+                    .focused($inspectorSourceFocusID, equals: focusID)
+                    .id(item.id)
+                }
+                retrospectiveCapturesCard(timeline)
+                if !showsPlacesRail {
+                    DisclosureGroup("当天地点 · \(stops.count) 条记录") {
+                        FootprintPlacesOverview(stops: stops,
+                                                onSelect: { selectTimelineItem($0, focusID: "moment-place:\($0.id)") },
+                                                onOpenPlaces: onOpenPlaces).padding(.top, 12)
+                    }.font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+                }
+                }
+                .onChange(of: scrollTarget) { _, target in
+                    guard target == .journal else { return }
+                    proxy.scrollTo(ScrollTarget.journal, anchor: .top)
+                    scrollTarget = nil
+                }
+            })
+            if showsPlacesRail {
+                ScrollView {
+                    FootprintPlacesOverview(stops: stops,
+                                            onSelect: { selectTimelineItem($0, focusID: "moment-place:\($0.id)") },
+                                            onOpenPlaces: onOpenPlaces)
+                        .padding(.top, 8).padding(.bottom, 30)
+                }
+                .riverScrollIndicators().frame(width: 260).padding(.trailing, AppSpacing.page)
+            }
+        }
+    }
+
     // MARK: Scaffold
 
     /// 页头钉住：标题 + 一天的时间带。
@@ -147,7 +309,7 @@ struct TimelineWorkspaceView: View {
     /// 同时是一条定位尺：悬停读时刻，拖动跳到那一刻所在的行。
     private func pinnedHeader(_ timeline: ActivityTimeline, displayed: [ActivityTimelineItem]) -> some View {
         RiverHeaderBand {
-            PageHeader("时间线", context: subheadline(timeline)) { quickNoteButton }
+            PageHeader("生活有迹，回头可见。", context: subheadline(timeline)) { quickNoteButton }
                 .riverAppear(index: 0)
             RiverDayRibbon(
                 date: selectedDate,
@@ -176,8 +338,12 @@ struct TimelineWorkspaceView: View {
     private func pageBody(_ timeline: ActivityTimeline, displayed: [ActivityTimelineItem]) -> some View {
         RiverPageBody(lazy: false, scrollContent: { proxy in
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
-                dayOverview(timeline)
-                    .riverAppear(index: 0)
+                DisclosureGroup(
+                    "已记录 \(ActivityFormatter.time(timeline.totalDuration)) · 专注 \(ActivityFormatter.time(timeline.focusDuration))",
+                    isExpanded: $showsDayOverview
+                ) { dayOverview(timeline).padding(.top, 12) }
+                .font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+                .riverAppear(index: 0)
                 journalCard
                     .id(ScrollTarget.journal)
                     .riverAppear(index: 1)
@@ -257,6 +423,8 @@ struct TimelineWorkspaceView: View {
 
     private func openRequestedTimelineItem(in timeline: ActivityTimeline) {
         guard let requestedID = requestedFocusItemID else { return }
+        showsMoments = false
+        showsRawTimeline = true
         guard let item = timeline.items.first(where: { $0.id == requestedID }) else {
             requestedFocusItemID = nil
             return
@@ -319,7 +487,30 @@ struct TimelineWorkspaceView: View {
 
     // MARK: Journal
 
+    @ViewBuilder
     private var journalCard: some View {
+        let buffer = editor.buffer(for: entry)
+        if isJournalExpanded || buffer.isDirty {
+            expandedJournalCard
+        } else {
+            Button { isJournalExpanded = true } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "square.and.pencil").font(.system(size: 17)).foregroundStyle(AppTheme.accent)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(buffer.text.isEmpty ? "为这一天留几句话" : "这一天的手记")
+                            .font(AppTypography.rowTitle().weight(.semibold)).foregroundStyle(Color.ink)
+                        Text(buffer.text.isEmpty ? "写下感受，和时间线一起保存。" : buffer.text)
+                            .font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk).lineLimit(1)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    Text(buffer.text.isEmpty ? "开始写" : "编辑").font(AppTypography.metadata()).foregroundStyle(AppTheme.accent)
+                    Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(Color.tertiaryInk)
+                }.padding(18).riverSoftSurface(radius: AppRadius.row).contentShape(Rectangle())
+            }.buttonStyle(.plain).accessibilityLabel(buffer.text.isEmpty ? "写日记" : "编辑日记，\(buffer.text)")
+        }
+    }
+
+    private var expandedJournalCard: some View {
         let buffer = editor.buffer(for: entry)
         let prompt = isToday
             ? "今天想留下什么？"
@@ -514,6 +705,7 @@ struct TimelineWorkspaceView: View {
 
     private var timelineModePicker: some View {
         HStack(spacing: density.spacing(AppSpacing.xs)) {
+            FilterChip(title: "片刻卡片", isSelected: false) { showMomentCards() }
             FilterChip(title: "AI 整理", isSelected: !showsRawTimeline) {
                 showsRawTimeline = false
                 restoreAndRefreshDigest()
@@ -538,7 +730,7 @@ struct TimelineWorkspaceView: View {
         let date = selectedDate
         let dayKey = DiaryEntry.dateFormatter.string(from: date)
         ai.restoreAnalysisResults(startDate: dayKey, endDate: dayKey)
-        guard ingestion.enabled, ai.hasVerifiedConnection else { return }
+        guard !showsMoments, ingestion.enabled, ai.hasVerifiedConnection else { return }
         let dayEntry = store.entry(for: date)
         let sessions = activity.liveSessions(for: date)
         let dayCaptures = store.captures(for: dayEntry)
@@ -575,7 +767,7 @@ struct TimelineWorkspaceView: View {
     }
 
     private func scheduleDigestRefresh() {
-        guard !showsRawTimeline, ingestion.enabled, ai.hasVerifiedConnection else { return }
+        guard !showsMoments, !showsRawTimeline, ingestion.enabled, ai.hasVerifiedConnection else { return }
         digestDebounceTask?.cancel()
         let date = selectedDate
         let dayKey = DiaryEntry.dateFormatter.string(from: date)

@@ -1,49 +1,51 @@
-.PHONY: build test check verify backup web ios mac swift-test verify-all clean
+.PHONY: build test check verify backup web ios mac swift-test verify-all clean clean-preview user-console-test
 
-check: build
-	node --check js/app.js
+check: test
 	python3 -m compileall -q build.py pipeline
-	python3 -m json.tool data/data.json > /dev/null
 
 build:
 	python3 build.py
 
-test: build
+test:
 	python3 -m unittest discover -s tests -p "test_*.py" -v
-	node --check js/app.js
+	python3 -c 'from pipeline import build_assets; build_assets()'
+	node --check web-preview/js/app.js
+	cd website/user && node --test tests/*.test.mjs
+
+user-console-test:
+	cd website/user && node --test tests/*.test.mjs
 
 verify: test check
 
 backup:
-	@mkdir -p backups
-	tar --exclude='./backups' --exclude='./ios/.build' --exclude='./ios/.devicebuild' \
-		--exclude='./ios/.simbuild' --exclude='./ios/.simrelease' \
-		--exclude='./macos/RiverDiaryMac/.build' --exclude='./macos/RiverDiaryMac/.swiftpm' \
-		--exclude='./dist/River Diary.app' \
-		-czf "backups/project-backup-$$(date +%Y%m%d-%H%M%S).tar.gz" .
+	@mkdir -p archive/backups
+	tar --exclude='./archive/backups' --exclude='./.git' \
+		--exclude='*/.build' --exclude='*/.swiftpm' --exclude='*/node_modules' \
+		--exclude='*/.simbuild' --exclude='*/.signedbuild' \
+		--exclude='*/.devicebuild' --exclude='*/.simrelease' \
+		--exclude='*/__pycache__' --exclude='*/.DS_Store' \
+		--exclude='./dist' --exclude='./server/dist' \
+		-czf "archive/backups/project-backup-$$(date +%Y%m%d-%H%M%S).tar.gz" .
 
 web: test
+	@echo "预览地址：http://localhost:8000/web-preview/"
 	python3 -m http.server 8000
 
 ios: test
-	DEVELOPER_DIR=/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer \
-	xcodebuild -project ios/RiverDiary/RiverDiary.xcodeproj -scheme RiverDiary \
-		-configuration Debug -destination 'generic/platform=iOS Simulator' \
-	-derivedDataPath ios/.simbuild build CODE_SIGNING_ALLOWED=NO
+	zsh -c 'source scripts/select_xcode.sh && xcodebuild -project ios/RiverDiary/RiverDiary.xcodeproj -scheme RiverDiary \
+		-configuration Debug -destination "generic/platform=iOS Simulator" \
+	-derivedDataPath ios/.simbuild build'
 
-mac: build
+mac:
 	./macos/RiverDiaryMac/make_app.sh
 
 verify-all: check swift-test ios
 
 swift-test:
-	cd macos/RiverDiaryMac && \
-		DEVELOPER_DIR="/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer" \
-		SDKROOT="/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk" \
-		SWIFTPM_CACHE_PATH=".build/spm-cache" \
-		CLANG_MODULE_CACHE_PATH=".build/clang-module-cache" \
-		SWIFT_MODULE_CACHE_PATH=".build/swift-module-cache" \
-		swift test --disable-sandbox
+	./scripts/test_macos_isolated.sh --disable-sandbox
 
 clean:
-	rm -rf __pycache__ tests/__pycache__ pipeline/__pycache__ .simbuild ios/.simbuild
+	python3 scripts/clean_project.py --apply
+
+clean-preview:
+	python3 scripts/clean_project.py

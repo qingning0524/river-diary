@@ -16,11 +16,17 @@ final class DataSafetyTests: XCTestCase {
 
     /// ActivityStore 会保护传入目录的父目录并读取 activity.enabled 偏好；
     /// 测试需要外层 support 目录 + 隔离的 UserDefaults 才不会碰到真实环境。
-    private func makeActivityStore(_ prefix: String) throws -> (ActivityStore, URL) {
+    private func makeActivityStore(_ prefix: String) throws -> (ActivityStore, URL, V2Store) {
         let outer = try makeTempDirectory(prefix)
         let preferences = UserDefaults(suiteName: "\(prefix)-\(UUID().uuidString)")!
         preferences.set(false, forKey: "activity.enabled")
-        return (ActivityStore(activityDirectory: outer.appendingPathComponent("Activity"), userDefaults: preferences), outer.appendingPathComponent("Activity"))
+        let factsStore = V2Store(databaseURL: outer.appendingPathComponent("facts.db"))
+        let activityDirectory = outer.appendingPathComponent("Activity")
+        return (
+            ActivityStore(activityDirectory: activityDirectory, userDefaults: preferences, v2Store: factsStore),
+            activityDirectory,
+            factsStore
+        )
     }
 
     // MARK: G1 — legacy database text bindings
@@ -85,13 +91,13 @@ final class DataSafetyTests: XCTestCase {
     // MARK: G2 — corrupt day files are quarantined, never deleted
 
     func testCorruptActivityDayFileIsQuarantinedNotDeleted() throws {
-        let (_, activityDirectory) = try makeActivityStore("river-g2-activity")
+        let (_, activityDirectory, factsStore) = try makeActivityStore("river-g2-activity")
         let dayKey = ActivitySession.dayKey(for: Date())
         let dayFile = activityDirectory.appendingPathComponent("\(dayKey).activity")
         try FileManager.default.createDirectory(at: activityDirectory, withIntermediateDirectories: true)
         try Data("这 definitely 不是有效的加密数据".utf8).write(to: dayFile)
 
-        let store = ActivityStore(activityDirectory: activityDirectory)
+        let store = ActivityStore(activityDirectory: activityDirectory, v2Store: factsStore)
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: dayFile.appendingPathExtension("corrupt").path),
                       "损坏文件应被隔离为 .corrupt")
@@ -102,7 +108,7 @@ final class DataSafetyTests: XCTestCase {
     }
 
     func testValidActivityFilesSurviveQuarantineAndLoad() throws {
-        let (store, activityDirectory) = try makeActivityStore("river-g2b-activity")
+        let (store, activityDirectory, factsStore) = try makeActivityStore("river-g2b-activity")
 
         let recent = ActivitySession(
             appName: "Xcode", bundleID: "com.apple.dt.Xcode", windowTitle: nil,
@@ -116,7 +122,7 @@ final class DataSafetyTests: XCTestCase {
         )
         try store.restoreBackup([recent, ancient])
 
-        let reloader = ActivityStore(activityDirectory: activityDirectory)
+        let reloader = ActivityStore(activityDirectory: activityDirectory, v2Store: factsStore)
         XCTAssertEqual(reloader.sessions.count, 1, "超过 365 天的片段应被保留期清理，其余保留")
         XCTAssertEqual(reloader.sessions.first?.appName, "Xcode")
     }

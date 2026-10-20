@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "C8E6E4BE-869C-4C7E-A6F7-60E33108726F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Largest text after opening writing_0_15873BA9-A3EC-47BF-984F-946DDE22A8F1.png",
+        "timestamp" : 1791060194.024
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "E1F2B352-23E4-4FED-898E-AF323D43F260.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Largest text before opening writing_0_38CBC288-D8C0-4B4A-AFF7-2C990C06B6C8.png",
+        "timestamp" : 1791060192.002
+      }
+    ],
+    "testIdentifier" : "RiverSystemRedesignUITests/testLargestTextWritingCanSaveAndReturnToTheDay()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverSystemRedesignUITests/testLargestTextWritingCanSaveAndReturnToTheDay"
+  }
+]

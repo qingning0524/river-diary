@@ -1,5 +1,6 @@
 import XCTest
 import RiverDiaryCore
+import SQLCipher
 @testable import RiverDiaryMac
 
 @MainActor
@@ -43,6 +44,306 @@ final class V2StoreTests: XCTestCase {
         XCTAssertEqual(store.countRows(in: .rawEvents), 0)
     }
 
+    func testSyncDerivedReconciliationSkipsCleanStoreAndRunsAfterImportedBatch() throws {
+        let (store, _) = try makeStore()
+        try store.rebuildDerivedState()
+        let database = try XCTUnwrap(store.db)
+        let setupSQL = """
+        INSERT INTO places(place_id, latitude, longitude, radius_meters, first_seen, last_seen)
+            VALUES ('sync-rebuild-sentinel', 0, 0, 100, 0, 0);
+        CREATE TABLE projection_rebuilds(name TEXT NOT NULL);
+        CREATE TRIGGER track_place_rebuild AFTER DELETE ON places
+        BEGIN INSERT INTO projection_rebuilds(name) VALUES ('places'); END;
+        """
+        var sqlError: UnsafeMutablePointer<CChar>?
+        let setupStatus = sqlite3_exec(database, setupSQL, nil, nil, &sqlError)
+        let setupMessage = sqlError.map { String(cString: $0) } ?? ""
+        sqlite3_free(sqlError)
+        XCTAssertEqual(setupStatus, SQLITE_OK, setupMessage)
+
+        try store.reconcileDerivedStateIfNeeded()
+        XCTAssertEqual(projectionRebuildCount(database), 0)
+
+        let localEvent = RawEvent(
+            timestamp: Date(timeIntervalSince1970: 1_000),
+            source: .systemApp,
+            kind: .appForeground,
+            payload: RawEventPayload(appName: "Safari", bundleID: "com.apple.Safari")
+        )
+        XCTAssertTrue(store.insertRawEvent(localEvent))
+        try store.reconcileDerivedStateIfNeeded()
+        XCTAssertEqual(projectionRebuildCount(database), 0,
+                       "a local non-location Event is reconciled inline and must not schedule a full place rebuild")
+
+        let phoneID = RiverDeviceID(rawValue: "iphone-derived-reconcile-test")
+        let event = RiverEvent(
+            originDeviceID: phoneID, originSequence: 1,
+            observedAt: Date(timeIntervalSince1970: 2_000), source: "shortcuts", kind: "app.opened",
+            payload: try JSONEncoder().encode(RiverEventPayload(appName: "Safari", bundleID: "com.apple.mobilesafari"))
+        )
+        let batch = try RiverEventBatch(deviceID: phoneID, events: [event])
+        XCTAssertTrue(store.importEventBatch(batch, objectID: batch.id, ciphertextHash: "test-hash"))
+        try store.reconcileDerivedStateIfNeeded()
+        XCTAssertEqual(projectionRebuildCount(database), 1)
+
+        try store.reconcileDerivedStateIfNeeded()
+        XCTAssertEqual(projectionRebuildCount(database), 1)
+    }
+
+    func testTwoV2StoresConvergeEventsAndSharedConfirmationThroughEncryptedFiles() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("river-two-v2-nodes-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: root) }
+
+        let phoneID = RiverDeviceID(rawValue: "iphone-v2-sync-test")
+        let macID = RiverDeviceID(rawValue: "mac-v2-sync-test")
+        let phone = V2Store(databaseURL: root.appendingPathComponent("phone.db"), testDeviceID: phoneID)
+        let mac = V2Store(databaseURL: root.appendingPathComponent("mac.db"), testDeviceID: macID)
+        XCTAssertNotNil(phone.db, phone.lastError ?? "phone V2 database should open")
+        XCTAssertNotNil(mac.db, mac.lastError ?? "Mac V2 database should open")
+        let registrations = [
+            DeviceRegistration(
+                id: phoneID, displayName: "QA iPhone", platform: "iOS", lifecycle: .active,
+                clock: HybridLogicalClock(physicalMilliseconds: 10, deviceID: phoneID)
+            ),
+            DeviceRegistration(
+                id: macID, displayName: "QA Mac", platform: "macOS", lifecycle: .active,
+                clock: HybridLogicalClock(physicalMilliseconds: 10, deviceID: macID)
+            )
+        ]
+        try phone.mergeDeviceRegistrations(registrations)
+        try mac.mergeDeviceRegistrations(registrations)
+
+        let phoneEvent = RawEvent(
+            timestamp: Date(timeIntervalSince1970: 1_000), source: .systemApp, kind: .appForeground,
+            payload: RawEventPayload(appName: "Safari", bundleID: "com.apple.Safari")
+        )
+        let macEvent = RawEvent(
+            timestamp: Date(timeIntervalSince1970: 2_000), source: .systemApp, kind: .appForeground,
+            payload: RawEventPayload(appName: "Xcode", bundleID: "com.apple.dt.Xcode")
+        )
+        XCTAssertTrue(phone.insertRawEvent(phoneEvent))
+        XCTAssertTrue(mac.insertRawEvent(macEvent))
+        let confirmation = try XCTUnwrap(RiverSharedStateRecord.timelineClarification(
+            candidateID: "v2-sqlite-sync-candidate",
+            observation: "14:00–14:30 正在处理 River Diary。",
+            opening: "这段活动的主要目标是什么？",
+            evidenceRefs: ["raw:\(phoneEvent.id.uuidString.lowercased())"],
+            createdAt: Date(timeIntervalSince1970: 2_100)
+        ))
+        XCTAssertTrue(phone.saveSharedUserRecord(confirmation))
+
+        let directory = ReplicationDirectory(rootURL: root.appendingPathComponent("Replication", isDirectory: true))
+        let key = SyncEncryptionKey()
+        let phoneSync = try RiverSyncCoordinator(store: phone, directory: directory, key: key)
+        let macSync = try RiverSyncCoordinator(store: mac, directory: directory, key: key)
+        let phoneBatchBeforeSync = try XCTUnwrap(try phone.localEventBatches().first)
+        let macBatchBeforeSync = try XCTUnwrap(try mac.localEventBatches().first)
+        var phoneReport = try phoneSync.synchronize()
+        var macReport = try macSync.synchronize()
+        try assertEventBatch(mac, equals: macBatchBeforeSync)
+        phoneReport = try phoneSync.synchronize()
+        try assertEventBatch(mac, equals: macBatchBeforeSync)
+        macReport = try macSync.synchronize()
+        for _ in 0..<6 {
+            if phoneReport.isVerified && macReport.isVerified { break }
+            phoneReport = try phoneSync.synchronize()
+            macReport = try macSync.synchronize()
+        }
+
+        XCTAssertTrue(phoneReport.isVerified)
+        XCTAssertTrue(macReport.isVerified)
+        try assertEventBatch(phone, equals: phoneBatchBeforeSync)
+        try assertEventBatch(mac, equals: macBatchBeforeSync)
+        XCTAssertEqual(Set(phone.allRawEvents().map(\.id)), Set(mac.allRawEvents().map(\.id)))
+        XCTAssertEqual(Set(phone.allRawEvents().map(\.id)), Set([phoneEvent.id, macEvent.id]))
+        XCTAssertEqual(Set(phone.allStateOperations().map(\.id)), Set(mac.allStateOperations().map(\.id)))
+        XCTAssertEqual(try phone.canonicalStateDigest(), try mac.canonicalStateDigest())
+        XCTAssertEqual(phone.sharedUserRecords().first(where: { $0.id == confirmation.id })?.status, "pending")
+        XCTAssertEqual(mac.sharedUserRecords().first(where: { $0.id == confirmation.id })?.status, "pending")
+
+        let phoneBatch = try XCTUnwrap(try phone.localEventBatches().first)
+        let phoneEnvelope = try XCTUnwrap(try directory.readObject(id: phoneBatch.id, stream: "Events", deviceID: phoneID))
+        let secondTransport = ReplicationDirectory(rootURL: root.appendingPathComponent("SecondTransport", isDirectory: true))
+        _ = try secondTransport.publish(phoneEnvelope, stream: "Events", deviceID: phoneID)
+        let duplicateReport = try RiverSyncCoordinator(store: mac, directory: secondTransport, key: key).synchronize()
+        XCTAssertEqual(duplicateReport.importedEventBatches, 0)
+        XCTAssertEqual(duplicateReport.duplicateEventBatches, 1)
+        XCTAssertEqual(mac.allRawEvents().filter { $0.id == phoneEvent.id }.count, 1)
+    }
+
+    func testV2SyncReportsMissingEventSequenceAndCannotVerify() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("river-v2-missing-sequence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: root) }
+
+        let phoneID = RiverDeviceID(rawValue: "iphone-v2-gap-test")
+        let macID = RiverDeviceID(rawValue: "mac-v2-gap-test")
+        let phone = V2Store(databaseURL: root.appendingPathComponent("phone.db"), testDeviceID: phoneID)
+        let mac = V2Store(databaseURL: root.appendingPathComponent("mac.db"), testDeviceID: macID)
+        let registrations = [
+            DeviceRegistration(
+                id: phoneID, displayName: "QA iPhone", platform: "iOS", lifecycle: .active,
+                clock: HybridLogicalClock(physicalMilliseconds: 10, deviceID: phoneID)
+            ),
+            DeviceRegistration(
+                id: macID, displayName: "QA Mac", platform: "macOS", lifecycle: .active,
+                clock: HybridLogicalClock(physicalMilliseconds: 10, deviceID: macID)
+            )
+        ]
+        try phone.mergeDeviceRegistrations(registrations)
+        try mac.mergeDeviceRegistrations(registrations)
+
+        for sequence in [UInt64(1), 2, 4] {
+            XCTAssertTrue(phone.insertRawEvent(RawEvent(
+                timestamp: Date(timeIntervalSince1970: TimeInterval(sequence * 1_000)),
+                source: .systemApp,
+                kind: .appForeground,
+                payload: RawEventPayload(appName: "Safari", bundleID: "com.apple.Safari"),
+                sourceHash: "event-\(sequence)",
+                originDeviceID: phoneID,
+                originSequence: sequence
+            )))
+        }
+        let database = try XCTUnwrap(phone.db)
+        let frontierKey = "owned.event.sequence.\(phoneID.rawValue)"
+        let setFrontierSQL = "INSERT OR REPLACE INTO sync_state(key, value) VALUES ('\(frontierKey)', '4')"
+        var sqlError: UnsafeMutablePointer<CChar>?
+        let status = sqlite3_exec(database, setFrontierSQL, nil, nil, &sqlError)
+        let message = sqlError.map { String(cString: $0) } ?? ""
+        sqlite3_free(sqlError)
+        XCTAssertEqual(status, SQLITE_OK, message)
+
+        let directory = ReplicationDirectory(rootURL: root.appendingPathComponent("Replication", isDirectory: true))
+        let key = SyncEncryptionKey()
+        _ = try RiverSyncCoordinator(store: phone, directory: directory, key: key).synchronize()
+        let report = try RiverSyncCoordinator(store: mac, directory: directory, key: key).synchronize()
+
+        XCTAssertFalse(report.isVerified)
+        XCTAssertTrue(report.sequenceGapDevices.contains(phoneID))
+        let gap = try XCTUnwrap(report.missingSequenceGaps.first {
+            $0.deviceID == phoneID && $0.stream == "Events"
+        })
+        XCTAssertEqual(gap.first, 3)
+        XCTAssertEqual(gap.last, 3)
+        XCTAssertEqual(mac.allRawEvents().filter { $0.originDeviceID == phoneID }.count, 3)
+    }
+
+    func testV2SyncRejectsCorruptedArtifactWithoutImportOrVerification() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("river-v2-corrupted-artifact-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: root) }
+
+        let phoneID = RiverDeviceID(rawValue: "iphone-v2-corrupt-test")
+        let macID = RiverDeviceID(rawValue: "mac-v2-corrupt-test")
+        let phone = V2Store(databaseURL: root.appendingPathComponent("phone.db"), testDeviceID: phoneID)
+        let mac = V2Store(databaseURL: root.appendingPathComponent("mac.db"), testDeviceID: macID)
+        let registrations = [
+            DeviceRegistration(
+                id: phoneID, displayName: "QA iPhone", platform: "iOS", lifecycle: .active,
+                clock: HybridLogicalClock(physicalMilliseconds: 10, deviceID: phoneID)
+            ),
+            DeviceRegistration(
+                id: macID, displayName: "QA Mac", platform: "macOS", lifecycle: .active,
+                clock: HybridLogicalClock(physicalMilliseconds: 10, deviceID: macID)
+            )
+        ]
+        try phone.mergeDeviceRegistrations(registrations)
+        try mac.mergeDeviceRegistrations(registrations)
+        XCTAssertTrue(phone.insertRawEvent(RawEvent(
+            timestamp: Date(timeIntervalSince1970: 1_000), source: .systemApp, kind: .appForeground,
+            payload: RawEventPayload(appName: "Safari", bundleID: "com.apple.Safari")
+        )))
+        let content = Data("canonical daily review".utf8)
+        let revision = RiverArtifactRevision(
+            id: "daily-review-v2-corrupt-test",
+            logicalKey: "daily-review:1970-01-01",
+            kind: .dailyReview,
+            revisionNumber: 1,
+            originDeviceID: phoneID,
+            clock: HybridLogicalClock(physicalMilliseconds: 5_000, deviceID: phoneID),
+            inputFrontier: try InputFrontier(sequences: [phoneID.rawValue: 1]),
+            inputSnapshotHash: "snapshot",
+            pipelineVersion: "1.0",
+            promptVersion: "1",
+            modelProvider: "test",
+            modelIdentifier: "test-model",
+            content: content,
+            contentHash: SHA256Hex.hash(content)
+        )
+        XCTAssertTrue(phone.insertArtifactRevision(revision))
+
+        let directoryURL = root.appendingPathComponent("Replication", isDirectory: true)
+        let directory = ReplicationDirectory(rootURL: directoryURL)
+        let key = SyncEncryptionKey()
+        _ = try RiverSyncCoordinator(store: phone, directory: directory, key: key).synchronize()
+        let encrypted = try XCTUnwrap(try directory.readObject(
+            id: revision.id, stream: "Artifacts", deviceID: phoneID
+        ))
+        let corrupted = EncryptedReplicationObject(
+            id: encrypted.id,
+            kind: encrypted.kind,
+            protocolVersion: encrypted.protocolVersion,
+            ciphertext: encrypted.ciphertext + Data([0]),
+            ciphertextSHA256: encrypted.ciphertextSHA256
+        )
+        let artifactURL = directoryURL.appendingPathComponent("Devices", isDirectory: true)
+            .appendingPathComponent(phoneID.rawValue, isDirectory: true)
+            .appendingPathComponent("Artifacts", isDirectory: true)
+            .appendingPathComponent("\(revision.id).rdo")
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        try encoder.encode(corrupted).write(to: artifactURL, options: .atomic)
+
+        let report = try RiverSyncCoordinator(store: mac, directory: directory, key: key).synchronize()
+        XCTAssertFalse(report.integrityFailures.isEmpty)
+        XCTAssertTrue(report.integrityFailures.contains { $0.contains(revision.id) })
+        XCTAssertEqual(report.importedArtifactRevisions, 0)
+        XCTAssertFalse(report.isVerified)
+        XCTAssertEqual(mac.countRows(in: .artifacts), 0)
+    }
+
+    private func projectionRebuildCount(_ database: OpaquePointer) -> Int {
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_prepare_v2(database, "SELECT COUNT(*) FROM projection_rebuilds", -1, &statement, nil) == SQLITE_OK,
+              let statement,
+              sqlite3_step(statement) == SQLITE_ROW else { return -1 }
+        return Int(sqlite3_column_int64(statement, 0))
+    }
+
+    private func assertEventBatch(
+        _ store: V2Store,
+        equals expected: RiverEventBatch,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let actual = try XCTUnwrap(store.localEventBatches().first, file: file, line: line)
+        XCTAssertEqual(actual.id, expected.id, file: file, line: line)
+        XCTAssertEqual(actual.deviceID, expected.deviceID, file: file, line: line)
+        XCTAssertEqual(actual.events.count, expected.events.count, file: file, line: line)
+        let actualEvent = try XCTUnwrap(actual.events.first, file: file, line: line)
+        let expectedEvent = try XCTUnwrap(expected.events.first, file: file, line: line)
+        XCTAssertEqual(actualEvent.id, expectedEvent.id, file: file, line: line)
+        XCTAssertEqual(actualEvent.originSequence, expectedEvent.originSequence, file: file, line: line)
+        XCTAssertEqual(actualEvent.observedAt.timeIntervalSince1970.bitPattern,
+                       expectedEvent.observedAt.timeIntervalSince1970.bitPattern, file: file, line: line)
+        XCTAssertEqual(actualEvent.recordedAt.timeIntervalSince1970.bitPattern,
+                       expectedEvent.recordedAt.timeIntervalSince1970.bitPattern, file: file, line: line)
+        XCTAssertEqual(actualEvent.observedTimeZoneIdentifier, expectedEvent.observedTimeZoneIdentifier, file: file, line: line)
+        XCTAssertEqual(actualEvent.source, expectedEvent.source, file: file, line: line)
+        XCTAssertEqual(actualEvent.kind, expectedEvent.kind, file: file, line: line)
+        XCTAssertEqual(actualEvent.sourceHash, expectedEvent.sourceHash, file: file, line: line)
+        XCTAssertEqual(
+            actualEvent.payload, expectedEvent.payload,
+            "actual=\(String(decoding: actualEvent.payload, as: UTF8.self)) expected=\(String(decoding: expectedEvent.payload, as: UTF8.self))",
+            file: file, line: line
+        )
+    }
+
     func testDeveloperDiagnosticsCountsSharedPendingTimelineConfirmations() throws {
         let (store, databaseURL) = try makeStore()
         let suiteName = "river-diagnostics-confirmations-\(UUID().uuidString)"
@@ -68,6 +369,30 @@ final class V2StoreTests: XCTestCase {
         let pendingStatus = try XCTUnwrap(report["pendingConfirmationStatus"] as? String)
         XCTAssertTrue(pendingStatus.contains("时间线 1 条"))
         XCTAssertFalse(pendingStatus.contains("尚未接入"))
+    }
+
+    func testLostSyncFolderBookmarkKeepsLocalNodeUsableAndRequestsReconnection() throws {
+        let (store, _) = try makeStore()
+        let suiteName = "river-sync-bookmark-loss-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(Data("unresolvable-bookmark".utf8), forKey: "river.sync.directory.bookmark.v1")
+
+        let sync = SyncSettingsStore(database: store, preferences: defaults)
+        sync.synchronize()
+
+        XCTAssertEqual(sync.status, "需要重新连接 iCloud Drive 文件夹")
+        XCTAssertTrue(sync.lastError?.contains("重新选择 iCloud Drive") == true)
+        XCTAssertFalse(sync.isVerified, "授权失效时不能继续显示旧的 Verified 状态")
+
+        let event = RawEvent(
+            timestamp: Date(timeIntervalSince1970: 1_800_000_000),
+            source: .manual,
+            kind: .quickCapture,
+            payload: RawEventPayload(text: "local capture remains available")
+        )
+        XCTAssertTrue(store.insertRawEvent(event), "同步目录失效不应阻断本机 Event 写入")
+        XCTAssertEqual(store.rawEvents(ids: [event.id]).count, 1)
     }
 
     func testRawEventRoundTripAndEmptyState() throws {
@@ -171,6 +496,58 @@ final class V2StoreTests: XCTestCase {
         XCTAssertEqual(store.allStateOperations().filter { $0.operationType == "shared.record.upsert" }.count, 1)
     }
 
+    func testLegacyHabitAndMemoryRowsMigrateDuringSyncRebuildAndRemainIdempotentAfterRestart() throws {
+        let (store, databaseURL) = try makeStore()
+        let ruleID = "00000000-0000-0000-0000-000000000101"
+        let cardID = "00000000-0000-0000-0000-000000000102"
+        let batchID = "00000000-0000-0000-0000-000000000103"
+        let memoryID = "00000000-0000-0000-0000-000000000104"
+        let database = try XCTUnwrap(store.db)
+        let legacyRows = """
+        INSERT INTO habit_rules(id, status, payload_json, updated_at)
+        VALUES ('\(ruleID)', 'active', '{"title":"旧规则"}', 100);
+        INSERT INTO habit_cards(id, batch_id, dedup_key, status, payload_json, updated_at)
+        VALUES ('\(cardID)', '\(batchID)', 'legacy:card', 'answered', '{"answer":"yes"}', 110);
+        INSERT INTO habit_batches(id, period_key, payload_json, created_at, shown_at)
+        VALUES ('\(batchID)', '2026-09', '{"period":"2026-09"}', 90, 120);
+        INSERT INTO memories(id, title, body, kind, confidence, source_episode_ids, created_at, last_confirmed_at, is_user_confirmed)
+        VALUES ('\(memoryID)', '旧记忆', '保留的正文', 'other', 80, '[]', 80, 130, 1);
+        INSERT INTO memory_confirmations(memory_id, confirmed_at, is_confirmed, note)
+        VALUES ('\(memoryID)', 130, 1, '旧确认');
+        """
+        var sqlError: UnsafeMutablePointer<CChar>?
+        let seedStatus = sqlite3_exec(database, legacyRows, nil, nil, &sqlError)
+        let seedMessage = sqlError.map { String(cString: $0) } ?? ""
+        sqlite3_free(sqlError)
+        XCTAssertEqual(seedStatus, SQLITE_OK, seedMessage)
+        XCTAssertTrue(store.allStateOperations().isEmpty)
+
+        // RiverSyncCoordinator calls rebuildDerivedState before exporting local batches.
+        try store.rebuildDerivedState()
+
+        let migrated = store.sharedUserRecords()
+        XCTAssertTrue(migrated.contains { $0.kind == .habitRule && $0.id.uuidString.lowercased() == ruleID })
+        XCTAssertTrue(migrated.contains { $0.kind == .habitCard && $0.id.uuidString.lowercased() == cardID && $0.status == "answered" })
+        XCTAssertTrue(migrated.contains { $0.kind == .habitBatch && $0.id.uuidString.lowercased() == batchID })
+        let memory = try XCTUnwrap(migrated.first { $0.kind == .memory && $0.id.uuidString.lowercased() == memoryID })
+        XCTAssertTrue(memory.payloadJSON.contains("保留的正文"))
+        let confirmation = try XCTUnwrap(store.allStateOperations().first {
+            $0.operationType == "memory.confirmation.set" && $0.targetID == "memory:\(memoryID)"
+        })
+        let decision = try JSONDecoder().decode(RiverMemoryConfirmation.self, from: confirmation.payload)
+        XCTAssertTrue(decision.confirmed)
+        XCTAssertEqual(decision.note, "旧确认")
+        XCTAssertEqual(store.allStateOperations().count, 5)
+
+        try store.rebuildDerivedState()
+        XCTAssertEqual(store.allStateOperations().count, 5, "repeated migration must not append duplicate operations")
+
+        store.close()
+        let relaunched = V2Store(databaseURL: databaseURL)
+        try relaunched.rebuildDerivedState()
+        XCTAssertEqual(relaunched.allStateOperations().count, 5, "migration remains idempotent after reopening the database")
+    }
+
     func testPendingConfirmationResolutionReplicatesUserCorrectionAndPlaceIdentity() throws {
         let (store, _) = try makeStore()
         let createdAt = Date(timeIntervalSince1970: 1_700_000_000)
@@ -194,6 +571,41 @@ final class V2StoreTests: XCTestCase {
         let decision = try JSONDecoder().decode(RiverPlaceUserDecision.self, from: identity.payload)
         XCTAssertEqual(decision.name, "宿舍")
         XCTAssertEqual(decision.semanticType, "userDefined")
+        let operations = store.allStateOperations().sorted { $0.originSequence < $1.originSequence }
+        XCTAssertEqual(operations.count, 3)
+        XCTAssertEqual(operations[1].originSequence + 1, operations[2].originSequence)
+        XCTAssertEqual(operations[2].causalFrontier.operationSequences[operations[2].actorDeviceID.rawValue], operations[1].originSequence)
+    }
+
+    func testReopenedPlaceQuestionCanRejectAndClearItsEarlierUserIdentity() throws {
+        let (store, _) = try makeStore()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let content = RiverPendingConfirmationContent(
+            title: "地点候选", question: "这里是「学校」吗？", candidate: "学校",
+            targetType: "place", targetID: "place:reopened-question"
+        )
+        let payload = String(decoding: try JSONEncoder().encode(content), as: UTF8.self)
+        let pending = RiverSharedStateRecord(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000779")!,
+            kind: .pendingConfirmation, status: "pending", logicalKey: "place-confirmation:reopen",
+            payloadJSON: payload, createdAt: now, updatedAt: now
+        )
+        XCTAssertTrue(store.saveSharedUserRecord(pending))
+        XCTAssertTrue(store.resolvePendingConfirmation(pending, as: .confirmed))
+
+        let resolved = try XCTUnwrap(store.sharedUserRecords().first { $0.id == pending.id })
+        let reopened = try XCTUnwrap(resolved.reopened(at: now.addingTimeInterval(30)))
+        XCTAssertTrue(store.saveSharedUserRecord(reopened))
+        XCTAssertEqual(store.sharedUserRecords().first { $0.id == pending.id }?.status, "pending")
+        XCTAssertTrue(store.resolvePendingConfirmation(reopened, as: .rejected))
+
+        let finalIdentityOperation = try XCTUnwrap(store.allStateOperations().last {
+            $0.operationType == "place.identity.set" && $0.targetID == "place:reopened-question"
+        })
+        let decision = try JSONDecoder().decode(RiverPlaceUserDecision.self, from: finalIdentityOperation.payload)
+        XCTAssertFalse(decision.isConfirmed)
+        XCTAssertEqual(decision.name, "")
+        XCTAssertEqual(store.sharedUserRecords().first { $0.id == pending.id }?.status, "rejected")
     }
 
     func testTimelineClarificationConfirmationSharesReviewedAnnotationAndClosesQuestion() throws {
@@ -419,6 +831,95 @@ final class V2StoreTests: XCTestCase {
         XCTAssertEqual(store.memories().first(where: { $0.id == memory.id })?.isUserConfirmed, true)
     }
 
+    func testMemoryEvidenceReferencesSurviveStorageAndSharedProjection() throws {
+        let (store, _) = try makeStore()
+        let refs = [
+            "raw:00000000-0000-0000-0000-000000000901",
+            "capture:00000000-0000-0000-0000-000000000902",
+            "diary:2026-09-30"
+        ]
+        let memory = Memory(
+            title: "持续推进的项目",
+            kind: .projectTrajectory,
+            sourceEpisodeIDs: [UUID(uuidString: "00000000-0000-0000-0000-000000000903")!],
+            evidenceRefs: refs
+        )
+
+        XCTAssertTrue(store.insertMemory(memory))
+        XCTAssertEqual(store.memories().first(where: { $0.id == memory.id })?.evidenceRefs, refs)
+
+        let sharedRecord = try XCTUnwrap(store.sharedUserRecords().first { $0.id == memory.id })
+        let sharedMemory = try JSONDecoder().decode(Memory.self, from: Data(sharedRecord.payloadJSON.utf8))
+        XCTAssertEqual(sharedMemory.evidenceRefs, refs)
+
+        try store.rebuildDerivedState()
+        XCTAssertEqual(store.memories().first(where: { $0.id == memory.id })?.evidenceRefs, refs)
+    }
+
+    func testSharedMemoryDeletionRemovesMacProjectionAndSurvivesRebuild() throws {
+        let (store, _) = try makeStore()
+        let memory = Memory(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000778")!,
+            title: "River 暂定记忆", body: "这条记录由用户更正后删除。", confidence: 62
+        )
+        let payload = String(decoding: try JSONEncoder().encode(memory), as: UTF8.self)
+        let candidate = RiverSharedStateRecord(
+            id: memory.id, kind: .memory, status: "candidate", logicalKey: memory.id.uuidString.lowercased(),
+            payloadJSON: payload, createdAt: memory.createdAt, updatedAt: memory.createdAt
+        )
+        XCTAssertTrue(store.saveSharedUserRecord(candidate))
+        try store.rebuildDerivedState()
+        XCTAssertEqual(store.memories().first(where: { $0.id == memory.id })?.title, "River 暂定记忆")
+
+        let deletion = RiverSharedStateRecord(
+            id: memory.id, kind: .memory, status: "deleted", logicalKey: candidate.logicalKey,
+            payloadJSON: payload, createdAt: memory.createdAt, updatedAt: Date()
+        )
+        XCTAssertTrue(store.saveSharedUserRecord(deletion))
+        try store.rebuildDerivedState()
+
+        XCTAssertNil(store.memories().first(where: { $0.id == memory.id }))
+        XCTAssertEqual(store.sharedUserRecords().first(where: { $0.id == memory.id })?.status, "deleted")
+        try store.rebuildDerivedState()
+        XCTAssertNil(store.memories().first(where: { $0.id == memory.id }), "A deleted memory must not return through legacy row migration.")
+    }
+
+    func testPhoneNaturalLanguageHabitRuleDecodesIntoTheSharedMacHabitModel() throws {
+        let (store, _) = try makeStore()
+        let ruleID = UUID(uuidString: "00000000-0000-0000-0000-000000000884")!
+        let cardID = UUID(uuidString: "00000000-0000-0000-0000-000000000885")!
+        let now = ISO8601DateFormatter().string(from: Date())
+        let payloadObject: [String: Any] = [
+            "id": ruleID.uuidString,
+            "dedupKey": "pattern:com.example.safari",
+            "conditionBundleID": "com.apple.mobilesafari",
+            "conditionAppName": "Safari",
+            "naturalLanguageRule": "我用 Safari 查阅旅行资料。",
+            "supportingEvidenceRefs": [],
+            "conclusionCategory": "个人习惯",
+            "scopeText": "我用 Safari 查阅旅行资料。",
+            "status": "active",
+            "origin": "userConfirmed",
+            "recordedAt": now,
+            "validFrom": now,
+            "supportingExampleKeys": [],
+            "createdFromCardID": cardID.uuidString
+        ]
+        let bytes = try JSONSerialization.data(withJSONObject: payloadObject, options: [.sortedKeys])
+        let record = RiverSharedStateRecord(
+            id: ruleID, kind: .habitRule, status: "active", logicalKey: "pattern:com.example.safari",
+            payloadJSON: String(decoding: bytes, as: UTF8.self), createdAt: Date(), updatedAt: Date()
+        )
+        XCTAssertTrue(store.saveSharedUserRecord(record))
+        try store.rebuildDerivedState()
+
+        let review = HabitReviewStore(v2Store: store, calendar: Calendar(identifier: .gregorian))
+        let decoded = try XCTUnwrap(review.rules.first { $0.id == ruleID })
+        XCTAssertEqual(decoded.naturalLanguageRule, "我用 Safari 查阅旅行资料。")
+        XCTAssertEqual(decoded.origin, .userConfirmed)
+        XCTAssertEqual(decoded.status, .active)
+    }
+
     func testAnalyticalUserOperationInvalidatesArtifactsBehindItsFrontier() throws {
         let (store, _) = try makeStore()
         let device = try XCTUnwrap(store.localDeviceIdentifier())
@@ -509,6 +1010,49 @@ final class V2StoreTests: XCTestCase {
         XCTAssertEqual(batches.count, 1)
         XCTAssertEqual(batches.first?.firstSequence, 1)
         XCTAssertEqual(batches.first?.lastSequence, 2)
+    }
+
+    func testStateOperationBatchRollsBackAllWritesWhenOneIdentityConflicts() throws {
+        let store = try makeStore().0
+        let device = try XCTUnwrap(store.localDeviceIdentifier())
+        let conflictingID = UUID()
+        XCTAssertNotNil(store.appendStateOperation(
+            id: conflictingID,
+            targetID: "existing-target",
+            fieldKey: "record",
+            operationType: "test.record",
+            payload: Data("existing".utf8)
+        ))
+        let operationsBefore = store.allStateOperations()
+        let frontierBefore = try store.currentInputFrontier()
+        let wouldBeFirst = V2Store.StateOperationDraft(
+            id: UUID(), targetID: "new-target", fieldKey: "identity",
+            operationType: "test.identity", payload: Data("new".utf8)
+        )
+        let conflicting = V2Store.StateOperationDraft(
+            id: conflictingID, targetID: "different-target", fieldKey: "record",
+            operationType: "test.record", payload: Data("conflict".utf8)
+        )
+
+        XCTAssertNil(store.appendStateOperationsAtomically([wouldBeFirst, conflicting]))
+        XCTAssertEqual(store.allStateOperations(), operationsBefore)
+        XCTAssertEqual(try store.currentInputFrontier(), frontierBefore)
+
+        let first = V2Store.StateOperationDraft(
+            id: UUID(), targetID: "batch-target-1", fieldKey: "record",
+            operationType: "test.record", payload: Data("one".utf8)
+        )
+        let second = V2Store.StateOperationDraft(
+            id: UUID(), targetID: "batch-target-2", fieldKey: "record",
+            operationType: "test.record", payload: Data("two".utf8)
+        )
+        let appended = try XCTUnwrap(store.appendStateOperationsAtomically([first, second]))
+        XCTAssertEqual(appended.count, 2)
+        XCTAssertEqual(appended[1].originSequence, appended[0].originSequence + 1)
+        XCTAssertEqual(
+            appended[1].causalFrontier.operationSequences[device.rawValue],
+            appended[0].originSequence
+        )
     }
 
     func testCurrentDeviceRecoversOwnEventsOperationsAndArtifactsFromReplicationFolder() throws {

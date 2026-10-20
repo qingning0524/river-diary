@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#14326E"/><stop offset="1" stop-color="#071733"/></linearGradient>
+  <radialGradient id="glow" cx=".22" cy=".12" r=".9"><stop stop-color="#8FB6FF" stop-opacity=".38"/><stop offset="1" stop-color="#8FB6FF" stop-opacity="0"/></radialGradient>
+  <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#9DC2FF" stop-opacity=".55"/><stop offset="1" stop-color="#9DC2FF" stop-opacity=".08"/></linearGradient>
+</defs>
+<rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#glow)"/><path d="M0 690C150 660 292 722 446 700S760 640 1024 682V1024H0Z" fill="url(#water)" opacity=".22"/><path d="M0 692C150 662 292 724 446 702S760 642 1024 684" fill="none" stroke="#9DC2FF" stroke-width="4" stroke-opacity=".55"/><g transform="translate(210 200) scale(26)" fill="none" stroke-linecap="round" stroke-width="2.05"><path d="M15.12 1.92C.48 7.2 22.8 15.6 5.28 22.08" stroke="#FFFFFF"/><path d="M19.92 1.92C5.28 7.2 27.6 15.6 10.08 22.08" stroke="#8FB6FF"/></g>
+</svg>

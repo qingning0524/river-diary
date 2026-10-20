@@ -36,4 +36,41 @@ final class MemoryLibraryTests: XCTestCase {
         XCTAssertEqual(library.confirmations[memory.id.uuidString]?.confirmed, true)
         XCTAssertEqual(v2.memoryConfirmation(for: memory.id)?.confirmed, true)
     }
+
+    func testRefreshDeduplicatesSharedSourcesAndOmitsMissingEpisodes() throws {
+        let v2 = try makeStore()
+        let early = Episode(startTime: Date(timeIntervalSince1970: 10), endTime: Date(timeIntervalSince1970: 20), title: "early")
+        let late = Episode(startTime: Date(timeIntervalSince1970: 30), endTime: Date(timeIntervalSince1970: 40), title: "late")
+        let unrelated = Episode(startTime: Date(timeIntervalSince1970: 50), endTime: Date(timeIntervalSince1970: 60), title: "unrelated")
+        for episode in [late, unrelated, early] { XCTAssertTrue(v2.insertEpisode(episode)) }
+        let first = Memory(title: "first", sourceEpisodeIDs: [late.id, early.id, late.id, UUID()])
+        let second = Memory(title: "second", sourceEpisodeIDs: [late.id])
+        let missing = Memory(title: "missing", sourceEpisodeIDs: [UUID()])
+        for memory in [first, second, missing] { XCTAssertTrue(v2.insertMemory(memory)) }
+        let library = MemoryLibraryStore(v2Store: v2)
+
+        library.refresh(entries: [], captures: [:], letters: [:])
+
+        XCTAssertEqual(library.sourceEpisodes[first.id.uuidString]?.map(\.id), [early.id, late.id])
+        XCTAssertEqual(library.sourceEpisodes[second.id.uuidString]?.map(\.id), [late.id])
+        XCTAssertEqual(library.sourceEpisodes[missing.id.uuidString], [])
+    }
+
+    func testRefreshReplacesEpisodeLinksAfterMemoryUpdate() throws {
+        let v2 = try makeStore()
+        let first = Episode(startTime: Date(timeIntervalSince1970: 10), endTime: Date(timeIntervalSince1970: 20), title: "first")
+        let second = Episode(startTime: Date(timeIntervalSince1970: 30), endTime: Date(timeIntervalSince1970: 40), title: "second")
+        for episode in [first, second] { XCTAssertTrue(v2.insertEpisode(episode)) }
+        var memory = Memory(title: "memory", sourceEpisodeIDs: [first.id])
+        XCTAssertTrue(v2.insertMemory(memory))
+        let library = MemoryLibraryStore(v2Store: v2)
+        library.refresh(entries: [], captures: [:], letters: [:])
+        XCTAssertEqual(library.sourceEpisodes[memory.id.uuidString]?.map(\.id), [first.id])
+
+        memory.sourceEpisodeIDs = [second.id]
+        XCTAssertTrue(v2.insertMemory(memory))
+        library.refresh(entries: [], captures: [:], letters: [:])
+
+        XCTAssertEqual(library.sourceEpisodes[memory.id.uuidString]?.map(\.id), [second.id])
+    }
 }

@@ -29,6 +29,9 @@ struct Memory: Identifiable, Codable, Hashable, Sendable {
     var kind: MemoryKind
     var confidence: Int
     var sourceEpisodeIDs: [UUID]
+    /// Stable cross-device evidence pointers. Event, capture, and diary refs are
+    /// resolved by each client against its own shared projections.
+    var evidenceRefs: [String]?
     var createdAt: Date
     var lastConfirmedAt: Date?
     var isUserConfirmed: Bool
@@ -40,6 +43,7 @@ struct Memory: Identifiable, Codable, Hashable, Sendable {
         kind: MemoryKind = .other,
         confidence: Int = 50,
         sourceEpisodeIDs: [UUID] = [],
+        evidenceRefs: [String]? = nil,
         createdAt: Date = Date(),
         lastConfirmedAt: Date? = nil,
         isUserConfirmed: Bool = false
@@ -50,6 +54,7 @@ struct Memory: Identifiable, Codable, Hashable, Sendable {
         self.kind = kind
         self.confidence = confidence
         self.sourceEpisodeIDs = sourceEpisodeIDs
+        self.evidenceRefs = evidenceRefs
         self.createdAt = createdAt
         self.lastConfirmedAt = lastConfirmedAt
         self.isUserConfirmed = isUserConfirmed

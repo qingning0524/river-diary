@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录 · 河流日记</title>
+<meta name="description" content="登录河流日记 FlowRiver 账号:邮箱验证码登录或注册,或使用密码登录。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f6f3ee'/%3E%3Cpath d='M5 12c4-3 7 3 11 0s7-3 11 0' stroke='%2343698c' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M5 20c4-3 7 3 11 0s7-3 11 0' stroke='%2343698c' stroke-width='2.4' fill='none' stroke-linecap='round' opacity='.45'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/assets/style.css?v=20261010">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="wordmark" href="https://flowriver.xyz/">河流日记 <span class="en">River Diary</span></a>
+    <div class="login-tools"><button type="button" id="login-theme" aria-label="切换深色外观">深色</button><a href="https://flowriver.xyz/">返回官网 ↗</a></div>
+  </div>
+</header>
+
+<main class="auth">
+  <div class="auth-panel">
+    <div class="auth-head">
+      <h1>登录你的河流</h1>
+      <p>账号只管理登录、设备与权益;日记内容永远留在你的设备上。</p>
+    </div>
+
+    <div class="card">
+      <div class="tabs" role="tablist">
+        <button type="button" id="tab-code" role="tab" aria-selected="true">验证码登录 / 注册</button>
+        <button type="button" id="tab-password" role="tab" aria-selected="false">密码登录</button>
+      </div>
+
+      <div class="status" id="status" role="alert"></div>
+
+      <!-- ===== 验证码流程:第 1 步,邮箱 ===== -->
+      <form id="form-code-email" novalidate>
+        <div class="steps"><span class="on">STEP 1 · 邮箱</span><span class="dot"></span><span>STEP 2 · 验证码</span></div>
+        <div class="field">
+          <label for="code-email">邮箱地址</label>
+          <input id="code-email" name="email" type="email" autocomplete="email" required maxlength="320" placeholder="you@example.com">
+        </div>
+        <button class="btn" type="submit" id="btn-send-code">发送验证码</button>
+        <p class="hint" style="font-size:12px;color:#8a92a0;margin-top:10px;">未注册的邮箱将自动创建账号。验证码 10 分钟内有效,共 5 次尝试机会。</p>
+      </form>
+
+      <!-- ===== 验证码流程:第 2 步,验证码 ===== -->
+      <form id="form-code-verify" hidden novalidate>
+        <div class="steps"><span class="dot"></span><span>STEP 1 · 邮箱</span><span class="dot on"></span><span class="on">STEP 2 · 验证码</span></div>
+        <div class="field">
+          <label for="code-input">8 位验证码</label>
+          <input id="code-input" class="code-input" type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="one-time-code" required placeholder="————">
+          <p class="hint">已发送至 <span id="code-email-echo"></span></p>
+        </div>
+        <label class="agree">
+          <input type="checkbox" id="agree-check">
+          <span>我已阅读并同意<a href="https://flowriver.xyz/terms.html" target="_blank" rel="noopener">服务条款</a>与<a href="https://flowriver.xyz/privacy.html" target="_blank" rel="noopener">隐私政策</a>。</span>
+        </label>
+        <button class="btn" type="submit" id="btn-verify">登录</button>
+        <div class="resend">收不到?<button type="button" class="link" id="btn-resend" disabled>重新发送<span id="resend-count">（60s）</span></button></div>
+      </form>
+
+      <!-- ===== 密码登录 ===== -->
+      <form id="form-password" hidden novalidate>
+        <div class="field">
+          <label for="pw-email">邮箱地址</label>
+          <input id="pw-email" name="email" type="email" autocomplete="email" required maxlength="320" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label for="pw-input">密码</label>
+          <input id="pw-input" name="password" type="password" autocomplete="current-password" required maxlength="128">
+        </div>
+        <button class="btn" type="submit" id="btn-pw-login">登录</button>
+        <div class="aux">
+          <button type="button" class="link" id="btn-forgot">忘记密码?</button>
+        </div>
+      </form>
+
+      <!-- ===== 找回/设置密码:第 1 步 ===== -->
+      <form id="form-reset-email" hidden novalidate>
+        <div class="steps"><span class="on">STEP 1 · 邮箱</span><span class="dot"></span><span>STEP 2 · 新密码</span></div>
+        <div class="field">
+          <label for="reset-email">注册邮箱</label>
+          <input id="reset-email" type="email" autocomplete="email" required maxlength="320" placeholder="you@example.com">
+        </div>
+        <button class="btn" type="submit" id="btn-reset-send">发送验证码</button>
+      </form>
+
+      <!-- ===== 找回/设置密码:第 2 步 ===== -->
+      <form id="form-reset-complete" hidden novalidate>
+        <div class="steps"><span class="dot"></span><span>STEP 1 · 邮箱</span><span class="dot on"></span><span class="on">STEP 2 · 新密码</span></div>
+        <div class="field">
+          <label for="reset-code">8 位验证码</label>
+          <input id="reset-code" class="code-input" type="text" inputmode="numeric" maxlength="8" required placeholder="————">
+        </div>
+        <div class="field">
+          <label for="reset-password">新密码</label>
+          <input id="reset-password" type="password" autocomplete="new-password" maxlength="256" required>
+          <p class="hint">15–128 个字符,可包含空格。设置后将撤销所有已登录会话。</p>
+        </div>
+        <button class="btn" type="submit" id="btn-reset-complete">保存并登录</button>
+        <div class="aux"><button type="button" class="link" data-back>返回登录</button></div>
+      </form>
+
+      <div class="aux" id="aux-password-entry" hidden>
+        <button type="button" class="link" data-back>返回登录</button>
+      </div>
+    </div>
+
+    <p class="foot">遇到问题?联系 <a href="mailto:account@mail.flowriver.xyz">account@mail.flowriver.xyz</a></p>
+  </div>
+</main>
+
+<footer class="page-foot">
+  <a href="https://flowriver.xyz/terms.html">服务条款</a> · <a href="https://flowriver.xyz/privacy.html">隐私政策</a> · © 2026 FlowRiver
+</footer>
+
+<script src="/assets/auth.js?v=20261010"></script>
+</body>
+</html>

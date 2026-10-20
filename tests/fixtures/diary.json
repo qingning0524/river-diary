@@ -1,0 +1,9 @@
+{
+  "generated": "2000-01-02 00:00",
+  "today": "2000-01-02",
+  "poem": "",
+  "entries": [
+    {"date": "2000-01-01", "page_id": "fixture-1", "score": 60, "overview": "测试记录", "plan": "继续记录", "stage": {"label": "平稳", "color": "#D4A017"}, "metrics": {"mood": 60, "energy": 50, "focus": 50, "output": 50, "overall": 50}},
+    {"date": "2000-01-02", "page_id": "fixture-2", "metrics": {"energy": 50, "focus": 50, "output": 50, "overall": 50}}
+  ]
+}

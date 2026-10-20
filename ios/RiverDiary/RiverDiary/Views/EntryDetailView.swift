@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct EntryDetailView: View {
+    @Environment(\.riverTheme) private var theme
     let entry: DiaryEntry
     @State private var section: DetailSection = .overview
 
@@ -41,25 +42,25 @@ struct EntryDetailView: View {
             .padding(16)
             .padding(.bottom, 20)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(theme.canvas)
         .navigationTitle(entry.shortDate)
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var header: some View {
-        GlassCard {
+        RiverIOSPanel {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text(entry.entryDate, style: .date)
                         .font(.title3.weight(.bold))
                     Spacer()
                     Text(entry.score.map { String(format: "%.0f", $0) } ?? "—")
-                        .font(.system(size: 38, weight: .bold, design: .rounded))
+                        .font(.largeTitle.weight(.bold))
                         .foregroundStyle(entry.stageColor)
                 }
                 Text("\(entry.stageLabel) · 成长 \(Int(entry.metrics?.growth ?? 0))")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryInk)
 
                 if let tags = entry.tags, !tags.isEmpty {
                     HStack(spacing: 7) {
@@ -68,7 +69,7 @@ struct EntryDetailView: View {
                                 .font(.caption2.weight(.medium))
                                 .padding(.horizontal, 9)
                                 .padding(.vertical, 5)
-                                .background(.quaternary.opacity(0.6), in: .capsule)
+                                .background(theme.raisedSurface.opacity(0.9), in: .capsule)
                         }
                     }
                 }
@@ -78,7 +79,7 @@ struct EntryDetailView: View {
     }
 
     private var overview: some View {
-        GlassCard {
+        RiverIOSPanel {
             Text(entry.overview ?? "这一天没有概览。")
                 .font(.callout)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -86,10 +87,10 @@ struct EntryDetailView: View {
     }
 
     private var thoughts: some View {
-        GlassCard {
+        RiverIOSPanel {
             VStack(alignment: .leading, spacing: 14) {
                 if (entry.thoughts ?? []).isEmpty && (entry.memos ?? []).isEmpty {
-                    Text("没有想法记录。").foregroundStyle(.secondary)
+                    Text("没有想法记录。").foregroundStyle(theme.secondaryInk)
                 }
                 ForEach(entry.thoughts ?? [], id: \.self) { thought in
                     Label {
@@ -110,28 +111,28 @@ struct EntryDetailView: View {
     }
 
     private var activity: some View {
-        GlassCard {
+        RiverIOSPanel {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach(entry.activities ?? []) { group in
                     VStack(alignment: .leading, spacing: 8) {
                         Text(group.subtitle).font(.headline)
                         ForEach(group.items, id: \.self) { item in
                             HStack(alignment: .top, spacing: 8) {
-                                Circle().fill(.indigo).frame(width: 5, height: 5).padding(.top, 7)
+                                Circle().fill(theme.accent).frame(width: 5, height: 5).padding(.top, 7)
                                 Text(item).font(.callout)
                             }
                         }
                     }
                 }
                 if (entry.activities ?? []).isEmpty {
-                    Text("没有事项记录。").font(.callout).foregroundStyle(.secondary)
+                    Text("没有事项记录。").font(.callout).foregroundStyle(theme.secondaryInk)
                 }
             }
         }
     }
 
     private var dataSection: some View {
-        GlassCard {
+        RiverIOSPanel {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(spacing: 10) {
                     dataStat("屏幕", value: entry.screenHours.map { String(format: "%.1f 小时", $0) } ?? "—")
@@ -143,7 +144,7 @@ struct EntryDetailView: View {
                     Text("常用应用").font(.headline)
                     let apps = (entry.screenApps ?? []).prefix(6)
                     if apps.isEmpty {
-                        Text("没有屏幕数据。").font(.callout).foregroundStyle(.secondary)
+                        Text("没有屏幕数据。").font(.callout).foregroundStyle(theme.secondaryInk)
                     } else {
                         ForEach(Array(apps)) { app in
                             VStack(alignment: .leading, spacing: 6) {
@@ -151,11 +152,11 @@ struct EntryDetailView: View {
                                     Text(app.app)
                                     Spacer()
                                     Text(app.time ?? "\(app.resolvedMinutes)m")
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(theme.secondaryInk)
                                 }
                                 .font(.footnote)
                                 ProgressView(value: Double(app.resolvedMinutes), total: Double(max(240, app.resolvedMinutes)))
-                                    .tint(.indigo)
+                                    .tint(theme.accent)
                             }
                         }
                     }
@@ -173,7 +174,7 @@ struct EntryDetailView: View {
                                 Spacer()
                                 Text("\(site.count) 次")
                                     .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(theme.secondaryInk)
                             }
                         }
                     }
@@ -191,17 +192,17 @@ struct EntryDetailView: View {
     }
 
     private var plan: some View {
-        GlassCard {
+        RiverIOSPanel {
             VStack(alignment: .leading, spacing: 14) {
                 Text(entry.plan?.isEmpty == true ? "没有明日计划。" : (entry.plan ?? "没有明日计划。"))
                     .font(.callout)
-                    .foregroundStyle(entry.plan == nil || entry.plan?.isEmpty == true ? .secondary : .primary)
+                    .foregroundStyle(entry.plan == nil || entry.plan?.isEmpty == true ? theme.secondaryInk : theme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 if let buddy = entry.workBuddy, !buddy.isEmpty {
                     Label(buddy, systemImage: "person.2")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryInk)
                 }
             }
         }
@@ -211,20 +212,20 @@ struct EntryDetailView: View {
         HStack {
             Text(title)
                 .font(.footnote.weight(.medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryInk)
             Spacer()
             Text(value)
                 .font(.footnote.weight(.semibold))
                 .monospacedDigit()
         }
         .padding(12)
-        .background(.quaternary.opacity(0.45), in: .rect(cornerRadius: 14, style: .continuous))
+        .background(theme.raisedSurface.opacity(0.6), in: .rect(cornerRadius: theme.chipRadius, style: .continuous))
     }
 
     private func noteBlock(_ title: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title).font(.headline)
-            Text(text).font(.callout).foregroundStyle(.secondary)
+            Text(text).font(.callout).foregroundStyle(theme.secondaryInk)
                         }
     }
 }

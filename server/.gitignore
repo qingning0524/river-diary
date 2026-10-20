@@ -1,0 +1,7 @@
+.env
+*.pem
+*.p8
+dist/
+admin-ui/node_modules/
+/internal/adminui/generated/*
+!/internal/adminui/generated/.gitkeep

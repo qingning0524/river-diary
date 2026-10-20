@@ -77,9 +77,11 @@ struct SidebarDateNavigator: View {
 
     var body: some View {
         HStack(spacing: AppSpacing.xs) {
+            // 换日快捷键收敛到菜单里的 ⌘[ / ⌘]（见 AppCommands）。
+            // 之前 ⌘←/⌘→ 作为按钮 key equivalent 是全局的，会劫持
+            // 文本编辑器里"光标移到行首/行尾"的标准操作。
             chevronButton("chevron.left", action: { context.moveDay(-1) })
-                .keyboardShortcut(.leftArrow, modifiers: .command)
-                .help("前一天 (⌘←)")
+                .help("前一天 (⌘[)")
                 .accessibilityLabel("前一天")
 
             Button { showsCalendar.toggle() } label: {
@@ -117,9 +119,8 @@ struct SidebarDateNavigator: View {
             }
 
             chevronButton("chevron.right", action: { context.moveDay(1) })
-                .keyboardShortcut(.rightArrow, modifiers: .command)
                 .disabled(!context.canMoveForward)
-                .help("下一天 (⌘→)")
+                .help("下一天 (⌘])")
                 .accessibilityLabel("下一天")
 
             if !context.isToday {

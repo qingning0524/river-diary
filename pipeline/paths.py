@@ -3,6 +3,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+WEB_PREVIEW_DIR = ROOT / "web-preview"
 IOS_DATA = ROOT / "ios/RiverDiary/RiverDiary/Resources/data.json"
 RAW_DATA = ROOT / "data/raw.json"
 WEB_DATA = ROOT / "data/data.json"

@@ -1,0 +1,88 @@
+{
+  "title": "河流日记 · 手机端十版 UI 草图",
+  "date": "2026-10-02",
+  "status": "Design exploration only",
+  "sample_content": true,
+  "variants": [
+    {
+      "id": "01",
+      "name": "河流手记",
+      "direction": "文学手记 · 章节式日常",
+      "html": "variant-01.html",
+      "image": "variant-01.png",
+      "screens": 2
+    },
+    {
+      "id": "02",
+      "name": "城市漫游",
+      "direction": "地图优先 · 地点与故事",
+      "html": "variant-02.html",
+      "image": "variant-02.png",
+      "screens": 2
+    },
+    {
+      "id": "03",
+      "name": "时光胶片",
+      "direction": "深色胶片 · 影像生活",
+      "html": "variant-03.html",
+      "image": "variant-03.png",
+      "screens": 2
+    },
+    {
+      "id": "04",
+      "name": "轻盈日常",
+      "direction": "清晰平面 · 连续生活流",
+      "html": "variant-04.html",
+      "image": "variant-04.png",
+      "screens": 2
+    },
+    {
+      "id": "05",
+      "name": "生活星图",
+      "direction": "安静星图 · 记忆关联",
+      "html": "variant-05.html",
+      "image": "variant-05.png",
+      "screens": 2
+    },
+    {
+      "id": "06",
+      "name": "日子花园",
+      "direction": "自然气息 · 生活章节",
+      "html": "variant-06.html",
+      "image": "variant-06.png",
+      "screens": 2
+    },
+    {
+      "id": "07",
+      "name": "生活周刊",
+      "direction": "私人周刊 · 每日与每周",
+      "html": "variant-07.html",
+      "image": "variant-07.png",
+      "screens": 2
+    },
+    {
+      "id": "08",
+      "name": "潮汐时钟",
+      "direction": "时间节奏 · 一天潮汐",
+      "html": "variant-08.html",
+      "image": "variant-08.png",
+      "screens": 2
+    },
+    {
+      "id": "09",
+      "name": "随身剪贴簿",
+      "direction": "纸张收藏 · 照片与短句",
+      "html": "variant-09.html",
+      "image": "variant-09.png",
+      "screens": 2
+    },
+    {
+      "id": "10",
+      "name": "纯净生活",
+      "direction": "双栏片段 · 上下文理解",
+      "html": "variant-10.html",
+      "image": "variant-10.png",
+      "screens": 2
+    }
+  ]
+}

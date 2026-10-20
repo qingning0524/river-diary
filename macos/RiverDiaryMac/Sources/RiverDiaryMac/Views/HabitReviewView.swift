@@ -7,18 +7,27 @@ import RiverDiaryCore
 // 卡片展示观察与来源，始终提供自由输入，模型生成的快捷回复仅作提示。
 // 用户明确确认规则后才保存；宽窗右侧展开来源，规则可在本页撤销。
 
+enum HabitReviewPresentation: Equatable {
+    case habits
+    case confirmations
+}
+
 struct HabitReviewView: View {
     @Environment(\.riverDensity) private var density
     @ObservedObject var habit: HabitReviewStore
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore = AIAssistantStore()
     var onOpenTimeline: () -> Void = {}
+    var onOpenConfirmations: () -> Void = {}
+    var onRevealConfirmation: (RiverSharedStateRecord) -> Void = { _ in }
+    var presentation: HabitReviewPresentation = .habits
     /// 离屏渲染（ImageRenderer）不触发 onAppear，入场动画会把初态的透明内容拍下来；
     /// 渲染测试传 false 直接取最终状态。
     var animatesEntrance = true
 
     @State private var evidenceCardID: UUID?
     @State private var confirmationCorrections: [UUID: String] = [:]
+    @State private var showingLocationCorrectionIDs = Set<UUID>()
 
     /// 依据栏出现的最小内容宽度（主列 + 间距 + 栏宽）。
     private let railWidth: CGFloat = 280
@@ -34,13 +43,18 @@ struct HabitReviewView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let showsRail = geometry.size.width >= 980 + railWidth + AppSpacing.panelGap
+            let isConfirmationCenter = presentation == .confirmations
+            let showsRail = !isConfirmationCenter && geometry.size.width >= 980 + railWidth + AppSpacing.panelGap
             RiverPage(maxWidth: showsRail ? 980 + railWidth + AppSpacing.panelGap : AppLayout.contentMaxWidth) {
                 PageHeader(
-                    "习惯回顾",
-                    context: "我会结合每天的记录，慢慢学会怎样更懂你。"
+                    isConfirmationCenter ? "由你确认，才算记住。" : "习惯回顾",
+                    context: isConfirmationCenter
+                        ? "时间片、地点和习惯线索都在这里。确认或纠正后，才会成为可信记忆。"
+                        : "我会结合每天的记录，慢慢学会怎样更懂你。"
                 ) {
-                    HabitCadenceMenu(store: habit, showsChevron: true)
+                    if !isConfirmationCenter {
+                        HabitCadenceMenu(store: habit, showsChevron: true)
+                    }
                 }
 
                 HStack(alignment: .top, spacing: density.spacing(AppSpacing.panelGap)) {
@@ -54,6 +68,7 @@ struct HabitReviewView: View {
             }
         }
         .task {
+            guard presentation == .habits else { return }
             await habit.evaluateWithAIIfNeeded(ai: ai, allowManualGeneration: true)
             habit.markBatchShownIfFirstOpen()
         }
@@ -64,65 +79,120 @@ struct HabitReviewView: View {
     @ViewBuilder
     private func mainColumn(showsRail: Bool) -> some View {
         VStack(alignment: .leading, spacing: density.spacing(AppSpacing.panelGap)) {
-            if !habit.pendingConfirmations.isEmpty {
+            if presentation == .confirmations && !habit.pendingConfirmations.isEmpty {
                 pendingConfirmationsPanel
             }
-            if let batch = habit.currentBatch, !habit.pendingCards.isEmpty {
-                overviewPanel(batch)
+            if presentation == .confirmations {
+                if let error = habit.lastError {
+                    RiverPanel(title: "这项更改尚未保存", systemImage: "exclamationmark.circle", accent: AppTheme.warning) {
+                        Text(error)
+                            .font(AppTypography.secondary())
+                            .foregroundStyle(Color.secondaryInk)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                if habit.pendingCards.isEmpty && habit.pendingConfirmations.isEmpty {
+                    confirmationsEmptyState
+                }
+                ForEach(Array(habit.pendingCards.enumerated()), id: \.element.id) { index, card in
+                    reviewCard(card, index: index)
+                }
+            } else {
+                if habit.pendingCount + habit.pendingConfirmations.count > 0 {
+                    Button(action: onOpenConfirmations) {
+                        HStack {
+                            Text("有新的观察等你确认").font(AppTypography.rowTitle()).foregroundStyle(Color.ink)
+                            Spacer()
+                            Text("前往待确认 →").font(AppTypography.metadata()).foregroundStyle(AppTheme.accent)
+                        }.padding(18).riverSoftSurface(radius: AppRadius.row)
+                    }.buttonStyle(.plain)
+                }
+                if !rememberedRules.isEmpty || !legacyRules.isEmpty {
+                    rememberedHabitsPanel
+                }
+                if displayedCards.allSatisfy(\.isPending) && rememberedRules.isEmpty && legacyRules.isEmpty {
+                    emptyStatePanel
+                }
+                ForEach(Array(displayedCards.filter { !$0.isPending }.enumerated()), id: \.element.id) { index, card in
+                    reviewCard(card, index: index)
+                }
+                if !showsRail {
+                    HabitRhythmPanel(store: habit)
+                }
             }
-            if !rememberedRules.isEmpty || !legacyRules.isEmpty {
-                rememberedHabitsPanel
-            }
-            if habit.pendingCards.isEmpty {
-                emptyStatePanel
-            }
-
-            ForEach(Array(displayedCards.enumerated()), id: \.element.id) { index, card in
-                entrance(
-                    HabitReviewCardView(
-                        card: card,
-                        positionText: positionText(for: card, index: index),
-                        showsInlineEvidence: evidenceCardID == card.id,
-                        isResponding: habit.respondingCardIDs.contains(card.id),
-                        errorText: habit.lastError,
-                        onSendMessage: { message in
-                            Task { await habit.sendMessage(message, to: card, using: ai) }
-                        },
-                        onAcceptRuleSuggestion: {
-                            if let current = habit.cards.first(where: { $0.id == card.id }) {
-                                habit.acceptRuleSuggestion(for: current)
-                            }
-                        },
-                        onUndo: {
-                            if let current = habit.cards.first(where: { $0.id == card.id }) {
-                                habit.undoAnswer(current)
-                            }
-                        },
-                        onToggleEvidence: {
-                            withAnimation(.easeOut(duration: AppMotion.quick)) {
-                                evidenceCardID = evidenceCardID == card.id ? nil : card.id
-                            }
-                        },
-                        onOpenTimeline: onOpenTimeline
-                    ),
-                    index: min(index + 1, 3)
-                )
-            }
-
             footerNote
-            if !showsRail {
-                HabitRhythmPanel(store: habit)
+        }
+    }
+
+    private func reviewCard(_ card: HabitReviewCard, index: Int) -> some View {
+        entrance(
+            HabitReviewCardView(
+                card: card,
+                positionText: positionText(for: card, index: index),
+                showsInlineEvidence: evidenceCardID == card.id,
+                isResponding: habit.respondingCardIDs.contains(card.id),
+                errorText: habit.lastError,
+                onSendMessage: { message in
+                    Task { await habit.sendMessage(message, to: card, using: ai) }
+                },
+                onAcceptRuleSuggestion: {
+                    if let current = habit.cards.first(where: { $0.id == card.id }) {
+                        habit.acceptRuleSuggestion(for: current)
+                    }
+                },
+                onUndo: {
+                    if let current = habit.cards.first(where: { $0.id == card.id }) {
+                        habit.undoAnswer(current)
+                    }
+                },
+                onToggleEvidence: {
+                    withAnimation(.easeOut(duration: AppMotion.quick)) {
+                        evidenceCardID = evidenceCardID == card.id ? nil : card.id
+                    }
+                },
+                onOpenTimeline: onOpenTimeline
+            ),
+            index: min(index + 1, 3)
+        )
+    }
+
+    private var confirmationsEmptyState: some View {
+        RiverPanel(level: .raised, padding: AppSpacing.panelPadding) {
+            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
+                Label("目前没有待确认项", systemImage: "checkmark.circle")
+                    .font(AppTypography.sectionTitle())
+                    .foregroundStyle(Color.ink)
+                Text("你确认过的事实和 River 的观察会分开保存。有新的线索时，我会留在这里等你判断。")
+                    .font(AppTypography.secondary())
+                    .foregroundStyle(Color.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("回到当天时间线", action: onOpenTimeline)
+                    .linkAction()
+                    .padding(.top, density.spacing(AppSpacing.xs))
             }
         }
     }
 
+    @ViewBuilder
     private var pendingConfirmationsPanel: some View {
-        RiverPanel(title: "需要你确认", systemImage: "questionmark.circle", detail: "地点候选会在多次真实到访后出现；你的决定会同步到另一台设备。", accent: AppTheme.accent) {
-            VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
+        if presentation == .confirmations {
+            LazyVGrid(columns: habit.pendingConfirmations.count == 1
+                      ? [GridItem(.flexible())]
+                      : [GridItem(.adaptive(minimum: 380), spacing: 24, alignment: .top)], alignment: .leading, spacing: 24) {
                 ForEach(habit.pendingConfirmations) { record in
-                    pendingConfirmationRow(record)
-                    if record.id != habit.pendingConfirmations.last?.id {
-                        RiverRule(color: Color.border.opacity(0.6))
+                    RiverPanel(
+                        title: record.pendingConfirmationContent?.targetType == "place" ? "地点线索" : "时间片线索",
+                        systemImage: record.pendingConfirmationContent?.targetType == "place" ? "mappin" : "clock",
+                        detail: "待你确认", accent: AppTheme.warning
+                    ) { pendingConfirmationRow(record) }
+                }
+            }.frame(maxWidth: 960, alignment: .leading)
+        } else {
+            RiverPanel(title: "需要你确认", systemImage: "questionmark.circle", detail: "保留依据，由你确认。", accent: AppTheme.accent) {
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(habit.pendingConfirmations) { record in
+                        pendingConfirmationRow(record)
+                        if record.id != habit.pendingConfirmations.last?.id { RiverRule() }
                     }
                 }
             }
@@ -134,26 +204,84 @@ struct HabitReviewView: View {
         if let content = record.pendingConfirmationContent {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
                 Text(content.question)
-                    .font(AppTypography.rowTitle())
+                    .font(presentation == .confirmations ? AppTypography.sheetTitle() : AppTypography.rowTitle())
                     .foregroundStyle(Color.ink)
                 if !content.detail.isEmpty {
                     Text(content.detail).font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
                 }
-                HStack(spacing: density.spacing(AppSpacing.sm)) {
-                    Button("确认") { resolve(record, as: .confirmed) }
-                        .buttonStyle(.borderedProminent)
-                    Button("不正确") { resolve(record, as: .rejected) }
-                        .buttonStyle(.bordered)
+                if let choices = content.choices, choices.count >= 2 {
+                    Text("选这次停留的商户；在这里做什么会按其他记录判断。")
+                        .font(AppTypography.secondary())
+                        .foregroundStyle(Color.secondaryInk)
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                        ForEach(choices.prefix(4)) { choice in
+                            Button {
+                                resolve(record, as: .corrected, correction: choice.name,
+                                    selectedCandidateID: choice.id)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(choice.name).font(AppTypography.rowTitle())
+                                    if let kind = choice.suggestedKind {
+                                        Text(kind).font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+                                    }
+                                    if choice.distanceMeters.isFinite && choice.distanceMeters >= 0 {
+                                        Text("距定位点约 \(Int(choice.distanceMeters.rounded())) 米")
+                                            .font(AppTypography.metadata())
+                                            .foregroundStyle(Color.tertiaryInk)
+                                    }
+                                    if let address = choice.address, !address.isEmpty {
+                                        Text(address)
+                                            .font(AppTypography.metadata())
+                                            .foregroundStyle(Color.tertiaryInk)
+                                            .lineLimit(2)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, minHeight: AppSpacing.rowHeight, alignment: .leading)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    HStack {
+                        Button("只是路过") { resolve(record, as: .dismissed) }.buttonStyle(.plain)
+                        Spacer()
+                        Button(showingLocationCorrectionIDs.contains(record.id) ? "收起" : "其他地点…") {
+                            if showingLocationCorrectionIDs.contains(record.id) {
+                                showingLocationCorrectionIDs.remove(record.id)
+                            } else {
+                                showingLocationCorrectionIDs.insert(record.id)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    HStack(spacing: density.spacing(AppSpacing.sm)) {
+                        Button("确认") { resolve(record, as: .confirmed) }.primaryCTA()
+                        Button("不正确") { resolve(record, as: .rejected) }.secondaryCTA()
+                    }
                 }
-                HStack(spacing: density.spacing(AppSpacing.sm)) {
-                    TextField("改成自己的地点名称", text: correctionBinding(for: record.id))
-                        .textFieldStyle(.roundedBorder)
-                    Button("保存修改") { resolve(record, as: .corrected) }
-                        .buttonStyle(.bordered)
-                        .disabled((confirmationCorrections[record.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                if presentation == .confirmations {
+                    Button(content.targetType == "place" ? "查看地点候选依据" : "查看原始记录") {
+                        onRevealConfirmation(record)
+                    }
+                    .linkAction()
+                    .font(AppTypography.metadata())
+                    .accessibilityLabel(content.targetType == "place" ? "查看地点候选依据" : "查看这条待确认事项的原始记录")
+                }
+                if (content.choices?.count ?? 0) < 2 || showingLocationCorrectionIDs.contains(record.id) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(content.targetType == "place" ? "更准确的地点" : "补充或纠正")
+                            .font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+                        HStack(alignment: .top, spacing: 12) {
+                            TextField(content.targetType == "place" ? "输入地点名称" : "用自己的话补充", text: correctionBinding(for: record.id), axis: .vertical)
+                                .textFieldStyle(.plain).font(AppTypography.secondary()).lineLimit(1...4)
+                                .padding(12).riverSoftInset()
+                            Button("保存修改") { resolve(record, as: .corrected) }
+                                .secondaryCTA()
+                                .disabled((confirmationCorrections[record.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }.padding(.top, 8)
                 }
             }
-            .padding(.vertical, density.spacing(AppSpacing.xs))
         }
     }
 
@@ -164,8 +292,14 @@ struct HabitReviewView: View {
         )
     }
 
-    private func resolve(_ record: RiverSharedStateRecord, as resolution: RiverPendingConfirmationResolution) {
-        _ = habit.resolvePendingConfirmation(record, as: resolution, correction: confirmationCorrections[record.id])
+    private func resolve(_ record: RiverSharedStateRecord, as resolution: RiverPendingConfirmationResolution,
+                         correction: String? = nil, selectedCandidateID: String? = nil) {
+        if habit.resolvePendingConfirmation(record, as: resolution,
+                                            correction: correction ?? confirmationCorrections[record.id],
+                                            selectedCandidateID: selectedCandidateID) {
+            confirmationCorrections.removeValue(forKey: record.id)
+            showingLocationCorrectionIDs.remove(record.id)
+        }
     }
 
     private var rememberedRules: [HabitPersonalRule] {

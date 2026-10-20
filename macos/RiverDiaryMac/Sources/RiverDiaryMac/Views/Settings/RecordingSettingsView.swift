@@ -10,6 +10,7 @@ struct RecordingSettingsView: View {
     @ObservedObject var activity: ActivityStore
     @ObservedObject var ai: AIAssistantStore
     @ObservedObject var ingestion: DataIngestionStore
+    var onInspectDatabase: (() -> Void)? = nil
     @State private var showsClearActivityConfirmation = false
     @State private var pendingRetentionDays: Int?
 
@@ -20,6 +21,11 @@ struct RecordingSettingsView: View {
             dailyCaptureSection
             footprintSection
             baselineSection
+            if let onInspectDatabase {
+                SettingsGroup(title: "高级数据工具", detail: "按需检查本地记录，不占用日常工作区。") {
+                    Button("查看本地数据库", action: onInspectDatabase).secondaryCTA()
+                }
+            }
         }
         .confirmationDialog("要清除全部实时足迹吗？", isPresented: $showsClearActivityConfirmation, titleVisibility: .visible) {
             Button("清除实时足迹", role: .destructive) { activity.clearActivity() }

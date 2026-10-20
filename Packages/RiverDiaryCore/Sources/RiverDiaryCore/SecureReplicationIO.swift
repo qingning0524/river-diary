@@ -20,7 +20,17 @@ public enum SecureStoreError: Error, Equatable, LocalizedError {
 }
 
 public enum RiverSecureStore {
-    private static let service = "local.riverdiary.node"
+    private static let service = keychainServiceName("local.riverdiary.node")
+
+    /// QA app bundles must never read or overwrite production Keychain items.
+    /// iOS also gets bundle-scoped access groups; macOS uses this namespace
+    /// because its generic-password queries otherwise share the user's login
+    /// Keychain across app bundle identifiers.
+    public static func keychainServiceName(_ baseName: String,
+                                           bundleIdentifier: String? = Bundle.main.bundleIdentifier) -> String {
+        guard bundleIdentifier?.hasSuffix(".qa") == true else { return baseName }
+        return "\(baseName).qa"
+    }
 
     public static func loadOrCreateDeviceID(kind: String) throws -> RiverDeviceID {
         if let saved = try? read(account: "device-id"),

@@ -1,0 +1,154 @@
+{
+  "date": "2026-10-19",
+  "timezone": "Asia/Shanghai",
+  "sourceRoot": "/Users/fa1lingdown/Desktop/河流日记项目",
+  "sourceHEAD": "628aa249931ccba67e3cd07454f349e2baa86f19",
+  "auditWorkspaceHEAD": "2674a6dae80647cd8bc34ec8575ba05bee74e9d2",
+  "warning": "Source contains uncommitted changes. Hashes identify reviewed files; commit alone is insufficient. No private data payload included.",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "db5db5f773651a7b80b145db568df89ab04bb0281665aa97773c39b45f476d98"
+    },
+    {
+      "path": "DESIGN.md",
+      "sha256": "3e92096ec8b14612db542e567f214470ee02f2ec5414f49a5b9ce9c373318bc7"
+    },
+    {
+      "path": "规划.md",
+      "sha256": "6c25826c24a19836a5e20a2dc86050b60316368003573762995866e64aefe97b"
+    },
+    {
+      "path": "ios/BUILD_BASELINE.md",
+      "sha256": "a4eb1e7d9403d5aab6a4ad82e013b78f98fe50cd172a8d116f1c15abaeee07dd"
+    },
+    {
+      "path": "ios/IMPLEMENTATION.md",
+      "sha256": "16ddc6a08fd443435845166e4fb92779eab6d4b68cefa0befe84f1ef34d1418b"
+    },
+    {
+      "path": "macos/RiverDiaryMac/make_app.sh",
+      "sha256": "2e0596bee9efb672b4e0023ccad729b8f65853e52d060980a1251b936c058e30"
+    },
+    {
+      "path": "scripts/launch_mac_qa.sh",
+      "sha256": "3cbd95c392f1b185785c10a69e45d0901998ae4515a7311a6126aa0fd9fd10d8"
+    },
+    {
+      "path": "scripts/test_macos_isolated.sh",
+      "sha256": "2b8704774f2fc92706b2b44a5ea6bb55cc57f05e1750083ef009d1449abaca46"
+    },
+    {
+      "path": "scripts/test_ios_isolated.sh",
+      "sha256": "404b28dd61768c83c25f7e285b61f9c996aaeedee93da88950517c842c975186"
+    },
+    {
+      "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/AccountService.swift",
+      "sha256": "4902f90957dcf9c0425ff40b491d7c0fa48cff6e7d1dc521adbfc1b276c19295"
+    },
+    {
+      "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/SyncCoordinator.swift",
+      "sha256": "e225a8d05b18ecd3908e8c249bebe9f98bf59a3298f42a04acd0b246ff3d7699"
+    },
+    {
+      "path": "Packages/RiverDiaryCore/Sources/RiverDiaryCore/ObservedTimeDistribution.swift",
+      "sha256": "ea9f6a2ab09a817e27814b32cd431615f6904c58b1c75a22c50193802c53725b"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/App/RiverDiaryApp.swift",
+      "sha256": "c0b74498e83d13771ac6b20938b27c9b39056c6285897f1a57085df9a4c61460"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Views/RootView.swift",
+      "sha256": "903dd4afd013b3e8d9a2e973fde2c781f60bdc7dbda1c74f479deadf42b4e6fb"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Infrastructure/AI/IPhoneAIStore.swift",
+      "sha256": "ade82491085d210d3a96b3afb8d94a317957fa9b4d1a08a67805100d87d9326c"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Infrastructure/Sync/RiverNodeStore.swift",
+      "sha256": "179ccf4967b33211a5f28d33a0dc695b55fdf34b17fe164fccff87827bb66633"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Infrastructure/Database/RiverLocalDatabase.swift",
+      "sha256": "a688750ce35073f5738ff943490b6a737d6220dc9af9ee4b321a47b6f01cbca9"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/HealthKitStore.swift",
+      "sha256": "d6f678196f5f445bf4159e6c19241dfa515cf8bbbc3008bf87bf5defad8e4238"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/LogAppActivityIntent.swift",
+      "sha256": "f8bf901bb98dfb3f0bb44e7a7707048c533401250433aa6d833bc4a2a667eb17"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/BackgroundHealthSyncManager.swift",
+      "sha256": "b67df0242bf2574511dfa120479f2e4ab5b0789e36c8f649bac784c205ea7ba5"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/IPhonePhotoAnalyzer.swift",
+      "sha256": "b522e71dd06c0e343e324d5f09f71eaea0cb42b3db2060d4a7850133b8a61f0d"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Views/SettingsView.swift",
+      "sha256": "c95edf262bdc5acf86933d6ffd1ad1ccf0458b22c4ea280fc95bce7d92fbac1f"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Views/AccountViews.swift",
+      "sha256": "bd93e8a1c685c83c6f560536271cbee194f446d14e59ace6385f5dc46166ae45"
+    },
+    {
+      "path": "ios/RiverDiary/RiverDiary/Views/RiverMemoryHomeView.swift",
+      "sha256": "fb4e989ee2f557bda16f15a3c0b6d711d593036b21b10b3d9c813995fbe77245"
+    },
+    {
+      "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/App/RiverDiaryMacApp.swift",
+      "sha256": "1937874eeed536781b03611cc87ce2f4c486605b7631e9c3f66a13666701b4c5"
+    },
+    {
+      "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Infrastructure/QA/MacQAStorageIsolation.swift",
+      "sha256": "6501d1916d3f47ab69f9d2d76695f553a743d1763c419f0963c42124f47d1866"
+    },
+    {
+      "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/AI/AIAssistantStore.swift",
+      "sha256": "f6ab87b63e94bfec82694f48e7826461642b5de80a7b93fe67fe2f1e0954a3fd"
+    },
+    {
+      "path": "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/RiverNavigation.swift",
+      "sha256": "a3bad3a8a39bce7a78c87ad8a75229411ad5c1273be643c0de5921076c35ce28"
+    },
+    {
+      "path": "docs/validation/RELEASE_AUDIT_2026-10-17.md",
+      "sha256": "4a7553e89ab8fa50c9ac63fef8161a706838b60a98d3a8269c28872143ddaeb6"
+    },
+    {
+      "path": "docs/validation/RIVER_DIARY_ACCEPTANCE.md",
+      "sha256": "ffdde9a63a7d2e6727390fe368e306d020481bab4f224315a963e3979a790f94"
+    },
+    {
+      "path": "docs/planning/ACCOUNT_REFACTOR_PLAN.md",
+      "sha256": "ca750289b719e784233fac4c76f21a6f980b3ac914d20991f4d2e5edaa3c7678"
+    },
+    {
+      "path": "docs/planning/IOS_REFACTOR_PLAN.md",
+      "sha256": "01a1dccc434c1a7b05b19e533bf50123350d4ef715ebe79b38e2e03db7467271"
+    },
+    {
+      "path": "docs/planning/MAC_REFACTOR_PLAN.md",
+      "sha256": "7bbd2fef084fbe90a357cb1b1463c4bd98fa8f5d16db3338d5fc0af84da5f454"
+    },
+    {
+      "path": "website/README.md",
+      "sha256": "8f4f1ca1efb7d9244043818a8a9a43e330e48e760d0aab7ec9d7266fceeb3001"
+    },
+    {
+      "path": "website/site/privacy.html",
+      "sha256": "bf5561ead54336c682ac4ed1f7248ed8161c5db66d313ee4e4250231b9a7472b"
+    },
+    {
+      "path": "server/internal/httpapi/email_flow_test.go",
+      "sha256": "d6ac967f32e0435021598db4844777bb58af26a18f2e4f54a610165d5b45a77f"
+    }
+  ]
+}

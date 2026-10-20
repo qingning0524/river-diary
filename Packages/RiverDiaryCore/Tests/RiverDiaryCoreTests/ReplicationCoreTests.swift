@@ -4,6 +4,18 @@ import Testing
 @testable import RiverDiaryCore
 
 struct ReplicationCoreTests {
+    @Test func qaBundleIdentifiersUseIsolatedKeychainServices() {
+        #expect(RiverSecureStore.keychainServiceName(
+            "local.riverdiary.node", bundleIdentifier: "studio.riverdiary.ios.qa"
+        ) == "local.riverdiary.node.qa")
+        #expect(RiverSecureStore.keychainServiceName(
+            "RiverDiaryMac.state", bundleIdentifier: "studio.riverdiary.mac.qa"
+        ) == "RiverDiaryMac.state.qa")
+        #expect(RiverSecureStore.keychainServiceName(
+            "local.riverdiary.node", bundleIdentifier: "local.riverdiary.app"
+        ) == "local.riverdiary.node")
+    }
+
     @Test func syncObjectsEncryptVerifyAndRejectTampering() throws {
         let key = SyncEncryptionKey()
         let original = Data("private river diary event".utf8)
@@ -42,10 +54,24 @@ struct ReplicationCoreTests {
             kind: "manual.note",
             payload: Data("private note".utf8)
         )
+        let legacyJournal = try #require(RiverSharedStateRecord.journalEntry(RiverJournalEntryContent(
+            dayKey: "2026-09-28", body: "legacy diary backup payload",
+            source: "legacy-data.json", updatedAt: Date(timeIntervalSince1970: 90)
+        )))
+        let journalOperation = StateOperation(
+            actorDeviceID: device,
+            originSequence: 1,
+            clock: HybridLogicalClock(physicalMilliseconds: 90_000, deviceID: device),
+            causalFrontier: try InputFrontier(),
+            targetID: legacyJournal.targetID,
+            fieldKey: "record",
+            operationType: "shared.record.upsert",
+            payload: try JSONEncoder().encode(legacyJournal)
+        )
         let backup = RiverNodeBackup(
             sourceDeviceID: device,
             events: [event],
-            stateOperations: [],
+            stateOperations: [journalOperation],
             artifactRevisions: [],
             deviceRegistrations: []
         )
@@ -70,9 +96,26 @@ struct ReplicationCoreTests {
             encoder.encode(backup), id: "local-backup-test", kind: "local_backup", using: key
         )
         #expect(encrypted.ciphertext.range(of: Data("private note".utf8)) == nil)
+        #expect(encrypted.ciphertext.range(of: Data("legacy diary backup payload".utf8)) == nil)
         let restored = try JSONDecoder().decode(RiverNodeBackup.self, from: encrypted.open(using: transferredKey))
         #expect(restored == backup)
+        let restoredJournal = try JSONDecoder().decode(
+            RiverSharedStateRecord.self, from: restored.stateOperations[0].payload
+        )
+        #expect(restoredJournal.journalEntryContent?.body == "legacy diary backup payload")
         #expect(throws: Error.self) { try encrypted.open(using: SyncEncryptionKey()) }
+    }
+
+    @Test func coordinatedFileIOReadsAndAtomicallyWritesSelectedFiles() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("river-coordinated-io-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("RiverDiary.riverbackup")
+        let contents = Data("coordinated backup payload".utf8)
+
+        try CoordinatedFileIO.writeAtomically(contents, to: file)
+
+        #expect(try CoordinatedFileIO.read(file) == contents)
     }
 
     @Test func sequenceScanKeepsHighestSeparateFromContiguousWatermark() {
@@ -309,6 +352,168 @@ struct ReplicationCoreTests {
         #expect(sessions[1].end == nil)
     }
 
+    @Test func sessionBuilderIgnoresNonAppEventsWhenResolvingOpenSessions() throws {
+        let phone = RiverDeviceID(rawValue: "iphone_a")
+        let opened = RiverEvent(
+            originDeviceID: phone,
+            originSequence: 1,
+            observedAt: Date(timeIntervalSince1970: 100),
+            source: "shortcuts",
+            kind: "app.opened",
+            payload: try JSONEncoder().encode(RiverEventPayload(appName: "Safari", bundleID: "com.apple.mobilesafari"))
+        )
+        let location = RiverEvent(
+            originDeviceID: phone,
+            originSequence: 2,
+            observedAt: Date(timeIntervalSince1970: 10_900),
+            source: "core_location",
+            kind: "location.visit.arrival",
+            payload: try JSONEncoder().encode(RiverEventPayload(latitude: 37.0, longitude: -122.0))
+        )
+
+        let session = try #require(SessionBuilder.build([opened, location]).first)
+        #expect(session.end == nil)
+        #expect(session.endReason == .stillOpen)
+    }
+
+    @Test func sessionBuilderResultsCanBeRebuiltIndependentlyPerDevice() throws {
+        let phone = RiverDeviceID(rawValue: "iphone_a")
+        let mac = RiverDeviceID(rawValue: "mac_b")
+        func event(_ device: RiverDeviceID, _ sequence: UInt64, _ time: TimeInterval,
+                   _ kind: String, _ app: String) throws -> RiverEvent {
+            RiverEvent(
+                originDeviceID: device,
+                originSequence: sequence,
+                observedAt: Date(timeIntervalSince1970: time),
+                source: "shortcuts",
+                kind: kind,
+                payload: try JSONEncoder().encode(RiverEventPayload(appName: app, bundleID: app.lowercased()))
+            )
+        }
+        let events = [
+            try event(phone, 1, 100, "app.opened", "Safari"),
+            try event(phone, 2, 200, "app.closed", "Safari"),
+            try event(mac, 1, 150, "app.opened", "Xcode"),
+            try event(mac, 2, 500, "app.opened", "Notes"),
+        ]
+        let combined = SessionBuilder.build(events)
+        let byDevice = [phone, mac].flatMap { device in
+            SessionBuilder.build(events.filter { $0.originDeviceID == device })
+        }.sorted {
+            if $0.start != $1.start { return $0.start < $1.start }
+            return $0.id < $1.id
+        }
+
+        #expect(combined == byDevice)
+    }
+
+    @Test func sessionBuilderAppendsMonotonicTailEquivalentToFullRebuild() throws {
+        let phone = RiverDeviceID(rawValue: "iphone_a")
+        func event(_ sequence: UInt64, _ time: TimeInterval, _ kind: String, _ app: String) throws -> RiverEvent {
+            RiverEvent(
+                originDeviceID: phone,
+                originSequence: sequence,
+                observedAt: Date(timeIntervalSince1970: time),
+                source: "shortcuts",
+                kind: kind,
+                payload: try JSONEncoder().encode(RiverEventPayload(appName: app, bundleID: app.lowercased()))
+            )
+        }
+        let first = try event(1, 100, "app.opened", "Safari")
+        let tail = [
+            try event(2, 102, "app.opened", "Safari"),
+            try event(3, 10_900, "app.opened", "Xcode"),
+            try event(4, 10_960, "app.closed", "Xcode"),
+        ]
+        let initial = SessionBuilder.snapshot([first], for: phone)
+        let incremental = try #require(SessionBuilder.appending(tail, to: initial))
+        let rebuilt = SessionBuilder.snapshot([first] + tail, for: phone)
+        var merged = Dictionary(uniqueKeysWithValues: initial.sessions.map { ($0.id, $0) })
+        for session in incremental.changedSessions { merged[session.id] = session }
+        let incrementallyRebuilt = RiverSessionProjectionSnapshot(
+            deviceID: phone,
+            sessions: merged.values.sorted { $0.start < $1.start },
+            activeSession: incremental.activeSession,
+            lastSessionSequence: incremental.lastSessionSequence,
+            latestSessionObservedAt: incremental.latestSessionObservedAt
+        )
+
+        #expect(incrementallyRebuilt == rebuilt)
+        #expect(incremental.changedSessions.first { $0.displayName == "Safari" }?.endReason == .durationCapped)
+        #expect(incremental.changedSessions.first { $0.displayName == "Safari" }?.evidenceEventIDs.count == 3)
+        #expect(incremental.changedSessions.first { $0.displayName == "Xcode" }?.endReason == .observedClose)
+    }
+
+    @Test func sessionBuilderRejectsOutOfOrderTailForFullRebuild() throws {
+        let phone = RiverDeviceID(rawValue: "iphone_a")
+        let first = RiverEvent(
+            originDeviceID: phone,
+            originSequence: 2,
+            observedAt: Date(timeIntervalSince1970: 100),
+            source: "shortcuts",
+            kind: "app.opened",
+            payload: try JSONEncoder().encode(RiverEventPayload(appName: "Safari", bundleID: "com.apple.mobilesafari"))
+        )
+        let late = RiverEvent(
+            originDeviceID: phone,
+            originSequence: 3,
+            observedAt: Date(timeIntervalSince1970: 90),
+            source: "shortcuts",
+            kind: "app.closed",
+            payload: try JSONEncoder().encode(RiverEventPayload(appName: "Safari", bundleID: "com.apple.mobilesafari"))
+        )
+        let snapshot = SessionBuilder.snapshot([first], for: phone)
+
+        #expect(SessionBuilder.appending([late], to: snapshot) == nil)
+    }
+
+    @Test func incrementalProjectionKeepsOpenStateBehindItsCappedDisplayRow() throws {
+        let phone = RiverDeviceID(rawValue: "iphone_a")
+        func event(_ sequence: UInt64, _ time: TimeInterval, _ kind: String,
+                   _ payload: RiverEventPayload) throws -> RiverEvent {
+            RiverEvent(originDeviceID: phone, originSequence: sequence,
+                       observedAt: Date(timeIntervalSince1970: time), source: "test", kind: kind,
+                       payload: try JSONEncoder().encode(payload))
+        }
+        let opened = try event(1, 100, "app.opened", RiverEventPayload(appName: "Safari", bundleID: "com.apple.mobilesafari"))
+        let boundary = try event(2, 10_900, "app.session", RiverEventPayload(
+            appName: "Console", bundleID: "com.apple.console",
+            sessionEnd: Date(timeIntervalSince1970: 10_930)
+        ))
+        let nextOpen = try event(3, 10_960, "app.opened", RiverEventPayload(appName: "Xcode", bundleID: "com.apple.dt.Xcode"))
+
+        let first = SessionBuilder.snapshot([opened], for: phone)
+        let afterBoundary = try #require(SessionBuilder.appending([boundary], to: first))
+        var afterBoundarySessions = Dictionary(uniqueKeysWithValues: first.sessions.map { ($0.id, $0) })
+        for session in afterBoundary.changedSessions { afterBoundarySessions[session.id] = session }
+        #expect(afterBoundarySessions["session:\(opened.id.uuidString.lowercased())"]?.endReason == .durationCapped)
+        #expect(afterBoundary.activeSession?.id == "session:\(opened.id.uuidString.lowercased())")
+        let cappedSnapshot = RiverSessionProjectionSnapshot(
+            deviceID: phone,
+            sessions: Array(afterBoundarySessions.values),
+            activeSession: afterBoundary.activeSession,
+            lastSessionSequence: afterBoundary.lastSessionSequence,
+            latestSessionObservedAt: afterBoundary.latestSessionObservedAt
+        )
+        let incrementallyUpdated = try #require(SessionBuilder.appending([nextOpen], to: cappedSnapshot))
+        let fullyRebuilt = SessionBuilder.snapshot([opened, boundary, nextOpen], for: phone)
+        var finalSessions = afterBoundarySessions
+        for session in incrementallyUpdated.changedSessions { finalSessions[session.id] = session }
+        let incrementallyRebuilt = RiverSessionProjectionSnapshot(
+            deviceID: phone,
+            sessions: finalSessions.values.sorted {
+                if $0.start != $1.start { return $0.start < $1.start }
+                return $0.id < $1.id
+            },
+            activeSession: incrementallyUpdated.activeSession,
+            lastSessionSequence: incrementallyUpdated.lastSessionSequence,
+            latestSessionObservedAt: incrementallyUpdated.latestSessionObservedAt
+        )
+
+        #expect(incrementallyRebuilt == fullyRebuilt)
+        #expect(finalSessions["session:\(opened.id.uuidString.lowercased())"]?.evidenceEventIDs.contains(nextOpen.id) == true)
+    }
+
     @Test func sessionBuilderUsesObservedCloseAndMacSessionBoundary() throws {
         let phone = RiverDeviceID(rawValue: "iphone_a")
         let mac = RiverDeviceID(rawValue: "mac_b")
@@ -441,6 +646,29 @@ struct ReplicationCoreTests {
             highPriority, at: try InputFrontier(sequences: [device.rawValue: 5], operationSequences: [device.rawValue: 2]),
             pipelineVersion: "1", requestFingerprint: "snapshot-hash"
         ))
+
+        let changedFrontier = try InputFrontier(sequences: [device.rawValue: 5], operationSequences: [device.rawValue: 2])
+        let interruptedDailyReview = RiverAnalysisJob(
+            id: UUID(), logicalKey: "daily-review:2026-09-28", artifactType: .dailyReview,
+            inputFrontier: frontier, status: .running, originDeviceID: device,
+            pipelineVersion: "1.0|network|model|endpoint", promptVersion: "1",
+            requestSnapshot: snapshot, requestFingerprint: "snapshot-hash"
+        )
+        #expect(RiverAnalysisJobScheduler.needsCurrentInputRebuild(
+            [interruptedDailyReview], logicalKey: interruptedDailyReview.logicalKey,
+            currentFrontier: changedFrontier, pipelineVersion: interruptedDailyReview.pipelineVersion,
+            hasCurrentArtifact: false
+        ))
+        #expect(!RiverAnalysisJobScheduler.needsCurrentInputRebuild(
+            [interruptedDailyReview], logicalKey: interruptedDailyReview.logicalKey,
+            currentFrontier: changedFrontier, pipelineVersion: interruptedDailyReview.pipelineVersion,
+            hasCurrentArtifact: true
+        ))
+        #expect(!RiverAnalysisJobScheduler.needsCurrentInputRebuild(
+            [interruptedDailyReview], logicalKey: interruptedDailyReview.logicalKey,
+            currentFrontier: changedFrontier, pipelineVersion: "new-pipeline",
+            hasCurrentArtifact: false
+        ))
     }
 
     @Test func artifactResolverDoesNotUseProviderOrModelAsArtifactIdentity() throws {
@@ -501,22 +729,133 @@ struct ReplicationCoreTests {
         #expect(RiverStateOperationFreshness.changesAnalyticalState(operation(answeredCard, sequence: 2)))
     }
 
+    @Test func deletedSharedMemoryOutranksConcurrentGeneratedCandidate() throws {
+        let device = RiverDeviceID(rawValue: "iphone_memory_delete")
+        let frontier = try InputFrontier()
+        let id = UUID(uuidString: "00000000-0000-0000-0000-000000000777")!
+        let candidate = RiverSharedStateRecord(
+            id: id, kind: .memory, status: "candidate", logicalKey: id.uuidString.lowercased(),
+            payloadJSON: "{\"title\":\"River 记忆候选\",\"body\":\"candidate\"}",
+            createdAt: Date(timeIntervalSince1970: 10), updatedAt: Date(timeIntervalSince1970: 10)
+        )
+        let deleted = RiverSharedStateRecord(
+            id: id, kind: .memory, status: "deleted", logicalKey: candidate.logicalKey,
+            payloadJSON: candidate.payloadJSON,
+            createdAt: candidate.createdAt, updatedAt: Date(timeIntervalSince1970: 20)
+        )
+        func operation(_ record: RiverSharedStateRecord, sequence: UInt64) throws -> StateOperation {
+            StateOperation(
+                actorDeviceID: device, originSequence: sequence,
+                clock: HybridLogicalClock(physicalMilliseconds: sequence, deviceID: device),
+                causalFrontier: frontier, targetID: record.targetID, fieldKey: "record",
+                operationType: "shared.record.upsert", payload: try JSONEncoder().encode(record)
+            )
+        }
+        let generated = try operation(candidate, sequence: 1)
+        let deletion = try operation(deleted, sequence: 2)
+        let key = "\(candidate.targetID)\u{1f}record"
+
+        for operations in [[generated, deletion], [deletion, generated]] {
+            let current = try #require(StateOperationResolver.resolve(operations).currentByField[key])
+            let record = try JSONDecoder().decode(RiverSharedStateRecord.self, from: current.payload)
+            #expect(record.status == "deleted")
+        }
+        #expect(RiverStateOperationFreshness.changesAnalyticalState(deletion))
+    }
+
+    @Test func explicitUserReopenOutranksThePreviouslyAnsweredQuestion() throws {
+        let device = RiverDeviceID(rawValue: "iphone_question_reopen")
+        let frontier = try InputFrontier()
+        let createdAt = Date(timeIntervalSince1970: 10)
+        let questionContent = RiverPendingConfirmationContent(
+            title: "时间线理解", question: "这段记录通常代表什么？", candidate: "写作"
+        )
+        let questionPayload = String(decoding: try JSONEncoder().encode(questionContent), as: UTF8.self)
+        let pending = RiverSharedStateRecord(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000779")!,
+            kind: .pendingConfirmation, status: "pending", logicalKey: "question:reopen",
+            payloadJSON: questionPayload, createdAt: createdAt, updatedAt: createdAt
+        )
+        let answered = try #require(pending.resolving(.confirmed, at: Date(timeIntervalSince1970: 20)))
+        let reopened = try #require(answered.reopened(at: Date(timeIntervalSince1970: 30)))
+        func operation(_ record: RiverSharedStateRecord, sequence: UInt64) throws -> StateOperation {
+            StateOperation(
+                actorDeviceID: device, originSequence: sequence,
+                clock: HybridLogicalClock(physicalMilliseconds: sequence, deviceID: device),
+                causalFrontier: frontier, targetID: record.targetID, fieldKey: "record",
+                operationType: "shared.record.upsert", payload: try JSONEncoder().encode(record)
+            )
+        }
+        let resolvedOperation = try operation(answered, sequence: 1)
+        let reopenedOperation = try operation(reopened, sequence: 2)
+        let reanswered = try #require(reopened.resolving(.corrected, correction: "阅读", at: Date(timeIntervalSince1970: 40)))
+        let reansweredOperation = try operation(reanswered, sequence: 3)
+        let key = "\(pending.targetID)\u{1f}record"
+        for operations in [[resolvedOperation, reopenedOperation], [reopenedOperation, resolvedOperation]] {
+            let current = try #require(StateOperationResolver.resolve(operations).currentByField[key])
+            let record = try JSONDecoder().decode(RiverSharedStateRecord.self, from: current.payload)
+            #expect(record.status == "pending")
+            #expect(record.pendingConfirmationContent?.userReopenedAt != nil)
+        }
+        let finalQuestion = try #require(StateOperationResolver.resolve([
+            resolvedOperation, reopenedOperation, reansweredOperation
+        ]).currentByField[key])
+        #expect(try JSONDecoder().decode(RiverSharedStateRecord.self, from: finalQuestion.payload).status == "corrected")
+        #expect(RiverStateOperationFreshness.changesAnalyticalState(reopenedOperation))
+
+        let answeredHabit = RiverSharedStateRecord(
+            id: UUID(), kind: .habitCard, status: "answered", logicalKey: "habit:reopen",
+            payloadJSON: "{\"answerKind\":\"longTermRule\"}", createdAt: createdAt, updatedAt: createdAt
+        )
+        let reopenedHabit = RiverSharedStateRecord(
+            id: answeredHabit.id, kind: .habitCard, status: "shown", logicalKey: answeredHabit.logicalKey,
+            payloadJSON: "{\"userReopenedAt\":\"1970-01-01T00:00:30Z\"}",
+            createdAt: createdAt, updatedAt: Date(timeIntervalSince1970: 30)
+        )
+        let answeredHabitOperation = try operation(answeredHabit, sequence: 3)
+        let reopenedHabitOperation = try operation(reopenedHabit, sequence: 4)
+        let reansweredHabit = RiverSharedStateRecord(
+            id: answeredHabit.id, kind: .habitCard, status: "answered", logicalKey: answeredHabit.logicalKey,
+            payloadJSON: "{\"answerKind\":\"conversation\",\"userReopenedAt\":\"1970-01-01T00:00:30Z\"}",
+            createdAt: createdAt, updatedAt: Date(timeIntervalSince1970: 40)
+        )
+        let reansweredHabitOperation = try operation(reansweredHabit, sequence: 5)
+        let habitKey = "\(answeredHabit.targetID)\u{1f}record"
+        let currentHabit = try #require(StateOperationResolver.resolve([
+            answeredHabitOperation, reopenedHabitOperation, reansweredHabitOperation
+        ]).currentByField[habitKey])
+        #expect(try JSONDecoder().decode(RiverSharedStateRecord.self, from: currentHabit.payload).status == "answered")
+        #expect(RiverStateOperationFreshness.changesAnalyticalState(reopenedHabitOperation))
+    }
+
     @Test func placeConfirmationIsStableAndUserResolutionChangesAnalyticalState() throws {
         let firstSeen = Date(timeIntervalSince1970: 1_700_000_000)
+        // 新判定门槛：停留 ≥180 秒、≥2 个商户候选、最近候选 ≤120m
+        // 且与次近差距 ≤ max(45, 最近水平精度×0.6)。
+        let closest = RiverPlaceCandidate(
+            name: "长宁图书馆", address: "上海市长宁区", category: "library", provider: "MapKit",
+            resultIdentifier: "map-item-1", distanceMeters: 30, horizontalAccuracyMeters: 50
+        )
+        let next = RiverPlaceCandidate(
+            name: "隔壁咖啡馆", address: "上海市长宁区", category: "cafe", provider: "MapKit",
+            resultIdentifier: "map-item-2", distanceMeters: 75, horizontalAccuracyMeters: 50
+        )
         let place = RiverPlace(
             id: "place:stable-first-event", latitude: 31.2, longitude: 121.4, radiusMeters: 20,
             mapName: "长宁图书馆", mapAddress: "上海市长宁区", poiCategory: "library",
             mapProvider: "MapKit", mapResultIdentifier: "map-item-1", userDefinedName: nil,
             semanticType: nil, isUserConfirmed: false, confidence: 0.75,
             firstSeen: firstSeen, lastSeen: firstSeen.addingTimeInterval(86_400),
-            visitCount: 2, totalDurationSeconds: 3_600
+            visitCount: 2, totalDurationSeconds: 3_600,
+            mapCandidates: [next, closest]
         )
 
         let pending = try #require(RiverSharedStateRecord.placeCandidate(place))
         let repeated = try #require(RiverSharedStateRecord.placeCandidate(place))
         #expect(pending == repeated)
         #expect(pending.targetID == "user-record:pendingConfirmation:\(pending.id.uuidString.lowercased())")
-        #expect(pending.pendingConfirmationContent?.question == "这里是「长宁图书馆」吗？")
+        #expect(pending.pendingConfirmationContent?.question == "附近有几家商户，选一个最符合的就行。")
+        #expect(pending.pendingConfirmationContent?.candidate == "长宁图书馆")
         #expect(RiverSharedStateRecord.placeCandidate(RiverPlace(
             id: "one-visit", latitude: 31.2, longitude: 121.4, radiusMeters: 20,
             mapName: "长宁图书馆", mapAddress: nil, poiCategory: "library", mapProvider: "MapKit",

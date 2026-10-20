@@ -1,0 +1,591 @@
+{
+  "schemaVersion": 1,
+  "status": "runtime_v1_implemented_reference_catalog",
+  "runtimeSource": "ios/RiverDiary/RiverDiary/Managers/RiverThemeStore.swift",
+  "scope": "iOS",
+  "defaultPreferences": {
+    "schemaVersion": 1,
+    "themeID": "river_journal",
+    "appearance": "system"
+  },
+  "appearanceOptions": [
+    "system",
+    "light",
+    "dark"
+  ],
+  "coreNavigationProposal": [
+    "today",
+    "footprints",
+    "river",
+    "me"
+  ],
+  "referencePackage": "river-mobile-ten-designs.zip",
+  "sharedRules": {
+    "minimumTapTargetPt": 44,
+    "bodyBaseFontPt": 16,
+    "secondaryBaseFontPt": 13,
+    "themeTransitionMs": 180,
+    "reduceMotionTransitionMs": 0,
+    "requiresNetworkToApply": false,
+    "preferenceScope": "device",
+    "decorativeContinuousAnimation": false,
+    "maximumLivePreviewCount": 1
+  },
+  "themes": [
+    {
+      "id": "river_journal",
+      "order": 1,
+      "name": "河流手记",
+      "version": 1,
+      "referencePng": "variant-01.png",
+      "referenceAppearance": "light",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "serif",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "chapter_journal",
+      "panelRadiusPt": 8,
+      "palettes": {
+        "light": {
+          "canvas": "#F5F0E5",
+          "surface": "#FFFDF7",
+          "ink": "#213F32",
+          "secondaryInk": "#52684F",
+          "accent": "#2B5140",
+          "onAccent": "#FFFFFF",
+          "raisedSurface": "#FFFEFA",
+          "separator": "#CFD0C5",
+          "accentSoft": "#EEEFE8",
+          "riverSurface": "#F2F3EC",
+          "placeSurface": "#F8F7F1",
+          "noteSurface": "#FEFBF3"
+        },
+        "dark": {
+          "canvas": "#16221B",
+          "surface": "#202D24",
+          "ink": "#E8E4D9",
+          "secondaryInk": "#B2BFA7",
+          "accent": "#A6BE94",
+          "onAccent": "#15221A",
+          "raisedSurface": "#2B372E",
+          "separator": "#515850",
+          "accentSoft": "#2B392D",
+          "riverSurface": "#28362B",
+          "placeSurface": "#253228",
+          "noteSurface": "#253127"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    },
+    {
+      "id": "city_roamer",
+      "order": 2,
+      "name": "城市漫游",
+      "version": 1,
+      "referencePng": "variant-02.png",
+      "referenceAppearance": "light",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "compact_sans",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "map_story",
+      "panelRadiusPt": 18,
+      "palettes": {
+        "light": {
+          "canvas": "#EFF1EC",
+          "surface": "#F9FBF7",
+          "ink": "#202E39",
+          "secondaryInk": "#596D72",
+          "accent": "#265EE1",
+          "onAccent": "#FFFFFF",
+          "raisedSurface": "#FBFDFA",
+          "separator": "#CACECC",
+          "accentSoft": "#E8EEF5",
+          "riverSurface": "#ECF2F6",
+          "placeSurface": "#F2F6F6",
+          "noteSurface": "#F8F9F3"
+        },
+        "dark": {
+          "canvas": "#101C26",
+          "surface": "#182A36",
+          "ink": "#EAF0F4",
+          "secondaryInk": "#A3BAC9",
+          "accent": "#87ACFF",
+          "onAccent": "#10203D",
+          "raisedSurface": "#243540",
+          "separator": "#4D5760",
+          "accentSoft": "#213446",
+          "riverSurface": "#1F3242",
+          "placeSurface": "#1C2F3D",
+          "noteSurface": "#1D2E39"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    },
+    {
+      "id": "time_film",
+      "order": 3,
+      "name": "时光胶片",
+      "version": 1,
+      "referencePng": "variant-03.png",
+      "referenceAppearance": "dark",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "condensed",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "film_story",
+      "panelRadiusPt": 6,
+      "palettes": {
+        "light": {
+          "canvas": "#F1E7D5",
+          "surface": "#FAF2E4",
+          "ink": "#2C2B21",
+          "secondaryInk": "#685F49",
+          "accent": "#6D4B1E",
+          "onAccent": "#FFFFFF",
+          "raisedSurface": "#FCF7EE",
+          "separator": "#CEC5B5",
+          "accentSoft": "#EFE5D4",
+          "riverSurface": "#F2E8D8",
+          "placeSurface": "#F5ECDD",
+          "noteSurface": "#F9F0E1"
+        },
+        "dark": {
+          "canvas": "#171914",
+          "surface": "#20241B",
+          "ink": "#E6DFCE",
+          "secondaryInk": "#B1B798",
+          "accent": "#D8B476",
+          "onAccent": "#282C1C",
+          "raisedSurface": "#2B2E25",
+          "separator": "#515048",
+          "accentSoft": "#2F3022",
+          "riverSurface": "#2B2D20",
+          "placeSurface": "#26291E",
+          "noteSurface": "#25281E"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    },
+    {
+      "id": "light_everyday",
+      "order": 4,
+      "name": "轻盈日常",
+      "version": 1,
+      "referencePng": "variant-04.png",
+      "referenceAppearance": "light",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "geometric_sans",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "continuous_flow",
+      "panelRadiusPt": 6,
+      "palettes": {
+        "light": {
+          "canvas": "#FAFAF7",
+          "surface": "#FFFFFF",
+          "ink": "#252A27",
+          "secondaryInk": "#616A64",
+          "accent": "#C84232",
+          "onAccent": "#FFFFFF",
+          "raisedSurface": "#FFFFFF",
+          "separator": "#D4D5D2",
+          "accentSoft": "#FBF0EF",
+          "riverSurface": "#FCF4F3",
+          "placeSurface": "#FDF8F8",
+          "noteSurface": "#FEFDFA"
+        },
+        "dark": {
+          "canvas": "#231B19",
+          "surface": "#312420",
+          "ink": "#FAEEE8",
+          "secondaryInk": "#CEB2A8",
+          "accent": "#FF9C8A",
+          "onAccent": "#3A1710",
+          "raisedSurface": "#3C2F2B",
+          "separator": "#5F5653",
+          "accentSoft": "#412E28",
+          "riverSurface": "#3D2B26",
+          "placeSurface": "#382824",
+          "noteSurface": "#362823"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    },
+    {
+      "id": "life_constellation",
+      "order": 5,
+      "name": "生活星图",
+      "version": 1,
+      "referencePng": "variant-05.png",
+      "referenceAppearance": "dark",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "light_sans",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "linked_constellation",
+      "panelRadiusPt": 20,
+      "palettes": {
+        "light": {
+          "canvas": "#F0EFF8",
+          "surface": "#FBFAFF",
+          "ink": "#232646",
+          "secondaryInk": "#66617D",
+          "accent": "#67599E",
+          "onAccent": "#FFFFFF",
+          "raisedSurface": "#FDFCFF",
+          "separator": "#CBCBD8",
+          "accentSoft": "#EFEDF7",
+          "riverSurface": "#F2F0F9",
+          "placeSurface": "#F6F4FC",
+          "noteSurface": "#FAF8FA"
+        },
+        "dark": {
+          "canvas": "#10172D",
+          "surface": "#182039",
+          "ink": "#F0F1FF",
+          "secondaryInk": "#B7C0DA",
+          "accent": "#BCB5ED",
+          "onAccent": "#20203A",
+          "raisedSurface": "#242B44",
+          "separator": "#4F5468",
+          "accentSoft": "#252C47",
+          "riverSurface": "#222944",
+          "placeSurface": "#1E253F",
+          "noteSurface": "#1D243C"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    },
+    {
+      "id": "day_garden",
+      "order": 6,
+      "name": "日子花园",
+      "version": 1,
+      "referencePng": "variant-06.png",
+      "referenceAppearance": "light",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "rounded",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "garden_chapters",
+      "panelRadiusPt": 24,
+      "palettes": {
+        "light": {
+          "canvas": "#F1F5E9",
+          "surface": "#FAFCF4",
+          "ink": "#455540",
+          "secondaryInk": "#5F7054",
+          "accent": "#9B5333",
+          "onAccent": "#FFFFFF",
+          "raisedSurface": "#FCFDF8",
+          "separator": "#D2D8CB",
+          "accentSoft": "#F2EEE5",
+          "riverSurface": "#F4F2E8",
+          "placeSurface": "#F7F6ED",
+          "noteSurface": "#F9FAF0"
+        },
+        "dark": {
+          "canvas": "#18251D",
+          "surface": "#223327",
+          "ink": "#E7EDD8",
+          "secondaryInk": "#B4C4A4",
+          "accent": "#DCA780",
+          "onAccent": "#2F2118",
+          "raisedSurface": "#2D3D31",
+          "separator": "#525D51",
+          "accentSoft": "#313C2E",
+          "riverSurface": "#2D3A2C",
+          "placeSurface": "#29372A",
+          "noteSurface": "#27372A"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    },
+    {
+      "id": "life_weekly",
+      "order": 7,
+      "name": "生活周刊",
+      "version": 1,
+      "referencePng": "variant-07.png",
+      "referenceAppearance": "light",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "bold_editorial",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "daily_publication",
+      "panelRadiusPt": 2,
+      "palettes": {
+        "light": {
+          "canvas": "#F4EEE4",
+          "surface": "#FCF7ED",
+          "ink": "#242420",
+          "secondaryInk": "#655F54",
+          "accent": "#B63020",
+          "onAccent": "#FFFFFF",
+          "raisedSurface": "#FDFAF4",
+          "separator": "#CFCAC1",
+          "accentSoft": "#F6E7DD",
+          "riverSurface": "#F8EBE1",
+          "placeSurface": "#FAF0E6",
+          "noteSurface": "#FBF5E9"
+        },
+        "dark": {
+          "canvas": "#241C18",
+          "surface": "#342720",
+          "ink": "#F6EBDD",
+          "secondaryInk": "#CEB7A2",
+          "accent": "#F1A07E",
+          "onAccent": "#361A12",
+          "raisedSurface": "#3F322A",
+          "separator": "#5F564F",
+          "accentSoft": "#433128",
+          "riverSurface": "#3F2E26",
+          "placeSurface": "#3B2B23",
+          "noteSurface": "#382B23"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    },
+    {
+      "id": "tidal_clock",
+      "order": 8,
+      "name": "潮汐时钟",
+      "version": 1,
+      "referencePng": "variant-08.png",
+      "referenceAppearance": "dark",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "serif_numeric",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "day_clock",
+      "panelRadiusPt": 16,
+      "palettes": {
+        "light": {
+          "canvas": "#DCF0EB",
+          "surface": "#F3FCF9",
+          "ink": "#10464C",
+          "secondaryInk": "#4C6D6E",
+          "accent": "#10464C",
+          "onAccent": "#FFFFFF",
+          "raisedSurface": "#F8FDFB",
+          "separator": "#B7D1CE",
+          "accentSoft": "#E1EDEB",
+          "riverSurface": "#E5F1EF",
+          "placeSurface": "#EBF6F3",
+          "noteSurface": "#F2FAF5"
+        },
+        "dark": {
+          "canvas": "#10464C",
+          "surface": "#18585D",
+          "ink": "#DCF8F2",
+          "secondaryInk": "#B6DCD5",
+          "accent": "#C7EEE9",
+          "onAccent": "#10464C",
+          "raisedSurface": "#236165",
+          "separator": "#49787A",
+          "accentSoft": "#266468",
+          "riverSurface": "#226165",
+          "placeSurface": "#1E5D62",
+          "noteSurface": "#1D5B5F"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "order": 9,
+      "name": "随身剪贴簿",
+      "version": 1,
+      "referencePng": "variant-09.png",
+      "referenceAppearance": "light",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "calligraphic",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "paper_collection",
+      "panelRadiusPt": 4,
+      "palettes": {
+        "light": {
+          "canvas": "#F4E6CE",
+          "surface": "#FFF3DB",
+          "ink": "#5D3358",
+          "secondaryInk": "#74546A",
+          "accent": "#5D3358",
+          "onAccent": "#FFFFFF",
+          "raisedSurface": "#FFF8E9",
+          "separator": "#D9C6B9",
+          "accentSoft": "#F2E4D1",
+          "riverSurface": "#F5E7D3",
+          "placeSurface": "#F9ECD6",
+          "noteSurface": "#FEF1D8"
+        },
+        "dark": {
+          "canvas": "#2A1C29",
+          "surface": "#3A2937",
+          "ink": "#F5E8D7",
+          "secondaryInk": "#D1B5CB",
+          "accent": "#D9B4D1",
+          "onAccent": "#341B30",
+          "raisedSurface": "#443440",
+          "separator": "#63555A",
+          "accentSoft": "#473443",
+          "riverSurface": "#443140",
+          "placeSurface": "#402E3C",
+          "noteSurface": "#3E2D3A"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    },
+    {
+      "id": "pure_life",
+      "order": 10,
+      "name": "纯净生活",
+      "version": 1,
+      "referencePng": "variant-10.png",
+      "referenceAppearance": "light",
+      "supportedAppearances": [
+        "light",
+        "dark"
+      ],
+      "headlineStyle": "native_sans",
+      "bodyFontPolicy": "scalable_system_with_CJK_fallback",
+      "todayLayout": "compact_moments",
+      "panelRadiusPt": 20,
+      "palettes": {
+        "light": {
+          "canvas": "#F9FAF6",
+          "surface": "#EDF0E6",
+          "ink": "#182019",
+          "secondaryInk": "#59664E",
+          "accent": "#DFEDA9",
+          "onAccent": "#23321C",
+          "raisedSurface": "#F4F6F0",
+          "separator": "#D0D3CE",
+          "accentSoft": "#ECF0E1",
+          "riverSurface": "#ECF0E2",
+          "placeSurface": "#EDF0E4",
+          "noteSurface": "#EDEEE3"
+        },
+        "dark": {
+          "canvas": "#181F18",
+          "surface": "#252E22",
+          "ink": "#EFF4E5",
+          "secondaryInk": "#B7C3AB",
+          "accent": "#DFEDA9",
+          "onAccent": "#23321C",
+          "raisedSurface": "#30392D",
+          "separator": "#545B51",
+          "accentSoft": "#343D2D",
+          "riverSurface": "#30392A",
+          "placeSurface": "#2C3527",
+          "noteSurface": "#2A3225"
+        }
+      },
+      "supportedScenes": [
+        "today",
+        "footprints",
+        "river",
+        "memory",
+        "detail",
+        "theme_gallery"
+      ],
+      "accessibilityLayoutFallback": "ordered_single_column"
+    }
+  ],
+  "validationNote": {
+    "checked": "Base ink/secondaryInk on seven defined opaque surfaces, plus onAccent on accent. Final component, photos, maps, focus, disabled states and system accessibility still require implementation QA.",
+    "minimumCheckedTextContrast": 4.569,
+    "minimumCase": "tidal_clock/dark/secondaryInk on accentSoft"
+  }
+}

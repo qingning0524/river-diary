@@ -50,7 +50,7 @@ struct TimelineAIDigestView: View {
 
     private var sections: [DigestSection] {
         let grouped = Dictionary(grouping: rows, by: { sectionTitle(for: $0.start) })
-        let order = ["凌晨", "上午", "午后", "晚上"]
+        let order = ["凌晨", "上午", "下午", "晚上"]
         return order.compactMap { title in
             guard let rows = grouped[title], !rows.isEmpty else { return nil }
             return DigestSection(title: title, rows: rows.sorted { $0.start < $1.start })
@@ -219,7 +219,7 @@ struct TimelineAIDigestView: View {
         switch Calendar.current.component(.hour, from: date) {
         case 0..<5: "凌晨"
         case 5..<12: "上午"
-        case 12..<18: "午后"
+        case 12..<18: "下午"
         default: "晚上"
         }
     }

@@ -26,7 +26,7 @@ struct InspectorPanel: View {
                 if let content {
                     switch content {
                     case .episode(let item):
-                        episodeInspector(item)
+                        episodeInspector(item.refreshingAnnotation(from: store.timelineAnnotations))
                     case .evidence(let title, let items):
                         evidenceInspector(title: title, items: items)
                     case .archiveDay(let day):

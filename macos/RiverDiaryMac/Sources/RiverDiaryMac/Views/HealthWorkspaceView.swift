@@ -10,6 +10,7 @@ struct HealthWorkspaceView: View {
     var onOpenSources: () -> Void
     @State private var moodDraft: MoodScoreDraft
     @State private var moodError: String?
+    @State private var showsHealthDetails = false
 
     init(
         store: DiaryStore,
@@ -42,6 +43,16 @@ struct HealthWorkspaceView: View {
                 }
                 .riverAppear(index: 0)
 
+                if entry.health == nil {
+                    RiverPanel(title: "健康摘要", systemImage: "heart", accent: AppTheme.accent) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("连接 iPhone 健康来源后，这里会显示睡眠、步数和活动。你也可以先记录自己的心情。")
+                                .font(AppTypography.secondary()).foregroundStyle(Color.secondaryInk)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button("管理数据来源", action: onOpenSources).secondaryCTA()
+                        }
+                    }
+                } else {
                 RiverPanel(title: "今日状态", systemImage: "heart.text.square", accent: AppTheme.accent, tint: AppTheme.accent) {
                     HStack(spacing: 0) {
                         HealthMetric(title: "睡眠", value: entry.health?.resolvedSleepHours.map { "\($0.formatted(.number.precision(.fractionLength(1))))h" } ?? "未知", detail: "缺失不按零计算")
@@ -51,10 +62,14 @@ struct HealthWorkspaceView: View {
                     }
                 }
                 .riverAppear(index: 1)
+                }
+
 
                 moodEditor
                     .riverAppear(index: 2)
 
+                DisclosureGroup("数据来源与明细", isExpanded: $showsHealthDetails) {
+                    VStack(spacing: AppSpacing.panelGap) {
                 SourceHealthPanel(
                     items: SourceHealthBuilder.make(
                         pipelineEnabled: ingestion.enabled,
@@ -86,6 +101,9 @@ struct HealthWorkspaceView: View {
                     SettingsFootnote(text: "健康数据只描述已采集的测量和用户主动记录，不生成医学判断。AI 解释不可用时，原始测量仍然保留。")
                 }
                 .riverAppear(index: 5)
+                    }.padding(.top, 14)
+                }.font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+
             }
         }
         .onChange(of: entry.date) { _, _ in

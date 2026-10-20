@@ -40,6 +40,33 @@ final class MemorySearchTests: XCTestCase {
         XCTAssertEqual(answer.notes.count, 1)
     }
 
+    func testUnratedDiaryDoesNotBecomeAZeroScoreAnswer() {
+        var unrated = entry(date: Date(), overview: "River audit", score: 50)
+        unrated.score = nil
+        let answer = MemorySearchEngine.search("River audit", entries: [unrated])
+        XCTAssertEqual(answer.entries.count, 1)
+        XCTAssertTrue(answer.summary.contains("尚无评分"))
+        XCTAssertFalse(answer.summary.contains("平均 0 分"))
+    }
+
+    func testSearchAverageExcludesMissingScoresButIncludesAnExplicitZero() {
+        var unrated = entry(date: Date(), overview: "audit", score: 50)
+        unrated.score = nil
+        let high = entry(date: Date(), overview: "audit", score: 80)
+        let zero = entry(date: Date(), overview: "audit", score: 0)
+        let answer = MemorySearchEngine.search("audit", entries: [unrated, high, zero])
+        XCTAssertTrue(answer.summary.contains("平均 40 分"))
+        XCTAssertTrue(answer.summary.contains("已评分 2 天"))
+    }
+
+    func testScoreThresholdDoesNotMatchAnUnratedDiary() {
+        var unrated = entry(date: Date(), overview: "工作", score: 50)
+        unrated.score = nil
+        let zero = entry(date: Date(), overview: "工作", score: 0)
+        let answer = MemorySearchEngine.search("低于40 工作", entries: [unrated, zero])
+        XCTAssertEqual(answer.entries.map(\.id), [zero.id])
+    }
+
     func testLocationQuestionIntentRecognizesKnownPlaceNamesOnly() {
         XCTAssertTrue(AskQuestionIntent.asksAboutKnownPlace("哪天去了图书馆？"))
         XCTAssertTrue(AskQuestionIntent.asksAboutKnownPlace("在咖啡馆学习过吗？"))

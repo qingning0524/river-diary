@@ -31,7 +31,7 @@ otool -l "$APP/Contents/MacOS/RiverDiary" | rg -q '@executable_path/../Framework
 /usr/libexec/PlistBuddy -c 'Print:NSLocationUsageDescription' "$APP/Contents/Info.plist" >/dev/null
 
 if [[ -n "${DEVELOPER_DIR:-}" && "$DEVELOPER_DIR" != "/Library/Developer/CommandLineTools" ]]; then
-  (cd "$MAC_ROOT" && "$RIVER_SWIFT_EXECUTABLE" test --disable-sandbox) > /tmp/river-diary-tests.log 2>&1
+  "$PROJECT_ROOT/scripts/test_macos_isolated.sh" --disable-sandbox > /tmp/river-diary-tests.log 2>&1
   rg 'Executed [0-9]+ tests, with 0 failures' /tmp/river-diary-tests.log | tail -1
 else
   echo "XCODE_TESTS_SKIPPED: Xcode Beta not found at $XCODE_BETA_APP"

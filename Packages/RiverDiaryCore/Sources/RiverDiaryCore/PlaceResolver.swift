@@ -22,6 +22,7 @@ public struct RiverPlace: Identifiable, Codable, Hashable, Sendable {
     public let poiCategory: String?
     public let mapProvider: String?
     public let mapResultIdentifier: String?
+    public let mapCandidates: [RiverPlaceCandidate]?
     public let userDefinedName: String?
     public let semanticType: String?
     public let isUserConfirmed: Bool
@@ -37,7 +38,8 @@ public struct RiverPlace: Identifiable, Codable, Hashable, Sendable {
                 mapName: String?, mapAddress: String?, poiCategory: String?, mapProvider: String?,
                 mapResultIdentifier: String?, userDefinedName: String?, semanticType: String?,
                 isUserConfirmed: Bool, confidence: Double, firstSeen: Date, lastSeen: Date,
-                visitCount: Int, totalDurationSeconds: TimeInterval) {
+                visitCount: Int, totalDurationSeconds: TimeInterval,
+                mapCandidates: [RiverPlaceCandidate]? = nil) {
         self.id = id
         self.latitude = latitude
         self.longitude = longitude
@@ -47,6 +49,7 @@ public struct RiverPlace: Identifiable, Codable, Hashable, Sendable {
         self.poiCategory = poiCategory
         self.mapProvider = mapProvider
         self.mapResultIdentifier = mapResultIdentifier
+        self.mapCandidates = mapCandidates
         self.userDefinedName = userDefinedName
         self.semanticType = semanticType
         self.isUserConfirmed = isUserConfirmed
@@ -171,6 +174,7 @@ public enum PlaceClusterEngine {
             let latestAddress = mapObservation?.payload.mapAddress
             let category = mapObservation?.payload.poiCategory
             let resultID = mapObservation?.payload.mapResultIdentifier
+            let mapCandidates = mapObservation?.payload.mapCandidates
             let identityOperation = operationResolution.currentByField["\(cluster.id)\u{1f}identity"]
             let identity = identityOperation.flatMap { try? JSONDecoder().decode(RiverPlaceUserDecision.self, from: $0.payload) }
             let userName = identity?.name ?? resolvedString(operationResolution.currentByField, targetID: cluster.id, field: "userDefinedName")
@@ -194,7 +198,8 @@ public enum PlaceClusterEngine {
                 firstSeen: cluster.firstSeen,
                 lastSeen: cluster.lastSeen,
                 visitCount: cluster.arrivalCount,
-                totalDurationSeconds: durations[cluster.id, default: 0]
+                totalDurationSeconds: durations[cluster.id, default: 0],
+                mapCandidates: mapCandidates
             )
         }.sorted {
             if $0.firstSeen != $1.firstSeen { return $0.firstSeen < $1.firstSeen }

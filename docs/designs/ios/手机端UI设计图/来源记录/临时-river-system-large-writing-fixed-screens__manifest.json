@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "1232AA7C-E45F-43E8-9835-F8910D7C9D78.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Writing at largest text with keyboard_0_F8724965-565B-4C8E-A12A-C32A3AB4E1B0.png",
+        "timestamp" : 1791060332.007
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "82747F9E-8EA3-44AE-BC93-0B10ED47B82F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Largest text after opening writing_0_3F826D2C-00E1-43C0-B3A1-A754A2406325.png",
+        "timestamp" : 1791060328.279
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "55B85BB0-CE84-484B-8F4B-60A6D98B4564",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "F18E2A59-E1FD-40EF-9964-DAA36B894D22.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "River OS · Largest text before opening writing_0_20B9D6FE-C83A-4A08-AC20-6A8BA61AC062.png",
+        "timestamp" : 1791060325.728
+      }
+    ],
+    "testIdentifier" : "RiverSystemRedesignUITests/testLargestTextWritingCanSaveAndReturnToTheDay()",
+    "testIdentifierURL" : "test://com.apple.xcode/RiverDiary/RiverDiaryUITests/RiverSystemRedesignUITests/testLargestTextWritingCanSaveAndReturnToTheDay"
+  }
+]

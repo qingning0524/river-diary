@@ -164,10 +164,12 @@ final class TimelineRowAnatomyTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(rightCore.b, rightCore.r + 30, "右侧碎片标记应为 accent")
 
         let between = pixel(image, centre.x, centre.y)
-        XCTAssertTrue(
-            isNearWhite(between),
-            "双点之间应留空（rgb(\(between.r),\(between.g),\(between.b))）"
-        )
+        var surfaceRGB: UInt64 = 0
+        Scanner(string: RiverPalette.seafoam.theme.light.surface.replacingOccurrences(of: "#", with: ""))
+            .scanHexInt64(&surfaceRGB)
+        XCTAssertEqual(between.r, Int((surfaceRGB >> 16) & 0xFF), accuracy: 2, "双点间应露出当前面板材质")
+        XCTAssertEqual(between.g, Int((surfaceRGB >> 8) & 0xFF), accuracy: 2, "双点间应露出当前面板材质")
+        XCTAssertEqual(between.b, Int(surfaceRGB & 0xFF), accuracy: 2, "双点间应露出当前面板材质")
 
         let ring = pixel(image, centre.x + 18, centre.y)
         XCTAssertFalse(isNearWhite(ring), "碎片带节点没有描边环")

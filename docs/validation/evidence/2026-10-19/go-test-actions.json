@@ -1,0 +1,397 @@
+[
+  {
+    "package": "flowriver/server/cmd/api",
+    "test": "TestParseInboundPrefersPlainBodyAndSkipsAttachments",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/cmd/api",
+    "test": "TestParseInboundSafeUnicodeLimits",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/cmd/api",
+    "test": "TestHTMLMailFallbackExcludesScriptAndKeepsParagraphs",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/identity",
+    "test": "TestParseEmailCanonicalization",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/identity",
+    "test": "TestParseEmailPreservesLocalPartPolicy",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/identity",
+    "test": "TestParseEmailRejectsDisplayNamesAndSMTPUTF8LocalPart",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/secure",
+    "test": "TestBoxSealsAndAuthenticatesAssociatedData",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/secure",
+    "test": "TestMACUsesFieldBoundaries",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/config",
+    "test": "TestProductionRequiresAllAuthenticationAndJournalProviders/missing_Apple_config_fails_closed",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/config",
+    "test": "TestProductionRequiresAllAuthenticationAndJournalProviders/local_same-host_database_is_accepted",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/config",
+    "test": "TestProductionRequiresAllAuthenticationAndJournalProviders/remote_database_is_rejected",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/config",
+    "test": "TestProductionRequiresAllAuthenticationAndJournalProviders/console_mail_is_rejected",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/config",
+    "test": "TestProductionRequiresAllAuthenticationAndJournalProviders/non-HTTPS_security_journal_is_rejected",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/config",
+    "test": "TestProductionRequiresAllAuthenticationAndJournalProviders",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/mailer",
+    "test": "TestBrandedContentEscapesMarkupAndPreservesPlainFallback",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/mailer",
+    "test": "TestSMTPAdministrativeMailHasUnicodeSubjectAndBothAlternatives",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestUserSearchFiltersAndStablePagination",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestNativeAppleLoginSharesAccountAcrossGroupedAppIDs",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestProtectedAPIPreservesSessionDuringDatabaseFailure",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAnnouncementUnicodeLimitsAndLinkSafety",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestDownloadNoteRollsBackWhenAuditFails",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestDownloadFailedUploadDoesNotBlockRetry",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestDownloadUploadOutlivesOrdinaryReadAndWriteTimeouts",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailUnconfirmedSMTPIsNotAutomaticallyRetried",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailAuditsBeforeDelivery/manual",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailAuditsBeforeDelivery/feedback",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailAuditsBeforeDelivery/inbound",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailAuditsBeforeDelivery",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailRetryDoesNotSendTwice/manual",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailRetryDoesNotSendTwice/feedback",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailRetryDoesNotSendTwice/inbound",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailRetryDoesNotSendTwice",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdministrativeMailUncertainRecordingDoesNotResend",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestPreviewRequiresSessionAndCSRFButDoesNotRequireSendMFA",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestBrandedReplyPersistsExactContentAndThreadContext",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestMailSearchAndOutboundPaginationIncludeFormattedReferences",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdminSessionManagementUsesPublicIDs",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestAdminSessionIDMigrationKeepsExistingLogin",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestOperationsMarksOldBackupSuccessAsStale",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/mailer",
+    "test": "TestSMTPAcceptanceDoesNotBecomeFailureWhenQuitDisconnects",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestConfigDescribesAuthenticatedAccessForUniversalNetworks",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestMailQueueDoesNotLabelSkippedOrUnconfirmedMessagesDelivered",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestUserWorkspaceStatisticsAndCombinedFilters",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestUserActivityIsScopedToTheRequestedAccount",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestEmptyUserDetailUsesArraysInsteadOfNull",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestDeviceSearchCoversAllPagesAndDisabledAccounts",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestCurrentAdminCannotInvalidateOwnAuthenticator",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestRateLimitLookupPreservesEmailLocalCaseAndFailsClosed/canonical_address",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestRateLimitLookupPreservesEmailLocalCaseAndFailsClosed/database_failure",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestRateLimitLookupPreservesEmailLocalCaseAndFailsClosed",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestInboundMutationsRollBackWithoutAudit/read",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestInboundMutationsRollBackWithoutAudit/delete",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestInboundMutationsRollBackWithoutAudit",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestDownloadCannotPublishMissingOrWrongFile",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/adminapi",
+    "test": "TestStatisticsUseShanghaiCalendarDays",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/mailer",
+    "test": "TestSMTPMissingDataAcknowledgementIsExplicitlyUnconfirmed",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/mailer",
+    "test": "TestBrandedMessageThreadHeadersAndVerification",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestAppleIdentityTokenSignatureAndClaims",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestEmailSignupOutboxAndSessionRotation",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestRateLimitPersistsAndDoesNotRevealAccountExistence",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestAccountDeletionWaitsForOffHostJournal",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestEmailIdentityLinkRequiresStepUpAndVerifiedCode",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestUserPasswordSetLoginResetAndReplay",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestPasswordResetUnknownExpiredAndAttemptLimits",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestPublicDownloadPublicationHeadRangeAndSuspension",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestPublicDownloadRejectsUnpublishedPathsAndEscapingSymlinks",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestPublicDownloadFailsClosedOnDatabaseFailure",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestPublicDownloadOutlivesOrdinaryWriteTimeout",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestOrdinaryResponseRetainsShortWriteTimeout",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestPublicFeedbackRetriesAreIdempotentAndUnicodeAgentsAreSafe",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestOTPTasksPreserveRealTerminalStatuses/expired",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestOTPTasksPreserveRealTerminalStatuses/inactive",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestOTPTasksPreserveRealTerminalStatuses/unconfirmed",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestOTPTasksPreserveRealTerminalStatuses",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestOTPMetadataRetentionPreservesThirtyDayStatistics",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/httpapi",
+    "test": "TestPersonalConsoleOwnershipAndFeedbackReplay",
+    "action": "skip"
+  },
+  {
+    "package": "flowriver/server/internal/secure",
+    "test": "TestUserPasswordHashSaltAndVerification",
+    "action": "pass"
+  },
+  {
+    "package": "flowriver/server/internal/secure",
+    "test": "TestUserPasswordPolicyAcceptsPassphrasesAndUnicode",
+    "action": "pass"
+  }
+]

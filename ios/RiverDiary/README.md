@@ -1,51 +1,41 @@
-# 情绪河流 iOS 版
+# 河流日记 iOS · AI 自动日记
 
-这是一个原生 SwiftUI 应用，用来查看和整理「河流日记」中的每日情绪、事项、屏幕使用摘要与洞察。当前版本支持 iPhone 与 iPad。
+产品与开发唯一入口：[主规划](../../主规划.md)；本文件说明当前实现与运行方式。
 
-## 打开与运行
+本轮将已确定的五页拟态设计接入现有自动记录核心：今天、足迹、待确认、River、我的。顶部共用 RIVER DIARY 与全局日期；不会恢复已删除的工具排。
 
-1. 在 Xcode 中打开 `ios/RiverDiary/RiverDiary.xcodeproj`。
-2. 选择一个 iPhone 模拟器或已信任的开发者设备。
-3. 按常规方式 Run。首次构建已确认使用 Xcode beta 与 iOS 27 SDK 通过。
+## 产品主线
 
-如果通过命令行构建，可使用：
+授权后的位置到访/显著位置变化、运动识别、健康摘要、本机照片线索，以及快捷指令和跨设备事件，会自动写入既有 RiverLocalDatabase / RiverDiaryCore Event 流。事实先保存并呈现，不依赖 AI 返回或用户逐条确认。
+
+连接本机或获准网络模型后，新增输入会在安静 45 秒后自动安排当日整理，自动调用最短间隔为 5 分钟。沿用 AnalysisJob、输入指纹、来源白名单和 canonical Artifact 机制；自动生成的日记进入“我的 → 自动日记”。日界切换会更新自动任务键，前台周期同步会重新检查调度。
+
+待确认处理模糊地点、不确定事实解释和习惯提问。用户决定进入现有共享 State Operation，纠正和跨端复制沿用原有链路。手动文字是可选补充，不是创建每段活动的必经步骤。
+
+时间分布使用已观察到且有时长的来源区间，按日裁剪、重叠去重；不要求用户填写时长，不把缺失时段当作休息或零值。
+
+## 打开和构建
+
+打开 `RiverDiary.xcodeproj`，正式应用选择 `RiverDiary` scheme。需按本机环境设置 `DEVELOPER_DIR`：
 
 ```bash
-DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
-xcodebuild -project ios/RiverDiary/RiverDiary.xcodeproj \
-  -scheme RiverDiary -configuration Debug \
-  -destination 'generic/platform=iOS' \
-  -derivedDataPath ios/.build build CODE_SIGNING_ALLOWED=NO
+DEVELOPER_DIR=/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer \
+xcodebuild -project ios/RiverDiary/RiverDiary.xcodeproj -scheme RiverDiary \
+  -configuration Release -destination 'generic/platform=iOS' \
+  -derivedDataPath /tmp/river-auto-release build CODE_SIGNING_ALLOWED=NO
 ```
 
-`DEVELOPER_DIR` 需要指向实际安装的 Xcode beta 路径。
+上述构建检查不等于签名分发或手机安装。正式设备运行保留工程现有 Team 与签名设置。
 
-## 更新数据
+## 首次连接
 
-在项目根目录更新 `data/raw.json` 后执行 `python3 build.py`。脚本会清洗数据并同步到
-`RiverDiary/Resources/data.json`，两端看到同一份快照。
+在设置中一次性选择并授权记录来源、同步目录及 AI 输入范围。位置、照片、健康与运动受 iOS 权限控制；应用使用事件依赖用户配置的 Shortcuts 自动化，不能读取任意 App 的正文。网络 AI 只有在独立同意与模型配置后才使用已选择的数据类型；账号接口不接收日记、位置和健康正文。
 
-## 当前功能
+## 验证与预览
 
-- 今日/历史日记浏览与日期切换。
-- 心情大卡点按编辑，评分会在 0–100 内校验并保存到本机。
-- 情绪河流图、洞察摘要、阶段分布与日记搜索。
-- HealthKit 最近 7 天睡眠汇总，包括核心睡眠、深睡、REM 与清醒时间。
-- Family Controls 授权入口，为后续 Screen Time 聚合做准备。
-- 详情页展示标签、活动、常用应用、常访站点、观察笔记和计划。
-- 设置页支持还原本地修改过的心情评分。
-- 洞察页提供最近睡眠时长与当日心情的对照。
-- 洞察页提供数据体检，快速发现待评分、缺概览与缺计划的日期。
+- `swift test --package-path Packages/RiverDiaryCore`：54 项通过，包括自动应用事件无需手动文字/确认即可形成时段、跨端复制与用户纠正，以及新的来源时段统计测试。
+- QA Debug（带模拟器签名）与正式 Release 构建通过。
+- 五页原生预览：`ios/previews/automatic/index.html`。数据来自独立 QA 合成事件与 AI 产物，不是对真实模型质量或后台采集的实测声明。
+- 真机位置/运动/健康权限、后台唤醒、真实模型服务和双设备 File Provider 链路仍需设备与连接验证。此前该 SDK 的 UI runner 连接失败，不能把构建或截图计为完整界面测试通过。
 
-## 数据与隐私
-
-`Resources/data.json` 是只读内容快照。用户修改的心情评分保存在本设备 `UserDefaults` 中，不会上传。
-
-HealthKit 请求睡眠与运动数据，并按天聚合展示和同步；不保存原始样本。屏幕使用时间能力应当保持“最小聚合”原则：不要保存原始 App 记录，只保留每日汇总、分类或少量必要项目。
-
-## 后续采集建议
-
-- 健康与睡眠：继续使用 HealthKit，按夜晚聚合，不做逐条样本导出。
-- 屏幕使用时间：新增 `DeviceActivityReport` 扩展，通过用户主动授权获取聚合结果；不能、也不应尝试抓取任意 App 明细。
-- 持久化：当数据逐渐增多时，迁移到 SwiftData，睡眠与屏幕数据用独立实体保存。
-- 同步：如需多设备同步，优先使用 CloudKit private database，避免把情绪与敏感统计放到第三方后端。
+设计和版本来源见 [iOS构建基线](../BUILD_BASELINE.md)。2026-10-19进一步清理无调用的旧首页链路和四入口UI断言，保留当前五页实现；代码/测试迁移和本轮验证见 [整合记录](../../docs/maintenance/MASTER_PLAN_CONSOLIDATION_2026-10-19.md)。历史通过数只对应当时运行。

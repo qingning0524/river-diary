@@ -1,0 +1,20 @@
+{
+  "themeSceneScreenshots": 96,
+  "uiWorkflows": "6 passed; 3 repeated after reading-route and journal-cover changes",
+  "timeWindowBoundaryChecks": "6 passed",
+  "previewAsset": "generated example only",
+  "sourceSHA256": {
+    "Views/RiverThemeDayComposition.swift": "a8c97a9741236597e5d8daabf7e91a2a8e61613aa598e9447a0f86fee7313ad4",
+    "Views/RiverThemeCover.swift": "47bdd91458123d9fc7b551cd1d2563928560546378d69f524a26c898335149f6",
+    "Views/RiverThemeTimeWindow.swift": "fb16a688ffcb1c763bd0ca2424c37eda8c60a70d46557f27c74be65967e39998",
+    "Views/RiverThemeShareSheet.swift": "792b6dcbb74bb460596d4e9f5ca7212c307e4d1a09da6ad3001ffa5231a13fa3",
+    "Views/RiverThemeSettingsView.swift": "2a604d38ee22a87689f46a8df79730ce26d57eafa9a62f7e352f7710111ee463",
+    "Views/RiverTimelineHomeView.swift": "226e8c3cc1a9c8bb015b40f97ac54fb81859d91edf3abf134365cb5efcf443c5",
+    "Views/RiverActivityDetailView.swift": "3aa232ac588c268a48b14da2da1cc94fa76b990598b5ce7a14c4df75a3fab54e",
+    "Views/RiverFootprintsView.swift": "ef9978b9c354c1b9c31321dc49408d9ce3cb3ad4a7def4079eaa7d9d8636f468",
+    "Views/RiverUnderstandingView.swift": "8d6a850c45c5078fd9b517ae08c82c547a41e2d67d40ce15c66f9211ef2a6205",
+    "Views/RiverMemoryHomeView.swift": "69d4eb0381021be42a9b81f50ca4de91958ba9db2a56dcebfbe7d0c3c99a9af1",
+    "Views/RiverThemeDayOverview.swift": "67a322d2a2cc03f533ccdc9fa983fb6905a807b42f588c8f39e6246a5163bf1d",
+    "Managers/RiverThemeStore.swift": "d1da1ec833d8d2406752087e3da37ee38b1d94067601f44ba9cda8a467ea9890"
+  }
+}

@@ -4,11 +4,13 @@ import RiverDiaryCore
 
 private final class AnalysisRecoveryURLProtocol: URLProtocol {
     static let responseBody = Data(#"{"choices":[{"message":{"content":"**结论**\n已恢复的搜索结果。\n**相关日期**\n- 2026-09-28\n**证据**\n- 无\n**边界**\n相关不代表因果；如果你想，可以继续检索。"}}]}"#.utf8)
+    static var requestCount = 0
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
+        Self.requestCount += 1
         guard let url = request.url,
               let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"]) else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
@@ -132,6 +134,7 @@ final class AnalysisInterconnectTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [AnalysisRecoveryURLProtocol.self]
+        AnalysisRecoveryURLProtocol.requestCount = 0
         let session = URLSession(configuration: configuration)
         defer { session.invalidateAndCancel() }
         let ai = AIAssistantStore(v2Store: v2, userDefaults: defaults, urlSession: session)
@@ -188,9 +191,36 @@ final class AnalysisInterconnectTests: XCTestCase {
 
         let finishedJob = try XCTUnwrap(v2.analysisJobs().first { $0.id == jobID })
         XCTAssertEqual(finishedJob.status, .succeeded)
+        XCTAssertEqual(AnalysisRecoveryURLProtocol.requestCount, 1)
         XCTAssertNil(finishedJob.requestSnapshot, "terminal jobs must not retain the full prompt")
         XCTAssertNotNil(v2.canonicalArtifactRevision(logicalKey: dedupKey, kind: .insight))
         XCTAssertTrue(ai.recoveredAnalysisStatus?.contains("成功 1 个") == true)
+
+        let nonAnalyticalBatch = HabitReviewBatch(
+            periodKey: "recovery-frontier-advance",
+            cadence: .manual,
+            createdAt: Date(),
+            cardIDs: []
+        )
+        let batchJSON = try String(decoding: JSONEncoder().encode(nonAnalyticalBatch), as: UTF8.self)
+        XCTAssertTrue(v2.upsertHabitBatch(
+            id: nonAnalyticalBatch.id,
+            periodKey: nonAnalyticalBatch.periodKey,
+            payloadJSON: batchJSON,
+            createdAt: nonAnalyticalBatch.createdAt,
+            shownAt: nil
+        ))
+        let completedArtifactJob = RiverAnalysisJob(
+            id: UUID(), logicalKey: dedupKey, artifactType: .insight, inputFrontier: frontier,
+            priority: 10, status: .running, attempt: 1, originDeviceID: device,
+            pipelineVersion: pipeline, promptVersion: "1", requestSnapshot: snapshotData,
+            requestFingerprint: requestFingerprint
+        )
+        XCTAssertTrue(v2.saveAnalysisJob(completedArtifactJob))
+        await ai.resumeRecoverableAnalysisJobs()
+        XCTAssertEqual(v2.analysisJobs().first { $0.id == completedArtifactJob.id }?.status, .succeeded)
+        XCTAssertNil(v2.analysisJobs().first { $0.id == completedArtifactJob.id }?.requestSnapshot)
+        XCTAssertEqual(AnalysisRecoveryURLProtocol.requestCount, 1, "an exact saved Artifact must complete the job without resending after an irrelevant frontier advance")
 
         let lateEvent = RawEvent(source: .manual, kind: .quickCapture, payload: RawEventPayload(text: "late evidence"))
         XCTAssertTrue(v2.insertRawEvent(lateEvent))
@@ -209,14 +239,17 @@ final class AnalysisInterconnectTests: XCTestCase {
         XCTAssertTrue(v2.saveAnalysisJob(staleJob))
         await ai.resumeRecoverableAnalysisJobs()
         XCTAssertEqual(v2.analysisJobs().first { $0.id == staleJobID }?.status, .superseded)
+        XCTAssertEqual(AnalysisRecoveryURLProtocol.requestCount, 1)
         XCTAssertEqual(v2.analysisRuns().count, 1, "stale-frontier snapshot must not be sent")
     }
 
     func testCurrentDayRebuildDetectsStaleArtifactAndQueuedCurrentFrontier() throws {
         let dayKey = "2026-09-28"
+        // 当前语义：完成信号是"正本产物"，不是 Job 状态——
+        // 当天没有产物、产物过期或前沿不匹配时都需要重建。
         let staleStore = try makeStore()
         let staleAI = AIAssistantStore(v2Store: staleStore)
-        XCTAssertFalse(staleAI.needsCurrentDayRebuild(dayKey: dayKey))
+        XCTAssertTrue(staleAI.needsCurrentDayRebuild(dayKey: dayKey), "还没有任何产物的新一天需要重建")
 
         let staleDevice = try XCTUnwrap(staleStore.localDeviceIdentifier())
         let staleTimeline = RiverArtifactRevision(
@@ -256,6 +289,45 @@ final class AnalysisInterconnectTests: XCTestCase {
         XCTAssertTrue(queuedStore.saveAnalysisJob(queuedReview))
         XCTAssertTrue(queuedAI.needsCurrentDayRebuild(dayKey: dayKey))
         XCTAssertTrue(queuedStore.saveAnalysisJob(queuedReview.transitioning(to: .succeeded)))
+        XCTAssertTrue(queuedAI.needsCurrentDayRebuild(dayKey: dayKey), "Job 完成但产物未落地时仍需重建")
+
+        // 两个正本产物都落在当前前沿上 → 不再需要重建。
+        let currentDaily = RiverArtifactRevision(
+            id: "current-day-daily-review",
+            logicalKey: RiverCanonicalArtifactKey.dailyReview(dayKey: dayKey),
+            kind: .dailyReview,
+            revisionNumber: 1,
+            originDeviceID: queuedDevice,
+            clock: HybridLogicalClock(physicalMilliseconds: 1_790_000_000_001, deviceID: queuedDevice),
+            inputFrontier: frontier,
+            inputSnapshotHash: "current-input",
+            pipelineVersion: "1.0",
+            promptVersion: "1",
+            modelProvider: "test",
+            modelIdentifier: "test-model",
+            content: Data("{}".utf8),
+            contentHash: SHA256Hex.hash(Data("{}".utf8)),
+            status: .current
+        )
+        XCTAssertTrue(queuedStore.insertArtifactRevision(currentDaily))
+        let currentTimeline = RiverArtifactRevision(
+            id: "current-day-timeline",
+            logicalKey: "\(RiverTaskKind.timelineDigest.rawValue)|\(ContextAssembler.dayRangeKey(dayKey))",
+            kind: .semanticTimeline,
+            revisionNumber: 1,
+            originDeviceID: queuedDevice,
+            clock: HybridLogicalClock(physicalMilliseconds: 1_790_000_000_002, deviceID: queuedDevice),
+            inputFrontier: frontier,
+            inputSnapshotHash: "current-input",
+            pipelineVersion: "1.0",
+            promptVersion: "1",
+            modelProvider: "test",
+            modelIdentifier: "test-model",
+            content: Data("{}".utf8),
+            contentHash: SHA256Hex.hash(Data("{}".utf8)),
+            status: .current
+        )
+        XCTAssertTrue(queuedStore.insertArtifactRevision(currentTimeline))
         XCTAssertFalse(queuedAI.needsCurrentDayRebuild(dayKey: dayKey))
     }
 

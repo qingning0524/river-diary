@@ -1,0 +1,430 @@
+<!DOCTYPE html><html lang="zh-CN" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>河流日记 · 待确认</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            neu: {
+              bg: '#EEF2F6',
+              light: '#FFFFFF',
+              dark: '#A6B4C8'
+            },
+            river: {
+              50: '#F0F7FF',
+              100: '#E0EFFF',
+              500: '#3B82F6',
+              600: '#2563EB',
+              700: '#1D4ED8'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"PingFang SC"', '"Hiragino Sans GB"', '"Segoe UI"', 'Roboto', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #EEF2F6;
+    }
+    .tap-highlight-transparent {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Neumorphism Design System Tokens */
+    .neu-raised-card {
+      background: #EEF2F6;
+      border-radius: 24px;
+      box-shadow: -8px -8px 18px rgba(255, 255, 255, 0.95), 8px 8px 20px rgba(166, 180, 200, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    .neu-raised-pill {
+      background: #EEF2F6;
+      box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.9), 4px 4px 10px rgba(166, 180, 200, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    .neu-raised-item {
+      background: #EEF2F6;
+      box-shadow: -4px -4px 9px rgba(255, 255, 255, 0.9), 4px 4px 10px rgba(166, 180, 200, 0.32);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .neu-inset-card {
+      background: #EEF2F6;
+      box-shadow: inset 3px 3px 6px rgba(166, 180, 200, 0.35), inset -3px -3px 6px rgba(255, 255, 255, 0.9);
+    }
+    .neu-inset-subtle {
+      background: rgba(238, 242, 246, 0.8);
+      box-shadow: inset 2px 2px 5px rgba(166, 180, 200, 0.3), inset -2px -2px 5px rgba(255, 255, 255, 0.85);
+    }
+    .neu-selected-card {
+      background: linear-gradient(135deg, #F4F8FF 0%, #EEF4FD 100%);
+      box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.95), 4px 4px 12px rgba(37, 99, 235, 0.16);
+      border: 1.5px solid rgba(59, 130, 246, 0.45);
+    }
+    .neu-primary-button {
+      background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+      box-shadow: -3px -3px 8px rgba(255, 255, 255, 0.7), 4px 6px 14px rgba(37, 99, 235, 0.4);
+    }
+    .neu-floating-bar {
+      background: #EEF2F6;
+      border-radius: 32px;
+      box-shadow: -8px -8px 20px rgba(255, 255, 255, 0.95), 8px 10px 24px rgba(166, 180, 200, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+    }
+    .neu-tab-active {
+      background: #EEF2F6;
+      box-shadow: inset 3px 3px 6px rgba(166, 180, 200, 0.38), inset -3px -3px 6px rgba(255, 255, 255, 0.95);
+    }
+  </style>
+</head>
+<body class="bg-[#EEF2F6] text-slate-800 antialiased flex justify-center min-h-screen selection:bg-blue-600 selection:text-white">
+<!-- Mobile 390px Viewport Frame -->
+<div class="w-full max-w-[390px] mx-auto min-h-screen bg-[#EEF2F6] relative overflow-x-hidden font-sans border-x border-white/60 flex flex-col justify-between">
+<!-- Ambient Subtle Glow -->
+<div class="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-white/60 via-blue-50/20 to-transparent pointer-events-none -z-0"></div>
+<!-- Main Scrollable Content -->
+<div class="relative z-10 w-full px-4 pt-3 pb-36 space-y-4">
+<!-- 1. iOS Status Bar -->
+<div class="flex items-center justify-between pt-1 pb-1 text-xs font-semibold tracking-tight text-slate-600">
+<span class="font-bold text-sm text-slate-800">09:41</span>
+<div class="flex items-center space-x-1.5 text-slate-600">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 18.25c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l.74-.74C8.07 20.08 9.95 21 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 2c3.87 0 7 3.13 7 7 0 1.63-.56 3.13-1.5 4.34L6.66 5.5A6.98 6.98 0 0 1 12 5zm-7 7c0-1.63.56-3.13 1.5-4.34l10.84 10.84C15.97 19.44 14.05 20 12 20c-3.87 0-7-3.13-7-7z" opacity="0.3"></path><path d="M12 6c-3.31 0-6 2.69-6 6 0 1.34.44 2.58 1.19 3.57L15.57 7.19C14.58 6.44 13.34 6 12 6z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+<span class="material-symbols-outlined text-[15px] leading-none">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[15px] leading-none">wifi</span>
+<span class="material-symbols-outlined text-[18px] leading-none">battery_full</span>
+</div>
+</div>
+<!-- 2. Brand & Header Status Line -->
+<header class="flex items-center justify-between pt-0.5">
+<div class="flex items-center space-x-2 neu-raised-pill px-3 py-1.5 rounded-full">
+<span class="h-2 w-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+<span class="text-[12px] font-extrabold tracking-wider text-slate-800 font-mono">RIVER DIARY</span>
+<span class="text-[10px] text-slate-500 font-medium px-2 py-0.5 neu-inset-subtle rounded-full border border-white/60">智能伴随</span>
+</div>
+<div class="flex items-center space-x-1.5 neu-raised-pill px-3 py-1.5 rounded-full text-blue-600 text-[11px] font-bold">
+<span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+<span class="">待确认 3 项</span>
+</div>
+</header>
+<!-- 3. Date Capsule & Top Actions (Strict Neumorphic Raised Pills) -->
+<div class="flex items-center justify-between gap-2.5 pt-0.5">
+<button class="h-9 flex items-center space-x-2 neu-raised-pill px-4 rounded-full transition-all active:scale-[0.98] tap-highlight-transparent" type="button">
+<span class="material-symbols-outlined text-blue-600 text-[17px]">calendar_today</span>
+<span class="text-xs font-bold text-slate-700">5月16日 · 今天 周四</span>
+<span class="material-symbols-outlined text-slate-400 text-[16px]">expand_more</span>
+</button>
+<button class="h-9 px-3.5 rounded-full neu-raised-pill flex items-center space-x-1.5 text-[11px] font-bold text-indigo-600 active:scale-95 transition-all" title="点击查看并修改已保存的历史习惯" type="button">
+<span class="material-symbols-outlined text-[16px] text-indigo-500">history</span>
+<span class="">历史习惯</span>
+</button>
+</div>
+<!-- 4. Hero Banner: AI Habit Evolution (Neumorphic Raised Card with Inset Track) -->
+
+<!-- 5. Interactive Confirmation Cards Stream (Neumorphic Raised Outer Surfaces) -->
+<main class="space-y-4">
+<!-- CARD 1: 浅水湾公园（午后长椅驻足） -->
+<article class="w-full neu-raised-card p-4 space-y-3.5">
+<!-- Card Header -->
+<div class="flex items-start justify-between">
+<div class="flex items-center space-x-2.5">
+<div class="w-9 h-9 rounded-xl neu-raised-pill flex items-center justify-center text-base">
+                🌲
+              </div>
+<div>
+<h3 class="text-xs font-bold text-slate-800">浅水湾公园</h3>
+<p class="text-[10px] text-slate-400 mt-0.5">周四 14:20 - 15:45 · 停留 85min · 静息心率 68bpm</p>
+</div>
+</div>
+
+</div>
+<!-- Question Prompt (Inset Surface) -->
+<div class="neu-inset-subtle rounded-xl p-2.5 border border-white/70">
+<p class="text-[11px] text-slate-700 leading-relaxed font-medium">
+              你在周四下午常在长椅停留超过 1 小时，心率维持在平稳放松区间。你通常在这里做些什么？
+            </p>
+</div>
+<!-- Options -->
+<div class="space-y-2.5">
+<!-- Option 1 [Selected: Raised Soft Blue Glow] -->
+<button class="w-full text-left flex items-center justify-between p-2.5 rounded-xl neu-selected-card active:scale-[0.99] transition-all tap-highlight-transparent" type="button">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 rounded-lg neu-raised-pill text-emerald-600 flex items-center justify-center text-sm">🌿</span>
+<div>
+<div class="text-xs font-bold text-blue-900">散步休息&nbsp; &nbsp;(休息活动&nbsp; )</div>
+<div class="text-[10px] text-blue-600 mt-0.5">缓解脑力疲惫 · 感知湖风与树影</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-blue-600 font-bold">check_circle</span>
+</button>
+<!-- Option 2 [Unselected: Raised Soft UI Card] -->
+<button class="w-full text-left flex items-center justify-between p-2.5 rounded-xl neu-raised-item text-slate-700 active:scale-[0.99] transition-all tap-highlight-transparent group" type="button">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 rounded-lg neu-inset-subtle flex items-center justify-center text-xs">📖</span>
+<div>
+<div class="text-xs font-semibold text-slate-800">翻阅书籍与播客 (学习专注&nbsp; )</div>
+<div class="text-[10px] text-slate-400 mt-0.5">随身纸质书或降噪听书</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[19px] text-slate-400 group-hover:text-slate-500">radio_button_unchecked</span>
+</button>
+<!-- Option 3 [Unselected] -->
+<button class="w-full text-left flex items-center justify-between p-2.5 rounded-xl neu-raised-item text-slate-700 active:scale-[0.99] transition-all tap-highlight-transparent group" type="button">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 rounded-lg neu-inset-subtle flex items-center justify-center text-xs">💻</span>
+<div>
+<div class="text-xs font-semibold text-slate-800">深度创作与构思 (便携设备记录)</div>
+<div class="text-[10px] text-slate-400 mt-0.5">记录闪现的灵感与碎片</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[19px] text-slate-400 group-hover:text-slate-500">radio_button_unchecked</span>
+</button>
+<!-- Custom Option (Neumorphic Inset Dashed) -->
+<button class="w-full py-2.5 px-3 border border-dashed border-slate-300 rounded-xl text-center flex items-center justify-center space-x-1.5 text-slate-500 hover:text-blue-600 text-[11px] font-medium transition-all neu-inset-subtle tap-highlight-transparent active:scale-[0.99]" type="button">
+<span class="material-symbols-outlined text-[15px]">edit_note</span>
+<span class="">+ 自定义填写其它习惯...</span>
+</button>
+</div>
+<!-- Toggle Switch (Neumorphic Inset + Raised Thumb) -->
+
+<!-- Action Buttons -->
+<div class="flex items-center space-x-2.5 pt-0.5">
+<button class="w-20 py-2.5 rounded-xl text-xs font-bold text-slate-600 neu-raised-pill active:scale-95 transition-all tap-highlight-transparent" type="button">
+              跳过
+            </button>
+<button class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-white neu-primary-button active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 tap-highlight-transparent" type="button">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+<span class="">确认收录并记忆</span>
+</button>
+</div>
+</article>
+<!-- CARD 2: Corner Coffee（晨间仪式感知） -->
+<article class="w-full neu-raised-card p-4 space-y-3.5">
+<div class="flex items-start justify-between">
+<div class="flex items-center space-x-2.5">
+<div class="w-9 h-9 rounded-xl neu-raised-pill flex items-center justify-center text-base">
+                ☕
+              </div>
+<div>
+<h3 class="text-xs font-bold text-slate-800">Corner Coffee</h3>
+<p class="text-[10px] text-slate-400 mt-0.5">工作日 08:30 - 09:15 · 连续 4 天</p>
+</div>
+</div>
+<span class="inline-flex items-center space-x-1 text-[10px] font-bold text-amber-800 neu-raised-pill px-2.5 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+<span class="">高频节律</span>
+</span>
+</div>
+<div class="neu-inset-subtle rounded-xl p-2.5 border border-white/70">
+<p class="text-[11px] text-slate-700 leading-relaxed font-medium">
+              连续 4 个工作日早晨在此停留约 40 分钟，推测为固定晨间习惯：
+            </p>
+</div>
+<div class="space-y-2.5">
+<!-- Option 1 [Selected] -->
+<button class="w-full text-left flex items-center justify-between p-2.5 rounded-xl neu-selected-card active:scale-[0.99] transition-all tap-highlight-transparent" type="button">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 rounded-lg neu-raised-pill text-amber-700 flex items-center justify-center text-xs">☕</span>
+<div>
+<div class="text-xs font-bold text-blue-900">晨间唤醒 · 喝咖啡阅读</div>
+<div class="text-[10px] text-blue-600 mt-0.5">热饮、早间新闻与晨思</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-blue-600 font-bold">check_circle</span>
+</button>
+<!-- Option 2 -->
+<button class="w-full text-left flex items-center justify-between p-2.5 rounded-xl neu-raised-item text-slate-700 active:scale-[0.99] transition-all tap-highlight-transparent group" type="button">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 rounded-lg neu-inset-subtle flex items-center justify-center text-xs">📋</span>
+<div>
+<div class="text-xs font-semibold text-slate-800">梳理今日工作 Todo</div>
+<div class="text-[10px] text-slate-400 mt-0.5">规划优先级与日程检查</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[19px] text-slate-400 group-hover:text-slate-500">radio_button_unchecked</span>
+</button>
+<!-- Option 3 -->
+<button class="w-full text-left flex items-center justify-between p-2.5 rounded-xl neu-raised-item text-slate-700 active:scale-[0.99] transition-all tap-highlight-transparent group" type="button">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 rounded-lg neu-inset-subtle flex items-center justify-center text-xs">👥</span>
+<div>
+<div class="text-xs font-semibold text-slate-800">朋友轻度碰头沟通</div>
+<div class="text-[10px] text-slate-400 mt-0.5">日常交谈与早间社交</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[19px] text-slate-400 group-hover:text-slate-500">radio_button_unchecked</span>
+</button>
+<!-- Custom Option -->
+<button class="w-full py-2.5 px-3 border border-dashed border-slate-300 rounded-xl text-center flex items-center justify-center space-x-1.5 text-slate-500 hover:text-blue-600 text-[11px] font-medium transition-all neu-inset-subtle tap-highlight-transparent active:scale-[0.99]" type="button">
+<span class="material-symbols-outlined text-[15px]">edit_note</span>
+<span class="">+ 自定义填写...</span>
+</button>
+</div>
+
+<div class="flex items-center space-x-2.5 pt-0.5">
+<button class="w-24 py-2.5 rounded-xl text-xs font-bold text-slate-600 neu-raised-pill active:scale-95 transition-all tap-highlight-transparent" type="button">
+              修改地点
+            </button>
+<button class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-white neu-primary-button active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 tap-highlight-transparent" type="button">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+<span class="">确认收录并记忆</span>
+</button>
+</div>
+</article>
+<!-- CARD 3: 沿江漫步道（黄昏流转归类） -->
+<article class="w-full neu-raised-card p-4 space-y-3.5">
+<div class="flex items-start justify-between">
+<div class="flex items-center space-x-2.5">
+<div class="w-9 h-9 rounded-xl neu-raised-pill flex items-center justify-center text-base">
+                🌊
+              </div>
+<div>
+<h3 class="text-xs font-bold text-slate-800">沿江漫步道 · 傍晚散步</h3>
+<p class="text-[10px] text-slate-400 mt-0.5">傍晚 17:15 - 18:00 · 3.2km</p>
+</div>
+</div>
+<span class="inline-flex items-center space-x-1 text-[10px] font-bold text-cyan-800 neu-raised-pill px-2.5 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+<span class="">步频 115/分</span>
+</span>
+</div>
+<div class="neu-inset-subtle rounded-xl p-2.5 border border-white/70">
+<p class="text-[11px] text-slate-700 leading-relaxed font-medium">
+              傍晚规律的有氧步伐 (3.2 km，步频 115)，是否收录为日常锻炼与心流调节？
+            </p>
+</div>
+<div class="space-y-2.5">
+<!-- Option 1 [Selected] -->
+<button class="w-full text-left flex items-center justify-between p-2.5 rounded-xl neu-selected-card active:scale-[0.99] transition-all tap-highlight-transparent" type="button">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 rounded-lg neu-raised-pill text-orange-500 flex items-center justify-center text-xs">🌅</span>
+<div>
+<div class="text-xs font-bold text-blue-900">日落有氧慢跑</div>
+<div class="text-[10px] text-blue-600 mt-0.5">释放工作压力 · 沉浸晚风与天色</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-blue-600 font-bold">check_circle</span>
+</button>
+<!-- Option 2 -->
+<button class="w-full text-left flex items-center justify-between p-2.5 rounded-xl neu-raised-item text-slate-700 active:scale-[0.99] transition-all tap-highlight-transparent group" type="button">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 rounded-lg neu-inset-subtle flex items-center justify-center text-xs">🎧</span>
+<div>
+<div class="text-xs font-semibold text-slate-800">听播客晚间散步</div>
+<div class="text-[10px] text-slate-400 mt-0.5">声音相伴 · 卸下社交模式</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[19px] text-slate-400 group-hover:text-slate-500">radio_button_unchecked</span>
+</button>
+<!-- Option 3 -->
+<button class="w-full text-left flex items-center justify-between p-2.5 rounded-xl neu-raised-item text-slate-700 active:scale-[0.99] transition-all tap-highlight-transparent group" type="button">
+<div class="flex items-center space-x-2.5">
+<span class="w-7 h-7 rounded-lg neu-inset-subtle flex items-center justify-center text-xs">🚲</span>
+<div>
+<div class="text-xs font-semibold text-slate-800">下班慢速骑行通勤</div>
+<div class="text-[10px] text-slate-400 mt-0.5">低碳返程路线</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[19px] text-slate-400 group-hover:text-slate-500">radio_button_unchecked</span>
+</button>
+<!-- Custom Option -->
+<button class="w-full py-2.5 px-3 border border-dashed border-slate-300 rounded-xl text-center flex items-center justify-center space-x-1.5 text-slate-500 hover:text-blue-600 text-[11px] font-medium transition-all neu-inset-subtle tap-highlight-transparent active:scale-[0.99]" type="button">
+<span class="material-symbols-outlined text-[15px]">edit_note</span>
+<span class="">+ 自定义填写...</span>
+</button>
+</div>
+
+<div class="flex items-center space-x-2.5 pt-0.5">
+<button class="w-20 py-2.5 rounded-xl text-xs font-bold text-slate-600 neu-raised-pill active:scale-95 transition-all tap-highlight-transparent" type="button">
+              跳过
+            </button>
+<button class="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-white neu-primary-button active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 tap-highlight-transparent" type="button">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+<span class="">确认收录并记忆</span>
+</button>
+</div>
+</article>
+</main>
+<!-- 6. Privacy & Security Note (Neumorphic Inset Soft Card) -->
+<footer class="pt-1 pb-4">
+<div class="neu-inset-subtle rounded-2xl p-3 text-center border border-white/60">
+<div class="inline-flex items-center justify-center space-x-1.5 text-[11px] text-slate-500 font-medium">
+
+<span class="">所有的 AI 记忆均在设备端加密学习</span>
+</div>
+<p class="text-[10px] text-slate-400 mt-1">
+            可随时在上方的「历史习惯」中修正或清空规则
+          </p>
+</div>
+</footer>
+</div>
+<!-- 7. Floating Neumorphic Capsule Navigation Bar & iOS Home Indicator -->
+<div class="fixed bottom-5 left-1/2 -translate-x-1/2 w-[92%] max-w-[370px] neu-floating-bar py-2 px-3 flex justify-between items-center z-50 pointer-events-auto" data-purpose="floating-dock-nav">
+<!-- Tab 1: 今天 -->
+<a class="flex flex-col items-center group focus:outline-none tap-highlight-transparent w-14" href="#">
+<div class="w-8 h-8 rounded-full text-slate-400 flex items-center justify-center transition-all group-active:scale-95">
+<svg class="w-5 h-5 fill-none stroke-current stroke-[2.1]" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="4"></circle>
+<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke-linecap="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium text-slate-500">今天</span>
+</a>
+<!-- Tab 2: 足迹 -->
+<a class="flex flex-col items-center group focus:outline-none tap-highlight-transparent w-14" href="#">
+<div class="w-8 h-8 rounded-full text-slate-400 flex items-center justify-center transition-all group-active:scale-95">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+<circle cx="6" cy="18" r="3"></circle>
+<circle cx="18" cy="6" r="3"></circle>
+<path d="M8.5 15.5l7-7" stroke-linecap="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium text-slate-500">足迹</span>
+</a>
+<!-- Tab 3: 待确认 (Active Neumorphic Inset Tab) -->
+<a class="flex flex-col items-center relative group focus:outline-none tap-highlight-transparent w-14" href="#">
+<!-- Red Notification Badge -->
+<span class="absolute -top-1 right-2 min-w-[15px] h-[15px] px-1 bg-red-500 text-white rounded-full text-[9px] font-bold flex items-center justify-center ring-2 ring-[#EEF2F6] z-10 shadow-sm">
+          3
+        </span>
+<div class="w-8 h-8 rounded-full neu-tab-active text-blue-600 flex items-center justify-center transition-all group-active:scale-95">
+<svg class="w-4.5 h-4.5 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-bold text-blue-600 mt-0.5">待确认</span>
+<!-- Active Indicator Dot -->
+<span class="w-1.5 h-1.5 rounded-full bg-blue-600 mt-0.5 shadow-sm shadow-blue-500/50"></span>
+</a>
+<!-- Tab 4: River -->
+<a class="flex flex-col items-center group focus:outline-none tap-highlight-transparent w-14" href="#">
+<div class="w-8 h-8 rounded-full text-slate-400 flex items-center justify-center transition-all group-active:scale-95">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+<path d="M3 10c3-2 6-2 9 0s6 2 9 0M3 15c3-2 6-2 9 0s6 2 9 0" stroke-linecap="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium text-slate-500">River</span>
+</a>
+<!-- Tab 5: 我的 -->
+<a class="flex flex-col items-center group focus:outline-none tap-highlight-transparent w-14" href="#">
+<div class="w-8 h-8 rounded-full text-slate-400 flex items-center justify-center transition-all group-active:scale-95">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+<rect height="16" rx="3" width="14" x="5" y="4"></rect>
+<path d="M9 9h6M9 13h6M9 17h3" stroke-linecap="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium text-slate-500">我的</span>
+</a>
+</div>
+<!-- iOS Home Indicator Overlay at Bottom Center -->
+<div class="fixed bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-400/50 rounded-full pointer-events-none z-50"></div>
+</div>
+</body></html>

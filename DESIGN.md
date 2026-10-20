@@ -1,379 +1,112 @@
-# River Diary Design System
+# 河流日记 · 当前设计规范
 
-Status: Approved visual baseline v2, based on the provided evidence-report reference
-Scope: macOS Personal Evidence OS, `codex/ui-redesign`
+更新：2026-10-20。本文只定义当前视觉与交互规则；产品目标、功能顺序和验收以根目录 [主规划](主规划.md) 为准。旧四入口、手写优先首页与平面Evidence Desk材质已退役，不再作为当前实现要求。
 
-River Diary is a private evidence instrument, not a mood tracker, SaaS dashboard, or generic AI chat surface. The UI should help a user see what happened, inspect why the system believes it, correct uncertainty, and return to long-term change without feeling judged.
+## 1. 已确认的结构
 
-## Reference direction: Evidence Desk
+| 平台 | 主入口 | 页面约束 |
+|---|---|---|
+| iOS | 今天 / 足迹 / 待确认 / River / 我的 | 共用品牌与全局日期；标题属于页面滚动内容；今天是自动日记＋四张功能卡，补充与评分可选 |
+| Mac | 今天 / 足迹 / 记忆 / River / 回顾 | 五工作区全可见；足迹收拢时间线/地点/健康；回顾收拢周期/待确认/习惯/进展；系统工具进入设置 |
+| Web | 记忆首页 / 长河 / 合集 / 地点 / 理解 / 问 River / 账号与设置 | MemoryOS 只读窗口；本机副本导入与账号服务分离；不是第二个编辑器 |
 
-The current visual baseline follows the provided “daily evidence report” reference, rebuilt as an implemented panel system rather than a set of per-screen cards:
+保留已批准的柔光拟态。iOS当前三外观为柔光拟态、当代手记、夜色仪表，内部偏好ID继续兼容 `clear_life / contemporary_journal / night_dashboard`；改显示名称不重置数据或授权。Mac继续现有配色与深浅外观，不因功能拓展重做导航。
 
-- **Left:** date context and text-first navigation.
-- **Center:** a daily evidence report with a strong date header, one primary action, compact facts, and the river timeline.
-- **Right:** a short queue of evidence that needs the user's attention; selecting a row opens the source and correction controls in the inspector.
-- **Material:** warm paper canvas, opaque off-white panels, 1px hairlines, small radii, and generous whitespace.
-- **Accent:** one restrained steel blue for selection, primary actions, evidence bars, links, and timeline nodes.
-- **Language:** every conclusion carries an epistemic label such as `事实`, `推断`, `部分`, or `可纠正`.
+## 2. 材质与组件
 
-“Modern panel” here means modern craft, not modern ornament: one radius scale, layered surfaces with a real elevation order, consistent header and row anatomy, and aligned gutters — held inside the restrained character above. Floating and rounded is reserved for things that genuinely float (sheets, drawers, the lock gate); a page is still a stack of quiet, outlined panels, and there are no gradient fills, decorative blobs, or oversized hero cards.
+Mac参照10月15日获准原生落地与10月16日工作区整理：232pt侧栏/64pt收起态、约66pt上下文工具栏、24pt圆角面板、约274pt日期上下文列是常规字号参考；实际可用空间、字体和窗口大小优先。
 
-This is a style reference, not a pixel copy. The product keeps native macOS behavior, keyboard access, dark mode, and the existing evidence model.
-
-## Product thesis
+默认浅色seafoam采用代码中的蓝灰画布/表面与蓝色强调：`#EDF1F6 / #EDF2F7 / #2F6CF5`。拟态使用相向的柔和明暗阴影，输入/选中槽为内凹；这一套表面接近画布是既定选择，不能再套旧平面纸面比例强行改色。
 
-- The left sidebar owns the selected date and day/week/month range.
-- Today is a restrained dashboard, not the whole product.
-- The river timeline shows how a day flowed.
-- The evidence console explains why a fact or inference exists.
-- Facts, inferences, unknowns, and user feelings are visibly distinct.
-- Unknown data is never displayed as zero.
-- The interface should feel calm, exact, native, and useful at 3am.
+iOS沿用 `RiverNeumorphicSurface` 与 `RiverIOSPanel`。足迹保留地图→生活片段/待确认提示→连续细轴和片段卡，原文/来源从详情进入。不要为追求统一卡片把所有阅读正文包成仪表盘。
 
-## Information hierarchy
+新控件优先复用现有面板、行、按钮、状态、日期和编辑器。代码token为实际数值来源；普通视图不另写成套裸颜色、字号与间距。历史兼容命名不构成第二设计系统。
 
-1. Orientation: selected date, current workspace, source coverage.
-2. Day Brief: what happened in one scan.
-3. Core actions: open timeline, ask, review, correct.
-4. Evidence: sources, missing data, limits, replay.
-5. Detail: raw records, derived facts, report versions.
+## 3. token与文字
 
-Today uses: Day Brief → 2–3 core interactive cards → compact fact list → river timeline → evidence console. Day Brief shows at most three linkable day insights, each marked as an observation, user note, or material item needing explanation; it does not fill unused slots with synthetic conclusions.
-
-## Navigation
+| 平台 | 源码入口 |
+|---|---|
+| Mac | `Design/Palettes.swift`、`Design/DesignSystem.swift`、`Design/RiverSoftStyle.swift`、`Design/Theme.swift` |
+| iOS | `Infrastructure/Preferences/RiverThemeStore.swift`、`Views/RiverDesignSystem.swift`、`Views/RiverNeumorphicSurface.swift`、`Design/Theme.swift` |
+| 图标 | `图标素材库/` River Glyph v2：融合 DeepSeek 刻线/水位为一套双端共用图标；统一 Original 与四状态，平台只调整尺寸；当前为设计资产，App 绑定尚未切换 |
 
-The sidebar contains a compact date block at the top: previous day, current date, next day, Today, and a popover for day/week/month range. It does not expand into a full calendar by default.
+使用语义颜色与字体；Mac正文使用AppTypography，文字视图不新增裸 `.system(size:)`，图标和已登记的设计例外按现有测试处理。iOS文字随Dynamic Type缩放，辅助字号改纵向布局，不靠固定高度或缩小字体掩盖截断。
 
-```text
-[date block]
-RIVER: Today / Timeline / Daily Review
-UNDERSTAND: Health / Footprints / Work & Learn
-MEMORY: Ask / Progress
-SYSTEM: Database / Sources / Settings
-```
+正文/次级文字保持可读对比，重要状态不只靠颜色。数字使用等宽位；实际零、未知、估算分别表达。主题调整同步相应对比/层次回归，不能只测默认浅色。
 
-The selected date is owned by a Shell-level `DateContext`. Workspace changes preserve it. Keyboard navigation and VoiceOver must announce the selected date and range.
+## 4. 页面内容与动作
 
-## Color tokens
+- 今天优先当前有依据的日记与来源状态，不用AI生成字数或工程计数表示一天的价值。
+- 足迹显示离散真实线索和可核对时间；无位置不画路线，原始与推断区分，AI只替代证据完整覆盖的片段。
+- 待确认先给观察、问题和依据，答案不预选；用户真实保存成功后才关闭卡片。跳过/稍后不惩罚。
+- River保留日期与范围；输入时键盘不遮发送，底栏按既有焦点规则收起/恢复。不要因瞬时keyboardWillHide强撤焦点。
+- 我的/记忆提供搜索、收藏、地点/项目/习惯与归档；新理解卡、章节和上下文包使用既有入口。
+- Mac子页面使用轻量工作区标题和分段选择，避免嵌套重复大标题；来源和只读数据库不重新长成侧栏顶级页。
 
-Every colour is defined once, in `Palettes.swift`, as a light/dark pair **per palette**. Views reference the semantic token through `AppTheme`, never a hex value and never a system colour like `.orange` or `Color.accentColor` — a system accent leak would break the single-accent rule the moment a user changes their accent colour.
+## 5. 交互与错误
 
-Eight palettes (海雾蓝 / 青瓷 / 暖阳 / 堇紫 / 莓红 / 墨青 / 可可棕 / 樱花粉) × two appearances, sixteen tokens each:
+触控目标至少44pt；小字元数据不能承载唯一必要信息。保存失败保留输入，加载保持旧有效内容，读取失败不伪装空态；本机保存、复制排队、对端收到和已核对分别说明。重要错误持续可读、可重试，不能只给短暂横幅。
 
-```text
-canvas  sidebar  surface  strongSurface  editor  chip
-border  separator  strongSeparator
-ink  ink2  ink3
-accent  accentSoft  gradientStart  gradientEnd
-```
+全局日期、返回栈、地图选择和草稿跨页保持。Mac日期快捷键不抢文字输入焦点，侧栏/面包屑/命令搜索来自同一导航目录；设置、Dock与菜单栏可回到主窗口。
 
-The tokens are not hand-picked hexes. Each set is generated from one recipe so that **the same lightness ladder holds in all sixteen combinations**; the recipe is documented in full at the top of `Palettes.swift`, and `PaletteDepthTests` enforces the bands below for every palette.
+动效只帮助定位和反馈：按压/转场简短、可中断，保存先成功再退场。Reduce Motion关闭缩放、位移与弹簧，保留必要淡入或即时变化；不使用循环装饰动效或伪造进度。
 
-```text
-token              target                       guarded band
-canvas             white → 1.17                 canvas darker than surface, 1.08–1.30
-chip               white → 1.15                 ≥ 1.10 vs surface
-editor             white → 1.22                 darker than surface; ≥ 6 channel steps from chip
-border             canvas → 1.26                1.18–1.60 vs canvas (white 10% in dark)
-separator          white → 1.20                 ≥ 1.14 vs surface (white 8% in dark)
-strongSeparator    canvas → 1.40                 ≥ 1.32 vs canvas
-sidebar            canvas → 1.07                 rail must stay distinguishable from the canvas
-ink2                white → 4.5+                 body text stays readable
-ink3               white → 3.25                 ≥ 3.0, and always lighter than ink2
-timelineSpine      accent 72% / 60% over surface  ≥ 2.2 vs surface, and lighter than accent
-```
+## 6. AI呈现规范
 
-Why a ratio table instead of a list of hexes: the first palette set was a set of "柔和水洗色" whose neighbours differed by 1.04–1.16. The light panel outline on the canvas measured **1.040:1**, the dark row divider **1.009:1**, and the timeline spine (`accent` at 30%) **1.48:1**. That is why the app read as flat and unfinished — not a matter of taste, a matter of contrast. Every step now sits in a band that can be seen without becoming a hard line.
+原始观测、用户原话/决定、AI推断和未知各自可辨。每个实质结论能回到有效依据；用户正式编辑不被自动改写。理解卡说明来源、作用范围和适用时间，不展示未经校准的“人格/正确率”百分比。
 
-Three numbers live outside the ladder:
+首批回放允许一条记录一张卡，留白不造故事。生成连接语与原文引句分开；减少动态时可静态逐卡阅读。主动建议服从主规划统一曝光/排除设置，不在各页面各建一套催促机制。
 
-- `darkBorderAlpha` (0.10) / `darkSeparatorAlpha` (0.08) — white hairlines over a dark panel. They must differ: a panel outline is a stronger statement than a row divider.
-- `settingsRailBlendAmount` (0.13) — how far `ink` is pressed into `sidebar`. After the light canvas was deepened, the previous 0.07 left the rail within 1–2 channel steps of the canvas and the two columns smeared together. `SettingsRailContrastTests` guards all sixteen combinations.
-- `timelineSpineAlphaLight` (0.72) / `timelineSpineAlphaDark` (0.60) — the connector's opacity over the current panel fill.
+分享通过新画布白名单构造并预览内容，默认抽象河纹不含敏感字段；用户有明确选择才加入日期、原文或照片。不要把模型/数据库工程细节塞进日常流程；处理位置和资料发送范围在需要用户作决定时清楚呈现。
 
-Rules that follow from this table:
+## 7. 八项设计验收
 
-- One accent, used for selection, evidence, links and the primary action. `AppTheme.accent`.
-- Status colour is always paired with a word. `StatusBadge("待确认", tone: .neutral)` carries meaning in the text; the tint is a second channel, never the only one.
-- The four surface levels are distinct in both appearances: canvas < panel < floating, and a **raised** chip must never be the same colour as a **recessed** well. Light mode `chip` and `editor` had collapsed to the same grey (channel delta 0–2) before this ladder existed: a raised button and a sunken input field were literally one colour.
-- `--tertiary-ink` is for hints and unrecorded values. Essential state never uses it.
-- Change a colour, change this table, and let `PaletteDepthTests` move with it. A hex edited in `Palettes.swift` without the table is drift.
+1. 双端当前五入口/五工作区与主规划一致，未恢复旧首页。
+2. 无资料、无AI、权限失败、长文和真实零值均有可继续路径。
+3. 常规/最大辅助字号、深浅外观、长邮箱/长标题可读，重要操作可达。
+4. 原生键盘、VoiceOver、焦点恢复、减少动态完成真实旅程。
+5. 色彩/字体/间距来自现有token，新例外有明确原因与对应回归。
+6. 全局日期/返回/地图/草稿不跳，写失败不丢字。
+7. 事实/原话/推断/未知可辨，用户决定保存和另一端状态可核对。
+8. 新版本截图来自实际原生QA并标合成资料，编译/单元/截图/真机/iCloud分别记录，不用设计评分替代发布验收。
 
-## Typography
+历史图册与日期审查只作来源证据。当前iOS细节见 [五页实现说明](ios/IMPLEMENTATION.md)，当前源代码与真实同范围验证优先于旧截图；不因历史报告写“通过”就宣布本版全部完成。
 
-One scale in `AppTypography`, so no view writes a raw `.system(size:)`. Sizes step by 1–2pt to keep dense evidence tables readable.
 
-```text
-pageTitle     22 semibold    one per page
-sheetTitle    17 semibold    sheets, modals, inspector section heads
-sectionTitle  15 semibold    panel and section titles
-rowTitle      13 medium      row titles: above body text, below section titles
-primary       14             primary reading text
-secondary     13             list bodies, descriptions, panel prose
-label         12 medium      form labels, compact list text
-metadata      11             captions, sources, timestamps
-micro         10             the smallest text allowed: dense counters, inline hints
-numeric       12 semibold    monospaced digits: clocks, durations, counts
-metricSmall   18 semibold    an inline metric inside a panel
-metric        26 semibold    the headline metric of a page
-mono          11             source labels, run IDs, evidence metadata
-kicker        10 semibold    monospaced, uppercase-style group labels
-reportTitle   28             the daily report date only
-```
+## 8. Web 用户记忆控制台
 
-- Native system typography everywhere. `Font.editorial` and `Font.ui` both resolve to the system face; they exist only for call-site compatibility, and new code uses `AppTypography`.
-- A raw `.system(size:)` in a view is reserved for icon glyphs (`Image(systemName:)`), never for text.
-- Monospaced digits are required for anything that sits in a column: times, durations, counts, deltas.
+用户控制台属于 MemoryOS，而不是一张更长的账号设置页。它把“我留下过什么”放在第一层，把身份、设备、权益与反馈收进“账号与设置”。记忆正文只从用户主动选择的本地副本读取；账号服务器不保存、页面也不上传。
 
-## Surfaces and components
+### 8.1 结构与材质
 
-### The panel system
+- 桌面为浮动顶栏 + 左侧空间栏 + 阅读区；移动端为顶栏 + 固定底栏五个入口（首页/长河/理解/River/我的）。合集、地点从首页与长河进入，不另加顶级社交入口。
+- 视觉沿用原生柔光拟态的语汇：画布 `#EDF1F6`、表面 `#EDF2F7`、正文 `#28364B`、主色 `#2F6CF5`；相向柔和明暗阴影、内凹输入与选中槽、24px 连续圆角、半透明顶栏。源码token在 `website/user/assets/style.css`。
+- 三套外观与原生偏好同名同义：**柔光**（默认海雾蓝拟态）、**手记**（暖白纸面）、**夜色**（深色蓝）。改显示名不改变账号或副本数据。
+- 标题使用宋体/衬线制造阅读停顿，正文与控件使用系统无衬线；River 的理解、旧日回声和空态允许用较大衬线句，不把所有正文做成仪表盘。
+- River Glyph v2 作为唯一图标家族，网页通过本地雪碧图复用同一几何；主轮廓 `currentColor`，水位 `--glyph-accent`。不新增第二套网页图标。
 
-There is exactly one panel primitive. `RiverPanel` is built from a header and a body, and every card, group and section in the app is an instance of it.
+### 8.2 页面内容
 
-```text
-RiverPanel(title:systemImage:detail:accent:trailingText:level:padding:)   a titled panel
-RiverPanel(level:padding:)                                                a bare panel
-RiverPanelRow(title:detail:systemImage:showsDivider:)                     a row in a panel
-RiverValueRow(title:value:detail:valueTint:showsDivider:)                 a label / value / source row
-RiverPanelTitle / RiverIconWell / RiverSectionHeading / RiverGroupLabel    header anatomy
-RiverRule / RiverRowDivider                                               the only two 1px rules
-RiverStat / RiverStatStrip / RiverStatDivider                             a metric row inside a panel
-```
+- **记忆首页**：先出现“今天”和最近留下的原话，再出现长河密度、那年今天、久未重读与正在成形的理解。统计只描述天数、地点、合集和收藏，不做记忆分数、连续打卡或情绪评价。
+- **长河**：日期、月份、类型、地点、标签、收藏与合集可组合筛选；搜索高亮只标记查询词。卡片保留原话、来源与时间，详情提供收藏、复制原话、回到那天和相关日子。
+- **合集**：章节来自副本的显式分组；收藏只写入当前浏览器。没有章节时说明如何在原生 App 整理，不用算法自动宣布“人生转折”。
+- **地点**：只按副本里的地点名显示抽象地图，不读取浏览器定位，不画真实路线，不把“最早记录”说成“人生第一次”。
+- **理解**：每张卡先给依据、范围和状态，再给暂定解释；确认、纠正、撤销只影响本卡。没有依据的卡不展示结论，不使用模型自报置信度百分比。
+- **问 River**：本机检索原话并逐条引用；没有匹配就如实说没有找到。未接模型时固定标注“本机检索 · 未调用模型 · 未上传”，不用生成式文案冒充回答。
+- **账号与设置**：复用七栏目（概览/设备与会话/权益与兑换/登录安全/安全活动/反馈与回复/资料与偏好）；密码、令牌、幂等键与失败保留规则沿用原生账号口径。
 
-Anatomy of a panel:
+### 8.3 交互与失败
 
-1. A header band at least 44pt tall: optional icon well or 3pt accent bar, then the title, then an optional detail line, then optional trailing text.
-2. The body, padded by `AppSpacing.panelPadding`.
-3. A 1px `--border` outline around the whole panel, radius `AppRadius.panel`.
-
-There is deliberately **no** rule between the header and the body, the way macOS System Settings groups a header above its box. When a panel needs to separate two regions inside its body — a filter bar above a list, say — it introduces an explicit `RiverRule()` at that boundary rather than relying on the header.
-
-Rows inside a panel use `RiverPanelRow` or `RiverValueRow` and are separated by `RiverRowDivider`, which is inset so it lines up with the row's text rather than the panel edge. Because a row cannot know its own position, the last row in a panel passes `showsDivider: false` (or the loop guards on its index).
-
-Three elevation levels, and only three:
-
-```text
-.inline     outline only, no shadow     panels inside a scrolling page
-.raised     outline + 5pt soft shadow   panels on a rail, a drawer, or a header band
-.floating   outline + 20pt shadow       sheets, the lock gate, the recovery gate, the feedback banner
-```
-
-`.inline` is the default and carries no shadow, deliberately: dozens of shadowed panels in one scroll view is both slow and visually noisy. Depth on a page comes from the canvas/panel colour step, not from shadow.
-
-### Page scaffold
-
-Every destination is one of two shapes, and both put their content on the same line.
-
-```text
-RiverPage              header scrolls with the content (most destinations)
-RiverHeaderBand        header stays put, body scrolls (记忆, 设置)
-  └── RiverPageBody    the shared scrolling column, optionally lazy
-```
-
-Both use `AppSpacing.headerTop` (20) below the toolbar, `AppSpacing.page` (24) as the side gutter, `AppSpacing.headerBottom` (16) above the first panel, and `AppLayout.contentMaxWidth` (920) as the reading width. **One content width for every destination** — dashboards and timelines used to run wider (1000/1040) and Ask/数据库 narrower (760/820), which made the版心 jump when switching pages; that inconsistency is gone. A page never hand-rolls `ScrollView` + padding + background.
-
-### Page header
-
-One anatomy for every destination: a 22pt title, one line of context, and actions on the right. There is no page-level kicker — the title already says where you are, and mixed "SYSTEM" / "TIMELINE" / "设置" labels were an inconsistency, not a hierarchy.
-
-### Sidebar date block
-
-Compact, always visible, keyboard accessible. Shows date and range, not a full calendar. The active workspace and selected date must be visually distinct.
-
-### Day Brief
-
-One concise summary plus observed activity duration, evidence coverage, and status. It must never present an unsupported single life score.
-
-The summary reads from `TimelineAnalysisSnapshot`. Each of at most three insight rows shows its time, short claim, epistemic type and source detail, and opens the matching timeline item. A material unexplained item may occupy one row; ordinary missing time stays unknown without becoming a task. Data coverage describes what was recorded; it is not confidence in an interpretation.
-
-### Core cards
-
-Cards exist only when they are interactive entry points. Phase 1 shows at most 2–3 prominent cards, prioritizing Work & Learn and Footprints. Other domains use compact rows or expandable details.
-
-Every card has: title, observed value, coverage and source state, primary action, evidence action, and correction action when applicable. A confidence score appears only when calibrated for that claim.
-
-### Timeline
-
-The timeline answers "what happened, and when". Its default `AI 整理` mode presents the day as an automatically prepared reading of nearby activity; `原始记录` remains the complete evidence table. Neither mode is a decorative river chart: no gradient spine, glowing app bubbles or animated water. App logos appear only as small local app identifiers beside an AI activity segment.
-
-The 时间线 page leads with the day, then the ordered rows:
-
-```text
-TimelineWorkspaceView          the 时间线 destination
-  pinned header                PageHeader + RiverDayRibbon (the whole day, always visible)
-  day overview panel           four compact stats, a RiverRule, a coverage footnote
-  journal panel                the day's writing, collapsed to a summary until edited
-  timeline panel               AI 整理 / 原始记录 switch; digest or RiverTimelineView
-```
-
-`RiverDayRibbon` is the one-glance component: a 00:00–24:00 band, 6-hour guides, one segment per recorded item, and a "现在" tick on today. Ordinary days use an even 24-hour scale; local clock-change days map the actual 23/25-hour interval and identify the offset on the time cursor. It is pinned in the header rather than repeated in the body, because it answers a question about the whole day and the row list scrolls away. It exists because a row list can say what happened but only a laid-out day shows *where* the recorded evidence sits and how much of the day holds none. It is deliberately not a chart — no per-category rainbow, no axis drama.
-
-The ribbon is also the page's **scrubber**. Hovering draws a crosshair with the time under the pointer and says "未记录" over empty time; pressing and dragging scrolls to evidence only when a row covers that moment. A folded 碎片带 expands and selects the member at that moment. A capture marker has a small hit area matching its visible tick. Clicking empty time never jumps to a nearby row. The translation from a moment to a row lives in `TimelineDisplayList.scrubTarget(for:rows:)`, the same code the list renders from, so the two cannot drift.
-
-`TimelineAIDigestView` is the default. It shows one short overview, then activity segments grouped by time of day; each segment links back to its contributing `ActivityTimelineItem`s. Overview evidence can open an activity, capture, or the matching journal entry. User captures stay separate and optional. Unknown intervals keep their real start and end, and app-only input is rendered as app usage with unknown detail. A changed source marks the saved digest as old while the debounced refresh runs. If a candidate was not returned by the model, it still appears as a local factual row.
-
-`AIAssistantStore.organizeTimeline` sends candidates only when the existing **自动采集与 AI 分析** preference is enabled and the model connection has been verified. Window titles remain behind their independent preference. The model returns candidate IDs, title and summary; local code validates IDs, grouping gaps and text lengths, then derives timestamps, durations and source sessions from local records. The normalized digest and source fingerprint are stored in `ai_results`; the related `AnalysisRun` is stored as `timelineDigest`. A repeated source fingerprint skips the request. The daily capture schedule and opening a date in Timeline both use this same path; live session updates debounce for 90 seconds.
-
-The model is not allowed to promote app names into task completion, mood, location or intent. Segments without a window title or user annotation use local app/time wording, even if the model returned a more specific sentence. Unsupported JSON or IDs leave the local list readable and report the issue in the AI status line.
-
-App logos are loaded from local application bundles using the recorded bundle ID, grouped by foreground duration and limited to two visible icons plus `+N`. Missing or uninstalled apps use a neutral placeholder. Capture cards do not use app logos.
-
-The `原始记录` mode remains `RiverTimelineView`, an evidence table with five fixed columns:
-
-```text
-time column      54pt   start over end, monospaced digits, trailing-aligned
-spine column     26pt   the node, and the connector drawn behind it
-content                 title line, then one evidence line; badges ride the title line
-duration column  78pt   duration, right-aligned
-control column   22pt   the row's own affordance: run disclosure, or detail chevron
-```
-
-**Two lines per row, not three.** A row says *when* and *what happened*; the second line is the evidence — note → capture tag → 碎片带 (composition + span) → gap → window title → span vs foreground cover → app composition — plus where the row came from, with any part the title already stated removed. There used to be a third line for the source, and a trailing "· N 个原始片段" counter: two lines said the same thing, and the counter is an instrument's internal number, not something that happened. Both now live in the inspector and the context menu.
-
-Six rules keep the rows honest, aligned and quiet:
-
-- **The connector is continuous.** Rows carry no vertical padding of their own — the padding lives inside each column, and the content column supplies the row's height — so a background connector meets the next row's. It is trimmed at the first and last row so the series has two clear ends, and **the trim is computed after expansion**: expanding a 碎片带 inserts child rows, so the run itself is no longer last and its lower half must keep drawing.
-- **The connector is visible.** `Color.timelineSpine` (`accent` blended into the current surface) reads at ≥ 2.2:1 in every palette, and stays lighter than a solid node so a node still reads as a node. A gap's connector uses the neutral `strongSeparator`, and a 碎片带 draws its connector dashed — the same line, saying "this stretch is made of many small pieces".
-- **Alignment is structural, not arithmetic.** The connector repeats the row's own column grid inside its background and is centred in the same spine column that centres the node. Never position it with a computed `offset(x:)`: that drifts from the rendered layout the moment a column width or an inner padding changes.
-- **Meaning never rests on colour alone.** An activity is a 19pt rimmed node with a solid centre; a gap is a hollow neutral ring; a written note is a warm square stamp; a 碎片带 is a rim with two small dots; a fragment inside an expanded run is a smaller dot, indented. Selection adds a larger soft halo. An empty list explains itself: "没有符合条件的节点" is not the same message as "这一天还没有记录".
-- **Hover is not selection.** Hover is a neutral wash (`ink` at 5%) with the detail chevron fading in; selection is `accentSoft` with a 2.5pt accent capsule as its leading rule and `AppRadius.row`. The two must be one glance apart, because a hover state you mistake for a selection makes the list feel broken. (The raised `chip` fill cannot serve as the hover wash: in light mode `accentSoft` and `chip` are within 1.001:1 of each other.)
-- **Affordances earn their ink.** The trailing detail chevron appears only on the hovered or selected row — a permanent column of chevrons is noise on a list where every row is already clickable. The exception is a 碎片带, whose disclosure is always drawn: it is a container, and its collapsed state has to be visible without hovering.
-
-A category chip is drawn only for the two categories a reader cannot infer from the node and the app names (`系统`, `快记`). Rows for 工作 / 浏览 / 娱乐 used to carry one each, restating what the node colour and the statistics already said.
-
-**碎片带 (fragment runs).** Measured on a real machine, 72% of a day's nodes are shorter than three minutes — one-minute app switches that no one needs to confirm. They are folded at the display layer: `ActivityTimeline.items` always holds every node (export, search, the evidence console and the daily review all read that), while the list reads `foldedItems`. Folding never changes a statistic and never drops a source record. The fold is visible and reversible: the day overview's 短切换 metric counts the folded nodes, an expanded run lists its members inline, and the panel footnote says where they went. `TimelineDisplayList` is the single owner of the folded row list, `ActivityTimelineEngine.foldFragments` of the folding itself.
-
-**Switching is neutral.** App switching does not imply a loss of focus — most of it is multi-tool composition, which *is* work. So a run's name is decided by its **structure**, not by its switch count, and every phrase is a pattern description: "组合工作", "短切换", "分散在 N 个应用之间" — never "分心". `FragmentRunShape` classifies each run from app structure alone:
-
-```text
-intraApp       every member is the same app        "Chrome 里的 8 段短切换"（换窗口/换页面）
-composedWork   dominant app ≥ 60% of foreground    "组合工作 · N 段"，第二行 "在 Xcode 与 终端 之间来回 3 次"
-               AND the run returns to it ≥ 2 times
-wandering      ≥ 3 apps, none above 40%            "N 段碎片"，第二行 "分散在 N 个应用之间"
-mixed          everything else                     "N 段碎片"，第二行退回应用构成
-```
-
-The thresholds come from a measured distribution (2026-09-26, 17 days / 2,378 sessions / 133 runs on the author's machine): dominant-app share p50 = 0.74, so composition is the *typical* shape; the composed rule captures 40% of runs; wandering runs measured **zero** — that tier stays as a deliberate silence. Retune thresholds by re-running the distribution, never by eye. Two consequences worth keeping:
-
-- **Structure beats category.** The composed runs' dominant categories on real data were 浏览/其他/沟通 — work-category runs measured zero, so any "is it work?" category condition would never fire. The ribbon draws composed runs' members at ordinary weight for structural reasons only.
-- **The 专注 metric reads ≈ 0 on this data** because the keyword classifier maps the user's actual apps to 浏览/其他. That is a classifier-vocabulary gap, not a folding bug — and it will partly self-heal now that window titles are sampled every 25 s (the classifier reads the title too). Do not "fix" it by redefining 专注.
-
-The review page may add **one sentence** under 时间分布, only when the range's busiest day reached 100 短切换 (p90 of the measured daily distribution is 121): "近 7 天里，9 月 25 日 的短切换最多（248 段），多为多工具之间的组合工作。" Default state is silence.
-
-A 碎片带 is not an annotatable evidence item: it is a view-level aggregate, so it has no annotation key and the inspector offers an explanation instead of an 编辑 button that would save nothing (see `ActivityTimelineItem.isAnnotatable`).
-
-A selected row uses `AppTheme.accentSoft` with a 2.5pt accent capsule as its leading rule and `AppRadius.row`. A reviewed row uses a text label such as `已确认`, never colour.
-
-`ActivityClassifier.color(for:)` and `AppTheme.categoryTint(_:)` return one accent for every category, with only system noise and unrecorded time stepping down to the neutral tone. There is intentionally no per-category colour palette: that would turn the evidence report into a productivity chart. Both must track the `--accent` and `--tertiary-ink` tokens.
-
-**Where the evidence comes from.** The row's second line is only as good as the data behind it, so the collector is part of this component:
-
-- Window titles are sampled **every 25 seconds while a session is open**, not once at the moment of the app switch. Sampling at the switch alone loses almost everything: the target app frequently has no window yet at that instant (2,297 recorded fragments on the author's machine contained exactly one title), and a missing title is one of the inputs to "needs review". `WindowTitleSampling` decides what a reading means — a failed read never erases a title, a session with no title adopts the first one it gets, and a title that changes for two consecutive samples (50s) splits the session at the first sighting, with unread badges like "(3)" ignored so a notification does not cut a block in half.
-- The sampling timer only exists while titles are enabled **and** accessibility is granted. When the permission is missing the timeline says so above the rows, with an action, once — dismissible, and permanently visible in Settings › 记录. Silently showing a day of "没有记录的时间" while the real cause is a missing permission is the failure mode this notice exists to prevent.
-- **The keyword classifier cannot know every app.** On the measured machine it mapped the user's main tools to 浏览/其他, which left the 专注 metric effectively empty (4 minutes across 17 days) — a vocabulary gap, not a folding bug. Settings › 记录 › 应用类别 lets the user assign a category per app, and the mapping is applied at **read time**: history recomputes instantly, the raw day files and the V2 evidence layer are never rewritten, and removing a mapping falls back to re-deriving from app name + title. Interpretation is a layer over evidence, never baked into it — the same rule the annotation system follows.
-- **Window titles stay inside three boundaries**: the encrypted local files and backups, the on-screen inspector, and AI requests behind their own explicit toggle. The review range's Markdown export carries aggregates only; the timeline Markdown builder is the only title-bearing export, declares it in its header, and currently has no UI entry.
-
-The 今日 page must not repeat the timeline. It shows the report header, the day brief, entry cards, compact facts and the review queue (`evidenceInbox`), and reaches the timeline through an action — a second copy of the timeline on 今日 was removed for exactly this reason. The current live-capture state appears as a small status pill beside today's date, within the main page header; it is not a second card in the right rail or sidebar footer.
-
-### Evidence console
-
-The console and inspector share one right-hand column:
-
-- **Review queue (`EvidenceConsoleView`)** — only the day's material unexplained evidence, capped at four prioritized cards. The queue is empty when nothing needs the user's attention; it never fills the rail with collection status or trust information. Starting capture is available from the Today's header when paused.
-- **What earns a confirmation** — the review queue is a triage list, not a to-do list. A node enters it only when it is an **activity** (never a gap — sleep and being away are life, and the daily review already speaks for them, never a 碎片带 whose members are all under three minutes), **at least 20 minutes** (`reviewMaterialityThreshold` — the same unit the console's own copy uses: "系统无法解释的二十分钟"), **and has nothing that explains it**: no window title, no annotation. The first criterion used to be "≥ 3 minutes and missing a window title", which silently degraded into "≥ 3 minutes" once titles were not being captured — the queue was never empty, which is the opposite of what it was built for ("日常状态是空的"). A long block with a title explains itself and does not need confirming. Items are ordered by unexplained duration, longest first, capped at four. Each row offers 写一句 (inline one-line annotation, saved as the node's title and marked reviewed — the timeline renames itself immediately) and 不用管 (mark reviewed silently); tapping the row opens the full evidence detail.
-- **The instrument does not record itself** — `ActivityClassifier.isRecordable` excludes River Diary (by bundle id and name). Time spent looking at the gauge is not observed life; it is excluded from new sessions and from aggregates.
-- **Detail (`InspectorPanel`)** — the selected fact, user note, or inference; its time range, original sources, why it is shown, evidence detail, and correction controls. “依据细度” describes whether an app, window title, or user note is present; it does not score semantic truth. The panel distinguishes facts from explanations without relying on color alone.
-
-Trust and storage information live under Settings › 隐私与备份, alongside encryption, recent collection, evidence coverage, backups and app lock. The compact review rows keep a tinted kind chip, source metadata in monospaced digits and a short “why this needs review” explanation. Below `AppLayout.sideInspectorBreakpoint` the column collapses and the selected detail opens as the floating Inspector instead.
-
-### Buttons
-
-Four button treatments, and no ad-hoc `background` + `foregroundStyle` pairs:
-
-```text
-.primaryCTA()                 filled accent; one per page, the page's main action
-.secondaryCTA()               outlined
-.smallAction(dark:)           compact inline action inside a panel or a row
-.iconAction(prominent:)       a single SF Symbol, square hit area
-```
-
-### Scroll indicator
-
-Scrolling surfaces never show the system NSScroller — it is chunky, stays resident under the "always show scrollbars" preference, and ignores `.scrollIndicators(.hidden)` on some containers. `riverScrollIndicators()` replaces it with two layers: an AppKit-level suppressor that closes the native scroller, and (macOS 15+) a 3pt hairline thumb in 22% ink that appears while scrolling and fades out shortly after. Wheel, trackpad and swipe scrolling are unaffected. Every `ScrollView` in the app goes through this primitive — a bare `ScrollView` is drift.
-
-### Segmented picker
-
-`RiverSegmentedPicker` is the only exclusive-mode switcher (复盘范围、记忆范围、对照周期、外观/密度). It is a chip-filled container with the selected segment raised on a `Color.surface` pill and a 1px border. The native `.pickerStyle(.segmented)` is banned: its filled-blue bezel belongs to System Settings, not to this instrument.
-
-### Empty and partial states
-
-Every empty state explains what is missing, why it matters, and the next action. An empty state inside a panel is chrome-less (`EmptyStateView(showsChrome: false)`) so it does not nest an outline inside an outline; `RiverInsetPanel` is the tinted note block used for guidance and boundary statements.
-
-
-## Interaction and accessibility
-
-- Keyboard: previous/next date, Today, range menu, workspace shortcuts, focus evidence, confirm/correct/undo.
-- VoiceOver: announce workspace, selected date/range, insight type, time range, source state, and whether a row opens evidence or needs explanation.
-- Focus order: date block → workspace navigation → Day Brief → core actions → cards → timeline → evidence console.
-- Do not rely on hover. Use visible affordances and native button/list behavior. Hover is an enhancement, selection is state: hover may add a neutral wash or fade in an affordance, but the selected state is always the stronger one and every hover-only affordance has a keyboard path.
-- Respect reduced motion. State changes must remain understandable without animation.
-- Contrast must meet macOS accessibility expectations; color is never the only encoding.
-
-## Mac window layouts
-
-- **Wide (≥`AppLayout.sideInspectorBreakpoint`):** sidebar + main workspace + the right column shows only the prioritized review queue. When a timeline node is selected, the same column is taken over by `InspectorPanel` — queue and detail share one slot, so the rail never competes with the inspector.
-- **Standard:** sidebar + main workspace; evidence detail opens as a drawer/Inspector; the console is hidden.
-- **Narrow:** sidebar remains navigable; prominent cards become compact rows; evidence and replay open as a sheet or Inspector; never require horizontal scrolling for core actions.
-- The minimum window size preserves date navigation, primary action, Day Brief, and the current evidence state.
-
-## State language
-
-```text
-loading       preserve structure; show quiet progress
-empty         explain absence; offer permission or manual action
-partial       show available facts; name missing sources
-success       show observed value, source coverage, and action
-ai-failed     preserve facts; explain unavailable interpretation; retry
-needs-review  show inference and evidence; confirm, edit, or ignore
-stale         show last valid report and why it is outdated
-```
-
-## Voice and copy
-
-Use factual, non-moralizing language: “31 minutes of video unrelated to the selected project” rather than “you wasted 31 minutes.” Use “unknown” when evidence is insufficient. Every AI interpretation must offer “why this judgment” and “correct it.”
-
-## Phase 1 visual acceptance
-
-- Left date context is always available and never duplicated in the main content.
-- Today can be understood in ten seconds without opening a detail page.
-- No generic card mosaic, oversized hero, gradient background, or ornamental icon grid.
-- Timeline and evidence console remain visibly connected.
-- Loading, empty, partial, failed, stale, and needs-review states are specified before implementation.
-
-## How to check a change against this document
-
-1. **Surface** — is the new thing a `RiverPanel` (or a `RiverPageBody` inside a `RiverPanel`)? If it draws its own `background` + `overlay` + `cornerRadius`, it is a new surface primitive and should not exist.
-2. **Shape** — does every radius and spacing come from `AppRadius` / `AppSpacing`, multiplied through `@Environment(\.riverDensity)`? A raw `cornerRadius: 8` or `padding(14)` is drift.
-3. **Type** — does every text font come from `AppTypography`? A raw `.system(size:)` is only valid on an `Image(systemName:)`.
-4. **Colour** — does every colour come from `Color.*` or `AppTheme.*`? `.orange`, `.red`, `Color.accentColor`, `#2C8158` are drift, and the last one silently ignores dark mode.
-5. **Position** — is this the last row in its panel? Then it must pass `showsDivider: false`.
-6. **Elevation** — is `.raised` or `.floating` justified? Inside a scrolling page, `.inline` is correct.
-7. **Cross-element alignment** — does anything line up across rows or across panels (a connector, a column, a rule)? Then it must share the same column grid rather than a computed offset. Reach for `TimelineRowMetrics`-style shared constants, and put the element inside a `background`/`overlay` that repeats the grid.
-8. **GeometryReader is greedy in both directions** — a `GeometryReader` with only a `minHeight` has no upper bound. Inside a ScrollView the proposal is the ideal height and the greed stays invisible; move the same view into a fixed header (or any unscrollable container) and it swallows the window's real height and pushes the page out from under it — this is how 260pt of blank canvas appeared under the day ribbon, and `TimelineRibbonTests` exists because of it. Cap every `GeometryReader` with a fixed `.frame(height:)`; the only exception is the root layout reader in `RiverShell`.
-9. **Does it render?** — a view-hierarchy check cannot see a broken connector, an off-centre node, or a filled ribbon. `Tests/RiverDiaryMacTests/TimelineRenderingTests.swift` renders components offscreen with `ImageRenderer` and asserts on the pixels; extend it when a change alters geometry, and never re-derive the numbers the view uses — measure the node out of the bitmap. `TimelineRowAnatomyTests.swift` is the same instrument for the row's *appearance*: it measures the spine's contrast at the node axis, the selected row's fill, and counts the dark pixels in the trailing control column to prove the chevron only appears when it should.
-10. **Is the colour ladder intact?** — a hex edited in `Palettes.swift` is a claim about contrast. `PaletteDepthTests` recomputes WCAG contrast for every token in all eight palettes × both appearances; if a token was lightened or darkened, update the table in *Color tokens* and the test's band together, and say why in the comment.
-11. **Does the change shuffle evidence or copy?** — the timeline reads `foldedItems`, everything else reads `items`. A change that moves a statistic onto the folded list, or makes the fold drop a node, is a data change wearing a display change's clothes.
-
-Run the whole suite before packaging:
-
-```bash
-cd macos/RiverDiaryMac
-source ../../scripts/select_xcode.sh && "$RIVER_SWIFT_EXECUTABLE" test --disable-sandbox
-```
-
-Then rebuild the shipping app so `dist/` is never stale:
-
-```bash
-make mac        # or ./macos/RiverDiaryMac/make_app.sh
-```
+- 记忆副本只读；导入失败保留原副本，解析报告说明读取了多少段、跳过了多少段。关闭标签页后不保留会话副本；收藏只存 ID，理解纠正只存当前标签页。
+- 账号请求失败不伪装空记录；网络错误保留输入并允许重试。401先尝试一次刷新，再决定退出；退出与撤销沿用 fail-closed。
+- 空态必须给出继续路径：导入副本、看示例、先写一句、去长河、回首页。没有记忆时不能展示伪造的统计或“已同步”。
+- 触控目标至少44px；键盘可达全部空间、筛选、卡片、对话框和账号表单；`Escape` 关闭对话框，程序化聚焦标题不显示焦点框；减少动态时关闭漂移与位移。
+- 深浅手记三套外观都要检查正文/次级文字/状态标签对比度；小字元数据不能承载唯一必要信息。
+
+### 8.4 验收
+
+1. 七空间与账号七栏目在320/390/768/1024/1440宽度无横向溢出，底栏不遮断必要动作。
+2. 三套外观下，面板、输入、选中、标签和空态可辨；正文与次级文字保持可读对比。
+3. 本机副本导入、旧 `entries` 快照兼容、搜索、日期意图、本机回答、收藏、理解卡确认/纠正/撤销可完成并保留失败输入。
+4. 账号设备/会话撤销、密码、权益兑换、反馈、注销在合成会话与 mock API 下完成；真实账号与生产联调未完成前不称通过。
+5. 键盘、焦点恢复、最大辅助字号、VoiceOver、减少动态与真实 Safari/WebKit 仍按发布前清单验证，不用设计截图替代。

@@ -1,0 +1,418 @@
+{
+  "themes": {
+    "river_journal": "河流手记",
+    "city_roamer": "城市漫游",
+    "time_film": "时光胶片",
+    "light_everyday": "轻盈日常",
+    "life_constellation": "生活星图",
+    "day_garden": "日子花园",
+    "life_weekly": "生活周刊",
+    "tidal_clock": "潮汐时钟",
+    "pocket_scrapbook": "随身剪贴簿",
+    "pure_life": "纯净生活"
+  },
+  "screens": [
+    {
+      "id": "pure_life",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/pure_life--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/pure_life--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/pocket_scrapbook--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/pocket_scrapbook--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/tidal_clock--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/tidal_clock--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/life_weekly--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/life_weekly--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/day_garden--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/day_garden--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/life_constellation--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/life_constellation--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/light_everyday--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/light_everyday--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/time_film--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/time_film--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/city_roamer--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/city_roamer--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "readable dark",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--readable-dark--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "readable light",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--readable-light--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "real empty day",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--real-empty-day--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "photo filter",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--photo-filter--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "sleep provenance",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--sleep-provenance--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "first viewport",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--first-viewport--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "busy day",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--busy-day--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "expanded original text",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--expanded-original-text--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "missing data",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--missing-data--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "accessibility preview",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--accessibility-preview--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "accessibility text",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--accessibility-text--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "saved journal",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--saved-journal--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "real empty day",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--real-empty-day--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "photo filter",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--photo-filter--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "sleep provenance",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--sleep-provenance--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "first viewport",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--first-viewport--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "busy day",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--busy-day--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "expanded original text",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--expanded-original-text--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "missing data",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--missing-data--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "real source explanation",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--real-source-explanation--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "per-day draft restored",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--per-day-draft-restored--iPhone-17-Pro.png"
+    },
+    {
+      "id": "pure_life",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/pure_life--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/pocket_scrapbook--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/tidal_clock--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/life_weekly--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/day_garden--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/life_constellation--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "light_everyday",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/light_everyday--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/time_film--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "city_roamer",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/city_roamer--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "restored question draft",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--restored-question-draft--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "editable question",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--editable-question--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "river first viewport",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--river-first-viewport--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "archive",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--archive--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "archive search",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--archive-search--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "footprint empty",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/river_journal--footprint-empty--iPhone-17-Pro.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "restored question draft",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--restored-question-draft--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "editable question",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--editable-question--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "river first viewport",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--river-first-viewport--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "archive",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--archive--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "archive search",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--archive-search--iPhone-17e.png"
+    },
+    {
+      "id": "river_journal",
+      "scene": "footprint empty",
+      "device": "iPhone 17e",
+      "url": "screenshots/river_journal--footprint-empty--iPhone-17e.png"
+    },
+    {
+      "id": "pocket_scrapbook",
+      "scene": "theme interaction · opened cover record",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/pocket_scrapbook--theme-interaction---opened-cover-record--iPhone-17-Pro.png"
+    },
+    {
+      "id": "tidal_clock",
+      "scene": "theme interaction · selected recorded time",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/tidal_clock--theme-interaction---selected-recorded-time--iPhone-17-Pro.png"
+    },
+    {
+      "id": "life_weekly",
+      "scene": "theme interaction · opened cover record",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/life_weekly--theme-interaction---opened-cover-record--iPhone-17-Pro.png"
+    },
+    {
+      "id": "day_garden",
+      "scene": "theme interaction · night chapter",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/day_garden--theme-interaction---night-chapter--iPhone-17-Pro.png"
+    },
+    {
+      "id": "life_constellation",
+      "scene": "theme interaction · selected photo",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/life_constellation--theme-interaction---selected-photo--iPhone-17-Pro.png"
+    },
+    {
+      "id": "time_film",
+      "scene": "theme interaction · selected first frame",
+      "device": "iPhone 17 Pro",
+      "url": "screenshots/time_film--theme-interaction---selected-first-frame--iPhone-17-Pro.png"
+    }
+  ]
+}

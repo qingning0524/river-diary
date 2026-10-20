@@ -1,0 +1,579 @@
+<!DOCTYPE html><html lang="zh-CN" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport">
+<title>河流日记 · 足迹页面 (拟态设计版)</title>
+<!-- Tailwind CSS v3 CDN with forms & container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            canvas: '#EEF2F6',
+            neuBase: '#EEF2F6',
+            darkSlate: '#1E293B',
+            midSlate: '#475569',
+            lightSlate: '#94A3B8',
+            brandBlue: '#2563EB',
+            brandGreen: '#10B981',
+            brandAmber: '#F59E0B',
+            brandPurple: '#8B5CF6'
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+<!-- BEGIN: Neumorphic Styling System -->
+<style data-purpose="neumorphic-shadows">
+    /* Base background */
+    body {
+      background-color: #EEF2F6;
+      color: #1E293B;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Raised tactile neumorphic surface (card level) */
+    .neu-raised-card {
+      background: linear-gradient(145deg, #f7fafe, #e5ebf2);
+      box-shadow: -8px -8px 18px rgba(255, 255, 255, 0.95),
+                   8px 8px 18px rgba(166, 180, 200, 0.38);
+    }
+
+    /* Subtle soft raised element (buttons, tags, badges) */
+    .neu-raised-sm {
+      background: #EEF2F6;
+      box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.9),
+                   4px 4px 10px rgba(166, 180, 200, 0.32);
+    }
+
+    .neu-raised-xs {
+      background: #EEF2F6;
+      box-shadow: -2px -2px 6px rgba(255, 255, 255, 0.85),
+                   2px 2px 6px rgba(166, 180, 200, 0.25);
+    }
+
+    /* Inset/pressed surface (wells, badges, inputs, active states) */
+    .neu-inset-well {
+      background: #E8EEF5;
+      box-shadow: inset 3px 3px 6px rgba(166, 180, 200, 0.38),
+                  inset -3px -3px 6px rgba(255, 255, 255, 0.85);
+    }
+
+    .neu-inset-subtle {
+      background: #EEF2F6;
+      box-shadow: inset 1.5px 1.5px 3.5px rgba(166, 180, 200, 0.3),
+                  inset -1.5px -1.5px 3.5px rgba(255, 255, 255, 0.85);
+    }
+
+    /* Floating bottom tab bar container */
+    .neu-tabbar {
+      background: rgba(238, 242, 246, 0.94);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 -8px 24px rgba(166, 180, 200, 0.32),
+                  0 -1px 3px rgba(255, 255, 255, 0.8);
+    }
+
+    /* Timeline vertical track gradient */
+    .timeline-rail {
+      background: linear-gradient(180deg, #F97316 0%, #EAB308 28%, #A855F7 58%, #60A5FA 85%, #38BDF8 100%);
+    }
+
+    /* Hide scrollbars for crisp native feel */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+<!-- END: Neumorphic Styling System -->
+</head>
+<body class="bg-canvas text-darkSlate min-h-screen relative flex justify-center selection:bg-blue-100">
+<!-- Mobile screen container frame (iPhone 15 Pro form factor max-w) -->
+<div class="w-full max-w-md min-h-screen flex flex-col relative px-4 pb-32 pt-2">
+<!-- BEGIN: Top System Bar -->
+<header class="w-full pt-1 pb-3 flex items-center justify-between text-xs text-slate-800 font-semibold" data-purpose="ios-status-bar">
+<!-- iOS Clock -->
+<span class="text-sm font-semibold tracking-tight text-slate-800 pl-1">09:41</span>
+<!-- iOS Top Icons: cellular, wifi, battery -->
+<div class="flex items-center space-x-2 text-slate-700 pr-1">
+<!-- Cellular Signal -->
+<svg class="w-4 h-3.5 fill-current" viewBox="0 0 17 12">
+<rect height="4" rx="0.6" width="2.5" x="0" y="8"></rect>
+<rect height="6.5" rx="0.6" width="2.5" x="4.5" y="5.5"></rect>
+<rect height="9" rx="0.6" width="2.5" x="9" y="3"></rect>
+<rect height="11.5" rx="0.6" width="2.5" x="13.5" y="0.5"></rect>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-4 h-3.5 fill-current" viewBox="0 0 16 12">
+<path clip-rule="evenodd" d="M8 2.5C10.7 2.5 13.1 3.6 14.8 5.4L8 12 1.2 5.4C2.9 3.6 5.3 2.5 8 2.5ZM8 0C4.4 0 1.2 1.6 -1 4.1L8 13.5 17 4.1C14.8 1.6 11.6 0 8 0Z" fill-rule="evenodd"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-6 h-3 border border-slate-700 rounded-sm p-0.5 flex items-center relative">
+<div class="h-full bg-slate-800 rounded-2xs w-4"></div>
+<div class="w-0.5 h-1.5 bg-slate-700 absolute -right-1 top-0.5 rounded-r"></div>
+</div>
+</div>
+</header>
+<!-- END: Top System Bar -->
+<!-- BEGIN: Navigation & Global Control Header -->
+<section class="flex items-center justify-between mt-1 mb-4" data-purpose="main-header">
+<!-- Title & Live Status -->
+<div class="flex items-center space-x-2.5">
+<h1 class="text-2xl font-bold tracking-tight text-slate-900">足迹</h1>
+<!-- Realtime status badge (inset neumorphic well) -->
+<div class="neu-inset-subtle px-2.5 py-1 rounded-full flex items-center space-x-1.5">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-xs font-medium text-emerald-700">实时记录中</span>
+</div>
+</div>
+<!-- Action capsules: Date Picker Capsule & Settings Button -->
+<div class="flex items-center space-x-2.5">
+<!-- Date Switcher Capsule -->
+<button class="neu-raised-sm px-3 py-1.5 rounded-full flex items-center space-x-1.5 text-xs font-medium text-slate-700 active:scale-95 transition-transform" data-purpose="date-picker-button">
+<!-- Calendar Icon -->
+<svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect>
+<line x1="16" x2="16" y1="2" y2="6"></line>
+<line x1="8" x2="8" y1="2" y2="6"></line>
+<line x1="3" x2="21" y1="10" y2="10"></line>
+</svg>
+<span class="">5月16日 · 今天</span>
+<!-- Dropdown caret -->
+<svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M19 9l-7 7-7-7"></path>
+</svg>
+</button>
+<!-- Settings Gear Button -->
+<button aria-label="设置" class="neu-raised-sm w-8 h-8 rounded-full flex items-center justify-center text-slate-600 active:scale-95 transition-transform" data-purpose="settings-button">
+<svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="12" cy="12" r="3"></circle>
+</svg>
+</button>
+</div>
+</section>
+<!-- END: Navigation & Global Control Header -->
+<!-- BEGIN: Master Track Map Card -->
+<section class="neu-raised-card rounded-3xl p-4 mb-5" data-purpose="master-map-card">
+<!-- Map Header Info -->
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center space-x-2">
+<span class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-400"></span>
+<h2 class="text-sm font-bold text-slate-800">今日漫步轨迹</h2>
+<!-- Distance Badge -->
+<span class="neu-inset-subtle text-[11px] font-semibold text-blue-600 px-2 py-0.5 rounded-full">3.6 km</span>
+</div>
+<!-- Stops badge -->
+<span class="text-xs text-slate-500 flex items-center space-x-1">
+<span class="text-blue-500 text-xs">✦</span>
+<span class="">3 处驻足标点</span>
+</span>
+</div>
+<!-- Stylized Neumorphic Vector Map Inset Container -->
+<div class="neu-inset-well rounded-2xl p-2 relative h-48 overflow-hidden flex flex-col justify-between" data-purpose="map-viewport">
+<!-- SVG Map Graphic with River Curve & Waypoints -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" fill="none" viewBox="0 0 360 190">
+<!-- Ambient river/water zone background -->
+<path d="M0,130 C110,135 190,145 360,120 L360,190 L0,190 Z" fill="#E0EDFB" opacity="0.85"></path>
+<!-- Subtle street grid layout lines -->
+<line stroke="#D3DFED" stroke-dasharray="3 3" stroke-width="1.2" x1="20" x2="340" y1="35" y2="35"></line>
+<line stroke="#D3DFED" stroke-dasharray="3 3" stroke-width="1.2" x1="20" x2="340" y1="75" y2="75"></line>
+<line stroke="#D3DFED" stroke-width="1.2" x1="100" x2="100" y1="10" y2="120"></line>
+<line stroke="#D3DFED" stroke-width="1.2" x1="220" x2="220" y1="10" y2="135"></line>
+<!-- River Edge Shoreline -->
+<path d="M0,128 C120,133 210,146 360,118" stroke="#93C5FD" stroke-linecap="round" stroke-width="2.5"></path>
+<!-- Walking trajectory dotted arc path -->
+<path d="M 52,142 C 100,105 150,55 208,62 C 255,68 280,100 305,125" stroke="#6366F1" stroke-dasharray="5 5" stroke-linecap="round" stroke-width="3"></path>
+<!-- Node 1: Start (街角咖啡) -->
+<circle cx="52" cy="142" fill="#3B82F6" r="8" stroke="#FFFFFF" stroke-width="3"></circle>
+<circle cx="52" cy="142" fill="#FFFFFF" r="2.5"></circle>
+<!-- Node 2: Midpoint (浅水湾) -->
+<circle cx="208" cy="62" fill="#8B5CF6" r="8" stroke="#FFFFFF" stroke-width="3"></circle>
+<circle cx="208" cy="62" fill="#FFFFFF" r="2.5"></circle>
+<!-- Node 3: Finish (江边防洪堤) -->
+<circle cx="305" cy="125" fill="#F97316" r="9" stroke="#FFFFFF" stroke-width="3"></circle>
+<circle cx="305" cy="125" fill="#FFFFFF" r="3"></circle>
+</svg>
+<!-- Top Row Map Pills (Road & Waypoint 2) -->
+<div class="relative z-10 flex justify-between items-start pt-1 px-1">
+<div class="neu-raised-xs bg-white/80 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] text-slate-500 font-medium border border-white/60">
+            南通 · 江边路段
+          </div>
+<!-- Midpoint Tag (浅水湾 14:15) -->
+<div class="neu-raised-xs bg-white/90 px-2.5 py-0.5 rounded-full flex items-center space-x-1 shadow-sm border border-white/80 mr-12 mt-1">
+<span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+<span class="text-[10px] font-bold text-slate-700">浅水湾</span>
+<span class="text-[9px] text-slate-400">14:15</span>
+</div>
+<!-- Zoom In/Out Floating Capsule Controls -->
+<div class="neu-raised-xs bg-white/90 rounded-lg flex flex-col p-0.5 shadow-sm">
+<button class="w-5 h-5 flex items-center justify-center text-xs font-bold text-slate-600 hover:text-blue-600">+</button>
+<div class="w-full h-px bg-slate-200"></div>
+<button class="w-5 h-5 flex items-center justify-center text-xs font-bold text-slate-600 hover:text-blue-600">−</button>
+</div>
+</div>
+<!-- Bottom Row Waypoint Callouts on Map -->
+<div class="relative z-10 flex justify-between items-end pb-1 px-1">
+<!-- Waypoint 1 (街角咖啡) -->
+<div class="neu-raised-xs bg-white/90 px-2.5 py-1 rounded-full flex items-center space-x-1 shadow-sm border border-white/80 mb-1">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+<span class="text-[10px] font-bold text-slate-800">街角咖啡</span>
+<span class="text-[9px] text-slate-400">08:46</span>
+</div>
+<!-- Waypoint 3 (江边防洪堤 终点) -->
+<div class="neu-raised-xs bg-white/95 px-2.5 py-1 rounded-full flex items-center space-x-1 shadow-sm border border-amber-200/60 mb-2">
+<span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+<span class="text-[10px] font-bold text-slate-800">江边防洪堤</span>
+<span class="text-[9px] text-orange-600 font-semibold">17:32 终点</span>
+</div>
+</div>
+</div>
+<!-- Map Footer Metric Row -->
+<div class="mt-3 pt-2 flex items-center justify-between text-xs border-t border-slate-200/60 px-1">
+<div class="text-slate-600">
+          累积步数 <span class="font-bold text-slate-800 tracking-tight">7,842</span> 步
+        </div>
+<div class="flex items-center space-x-1 text-emerald-600 font-medium">
+<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+<polyline points="20 6 9 17 4 12"></polyline>
+</svg>
+<span class="text-[11px]">GPS 已校准记录</span>
+</div>
+</div>
+</section>
+<!-- END: Master Track Map Card -->
+<!-- BEGIN: Timeline Section Header & Notice Banner -->
+<div class="flex items-center justify-between mb-2.5 px-1" data-purpose="timeline-section-header">
+<div class="text-sm font-bold text-slate-800 flex items-center space-x-1.5">
+<span class="">时间线</span>
+<span class="text-xs font-normal text-slate-500">(共 5 段旅程与移动)</span>
+</div>
+<button class="text-xs text-blue-600 font-medium hover:underline flex items-center space-x-0.5">
+<span class="">按时间倒序</span>
+</button>
+</div>
+<!-- Soft AI Pending Confirmation Alert Banner -->
+<section class="neu-raised-card rounded-2xl p-2.5 mb-5 flex items-center justify-between bg-gradient-to-r from-amber-50/70 via-orange-50/50 to-amber-50/70 border border-amber-200/50" data-purpose="ai-pending-banner">
+<div class="flex items-center space-x-2 pl-1">
+<span class="text-amber-500 text-sm">✦</span>
+<div class="text-xs text-slate-700">
+<span class="font-bold text-amber-900">2 条 AI 推测待确认</span>
+<span class="text-[11px] text-amber-700/80 ml-1">· 步频与场景感知</span>
+</div>
+</div>
+<button class="neu-raised-xs px-2.5 py-1 rounded-full text-[11px] font-semibold text-amber-800 bg-amber-100/70 hover:bg-amber-100 active:scale-95 transition-transform">
+        查看全部
+      </button>
+</section>
+<!-- END: Timeline Section Header & Notice Banner -->
+<!-- BEGIN: Vertical Timeline Container with Axis -->
+<div class="relative pl-6 pb-6" data-purpose="timeline-stream">
+<!-- Continuous Vertical Timeline Rail Line -->
+<div aria-hidden="true" class="absolute left-2.5 top-3 bottom-6 w-0.5 timeline-rail rounded-full"></div>
+<!-- TIMELINE ITEM 1: 17:32 (江边微风 · 晚风漫步) -->
+<div class="relative mb-6" data-purpose="timeline-event-card">
+<!-- Neumorphic Axis Node Badge (Sunset Theme) -->
+<div class="absolute -left-6 top-3 -translate-x-1/2 w-7 h-7 rounded-full neu-raised-sm bg-orange-50 flex items-center justify-center border border-white">
+<span class="text-xs">🌇</span>
+</div>
+<!-- Event Body Card -->
+<article class="neu-raised-card rounded-3xl p-4 ml-1">
+<!-- Card Header & Status Badges -->
+<div class="flex items-start justify-between mb-2">
+<div>
+<div class="flex items-center space-x-2">
+<h3 class="font-bold text-sm text-slate-900">江边微风 · 晚风漫步</h3>
+<span class="text-[11px] font-semibold text-orange-600 bg-orange-100/60 px-2 py-0.5 rounded-full">17:32</span>
+</div>
+</div>
+<!-- Action Chips: 已收录 & 编辑 -->
+<div class="flex items-center space-x-1.5">
+<span class="neu-inset-subtle text-[11px] text-emerald-700 font-medium px-2 py-0.5 rounded-full flex items-center space-x-1">
+<span class="">✓</span>
+<span class="">已收录</span>
+</span>
+<button class="text-xs text-slate-400 hover:text-slate-600 flex items-center">
+<span class="text-[11px]">✏ 编辑</span>
+</button>
+</div>
+</div>
+<!-- Diary Text Quote -->
+<p class="text-xs leading-relaxed text-slate-600 mb-3 tracking-wide">
+            “风把下午吹慢了。站在防洪堤看晚霞倒映在江水里，白鹭刚好掠过水面，整个人被温柔地治愈了。”
+          </p>
+<!-- Photo Attachment (Using Provided Preserved Image 22) -->
+<div class="relative rounded-2xl overflow-hidden mb-3 shadow-inner group">
+<img alt="傍晚江边实拍风景" class="w-full h-40 object-cover rounded-2xl" src="https://lh3.googleusercontent.com/aida/AEtjO1XUAvQuOeajH7wu6SG8fMUrIEgtAKDIJbzf5o2Nq1pkq30WskCbd33F9zmB3ldhk6KEm-PMSM15QOU8pMyrO9kjBjzPLJgZhSYkufDErQ0_OmWpIb0vS_HwcxIzHIxds15s3M0uel8YaRfVLtM9ZB1HtRiHu2OBx_yscpDehXQxMzHvaXSmgIaULTQjUdgp0F6pKr7VBpdM1uIZKf3QvfjOTCxjWa-GyFbJvVMTLeu_zD9OiP_4gxCr">
+<!-- Embedded Photo Tag Badge -->
+<div class="absolute top-2 right-2 neu-raised-xs bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] text-white flex items-center space-x-1 border border-white/20">
+<span class="">📷 傍晚江边实拍 · 1张</span>
+</div>
+</div>
+<!-- Metadata Tag Row -->
+<div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+<span class="neu-raised-xs text-[11px] text-slate-700 px-2 py-0.5 rounded-full flex items-center space-x-1">
+<span class="">🚶</span>
+<span class="">3.6 km 散步</span>
+</span>
+<span class="neu-raised-xs text-[11px] text-purple-700 bg-purple-50/50 px-2 py-0.5 rounded-full flex items-center space-x-1">
+<span class="">✦</span>
+<span class="">心情不错</span>
+</span>
+<span class="neu-raised-xs text-[11px] text-emerald-700 bg-emerald-50/50 px-2.5 py-0.5 rounded-full">
+              #娱乐活动</span>
+</div>
+</article>
+</div>
+<!-- TIMELINE ITEM 2: 16:40 - 17:25 (沿江慢跑与慢行 - AI待确认) -->
+<div class="relative mb-6" data-purpose="timeline-movement-card">
+<!-- Neumorphic Axis Node Badge (Runner Theme) -->
+<div class="absolute -left-6 top-3 -translate-x-1/2 w-7 h-7 rounded-full neu-raised-sm bg-amber-50 flex items-center justify-center border border-white">
+<span class="text-xs">🏃</span>
+</div>
+<!-- Movement Transition Card -->
+<article class="neu-raised-card rounded-3xl p-4 ml-1 border border-amber-200/40">
+<div class="flex items-start justify-between mb-2">
+<div>
+<div class="flex items-center space-x-2">
+<h3 class="font-bold text-sm text-slate-900">沿江慢跑与慢行</h3>
+<span class="text-[11px] font-medium text-slate-500">16:40 - 17:25</span>
+</div>
+</div>
+<!-- AI Inference Tag -->
+<span class="neu-inset-subtle text-[11px] text-amber-700 bg-amber-50/60 font-semibold px-2 py-0.5 rounded-full flex items-center space-x-1">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+<span class="">AI推测待确认</span>
+</span>
+</div>
+<!-- AI Sensing Detail Box -->
+<div class="neu-inset-well rounded-2xl p-2.5 my-2.5 flex items-start space-x-2">
+<span class="text-amber-500 text-xs mt-0.5">⚡</span>
+<p class="text-xs text-slate-600 leading-normal">
+              系统检测到持续 45 min 步频与心率达 118 bpm，推测为有氧慢跑
+            </p>
+</div>
+<!-- Sub Metrics & Decision Actions -->
+<div class="flex items-center justify-between pt-1">
+<div class="text-[11px] text-slate-500">
+              2.8 km · 3,210 步
+            </div>
+<div class="flex items-center space-x-2">
+<button class="neu-raised-xs px-2.5 py-1 rounded-full text-xs text-slate-600 hover:text-slate-800">
+                ✏ 修改
+              </button>
+<button class="neu-raised-xs px-3 py-1 rounded-full text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-transform flex items-center space-x-1 shadow-sm">
+<span class="">✓</span>
+<span class="">确认收录</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+<!-- TIMELINE ITEM 3: 14:15 (浅水湾创想 · 露天长椅) -->
+<div class="relative mb-6" data-purpose="timeline-event-card">
+<!-- Neumorphic Axis Node Badge (Sparkle/Creativity Theme) -->
+<div class="absolute -left-6 top-3 -translate-x-1/2 w-7 h-7 rounded-full neu-raised-sm bg-purple-50 flex items-center justify-center border border-white">
+<span class="text-xs text-purple-600">✨</span>
+</div>
+<article class="neu-raised-card rounded-3xl p-4 ml-1">
+<!-- Card Header -->
+<div class="flex items-start justify-between mb-2">
+<div>
+<div class="flex items-center space-x-2">
+<h3 class="font-bold text-sm text-slate-900">浅水湾散步</h3>
+<span class="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">14:15</span>
+</div>
+</div>
+<span class="neu-inset-subtle text-[11px] text-purple-700 bg-purple-50 font-semibold px-2 py-0.5 rounded-full flex items-center space-x-1">
+<span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+<span class="">AI推测 · 待确认</span>
+</span>
+</div>
+<!-- Diary Text -->
+<p class="text-xs leading-relaxed text-slate-600 mb-3 tracking-wide">
+            在浅水湾附近休息，散步约1.8h。</p>
+<!-- Metric Badges Row -->
+<div class="grid grid-cols-2 gap-2 mb-2.5">
+<div class="neu-inset-well rounded-xl p-2 flex flex-col justify-center">
+<span class="text-[10px] text-slate-500">散步运动</span>
+<span class="text-xs font-bold text-blue-700">1.8h <span class="font-normal text-[10px] text-blue-500">(高专注)</span></span>
+</div>
+<div class="neu-inset-well rounded-xl p-2 flex flex-col justify-center">
+<span class="text-[10px] text-slate-500">心率节律</span>
+<span class="text-xs font-bold text-indigo-700">68 bpm <span class="font-normal text-[10px] text-indigo-500">平稳</span></span>
+</div>
+</div>
+<!-- Insight Tags -->
+<div class="flex flex-wrap items-center gap-1.5 mb-2.5">
+<span class="neu-raised-xs text-[11px] text-amber-700 px-2 py-0.5 rounded-full flex items-center space-x-1">
+<span class="">💡</span>
+<span class="">产生 3 条新洞察</span>
+</span>
+<span class="neu-raised-xs text-[11px] text-purple-700 px-2.5 py-0.5 rounded-full"><br></span>
+</div>
+<!-- AI Inference Explanatory Banner -->
+<div class="neu-inset-well rounded-xl p-2.5 mb-3 flex items-start space-x-1.5">
+<span class="text-purple-600 text-xs">✦</span>
+<p class="text-[11px] text-slate-600 leading-snug">
+              根据驻足时长 (1.8h) 与手表专注心率波段自动归纳为「散步」
+            </p>
+</div>
+<!-- Footer Action Buttons -->
+<div class="flex items-center justify-between pt-1 text-xs">
+<span class="text-[11px] text-slate-400">点击确认或补充手账感悟</span>
+<div class="flex items-center space-x-2">
+<button class="neu-raised-xs px-2.5 py-1 rounded-full text-slate-600 hover:text-slate-800">
+                ✏ 修改
+              </button>
+<button class="neu-raised-xs px-3 py-1 rounded-full font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-transform flex items-center space-x-1 shadow-sm">
+<span class="">✓</span>
+<span class="">确认收录</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+<!-- TIMELINE ITEM 4: 09:30 - 10:05 (林荫道骑行 · 城市穿梭) -->
+<div class="relative mb-6" data-purpose="timeline-movement-card">
+<!-- Neumorphic Axis Node Badge (Bicycle Theme) -->
+<div class="absolute -left-6 top-3 -translate-x-1/2 w-7 h-7 rounded-full neu-raised-sm bg-blue-50 flex items-center justify-center border border-white">
+<span class="text-xs text-blue-600">🚲</span>
+</div>
+<article class="neu-raised-card rounded-2xl p-3.5 ml-1 flex items-center justify-between">
+<div>
+<div class="flex items-center space-x-2 mb-1">
+<h3 class="font-bold text-xs text-slate-800">林荫道骑行</h3>
+<span class="text-[10px] text-slate-500">09:30 - 10:05</span>
+</div>
+<div class="flex items-center space-x-2 text-[10px] text-slate-500">
+<span class="">4.2 km · 25 min</span>
+<span class="text-blue-500 font-medium">放空听播客</span>
+</div>
+</div>
+<span class="neu-raised-xs text-[10px] text-blue-700 bg-blue-50 px-2 py-1 rounded-full">
+            AI推断 骑行
+          </span>
+</article>
+</div>
+<!-- TIMELINE ITEM 5: 08:46 (街角第一口咖啡 · 唤醒) -->
+<div class="relative" data-purpose="timeline-event-card">
+<!-- Neumorphic Axis Node Badge (Coffee Theme) -->
+<div class="absolute -left-6 top-3 -translate-x-1/2 w-7 h-7 rounded-full neu-raised-sm bg-amber-50 flex items-center justify-center border border-white">
+<span class="text-xs">☕</span>
+</div>
+<article class="neu-raised-card rounded-3xl p-4 ml-1">
+<!-- Card Header & Status Badges -->
+<div class="flex items-start justify-between mb-2">
+<div>
+<div class="flex items-center space-x-2">
+<h3 class="font-bold text-sm text-slate-900">街角第一口咖啡 · 唤醒</h3>
+<span class="text-[11px] font-semibold text-blue-600 bg-blue-100/60 px-2 py-0.5 rounded-full">08:46</span>
+</div>
+</div>
+<!-- Action Chips: 已确认 & 编辑 -->
+<div class="flex items-center space-x-1.5">
+<span class="neu-inset-subtle text-[11px] text-emerald-700 font-medium px-2 py-0.5 rounded-full flex items-center space-x-1">
+<span class="">✓</span>
+<span class="">确认</span>
+</span>
+<button class="text-xs text-slate-400 hover:text-slate-600 flex items-center">
+<span class="text-[11px]">✏ 编辑</span>
+</button>
+</div>
+</div>
+<!-- Diary Text Quote -->
+<p class="text-xs leading-relaxed text-slate-600 mb-3 tracking-wide">
+            温热的燕麦拿铁与刚好洒在窗格上的朝阳。翻了两页书，身体和呼吸慢慢进入今天的节奏。
+          </p>
+<!-- Photo Attachment (Using Provided Preserved Image 21) -->
+<div class="relative rounded-2xl overflow-hidden mb-3 shadow-inner group">
+<img alt="晨间随手拍咖啡桌与书本" class="w-full h-40 object-cover rounded-2xl" src="https://lh3.googleusercontent.com/aida/AEtjO1WiFgq_wNv_QrCxbTShiA1K5NYbOa57lv1uZz8lI9yAk8RtJaYoto0H4maupF-pmexWmBOycXSs_sGO_doJijzloqLoXy_UwKAC2FsxPd54SjtHP7B7mSYQWipiCWaWHxqL4atvG5WJE720V3pzhZCZuXQMO9AK4obzotL1aYjKCPfi-a2mXNtYzggIFMoPPlCVqvgQ1ym55eWIfKDv14hL3eKZbNHr4xKhh_m7ZPtXysXVvI4uZ7wlew">
+<!-- Embedded Photo Tag Badge -->
+<div class="absolute top-2 right-2 neu-raised-xs bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] text-white flex items-center space-x-1 border border-white/20">
+<span class="">📷 晨间随手拍 · 1张</span>
+</div>
+</div>
+<!-- Metadata Tag Row -->
+<div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+<span class="neu-raised-xs text-[11px] text-amber-800 bg-amber-50/60 px-2.5 py-0.5 rounded-full font-medium">
+              #晨间</span>
+<span class="neu-raised-xs text-[11px] text-slate-600 px-2 py-0.5 rounded-full">
+              步数记录 · 自动关联
+            </span>
+<span class="neu-raised-xs text-[11px] text-purple-700 bg-purple-50/50 px-2.5 py-0.5 rounded-full">心情不错 ✦
+            </span>
+</div>
+</article>
+</div>
+</div>
+<!-- END: Vertical Timeline Container with Axis -->
+<!-- BEGIN: Floating Neumorphic Bottom Navigation Bar -->
+<nav class="fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[390px] neu-tabbar rounded-full px-3 py-2 flex items-center justify-between z-50 shadow-2xl" data-purpose="floating-tab-bar">
+<!-- Tab 1: 今天 -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-800 transition-colors" data-purpose="tab-today" href="#">
+<svg class="w-5 h-5 mb-0.5 stroke-current" fill="none" stroke-width="1.8" viewBox="0 0 24 24">
+<circle cx="12" cy="12" r="4"></circle>
+<path d="M12 2v2"></path>
+<path d="M12 20v2"></path>
+<path d="M4.93 4.93l1.41 1.41"></path>
+<path d="M17.66 17.66l1.41 1.41"></path>
+<path d="M2 12h2"></path>
+<path d="M20 12h2"></path>
+<path d="M6.34 17.66l-1.41 1.41"></path>
+<path d="M19.07 4.93l-1.41 1.41"></path>
+</svg>
+<span class="text-[10px] font-medium">今天</span>
+</a>
+<!-- Tab 2: 足迹 (ACTIVE TAB - Neumorphic Inset Capsule Well) -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 relative text-blue-600" data-purpose="tab-footprint-active" href="#">
+<!-- Inset well highlight surrounding active icon -->
+<div class="neu-inset-well px-3.5 py-1 rounded-2xl flex flex-col items-center">
+<svg class="w-5 h-5 stroke-current text-blue-600" fill="none" stroke-width="2" viewBox="0 0 24 24">
+<path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-bold text-blue-600 mt-0.5">足迹</span>
+<!-- Active Blue Pill Indicator Dot -->
+<div class="w-1.5 h-1.5 rounded-full bg-blue-600 mt-0.5"></div>
+</div>
+</a>
+<!-- Tab 3: 待确认 (With badge 3) -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 relative text-slate-500 hover:text-slate-800 transition-colors" data-purpose="tab-pending" href="#">
+<div class="relative">
+<svg class="w-5 h-5 mb-0.5 stroke-current" fill="none" stroke-width="1.8" viewBox="0 0 24 24">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+</svg>
+<!-- Badge 3 -->
+<span class="absolute -top-1 -right-2 bg-blue-600 text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">
+            3
+          </span>
+</div>
+<span class="text-[10px] font-medium">待确认</span>
+</a>
+<!-- Tab 4: River -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-800 transition-colors" data-purpose="tab-river" href="#">
+<svg class="w-5 h-5 mb-0.5 stroke-current" fill="none" stroke-width="1.8" viewBox="0 0 24 24">
+<path d="M3 10c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M3 14c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium">River</span>
+</a>
+<!-- Tab 5: 我的 -->
+<a class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-slate-800 transition-colors" data-purpose="tab-profile" href="#">
+<svg class="w-5 h-5 mb-0.5 stroke-current" fill="none" stroke-width="1.8" viewBox="0 0 24 24">
+<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="12" cy="7" r="4"></circle>
+</svg>
+<span class="text-[10px] font-medium">我的</span>
+</a>
+</nav>
+<!-- END: Floating Neumorphic Bottom Navigation Bar -->
+<!-- BEGIN: iOS Home Bar Indicator -->
+<div aria-hidden="true" class="fixed bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-300 rounded-full z-50 pointer-events-none"></div>
+<!-- END: iOS Home Bar Indicator -->
+</div>
+
+
+</body></html>

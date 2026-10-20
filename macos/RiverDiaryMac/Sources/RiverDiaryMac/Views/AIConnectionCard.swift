@@ -1,11 +1,12 @@
 import SwiftUI
 
 enum AIConnectionCopy {
-    static let setupGuidance = "支持 OpenAI 兼容、DeepSeek、Moonshot、OpenRouter、阿里云百炼、智谱、xAI、Groq、Mistral、SiliconFlow、Ollama 和 LM Studio。模型连接为可选；未连接时仍可使用本机记录、时间线和数据库。只有主动测试连接或请求 AI 分析、查询时才会调用模型。"
+    static let setupGuidance = "支持 OpenAI 兼容、DeepSeek、Moonshot、OpenRouter、阿里云百炼、智谱、xAI、Groq、Mistral、SiliconFlow、Ollama 和 LM Studio。模型连接为可选；未连接时仍可使用本机记录、时间线和数据库。开启远程 AI 分析并验证连接后，新记录会在安静 45 秒后合并整理，最短间隔 5 分钟，不会逐条调用模型。"
 }
 
 struct AIConnectionCard: View {
     @ObservedObject var ai: AIAssistantStore
+    @State private var showsRemoveConfirmation = false
 
     var body: some View {
         SettingsPage {
@@ -20,6 +21,12 @@ struct AIConnectionCard: View {
                     actionRow
                 }
             }
+        }
+        .confirmationDialog("要删除模型方案“\(ai.profileName)”吗？", isPresented: $showsRemoveConfirmation, titleVisibility: .visible) {
+            Button("删除方案", role: .destructive) { ai.removeProfile() }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("该方案的接口地址、模型与密钥配置会被移除；API 密钥会同时从钥匙串中删除。")
         }
     }
 
@@ -50,7 +57,7 @@ struct AIConnectionCard: View {
                 Button("复制") { ai.duplicateProfile() }
                     .buttonStyle(.plain)
                     .smallAction()
-                Button("删除") { ai.removeProfile() }
+                Button("删除") { showsRemoveConfirmation = true }
                     .buttonStyle(.plain)
                     .smallAction()
                     .disabled(ai.profiles.count <= 1)
@@ -102,8 +109,8 @@ struct AIConnectionCard: View {
     }
 
     private var endpointRow: some View {
-        RiverPanelRow(title: "API 地址") {
-            TextField("https://api.example.com/v1/chat/completions", text: $ai.endpoint)
+        RiverPanelRow(title: "API 地址", detail: "可填 DeepSeek 基础地址 https://api.deepseek.com，也可填完整 Chat Completions 路径") {
+            TextField("API 基础地址或完整接口地址", text: $ai.endpoint)
                 .textFieldStyle(.roundedBorder)
                 .font(AppTypography.label())
                 .frame(maxWidth: 320)

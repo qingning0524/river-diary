@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>河流日记 · UI/UX 重设计 · 第 1 轮 · 导航</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width:1560px; background:#FAFAF7;
+    font-family:"PingFang SC","Helvetica Neue",sans-serif;
+    color:#2A352E; padding:34px 40px 40px;
+  }
+  .sheet-head { margin-bottom:26px; }
+  .sheet-head h1 { font-family:"Songti SC",serif; font-size:27px; font-weight:600; letter-spacing:1px; }
+  .sheet-head h1 em { font-style:normal; color:#24685E; }
+  .sheet-head .sub { margin-top:8px; font-size:13px; color:#6B7A72; }
+  .sheet-head .sub b { color:#2A352E; font-weight:600; }
+  .legend { margin-top:10px; font-size:11.5px; color:#9AA79E; }
+  .legend .dot { display:inline-block; width:11px; height:11px; border-radius:50%; background:#C14E33; color:#fff; font-size:8px; line-height:11px; text-align:center; vertical-align:-1px; }
+
+  .row5 { display:grid; grid-template-columns:repeat(5,1fr); gap:20px; }
+  .opt { background:#fff; border:1px solid #E3E7E0; border-radius:16px; padding:14px 14px 16px; }
+  .opt h3 { font-size:15.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .opt h3 .tag { width:22px; height:22px; border-radius:7px; background:#24685E; color:#fff; font-size:12px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+  .opt h3 .en { font-size:10px; color:#9AA79E; font-weight:500; letter-spacing:.5px; margin-left:auto; }
+  .opt .tagline { margin:7px 0 12px; font-size:12px; color:#24685E; font-weight:500; }
+  .opt svg.mock { width:100%; display:block; }
+  .opt svg.mini { width:100%; display:block; margin-top:10px; border-top:1px dashed #E3E7E0; padding-top:10px; }
+  .opt ul.notes { list-style:none; margin-top:11px; }
+  .opt ul.notes li { font-size:12px; line-height:1.55; color:#4A5750; padding-left:13px; position:relative; margin-bottom:5px; }
+  .opt ul.notes li::before { content:""; position:absolute; left:0; top:7px; width:5px; height:5px; border-radius:50%; background:#C9D4CB; }
+  .opt ul.notes li b { color:#2A352E; }
+  .opt .meta { margin-top:10px; display:flex; gap:6px; flex-wrap:wrap; }
+  .pill { font-size:10.5px; padding:3px 9px; border-radius:99px; background:#F0F3EE; color:#5C6B62; white-space:nowrap; }
+  .pill.cost { background:#E5EFE8; color:#24685E; font-weight:600; }
+
+  h2.sec { font-family:"Songti SC",serif; font-size:19px; font-weight:600; margin:30px 0 12px; }
+  h2.sec span { font-family:"PingFang SC"; font-size:12px; color:#9AA79E; font-weight:400; margin-left:10px; }
+  table.compare { width:100%; border-collapse:collapse; background:#fff; border:1px solid #E3E7E0; border-radius:14px; overflow:hidden; }
+  .compare th { background:#F0F3EE; font-size:11.5px; color:#5C6B62; font-weight:600; padding:9px 10px; text-align:center; }
+  .compare th:first-child { text-align:left; }
+  .compare td { font-size:12.5px; padding:9px 10px; text-align:center; border-top:1px solid #EFF2ED; color:#4A5750; }
+  .compare td:first-child { text-align:left; font-weight:600; color:#2A352E; white-space:nowrap; }
+  .compare td:last-child { text-align:left; font-size:11.5px; color:#6B7A72; }
+  .compare .win { color:#24685E; font-weight:700; }
+  .dots { letter-spacing:2px; font-size:10px; color:#24685E; }
+  .dots i { font-style:normal; color:#D8DFD7; }
+
+  .footer { margin-top:28px; background:#24685E; border-radius:16px; padding:20px 24px; color:#fff; }
+  .footer .fh { font-size:15px; font-weight:700; margin-bottom:8px; }
+  .footer p { font-size:12.5px; line-height:1.7; color:#DDEAE3; }
+  .footer b { color:#fff; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+<defs>
+  <linearGradient id="gradAcc" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#2E7A6E"/><stop offset="1" stop-color="#1F5548"/>
+  </linearGradient>
+  <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+    <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#20332E" flood-opacity="0.16"/>
+  </filter>
+  <filter id="blur6" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+
+  <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3.2v2.1M12 18.7v2.1M3.2 12h2.1M18.7 12h2.1M5.8 5.8l1.5 1.5M16.7 16.7l1.5 1.5M18.2 5.8l-1.5 1.5M7.3 16.7l-1.5 1.5"/></g></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4.2" y="5" width="15.6" height="14" rx="3"/><path d="M8.2 10.2h7.6M8.2 14h4.8"/></g></symbol>
+  <symbol id="i-waves" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3.5 8.2c1.4-1.7 2.85-1.7 4.25 0s2.85 1.7 4.25 0 2.85-1.7 4.25 0 2.85 1.7 4.25 0"/><path d="M3.5 12.4c1.4-1.7 2.85-1.7 4.25 0s2.85 1.7 4.25 0 2.85-1.7 4.25 0 2.85 1.7 4.25 0"/><path d="M3.5 16.6c1.4-1.7 2.85-1.7 4.25 0s2.85 1.7 4.25 0 2.85-1.7 4.25 0 2.85 1.7 4.25 0"/></g></symbol>
+  <symbol id="i-books" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="6.4" width="4.4" height="11.6" rx="1.2"/><rect x="10" y="4.8" width="4.4" height="13.2" rx="1.2"/><rect x="16" y="7.2" width="4.4" height="10.8" rx="1.2"/></g></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="5.8"/><path d="M15.2 15.2 20 20"/></g></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.2 5.4H6.8A2.6 2.6 0 0 0 4.2 8v9.2a2.6 2.6 0 0 0 2.6 2.6H16a2.6 2.6 0 0 0 2.6-2.6v-4.4"/><path d="M17.9 4.5a2 2 0 0 1 2.8 2.8l-7.3 7.3-3.6.8.8-3.6Z"/></g></symbol>
+  <symbol id="i-place" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.6-5.4-6.6-10.2a6.6 6.6 0 0 1 13.2 0C18.6 15.6 12 21 12 21Z"/><circle cx="12" cy="10.6" r="2.3"/></g></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4.6" y="4.6" width="14.8" height="14.8" rx="3"/><path d="M8.4 9h7.2M8.4 12.4h7.2M8.4 15.8h4.2"/></g></symbol>
+  <symbol id="i-chevu" viewBox="0 0 24 24"><path d="M6 14.5l6-6 6 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-brand" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M14.8 3.4C7.6 6.6 7.1 12 12.9 13.9c4.5 1.5 3.4 4.7-2 7"/><path d="M19.6 3.4C12.4 6.6 11.9 12 17.7 13.9c4.5 1.5 3.4 4.7-2 7" opacity=".55"/></g></symbol>
+  <symbol id="i-status" viewBox="0 0 56 14">
+    <g fill="currentColor"><rect x="0" y="6" width="2.4" height="5" rx="1"/><rect x="3.6" y="4" width="2.4" height="7" rx="1"/><rect x="7.2" y="2" width="2.4" height="9" rx="1"/><rect x="10.8" y="0" width="2.4" height="11" rx="1"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M18.5 7.6a8.6 8.6 0 0 1 12.6 0"/><path d="M21.4 10.5a4.6 4.6 0 0 1 6.8 0"/></g>
+    <circle cx="24.8" cy="12.9" r="1.3" fill="currentColor"/>
+    <rect x="37" y="1.5" width="15.5" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".5"/>
+    <rect x="39" y="3.5" width="9.5" height="6" rx="1.5" fill="currentColor"/>
+    <rect x="53.8" y="4.5" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/>
+  </symbol>
+</defs>
+</svg>
+
+<header class="sheet-head">
+  <h1>河流日记 · UI/UX 重设计 — 第 1 轮 <em>导航</em></h1>
+  <div class="sub">五个导航范式，各自回答同一个问题：<b>今天 / 记录 / River / 记忆，这四个区域怎么移动、怎么回来。</b>草图即方案：结构、交互状态、代价都画在图里。2026-10-04</div>
+  <div class="legend"><span class="dot">①</span> 红色圆标 = 设计注记，对应卡片下方要点 &nbsp;·&nbsp; 灰块 = 内容占位，不代表最终视觉风格</div>
+</header>
+
+<section class="row5">
+
+  <!-- ============ 方案 A ============ -->
+  <article class="opt">
+    <h3><span class="tag">A</span>浮岛<span class="en">FLOATING ISLAND</span></h3>
+    <p class="tagline">"一岛四站，落点即到"</p>
+    <svg class="mock" viewBox="0 0 260 500">
+      <rect x="0.75" y="0.75" width="258.5" height="498.5" rx="38" fill="#FFFFFF" stroke="#D9DED6" stroke-width="1.5"/>
+      <clipPath id="scrA"><rect x="6" y="6" width="248" height="488" rx="32"/></clipPath>
+      <g clip-path="url(#scrA)">
+        <rect x="6" y="6" width="248" height="488" fill="#F7F8F4"/>
+        <text x="26" y="30" font-size="10" font-weight="600" fill="#2A352E">9:41</text>
+        <use href="#i-status" x="196" y="17" width="56" height="14" color="#2A352E"/>
+        <rect x="92" y="14" width="76" height="22" rx="11" fill="#232A24"/>
+        <use href="#i-brand" x="21" y="45" width="12" height="14" color="#24685E"/>
+        <text x="37" y="55" font-size="6.5" font-weight="600" letter-spacing="1.4" fill="#2A352E">RIVER OS</text>
+        <text x="83" y="55" font-size="5" fill="#93A29A" letter-spacing=".6">PERSONAL MEMORY OS</text>
+        <text x="21" y="93" font-size="21" font-weight="600" fill="#2A352E" font-family="'Songti SC',serif">10月4日 · 周六</text>
+        <circle cx="228" cy="86" r="12.5" fill="#FFFFFF" stroke="#E3E7E0"/>
+        <use href="#i-search" x="222.5" y="80.5" width="11" height="11" color="#6B7A72"/>
+        <text x="21" y="109" font-size="8" fill="#6B7A72">已记录 6 小时 12 分 · 3 条活动 · 心情 平静</text>
+        <rect x="21" y="115" width="206" height="6" rx="3" fill="#E7ECE5"/>
+        <rect x="21" y="115" width="124" height="6" rx="3" fill="url(#gradAcc)"/>
+        <g>
+          <rect x="20" y="132" width="220" height="62" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="143" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-sun" x="35" y="148" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="145" width="104" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="156" width="74" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="152" font-size="7.5" fill="#9AA79E" text-anchor="end">08:12</text>
+          <rect x="196" y="170" width="34" height="13" rx="6.5" fill="#F0F3EE"/>
+          <text x="213" y="179.5" font-size="6.5" fill="#6B7A72" text-anchor="middle">晨间</text>
+        </g>
+        <g>
+          <rect x="20" y="202" width="220" height="62" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="213" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-place" x="35" y="218" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="215" width="88" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="226" width="60" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="222" font-size="7.5" fill="#9AA79E" text-anchor="end">40 分</text>
+        </g>
+        <g>
+          <rect x="20" y="272" width="220" height="76" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="283" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-note" x="35" y="288" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="285" width="130" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <text x="62" y="308" font-size="7.5" font-style="italic" fill="#8A978D">「河水平静，像今天的心情。」</text>
+          <rect x="62" y="318" width="40" height="14" rx="7" fill="#E5EFE8"/>
+          <text x="82" y="328" font-size="6.5" fill="#24685E" text-anchor="middle">平静</text>
+          <text x="230" y="292" font-size="7.5" fill="#9AA79E" text-anchor="end">21:30</text>
+        </g>
+        <rect x="20" y="356" width="220" height="130" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+        <rect x="30" y="367" width="24" height="24" rx="8" fill="#EDF1EB"/>
+        <rect x="62" y="369" width="96" height="6.5" rx="3.25" fill="#E0E6DE"/>
+        <rect x="62" y="381" width="70" height="6.5" rx="3.25" fill="#E8ECE5"/>
+
+        <!-- 悬浮岛 -->
+        <rect x="16" y="408" width="228" height="56" rx="24" fill="#F7F8F4" fill-opacity=".93" stroke="#E0E5DD" filter="url(#soft)"/>
+        <g>
+          <rect x="17.5" y="416" width="58" height="40" rx="20" fill="#24685E"/>
+          <use href="#i-sun" x="27" y="428" width="16" height="16" color="#FFFFFF"/>
+          <text x="49" y="440" font-size="9" font-weight="600" fill="#FFFFFF">今天</text>
+        </g>
+        <use href="#i-list" x="94" y="425" width="15" height="15" color="#6B7A72"/>
+        <text x="101.5" y="452" font-size="6.5" fill="#6B7A72" text-anchor="middle">记录</text>
+        <use href="#i-waves" x="151" y="425" width="15" height="15" color="#6B7A72"/>
+        <text x="158.5" y="452" font-size="6.5" fill="#6B7A72" text-anchor="middle">River</text>
+        <use href="#i-books" x="208" y="425" width="15" height="15" color="#6B7A72"/>
+        <text x="215.5" y="452" font-size="6.5" fill="#6B7A72" text-anchor="middle">记忆</text>
+        <circle cx="166.5" cy="425" r="4.5" fill="#24685E" stroke="#F7F8F4" stroke-width="1.5"/>
+        <text x="166.5" y="427.7" font-size="5.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+        <rect x="95" y="482" width="70" height="4" rx="2" fill="#2A352E" opacity=".85"/>
+
+        <g font-size="8" font-weight="700" fill="#FFFFFF" text-anchor="middle">
+          <circle cx="17" cy="398" r="5.5" fill="#C14E33"/><text x="17" y="401">1</text>
+          <circle cx="82" cy="411" r="5.5" fill="#C14E33"/><text x="82" y="414">2</text>
+          <circle cx="181" cy="415" r="5.5" fill="#C14E33"/><text x="181" y="418">3</text>
+        </g>
+      </g>
+    </svg>
+    <svg class="mini" viewBox="0 0 260 128">
+      <text x="16" y="12" font-size="7" fill="#9AA79E">切换时：胶囊不闪跳，沿底边弹性滑到新落点</text>
+      <g>
+        <rect x="16" y="18" width="228" height="28" rx="14" fill="#FFFFFF" stroke="#E3E7E0"/>
+        <rect x="18" y="20" width="54" height="24" rx="12" fill="#24685E"/>
+        <use href="#i-sun" x="26" y="26" width="12" height="12" color="#fff"/>
+        <text x="43" y="35" font-size="7" font-weight="600" fill="#fff">今天</text>
+        <use href="#i-list" x="95" y="26" width="12" height="12" color="#9AA79E"/>
+        <use href="#i-waves" x="152" y="26" width="12" height="12" color="#9AA79E"/>
+        <use href="#i-books" x="209" y="26" width="12" height="12" color="#9AA79E"/>
+      </g>
+      <g>
+        <rect x="16" y="56" width="228" height="28" rx="14" fill="#FFFFFF" stroke="#E3E7E0"/>
+        <rect x="34" y="58" width="108" height="24" rx="12" fill="#24685E" opacity=".88"/>
+        <use href="#i-sun" x="42" y="64" width="12" height="12" color="#DDEAE3"/>
+        <use href="#i-list" x="95" y="64" width="12" height="12" color="#fff"/>
+        <text x="112" y="73" font-size="7" font-weight="600" fill="#fff">记录</text>
+        <use href="#i-waves" x="152" y="64" width="12" height="12" color="#9AA79E"/>
+        <use href="#i-books" x="209" y="64" width="12" height="12" color="#9AA79E"/>
+      </g>
+      <g>
+        <rect x="16" y="94" width="228" height="28" rx="14" fill="#FFFFFF" stroke="#E3E7E0"/>
+        <rect x="74.5" y="96" width="54" height="24" rx="12" fill="#24685E"/>
+        <use href="#i-list" x="83" y="102" width="12" height="12" color="#fff"/>
+        <text x="100" y="111" font-size="7" font-weight="600" fill="#fff">记录</text>
+        <use href="#i-sun" x="38" y="102" width="12" height="12" color="#9AA79E"/>
+        <use href="#i-waves" x="152" y="102" width="12" height="12" color="#9AA79E"/>
+        <use href="#i-books" x="209" y="102" width="12" height="12" color="#9AA79E"/>
+      </g>
+    </svg>
+    <ul class="notes">
+      <li><b>① 悬浮离底</b>：岛与屏幕边缘脱开，列表从岛下滑过，毛玻璃透出内容。</li>
+      <li><b>② 选中 = 实心胶囊</b>：图标+文字一起进胶囊，落点最清晰。</li>
+      <li><b>③ 徽标</b>：River 待确认数挂在图标右上。</li>
+      <li>代价：常驻占用约 80pt 高，沉浸感弱于 C / E。</li>
+    </ul>
+    <div class="meta"><span class="pill cost">实现 低</span><span class="pill">适合：要稳、要零学习成本</span></div>
+  </article>
+
+  <!-- ============ 方案 B ============ -->
+  <article class="opt">
+    <h3><span class="tag">B</span>河珠中枢<span class="en">ORB HUB</span></h3>
+    <p class="tagline">"中央一颗珠，落笔即入河"</p>
+    <svg class="mock" viewBox="0 0 260 500">
+      <rect x="0.75" y="0.75" width="258.5" height="498.5" rx="38" fill="#FFFFFF" stroke="#D9DED6" stroke-width="1.5"/>
+      <clipPath id="scrB"><rect x="6" y="6" width="248" height="488" rx="32"/></clipPath>
+      <g clip-path="url(#scrB)">
+        <rect x="6" y="6" width="248" height="488" fill="#F7F8F4"/>
+        <text x="26" y="30" font-size="10" font-weight="600" fill="#2A352E">9:41</text>
+        <use href="#i-status" x="196" y="17" width="56" height="14" color="#2A352E"/>
+        <rect x="92" y="14" width="76" height="22" rx="11" fill="#232A24"/>
+        <use href="#i-brand" x="21" y="45" width="12" height="14" color="#24685E"/>
+        <text x="37" y="55" font-size="6.5" font-weight="600" letter-spacing="1.4" fill="#2A352E">RIVER OS</text>
+        <text x="83" y="55" font-size="5" fill="#93A29A" letter-spacing=".6">PERSONAL MEMORY OS</text>
+        <text x="21" y="93" font-size="21" font-weight="600" fill="#2A352E" font-family="'Songti SC',serif">10月4日 · 周六</text>
+        <circle cx="228" cy="86" r="12.5" fill="#FFFFFF" stroke="#E3E7E0"/>
+        <use href="#i-search" x="222.5" y="80.5" width="11" height="11" color="#6B7A72"/>
+        <text x="21" y="109" font-size="8" fill="#6B7A72">已记录 6 小时 12 分 · 3 条活动 · 心情 平静</text>
+        <rect x="21" y="115" width="206" height="6" rx="3" fill="#E7ECE5"/>
+        <rect x="21" y="115" width="124" height="6" rx="3" fill="url(#gradAcc)"/>
+        <g>
+          <rect x="20" y="132" width="220" height="62" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="143" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-sun" x="35" y="148" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="145" width="104" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="156" width="74" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="152" font-size="7.5" fill="#9AA79E" text-anchor="end">08:12</text>
+        </g>
+        <g>
+          <rect x="20" y="202" width="220" height="62" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="213" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-place" x="35" y="218" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="215" width="88" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="226" width="60" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="222" font-size="7.5" fill="#9AA79E" text-anchor="end">40 分</text>
+        </g>
+        <g>
+          <rect x="20" y="272" width="220" height="76" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="283" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-note" x="35" y="288" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="285" width="130" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <text x="62" y="308" font-size="7.5" font-style="italic" fill="#8A978D">「河水平静，像今天的心情。」</text>
+          <rect x="62" y="318" width="40" height="14" rx="7" fill="#E5EFE8"/>
+          <text x="82" y="328" font-size="6.5" fill="#24685E" text-anchor="middle">平静</text>
+          <text x="230" y="292" font-size="7.5" fill="#9AA79E" text-anchor="end">21:30</text>
+        </g>
+        <rect x="20" y="356" width="220" height="130" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+        <rect x="30" y="367" width="24" height="24" rx="8" fill="#EDF1EB"/>
+        <rect x="62" y="369" width="96" height="6.5" rx="3.25" fill="#E0E6DE"/>
+        <rect x="62" y="381" width="70" height="6.5" rx="3.25" fill="#E8ECE5"/>
+
+        <!-- 底栏 + 河珠 -->
+        <rect x="6" y="436" width="248" height="58" fill="#F7F8F4" fill-opacity=".94"/>
+        <rect x="6" y="436" width="248" height="1" fill="#DAE3DC"/>
+        <circle cx="130" cy="438" r="33" fill="#F7F8F4"/>
+        <use href="#i-sun" x="24" y="450" width="14" height="14" color="#2A352E"/>
+        <text x="31" y="478" font-size="6.5" fill="#2A352E" text-anchor="middle">今天</text>
+        <use href="#i-list" x="74" y="450" width="14" height="14" color="#6B7A72"/>
+        <text x="81" y="478" font-size="6.5" fill="#6B7A72" text-anchor="middle">记录</text>
+        <use href="#i-waves" x="173" y="450" width="14" height="14" color="#6B7A72"/>
+        <text x="180" y="478" font-size="6.5" fill="#6B7A72" text-anchor="middle">River</text>
+        <use href="#i-books" x="222" y="450" width="14" height="14" color="#6B7A72"/>
+        <text x="229" y="478" font-size="6.5" fill="#6B7A72" text-anchor="middle">记忆</text>
+        <circle cx="186" cy="450" r="4.5" fill="#24685E" stroke="#F7F8F4" stroke-width="1.5"/>
+        <text x="186" y="452.7" font-size="5.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+        <circle cx="130" cy="431" r="31" fill="none" stroke="#24685E" opacity=".22"/>
+        <circle cx="130" cy="430" r="26" fill="url(#gradAcc)" filter="url(#soft)"/>
+        <use href="#i-pencil" x="120" y="420" width="20" height="20" color="#FFFFFF"/>
+        <rect x="95" y="486" width="70" height="4" rx="2" fill="#2A352E" opacity=".5"/>
+
+        <g font-size="8" font-weight="700" fill="#FFFFFF" text-anchor="middle">
+          <circle cx="160" cy="398" r="5.5" fill="#C14E33"/><text x="160" y="401">1</text>
+          <circle cx="192" cy="440" r="5.5" fill="#C14E33"/><text x="192" y="443">2</text>
+          <circle cx="16" cy="440" r="5.5" fill="#C14E33"/><text x="16" y="443">3</text>
+        </g>
+      </g>
+    </svg>
+    <svg class="mini" viewBox="0 0 260 128">
+      <rect x="0" y="0" width="260" height="122" rx="10" fill="#E4E9E2"/>
+      <rect x="20" y="6" width="220" height="26" rx="9" fill="#FFFFFF" opacity=".45"/>
+      <rect x="10" y="30" width="240" height="92" rx="18" fill="#FFFFFF" stroke="#E3E7E0"/>
+      <rect x="115" y="38" width="30" height="4" rx="2" fill="#D3DAD2"/>
+      <text x="26" y="60" font-size="10" font-weight="600" fill="#2A352E">写日记 · 10月4日</text>
+      <rect x="26" y="70" width="180" height="6" rx="3" fill="#E4E9E1"/>
+      <rect x="26" y="80" width="140" height="6" rx="3" fill="#EAEDE7"/>
+      <rect x="26" y="94" width="44" height="14" rx="7" fill="#E5EFE8"/>
+      <text x="48" y="104" font-size="6.5" fill="#24685E" text-anchor="middle">平静</text>
+      <rect x="76" y="94" width="44" height="14" rx="7" fill="#F0F3EE"/>
+      <text x="98" y="104" font-size="6.5" fill="#6B7A72" text-anchor="middle">专注</text>
+      <circle cx="130" cy="22" r="14" fill="url(#gradAcc)" stroke="#FFFFFF" stroke-width="2"/>
+      <use href="#i-pencil" x="124" y="16" width="12" height="12" color="#fff"/>
+      <path d="M130 40v-6" stroke="#C14E33" stroke-width="1.2" stroke-dasharray="2 2"/>
+      <text x="130" y="120" font-size="6.5" fill="#6B7A72" text-anchor="middle" opacity="0">.</text>
+    </svg>
+    <ul class="notes">
+      <li><b>① 河珠 = 写日记</b>：最高频动作放在拇指正下方，点按就地隆起成写作页。</li>
+      <li><b>② River 徽标</b>：AI 待确认仍是普通席位，不抢戏。</li>
+      <li><b>③ 四席 + 一珠</b>：长按河珠 = 心情速记（3 秒存一条）。</li>
+      <li>代价：五槽更密；键盘弹出时河珠要收编成发送键。</li>
+    </ul>
+    <div class="meta"><span class="pill cost">实现 中</span><span class="pill">适合：想让「记录」无处不在</span></div>
+  </article>
+
+  <!-- ============ 方案 C ============ -->
+  <article class="opt">
+    <h3><span class="tag">C</span>日期河<span class="en">DATE RIVER</span></h3>
+    <p class="tagline">"时间为主轴，流域横滑"</p>
+    <svg class="mock" viewBox="0 0 260 500">
+      <rect x="0.75" y="0.75" width="258.5" height="498.5" rx="38" fill="#FFFFFF" stroke="#D9DED6" stroke-width="1.5"/>
+      <clipPath id="scrC"><rect x="6" y="6" width="248" height="488" rx="32"/></clipPath>
+      <g clip-path="url(#scrC)">
+        <rect x="6" y="6" width="248" height="488" fill="#F7F8F4"/>
+        <text x="26" y="30" font-size="10" font-weight="600" fill="#2A352E">9:41</text>
+        <use href="#i-status" x="196" y="17" width="56" height="14" color="#2A352E"/>
+        <rect x="92" y="14" width="76" height="22" rx="11" fill="#232A24"/>
+        <text x="21" y="56" font-size="6" fill="#93A29A">十月 OCTOBER</text>
+        <path d="M20 80 q11-5 22 0 t22 0 t22 0 t22 0 t22 0 t22 0 t22 0 t22 0 t22 0 t22 0" fill="none" stroke="#9FB4A8" stroke-width="1.4" opacity=".55"/>
+        <g font-size="5.5" fill="#9AA79E" text-anchor="middle">
+          <text x="31" y="68">9/26</text><text x="53" y="68">27</text><text x="75" y="68">28</text><text x="97" y="68">29</text><text x="119" y="68">30</text>
+          <text x="141" y="68">10/1</text><text x="163" y="68">2</text><text x="185" y="68">3</text><text x="207" y="68" fill="#24685E" font-weight="700">4</text><text x="229" y="68">5</text>
+        </g>
+        <circle cx="31" cy="80" r="2.5" fill="#B9C4BB"/><circle cx="53" cy="80" r="2.5" fill="#B9C4BB"/><circle cx="75" cy="80" r="2.5" fill="#B9C4BB"/><circle cx="97" cy="80" r="2.5" fill="#B9C4BB"/><circle cx="119" cy="80" r="2.5" fill="#B9C4BB"/><circle cx="141" cy="80" r="2.5" fill="#B9C4BB"/><circle cx="163" cy="80" r="2.5" fill="#B9C4BB"/><circle cx="185" cy="80" r="2.5" fill="#B9C4BB"/><circle cx="229" cy="80" r="2.5" fill="#DDE3DC"/>
+        <circle cx="207" cy="80" r="8" fill="#24685E" opacity=".22"/><circle cx="207" cy="80" r="5" fill="#24685E"/>
+        <g fill="#C8D3C9"><rect x="74" y="84" width="3" height="4" rx="1"/><rect x="140" y="84" width="3" height="4" rx="1"/><rect x="162" y="84" width="3" height="4" rx="1"/><rect x="184" y="84" width="3" height="4" rx="1"/></g>
+        <g font-size="9.5" text-anchor="middle">
+          <text x="55" y="112" fill="#24685E" font-weight="700">今天</text>
+          <text x="105" y="112" fill="#6B7A72">记录</text>
+          <text x="155" y="112" fill="#6B7A72">River</text>
+          <text x="205" y="112" fill="#6B7A72">记忆</text>
+        </g>
+        <rect x="44" y="117" width="22" height="2.5" rx="1.25" fill="#24685E"/>
+        <g>
+          <rect x="20" y="134" width="220" height="64" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="145" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-sun" x="35" y="150" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="147" width="104" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="158" width="74" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="154" font-size="7.5" fill="#9AA79E" text-anchor="end">08:12</text>
+        </g>
+        <g>
+          <rect x="20" y="206" width="220" height="64" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="217" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-place" x="35" y="222" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="219" width="88" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="230" width="60" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="226" font-size="7.5" fill="#9AA79E" text-anchor="end">40 分</text>
+        </g>
+        <g>
+          <rect x="20" y="278" width="220" height="76" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="289" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-note" x="35" y="294" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="291" width="130" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <text x="62" y="314" font-size="7.5" font-style="italic" fill="#8A978D">「河水平静，像今天的心情。」</text>
+          <text x="230" y="298" font-size="7.5" fill="#9AA79E" text-anchor="end">21:30</text>
+        </g>
+        <rect x="20" y="362" width="220" height="116" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+        <rect x="30" y="373" width="24" height="24" rx="8" fill="#EDF1EB"/>
+        <rect x="62" y="375" width="96" height="6.5" rx="3.25" fill="#E0E6DE"/>
+        <rect x="62" y="387" width="70" height="6.5" rx="3.25" fill="#E8ECE5"/>
+        <use href="#i-chevu" x="8" y="290" width="14" height="14" color="#9AA79E" transform="rotate(-90 15 297)"/>
+        <use href="#i-chevu" x="238" y="290" width="14" height="14" color="#9AA79E" transform="rotate(90 245 297)"/>
+        <rect x="95" y="484" width="70" height="4" rx="2" fill="#2A352E" opacity=".85"/>
+        <g font-size="8" font-weight="700" fill="#FFFFFF" text-anchor="middle">
+          <circle cx="31" cy="99" r="5.5" fill="#C14E33"/><text x="31" y="102">1</text>
+          <circle cx="232" cy="110" r="5.5" fill="#C14E33"/><text x="232" y="113">2</text>
+          <circle cx="16" cy="160" r="5.5" fill="#C14E33"/><text x="16" y="163">3</text>
+        </g>
+      </g>
+    </svg>
+    <svg class="mini" viewBox="0 0 260 128">
+      <text x="16" y="14" font-size="7" fill="#9AA79E">拖动日期河 = 时间旅行；河上的刻度 = 那天有几条记录</text>
+      <path d="M8 70 q13-6 26 0 t26 0 t26 0 t26 0 t26 0 t26 0 t26 0 t26 0 t26 0" fill="none" stroke="#9FB4A8" stroke-width="1.6" opacity=".6"/>
+      <g font-size="6" fill="#9AA79E" text-anchor="middle">
+        <text x="21" y="56">9/28</text><text x="47" y="56">29</text><text x="73" y="56">30</text><text x="99" y="56">10/1</text><text x="125" y="56">2</text><text x="151" y="56">3</text><text x="177" y="56">4</text><text x="203" y="56">5</text><text x="229" y="56">6</text>
+      </g>
+      <circle cx="21" cy="70" r="3" fill="#B9C4BB"/><circle cx="47" cy="70" r="3" fill="#B9C4BB"/><circle cx="73" cy="70" r="3" fill="#B9C4BB"/><circle cx="99" cy="70" r="3" fill="#B9C4BB"/><circle cx="125" cy="70" r="3" fill="#B9C4BB"/><circle cx="151" cy="70" r="3" fill="#B9C4BB"/><circle cx="229" cy="70" r="3" fill="#DDE3DC" stroke="#C8D3C9" stroke-dasharray="1.5 1.5"/>
+      <circle cx="177" cy="70" r="9" fill="#24685E" opacity=".2"/><circle cx="177" cy="70" r="5.5" fill="#24685E"/>
+      <g fill="#C8D3C9"><rect x="72" y="76" width="3.5" height="5" rx="1"/><rect x="124" y="76" width="3.5" height="7" rx="1"/><rect x="150" y="76" width="3.5" height="5" rx="1"/><rect x="176" y="76" width="3.5" height="9" rx="1"/></g>
+      <rect x="143" y="92" width="70" height="18" rx="9" fill="#FFFFFF" stroke="#24685E" stroke-width="1"/>
+      <text x="178" y="104" font-size="7.5" font-weight="600" fill="#24685E" text-anchor="middle">10月4日 · 周六</text>
+      <text x="16" y="118" font-size="6.5" fill="#9AA79E">未来的日子虚线显示 — 河还没流到</text>
+    </svg>
+    <ul class="notes">
+      <li><b>① 日期河</b>：回「哪一天」升为第一操作，河上的刻度即当天记录密度。</li>
+      <li><b>② 流域横滑</b>：四区左右滑切换，文字切换器只做锚点。</li>
+      <li><b>③ 无底栏</b>：内容高度多出约 13%，签名行移入「关于」。</li>
+      <li>代价：新范式有学习成本；横滑与列表内滑动要分层处理。</li>
+    </ul>
+    <div class="meta"><span class="pill cost">实现 中高</span><span class="pill">适合：把「回溯某天」当核心</span></div>
+  </article>
+
+  <!-- ============ 方案 D ============ -->
+  <article class="opt">
+    <h3><span class="tag">D</span>河面水下<span class="en">SURFACE &amp; DEPTH</span></h3>
+    <p class="tagline">"今天在河面，其余在水下"</p>
+    <svg class="mock" viewBox="0 0 260 500">
+      <rect x="0.75" y="0.75" width="258.5" height="498.5" rx="38" fill="#FFFFFF" stroke="#D9DED6" stroke-width="1.5"/>
+      <clipPath id="scrD"><rect x="6" y="6" width="248" height="488" rx="32"/></clipPath>
+      <g clip-path="url(#scrD)">
+        <rect x="6" y="6" width="248" height="488" fill="#F7F8F4"/>
+        <text x="26" y="30" font-size="10" font-weight="600" fill="#2A352E">9:41</text>
+        <use href="#i-status" x="196" y="17" width="56" height="14" color="#2A352E"/>
+        <rect x="92" y="14" width="76" height="22" rx="11" fill="#232A24"/>
+        <use href="#i-brand" x="21" y="45" width="12" height="14" color="#24685E"/>
+        <text x="37" y="55" font-size="6.5" font-weight="600" letter-spacing="1.4" fill="#2A352E">RIVER OS</text>
+        <text x="83" y="55" font-size="5" fill="#93A29A" letter-spacing=".6">PERSONAL MEMORY OS</text>
+        <text x="21" y="93" font-size="21" font-weight="600" fill="#2A352E" font-family="'Songti SC',serif">10月4日 · 周六</text>
+        <circle cx="228" cy="86" r="12.5" fill="#FFFFFF" stroke="#E3E7E0"/>
+        <use href="#i-search" x="222.5" y="80.5" width="11" height="11" color="#6B7A72"/>
+        <text x="21" y="109" font-size="8" fill="#6B7A72">已记录 6 小时 12 分 · 3 条活动 · 心情 平静</text>
+        <rect x="21" y="115" width="206" height="6" rx="3" fill="#E7ECE5"/>
+        <rect x="21" y="115" width="124" height="6" rx="3" fill="url(#gradAcc)"/>
+        <g>
+          <rect x="20" y="132" width="220" height="62" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="143" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-sun" x="35" y="148" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="145" width="104" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="156" width="74" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="152" font-size="7.5" fill="#9AA79E" text-anchor="end">08:12</text>
+        </g>
+        <g>
+          <rect x="20" y="202" width="220" height="62" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="213" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-place" x="35" y="218" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="215" width="88" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="226" width="60" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="222" font-size="7.5" fill="#9AA79E" text-anchor="end">40 分</text>
+        </g>
+        <g>
+          <rect x="20" y="272" width="220" height="76" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="283" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-note" x="35" y="288" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="285" width="130" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <text x="62" y="308" font-size="7.5" font-style="italic" fill="#8A978D">「河水平静，像今天的心情。」</text>
+          <rect x="62" y="318" width="40" height="14" rx="7" fill="#E5EFE8"/>
+          <text x="82" y="328" font-size="6.5" fill="#24685E" text-anchor="middle">平静</text>
+          <text x="230" y="292" font-size="7.5" fill="#9AA79E" text-anchor="end">21:30</text>
+        </g>
+        <rect x="20" y="356" width="220" height="120" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+        <rect x="30" y="367" width="24" height="24" rx="8" fill="#EDF1EB"/>
+        <rect x="62" y="369" width="96" height="6.5" rx="3.25" fill="#E0E6DE"/>
+
+        <!-- 水位线拉环 -->
+        <rect x="6" y="462" width="248" height="1" fill="#E3E7E0"/>
+        <use href="#i-chevu" x="123" y="452" width="14" height="14" color="#9AA79E"/>
+        <rect x="105" y="470" width="50" height="5" rx="2.5" fill="#AEBBB0"/>
+        <circle cx="163" cy="472.5" r="4.5" fill="#24685E" stroke="#F7F8F4" stroke-width="1.5"/>
+        <text x="163" y="475.2" font-size="5.5" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+        <text x="22" y="478" font-size="6.5" fill="#9AA79E">上拉 · 记录 / River / 记忆</text>
+        <rect x="95" y="484" width="70" height="4" rx="2" fill="#2A352E" opacity=".85"/>
+        <g font-size="8" font-weight="700" fill="#FFFFFF" text-anchor="middle">
+          <circle cx="244" cy="472" r="5.5" fill="#C14E33"/><text x="244" y="475">1</text>
+          <circle cx="90" cy="466" r="5.5" fill="#C14E33"/><text x="90" y="469">2</text>
+          <circle cx="20" cy="140" r="5.5" fill="#C14E33"/><text x="20" y="143">3</text>
+        </g>
+      </g>
+    </svg>
+    <svg class="mini" viewBox="0 0 260 128">
+      <rect x="0" y="0" width="260" height="122" rx="10" fill="#E4E9E2"/>
+      <rect x="20" y="6" width="220" height="18" rx="8" fill="#FFFFFF" opacity=".5"/>
+      <path d="M0 48 h260 v74 h-260 Z" fill="#FFFFFF"/>
+      <path d="M0 48 q0-18 18-18 h224 q18 0 18 18 v74 h-260 Z" fill="#FFFFFF" stroke="#E3E7E0"/>
+      <rect x="115" y="38" width="30" height="4" rx="2" fill="#D3DAD2"/>
+      <rect x="14" y="50" width="232" height="22" rx="11" fill="#EFF3EE"/>
+      <rect x="17" y="52.5" width="74" height="17" rx="8.5" fill="#FFFFFF" stroke="#E0E5DD"/>
+      <text x="54" y="64.5" font-size="8" font-weight="600" fill="#2A352E" text-anchor="middle">记录</text>
+      <text x="130" y="64.5" font-size="8" fill="#6B7A72" text-anchor="middle">River</text>
+      <text x="208" y="64.5" font-size="8" fill="#6B7A72" text-anchor="middle">记忆</text>
+      <circle cx="30" cy="84" r="8" fill="#E5EFE8"/>
+      <rect x="46" y="78" width="150" height="6" rx="3" fill="#DDE3DB"/>
+      <rect x="46" y="89" width="90" height="5" rx="2.5" fill="#E8ECE5"/>
+      <circle cx="30" cy="108" r="8" fill="#E5EFE8"/>
+      <rect x="46" y="102" width="130" height="6" rx="3" fill="#DDE3DB"/>
+      <text x="228" y="92" font-size="7" fill="#9AA79E" text-anchor="end">半层</text>
+    </svg>
+    <ul class="notes">
+      <li><b>① 水位线拉环</b>：底部常驻一根把手，上拉出抽屉；待确认数挂在把手右端。</li>
+      <li><b>② 抽屉三档</b>：半层对照（边看记录边写）、全层沉浸、回落即「今天」。</li>
+      <li><b>③ 今天是唯一的家</b>：信息架构最诚实 — 其余三区都是今天的延伸。</li>
+      <li>代价：到 River / 记忆多一步；抽屉手势需与列表滚动仔细分层。</li>
+    </ul>
+    <div class="meta"><span class="pill cost">实现 中</span><span class="pill">适合：极简专注、当下优先</span></div>
+  </article>
+
+  <!-- ============ 方案 E ============ -->
+  <article class="opt">
+    <h3><span class="tag">E</span>穹顶<span class="en">PULL DOME</span></h3>
+    <p class="tagline">"屏即河面，一拉见全域"</p>
+    <svg class="mock" viewBox="0 0 260 500">
+      <rect x="0.75" y="0.75" width="258.5" height="498.5" rx="38" fill="#FFFFFF" stroke="#D9DED6" stroke-width="1.5"/>
+      <clipPath id="scrE"><rect x="6" y="6" width="248" height="488" rx="32"/></clipPath>
+      <g clip-path="url(#scrE)">
+        <rect x="6" y="6" width="248" height="488" fill="#F7F8F4"/>
+        <text x="26" y="30" font-size="10" font-weight="600" fill="#2A352E">9:41</text>
+        <use href="#i-status" x="196" y="17" width="56" height="14" color="#2A352E"/>
+        <rect x="92" y="14" width="76" height="22" rx="11" fill="#232A24"/>
+        <use href="#i-brand" x="21" y="45" width="12" height="14" color="#24685E"/>
+        <text x="37" y="55" font-size="6.5" font-weight="600" letter-spacing="1.4" fill="#2A352E">RIVER OS</text>
+        <text x="83" y="55" font-size="5" fill="#93A29A" letter-spacing=".6">PERSONAL MEMORY OS</text>
+        <text x="21" y="93" font-size="21" font-weight="600" fill="#2A352E" font-family="'Songti SC',serif">10月4日 · 周六</text>
+        <circle cx="228" cy="86" r="12.5" fill="#FFFFFF" stroke="#E3E7E0"/>
+        <use href="#i-search" x="222.5" y="80.5" width="11" height="11" color="#6B7A72"/>
+        <text x="21" y="109" font-size="8" fill="#6B7A72">已记录 6 小时 12 分 · 3 条活动 · 心情 平静</text>
+        <rect x="21" y="115" width="206" height="6" rx="3" fill="#E7ECE5"/>
+        <rect x="21" y="115" width="124" height="6" rx="3" fill="url(#gradAcc)"/>
+        <g>
+          <rect x="20" y="132" width="220" height="62" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="143" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-sun" x="35" y="148" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="145" width="104" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="156" width="74" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="152" font-size="7.5" fill="#9AA79E" text-anchor="end">08:12</text>
+        </g>
+        <g>
+          <rect x="20" y="202" width="220" height="62" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="213" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-place" x="35" y="218" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="215" width="88" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <rect x="62" y="226" width="60" height="6.5" rx="3.25" fill="#E4E9E1"/>
+          <text x="230" y="222" font-size="7.5" fill="#9AA79E" text-anchor="end">40 分</text>
+        </g>
+        <g>
+          <rect x="20" y="272" width="220" height="76" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+          <rect x="30" y="283" width="24" height="24" rx="8" fill="#E5EFE8"/>
+          <use href="#i-note" x="35" y="288" width="14" height="14" color="#24685E"/>
+          <rect x="62" y="285" width="130" height="6.5" rx="3.25" fill="#D9E0D7"/>
+          <text x="62" y="308" font-size="7.5" font-style="italic" fill="#8A978D">「河水平静，像今天的心情。」</text>
+          <text x="230" y="298" font-size="7.5" fill="#9AA79E" text-anchor="end">21:30</text>
+        </g>
+        <rect x="20" y="356" width="220" height="112" rx="16" fill="#FFFFFF" stroke="#EAEEE8"/>
+        <rect x="30" y="367" width="24" height="24" rx="8" fill="#EDF1EB"/>
+        <rect x="62" y="369" width="96" height="6.5" rx="3.25" fill="#E0E6DE"/>
+
+        <!-- 水位线 -->
+        <text x="16" y="470" font-size="6.5" fill="#9AA79E">今天 · 流域 1/4</text>
+        <rect x="16" y="476" width="228" height="2.5" rx="1.25" fill="#24685E" opacity=".85"/>
+        <circle cx="16" cy="477.25" r="3" fill="#24685E"/>
+        <circle cx="92" cy="477.25" r="2" fill="#B9C4BB"/>
+        <circle cx="168" cy="477.25" r="2" fill="#B9C4BB"/>
+        <circle cx="244" cy="477.25" r="2" fill="#B9C4BB"/>
+        <circle cx="176" cy="477.25" r="4" fill="#24685E"/>
+        <rect x="95" y="486" width="70" height="4" rx="2" fill="#2A352E" opacity=".5"/>
+        <g font-size="8" font-weight="700" fill="#FFFFFF" text-anchor="middle">
+          <circle cx="140" cy="477" r="5.5" fill="#C14E33"/><text x="140" y="480">1</text>
+          <circle cx="248" cy="462" r="5.5" fill="#C14E33"/><text x="248" y="465">2</text>
+          <circle cx="10" cy="300" r="5.5" fill="#C14E33"/><text x="10" y="303">3</text>
+        </g>
+      </g>
+    </svg>
+    <svg class="mini" viewBox="0 0 260 128">
+      <rect x="0" y="0" width="260" height="122" rx="10" fill="#E4E9E2"/>
+      <g transform="rotate(-14 40 128)"><rect x="-2" y="58" width="84" height="70" rx="14" fill="#FFFFFF" stroke="#E3E7E0"/><use href="#i-sun" x="32" y="72" width="16" height="16" color="#9AA79E"/><text x="40" y="104" font-size="8.5" fill="#6B7A72" text-anchor="middle">今天</text><text x="40" y="116" font-size="6" fill="#9AA79E" text-anchor="middle">此刻</text></g>
+      <g transform="rotate(-5 90 128)"><rect x="48" y="42" width="84" height="86" rx="14" fill="#FFFFFF" stroke="#E3E7E0"/><use href="#i-list" x="82" y="58" width="16" height="16" color="#9AA79E"/><text x="90" y="92" font-size="8.5" fill="#6B7A72" text-anchor="middle">记录</text><text x="90" y="104" font-size="6" fill="#9AA79E" text-anchor="middle">足迹与活动</text></g>
+      <g transform="rotate(5 176 128)"><rect x="134" y="42" width="84" height="86" rx="14" fill="#FFFFFF" stroke="#24685E" stroke-width="1.4"/><use href="#i-waves" x="168" y="58" width="16" height="16" color="#24685E"/><text x="176" y="92" font-size="8.5" font-weight="600" fill="#24685E" text-anchor="middle">River</text><text x="170" y="104" font-size="6" fill="#9AA79E" text-anchor="middle">待确认 3</text></g>
+      <g transform="rotate(14 226 128)"><rect x="184" y="58" width="84" height="70" rx="14" fill="#FFFFFF" stroke="#E3E7E0"/><use href="#i-books" x="218" y="72" width="16" height="16" color="#9AA79E"/><text x="226" y="104" font-size="8.5" fill="#6B7A72" text-anchor="middle">记忆</text><text x="226" y="116" font-size="6" fill="#9AA79E" text-anchor="middle">回声</text></g>
+      <text x="130" y="26" font-size="7" fill="#6B7A72" text-anchor="middle">上拉停留 → 穹顶张开；左右轻扫 → 相邻流域</text>
+    </svg>
+    <ul class="notes">
+      <li><b>① 水位线</b>：导航缩成一根 2.5pt 的线，线上的四颗珠 = 四区，实心珠是当前。</li>
+      <li><b>② 穹顶</b>：水位线上拉停留，四张流域卡扇形张开，松手即跳。</li>
+      <li><b>③ 轻扫切换</b>：屏幕左右缘轻扫 = 相邻流域，穹顶只在不清楚时才需要。</li>
+      <li>代价：学习成本最高；必须给无障碍完整替代路径（按钮入口）。</li>
+    </ul>
+    <div class="meta"><span class="pill cost">实现 高</span><span class="pill">适合：极致沉浸 + 独特气质</span></div>
+  </article>
+</section>
+
+<h2 class="sec">五案对比 <span>● 越多越好；「学习成本 / 实现成本」列里 ● 越少越好</span></h2>
+<table class="compare">
+  <tr><th style="width:120px">方案</th><th>直达切换</th><th>内容沉浸</th><th>单手友好</th><th>学习成本</th><th>品牌感</th><th>实现成本</th><th style="text-align:left">一句话</th></tr>
+  <tr><td>A · 浮岛</td><td class="dots">●●●●●</td><td class="dots">●●●○○</td><td class="dots">●●●●●</td><td class="dots">●●●●●</td><td class="dots">●●●○○</td><td class="dots">●●●●●</td><td>稳健的全能底栏，谁都会用</td></tr>
+  <tr><td>B · 河珠中枢</td><td class="dots">●●●●○</td><td class="dots">●●●○○</td><td class="dots">●●●●○</td><td class="dots">●●●●○</td><td class="win">●●●●●</td><td class="dots">●●●○○</td><td>把「写」放进拇指正下方，品牌与功能合一</td></tr>
+  <tr><td>C · 日期河</td><td class="dots">●●●○○</td><td class="dots">●●●●○</td><td class="dots">●●●○○</td><td class="dots">●●●○○</td><td class="dots">●●●●○</td><td class="dots">●●●○○</td><td>时间是日记的主轴，导航即时间旅行</td></tr>
+  <tr><td>D · 河面水下</td><td class="dots">●●○○○</td><td class="win">●●●●●</td><td class="dots">●●●●○</td><td class="dots">●●●○○</td><td class="dots">●●●●○</td><td class="dots">●●●○○</td><td>今天是一个家，其余都是水下的房间</td></tr>
+  <tr><td>E · 穹顶</td><td class="dots">●●●○○</td><td class="win">●●●●●</td><td class="dots">●●○○○</td><td class="dots">●●○○○</td><td class="win">●●●●●</td><td class="dots">●●○○○</td><td>一根水位线管全部，动效空间最大</td></tr>
+</table>
+
+<section class="footer">
+  <div class="fh">我的推荐</div>
+  <p><b>首选 B（河珠中枢）</b>：它同时解决两件事 — 最高频动作「写日记」获得一个专属的、带品牌形的入口，四区切换仍保持底栏的零学习成本。若你更看重「回溯某一天」，选 <b>C（日期河）</b>，它把日记类产品真正的轴（时间）做成了导航本身。<br>
+  B 与 C 可叠加：河珠做中央入口 + 日期河做顶部时间轴。选定后告诉我字母（或组合），下一轮我把该方案画成完整状态图（选中 / 滚动 / 键盘弹出 / 徽标 / 暗色），并出下一模块「首页 · 今天」的 5 个方案。</p>
+</section>
+
+</body>
+</html>

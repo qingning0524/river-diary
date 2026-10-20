@@ -19,12 +19,20 @@ struct TodayDashboardView: View {
     var onShowCapture: () -> Void
     var onOpenAsk: (String) -> Void
     var onOpenFootprints: () -> Void
+    var onOpenHealth: () -> Void = {}
     var onOpenSettings: () -> Void
     var onStartTracking: () -> Void
     /// 习惯回顾入口：只在确有问题包时出现一条简洁入口。
     var habitReviewPendingCount: Int = 0
     var onOpenHabitReview: () -> Void = {}
+    /// 宽窗口有常驻右侧队列，窄窗口把同一队列留在主列底部。
+    var showsEmbeddedReviewQueue: Bool = true
+    var excludedConfirmationTargetIDs: Set<String> = []
+    /// 足迹一行的真实状态（与数据源页同一真相）；缺省保持旧行为。
+    var locationStatusState: SourceHealthState? = nil
+    var locationStatusDetail: String? = nil
 
+    @State private var showsDayDetails = false
     @State private var reportError: String?
     @State private var isBriefExpanded = false
     @State private var showsCorrectionSheet = false
@@ -233,14 +241,30 @@ struct TodayDashboardView: View {
     var body: some View {
         let s = makeSnapshot()
         return RiverPage {
-            reportHeader.riverAppear(index: 0)
-            dayBrief(s).riverAppear(index: 1)
-            glanceHero(s).riverAppear(index: 2)
-            insightRow(s).riverAppear(index: 3)
-            if habitReviewPendingCount > 0 {
-                habitReviewEntry.riverAppear(index: 4)
+            modernHeading
+            if showsEmbeddedReviewQueue && habitReviewPendingCount > 0 { habitReviewEntry }
+            modernBrief(s)
+            modernMetrics(s)
+            modernMoments(s)
+            DisclosureGroup("更多当天信息", isExpanded: $showsDayDetails) {
+                VStack(spacing: AppSpacing.panelGap) {
+                    glanceHero(s)
+                    timeBreakdown(s)
+                    goalPanel
+                    factsPanel(s)
+                }.padding(.top, 16)
             }
-            evidenceInbox(s).riverAppear(index: 5)
+            .font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+            .padding(.top, 8)
+            if showsEmbeddedReviewQueue {
+                evidenceInbox(s)
+            }
+            VStack(spacing: 8) {
+                Text("日子有迹可循，生活慢慢成河。")
+                    .font(AppTypography.quietQuote()).tracking(2)
+                Text("ONE ORDINARY DAY AT A TIME").font(AppTypography.micro()).tracking(2)
+            }
+            .foregroundStyle(Color.tertiaryInk).frame(maxWidth: .infinity).padding(.vertical, 28)
         }
         .task(id: dateKey) {
             ai.restoreAnalysisResults(startDate: dateKey, endDate: dateKey)
@@ -258,18 +282,141 @@ struct TodayDashboardView: View {
         }
     }
 
+    private var modernHeading: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(selectedDate.formatted(.dateTime.year().month().day().weekday(.wide)))
+                .font(AppTypography.micro()).tracking(2).foregroundStyle(Color.secondaryInk)
+            (Text(isSelectedDateToday ? "让今天，" : "回看这一天，").foregroundColor(Color.ink)
+             + Text("慢慢清晰。").foregroundColor(Color.secondaryInk).fontWeight(.light))
+                .font(AppTypography.pageTitleLarge())
+            Text("发生过的片刻、写下的心情，都在这里。")
+                .font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+        }.padding(.bottom, 5)
+    }
+
+    private func modernBrief(_ s: Snapshot) -> some View {
+        RiverPanel(title: "\(dayName)的轮廓", systemImage: "book", accent: AppTheme.accent) {
+            VStack(alignment: .leading, spacing: 17) {
+                HStack(alignment: .top, spacing: 16) {
+                    Text(dailyJudgment ?? (s.timeline.recordedNodeCount > 0 ? s.localReport.headline : "这一天，等你慢慢写下。"))
+                        .font(AppTypography.briefLead())
+                        .foregroundStyle(Color.ink).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    StatusBadge(dailyReport == nil ? "本机记录" : "AI 推断", tone: .neutral)
+                }
+                Text(dailyReport ?? (s.entry.displayOverview.isEmpty
+                     ? (s.timeline.recordedNodeCount > 0 ? s.localReport.overview : "写下一点感受，或者从时间线开始。已有记录会在这里慢慢串起这一天。")
+                     : s.entry.displayOverview))
+                    .font(AppTypography.secondary()).foregroundStyle(Color.secondaryInk)
+                    .lineSpacing(5).lineLimit(isBriefExpanded ? nil : 4)
+                    .fixedSize(horizontal: false, vertical: true)
+                ZStack {
+                    RiverQuietFlow().stroke(AppTheme.accent.opacity(0.65), lineWidth: 1.1)
+                    RiverQuietFlow().stroke(AppTheme.accent.opacity(0.23), lineWidth: 1).offset(y: 10)
+                }.frame(height: 28).padding(.horizontal, -23).accessibilityHidden(true)
+                HStack(spacing: 12) {
+                    Text(dailyReport == nil ? s.localReport.sourceLine : "AI 解释 · 可以回到原始依据")
+                        .font(AppTypography.micro()).foregroundStyle(Color.secondaryInk)
+                    Spacer(minLength: 0)
+                    Button("与 River 聊聊") { onOpenAsk("这一天做了什么？") }.linkAction()
+                }
+                if dailyReport != nil {
+                    dailyEvidenceLinks(s)
+                }
+                HStack(spacing: 14) {
+                    Button(reportButtonTitle) {
+                        if ai.isConfigured { Task { await generateDailyReport() } }
+                        else { onOpenSettings() }
+                    }.smallAction().disabled(dailyTaskState?.isLoading == true)
+                    if dailyReport != nil {
+                        Button(isBriefExpanded ? "收起" : "阅读全文") { isBriefExpanded.toggle() }.linkAction()
+                        Button("改一改") { openCorrection(for: s) }.linkAction()
+                    }
+                }
+                if let reportError {
+                    Text(reportError).font(AppTypography.metadata()).foregroundStyle(AppTheme.warning)
+                }
+            }
+        }
+    }
+
+    private func modernMetrics(_ s: Snapshot) -> some View {
+        HStack(alignment: .top, spacing: 20) {
+            RiverSoftMetric(
+                title: "学习与创作",
+                value: hasRecordedTime(s) ? ActivityFormatter.time(s.stats.focusTotal) : "—",
+                detail: hasRecordedTime(s) ? focusShareText(s) : "还没有可计的活动时段",
+                symbol: "clock", tint: Color(hex: "#8C62D9"), action: onOpenTimeline
+            )
+            RiverSoftMetric(
+                title: isSelectedDateToday ? "今日步数" : "当天步数",
+                value: s.entry.health?.steps.map { $0.formatted() } ?? "—",
+                detail: s.entry.health?.steps == nil ? "等待 iPhone 健康摘要" : "来自已同步的健康摘要",
+                symbol: "figure.walk", tint: AppTheme.ok, action: onOpenHealth
+            )
+            RiverSoftMetric(
+                title: "生活片刻", value: String(s.timeline.recordedNodeCount),
+                detail: "\(s.timeline.sessions.count) 段活动 · \(s.captures.count) 条快记",
+                symbol: "archivebox", tint: AppTheme.warning, action: onOpenTimeline
+            )
+        }
+    }
+
+    private func modernMoments(_ s: Snapshot) -> some View {
+        let items = Array(s.timeline.items.filter { $0.kind != .gap }.sorted { $0.start > $1.start }.prefix(4))
+        return VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(dayName)，流经这些片刻").font(AppTypography.sectionTitle()).foregroundStyle(Color.ink)
+                    Text("一些小事，串起了这一天").font(AppTypography.micro()).foregroundStyle(Color.secondaryInk)
+                }
+                Spacer()
+                Button("完整足迹 →", action: onOpenTimeline).linkAction()
+            }
+            if items.isEmpty {
+                EmptyStateView(title: "给这一天留一个开始", message: "已有的活动与手记会按时间出现在这里。", symbol: "book",
+                               actionTitle: "写一笔", action: onOpenJournal,
+                               secondaryTitle: "查看数据源", secondaryAction: onOpenSettings)
+                    .padding(23).riverSoftSurface()
+            }
+            ForEach(items) { item in
+                Button {
+                    onSelectTimelineItem(item, "today:\(item.id)")
+                } label: {
+                    HStack(alignment: .top, spacing: 15) {
+                        Text(item.start.formatted(date: .omitted, time: .shortened))
+                            .font(AppTypography.micro().monospacedDigit()).foregroundStyle(Color.tertiaryInk)
+                            .frame(width: 41, alignment: .leading).padding(.top, 7)
+                        Image(systemName: item.kind == .capture ? "square.and.pencil" : "circle.grid.2x2")
+                            .font(.system(size: 12)).foregroundStyle(AppTheme.accent)
+                            .frame(width: 31, height: 31).riverSoftSurface(radius: 16, compact: true)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(item.title).font(AppTypography.rowTitle()).foregroundStyle(Color.ink)
+                                .lineLimit(2)
+                            Text(item.kind == .capture ? "手动记录" : ActivityFormatter.time(item.duration))
+                                .font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                        StatusBadge(item.needsReview ? "待补充" : "已记录", tone: item.needsReview ? .attention : .positive)
+                    }.padding(.vertical, 7).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .focused($inspectorSourceFocusID, equals: "today:\(item.id)")
+            }
+        }.padding(.top, 10)
+    }
+
     // MARK: Habit review entry
 
     /// 习惯回顾的安静入口：一行说明 + 预计耗时，不使用徽标或庆祝样式。
     private var habitReviewEntry: some View {
         Button(action: onOpenHabitReview) {
             HStack(alignment: .center, spacing: density.spacing(AppSpacing.md)) {
-                RiverIconWell(systemImage: "sparkles", tint: AppTheme.accent, size: 32)
+                RiverIconWell(systemImage: "checkmark.bubble", tint: AppTheme.accent, size: 32)
                 VStack(alignment: .leading, spacing: density.spacing(2)) {
-                    Text("习惯回顾 · 有 \(habitReviewPendingCount) 个观察想和你聊聊")
+                    Text("待确认 · 有 \(habitReviewPendingCount) 项等你判断")
                         .font(AppTypography.rowTitle().weight(.semibold))
                         .foregroundStyle(Color.ink)
-                    Text("我从最近的记录里留意到一些和你有关的事")
+                    Text("所有日期的时间线、地点与习惯线索")
                         .font(AppTypography.metadata())
                         .foregroundStyle(Color.secondaryInk)
                 }
@@ -289,7 +436,7 @@ struct TodayDashboardView: View {
             .contentShape(RoundedRectangle(cornerRadius: AppRadius.panel, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("打开习惯回顾，有 \(habitReviewPendingCount) 个观察想和你聊聊")
+        .accessibilityLabel("打开待确认中心，有 \(habitReviewPendingCount) 项需要你的判断")
     }
 
     // MARK: Header
@@ -319,7 +466,7 @@ struct TodayDashboardView: View {
             }
             Spacer(minLength: density.spacing(AppSpacing.md))
             HStack(spacing: density.spacing(AppSpacing.sm)) {
-                Button("询问这一天") { onOpenAsk("这一天做了什么？") }
+                Button("问问 River") { onOpenAsk("这一天做了什么？") }
                     .primaryCTA()
                 Button("写日记", action: onOpenJournal)
                     .secondaryCTA()
@@ -335,7 +482,7 @@ struct TodayDashboardView: View {
     /// The factual companion to the daily interpretation: recorded time, focus,
     /// places the user named, and the compact day band.
     private func glanceHero(_ s: Snapshot) -> some View {
-        RiverPanel(padding: AppSpacing.panelPadding, tint: AppTheme.accent) {
+        RiverPanel(level: .raised, padding: AppSpacing.panelPadding, tint: AppTheme.accent) {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.lg)) {
                 HStack(alignment: .top, spacing: 0) {
                     TodayHeroStat(
@@ -375,7 +522,8 @@ struct TodayDashboardView: View {
         RiverPanel(
             title: "AI 的今日判断",
             systemImage: "sparkles",
-            accent: AppTheme.accent
+            accent: AppTheme.accent,
+            level: .raised
         ) {
             VStack(alignment: .leading, spacing: density.spacing(AppSpacing.md)) {
                 HStack(alignment: .top, spacing: density.spacing(AppSpacing.md)) {
@@ -827,8 +975,8 @@ struct TodayDashboardView: View {
                 )
                 RiverValueRow(
                     title: "足迹",
-                    value: "未知",
-                    detail: "连接位置来源后显示去过哪里、停留多久。",
+                    value: locationStatusState?.label ?? "未知",
+                    detail: locationStatusDetail ?? "连接位置来源后显示去过哪里、停留多久。",
                     showsDivider: false
                 )
             }
@@ -853,37 +1001,21 @@ struct TodayDashboardView: View {
                 .map { ($0.candidateID, $0) },
             uniquingKeysWith: { first, _ in first }
         )
-        let items = Array(s.timeline.foldedItems
-            .filter { $0.needsReview || clarifications[$0.id] != nil }
-            .sorted { $0.reviewSpan > $1.reviewSpan }
-            .prefix(4))
+        let items = DayReviewQueue.items(in: s.timeline, clarificationIDs: Set(clarifications.keys),
+                                         excluding: excludedConfirmationTargetIDs)
 
-        return RiverPanel(
-            title: "需要你确认",
-            systemImage: "questionmark.circle",
-            detail: items.isEmpty ? "暂无待确认项" : "\(items.count) 段活动需要补充理解",
-            accent: AppTheme.warning
-        ) {
-            if items.isEmpty {
-                HStack(spacing: density.spacing(AppSpacing.sm)) {
-                    Image(systemName: "checkmark.circle")
-                        .foregroundStyle(AppTheme.ok)
-                    Text("\(dayName)暂时没有需要确认的时间片。")
-                        .font(AppTypography.secondary())
-                        .foregroundStyle(Color.secondaryInk)
-                }
-            } else {
-                VStack(spacing: density.spacing(AppSpacing.xs)) {
-                    ForEach(items) { item in
-                        let focusID = "today-review:\(item.id)"
-                        TodayReviewRow(
-                            item: item,
-                            clarification: clarifications[item.id],
-                            focus: $inspectorSourceFocusID,
-                            focusID: focusID
-                        ) {
-                            inspectorSourceFocusID = focusID
-                            onSelectTimelineItem(item, focusID)
+        return Group {
+            if !items.isEmpty {
+                RiverPanel(title: "当天还需补充的线索", systemImage: "questionmark.circle",
+                           detail: "\(items.count) 段活动需要补充理解", accent: AppTheme.warning) {
+                    VStack(spacing: density.spacing(AppSpacing.xs)) {
+                        ForEach(items) { item in
+                            let focusID = "today-review:\(item.id)"
+                            TodayReviewRow(item: item, clarification: clarifications[item.id],
+                                           focus: $inspectorSourceFocusID, focusID: focusID) {
+                                inspectorSourceFocusID = focusID
+                                onSelectTimelineItem(item, focusID)
+                            }
                         }
                     }
                 }

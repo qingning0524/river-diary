@@ -17,9 +17,16 @@ import AppKit
 struct NativeScrollbarSuppressor: NSViewRepresentable {
     final class SuppressingView: NSView {
         private var attempts = 0
+        private var retry: DispatchWorkItem?
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
+            suppress()
+        }
+
+        func refresh() {
+            retry?.cancel()
+            attempts = 0
             suppress()
         }
 
@@ -29,23 +36,49 @@ struct NativeScrollbarSuppressor: NSViewRepresentable {
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.window != nil else { return }
                 if let scrollView = self.enclosingScrollView {
-                    scrollView.hasVerticalScroller = false
-                    scrollView.hasHorizontalScroller = false
+                    self.hideScrollers(in: scrollView)
                 } else {
-                    // 内容尚未挂进 NSScrollView 层级时稍后重试。
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
-                        self?.suppress()
+                    // SwiftUI may mount a representable beside, rather than inside,
+                    // its NSScrollView. Search the nearest hosting ancestor only.
+                    var ancestor = self.superview
+                    while let candidate = ancestor {
+                        let scrollViews = self.descendantScrollViews(in: candidate)
+                        if !scrollViews.isEmpty {
+                            scrollViews.forEach { self.hideScrollers(in: $0) }
+                            break
+                        }
+                        ancestor = candidate.superview
                     }
                 }
+                // SwiftUI can reapply the system's legacy scroller preference on
+                // the next layout pass. Reassert during the short mounting window.
+                self.retry?.cancel()
+                let next = DispatchWorkItem { [weak self] in self?.suppress() }
+                self.retry = next
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08, execute: next)
             }
         }
+
+        private func hideScrollers(in scrollView: NSScrollView) {
+            if scrollView.scrollerStyle != .overlay { scrollView.scrollerStyle = .overlay }
+            if scrollView.hasVerticalScroller { scrollView.hasVerticalScroller = false }
+            if scrollView.hasHorizontalScroller { scrollView.hasHorizontalScroller = false }
+        }
+
+        private func descendantScrollViews(in view: NSView) -> [NSScrollView] {
+            if let scrollView = view as? NSScrollView { return [scrollView] }
+            return view.subviews.flatMap { descendantScrollViews(in: $0) }
+        }
+
     }
 
     func makeNSView(context: Context) -> NSView {
         SuppressingView()
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ nsView: NSView, context: Context) {
+        (nsView as? SuppressingView)?.refresh()
+    }
 }
 
 extension View {

@@ -122,7 +122,7 @@ final class PaletteSwitchStabilityTests: XCTestCase {
 
     /// `.id(palette…)` 不能出现在 app 级环境修饰符里（那会重建视图自身的 @State）。
     func testPaletteIdentityIsNotBoundAboveTheWindowRoot() throws {
-        let design = try source("DesignSystem.swift")
+        let design = try source("Design/DesignSystem.swift")
         let modifier = design.components(separatedBy: "struct RiverAppEnvironment").last ?? ""
         let body = modifier.components(separatedBy: "extension View").first ?? modifier
         for line in body.components(separatedBy: .newlines) {

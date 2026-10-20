@@ -2,12 +2,14 @@ import json
 import uuid
 from pathlib import Path
 import unittest
+import tempfile
 
 import pipeline
 from pipeline import paths
 
 build = pipeline
 ROOT = paths.ROOT
+FIXTURE = Path(__file__).parent / "fixtures" / "diary.json"
 
 
 class BuildTests(unittest.TestCase):
@@ -46,7 +48,7 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(cleaned["entries"][1]["browse_sites"], [{"site": "a.com", "n": 5, "count": "5"}])
 
     def test_production_snapshot_is_valid(self):
-        source = paths.RAW_DATA if paths.RAW_DATA.exists() else paths.WEB_DATA
+        source = FIXTURE
         data = build.clean_data(json.loads(source.read_text(encoding="utf-8")))
         self.assertEqual(data["today"], data["entries"][-1]["date"])
 
@@ -123,12 +125,10 @@ class BuildTests(unittest.TestCase):
             }],
         }
         data = {"entries": [{"date": "2026-09-02", "score": 50.0, "metrics": {}}]}
-        source = ROOT / "data/.test-ingested-user-data.json"
-        source.write_text(json.dumps(user), encoding="utf-8")
-        try:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "ios-user-data.json"
+            source.write_text(json.dumps(user), encoding="utf-8")
             build.merge_ingested_user_data(data, source)
-        finally:
-            source.unlink()
 
         health = data["entries"][0]["ios_health"]
         self.assertEqual(health["sleep_hours"], 7.2)
@@ -164,7 +164,7 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(daily["page_id"], "page-2")
 
     def test_web_template_contains_required_anchor_and_new_controls(self):
-        html = (paths.ROOT / "index.html").read_text(encoding="utf-8")
+        html = (paths.WEB_PREVIEW_DIR / "index.html").read_text(encoding="utf-8")
         anchors = [
             '<link rel="stylesheet" href="css/style.css">',
             '<script src="js/app.js" defer></script>',
@@ -183,15 +183,15 @@ class BuildTests(unittest.TestCase):
 
     def test_built_assets_contain_new_features_and_are_valid_enough(self):
         build.build_assets()
-        js = (paths.ROOT / "js/app.js").read_text(encoding="utf-8")
-        css = (paths.ROOT / "css/style.css").read_text(encoding="utf-8")
+        js = (paths.WEB_PREVIEW_DIR / "js/app.js").read_text(encoding="utf-8")
+        css = (paths.WEB_PREVIEW_DIR / "css/style.css").read_text(encoding="utf-8")
         for token in ("renderHealth", "renderPeriodCompare", "renderDataQuality", "renderCorrelations", "exportCsv", "exportJson", "openHelpModal"):
             self.assertIn(token, js)
         for token in (".period-compare", ".help-modal", ".quality-row", ".export-row"):
             self.assertIn(token, css)
 
     def test_production_data_includes_summary_and_quality(self):
-        path = paths.RAW_DATA if paths.RAW_DATA.exists() else paths.WEB_DATA
+        path = FIXTURE
         data = build.clean_data(json.loads(path.read_text(encoding="utf-8")))
         self.assertEqual(data["summary"]["entry_count"], len(data["entries"]))
         self.assertIn(data["data_quality"]["status"], {"good", "warning", "needs_attention"})

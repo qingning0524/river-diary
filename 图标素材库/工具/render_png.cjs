@@ -1,0 +1,2 @@
+const fs=require('fs');const sharp=require('sharp');const path=require('path');
+(async()=>{const jobs=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));let i=0;for(const job of jobs){await sharp(job.source,{density:288}).resize(job.size,job.size).png().toFile(job.dest);if(++i%400===0)console.log('Rendered',i,'/',jobs.length)}console.log('PNG_DONE',jobs.length)})().catch(e=>{console.error(e);process.exit(1)});

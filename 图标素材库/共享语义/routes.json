@@ -1,0 +1,52 @@
+{
+  "iosPrimary": [
+    {
+      "route": "timeline",
+      "label": "今天",
+      "icon": "today"
+    },
+    {
+      "route": "footprints",
+      "label": "足迹",
+      "icon": "footprints"
+    },
+    {
+      "route": "confirmations",
+      "label": "待确认",
+      "icon": "confirmations"
+    },
+    {
+      "route": "river",
+      "label": "River",
+      "icon": "river"
+    },
+    {
+      "route": "me",
+      "label": "我的",
+      "icon": "profile"
+    }
+  ],
+  "macDestinations": {
+    "today": "today",
+    "timeline": "footprints",
+    "confirmations": "confirmations",
+    "dailyReview": "review",
+    "habitReview": "habit",
+    "health": "health",
+    "footprints": "location",
+    "workLearn": "chapter",
+    "memory": "memory",
+    "ask": "river",
+    "progress": "progress",
+    "database": "database",
+    "sources": "source"
+  },
+  "macPrimary": [
+    "today",
+    "timeline",
+    "memory",
+    "ask",
+    "dailyReview"
+  ],
+  "rule": "One route-to-icon map per platform. Primary order references that map; route names are taken from app enums."
+}

@@ -1,0 +1,1207 @@
+{
+  "system": "River Glyph",
+  "version": "2.0.0",
+  "family": "河流 · Waterline",
+  "count": 80,
+  "status": "shared assets ready; app binding pending",
+  "platforms": [
+    "macOS",
+    "iOS"
+  ],
+  "rendering": "original",
+  "states": [
+    "light",
+    "dark",
+    "selected",
+    "selected-dark"
+  ],
+  "grid": {
+    "viewBox": 24,
+    "stroke": {
+      "current": 1.75,
+      "ripple": 1.25
+    },
+    "selectedStrokeIncrease": 0.2,
+    "mouthCenterlineGap": 3.8,
+    "waterRise": 0.8
+  },
+  "pngPixels": [
+    16,
+    18,
+    20,
+    24,
+    28,
+    32,
+    36,
+    40,
+    48,
+    54,
+    56,
+    60,
+    64,
+    72,
+    84,
+    96
+  ],
+  "catalogPointSize": 32,
+  "palettes": {
+    "light": {
+      "ink": "#2B3B52",
+      "accent": "#2F6CF5",
+      "water": "#2F6CF5",
+      "canvas": "#F4F7FB"
+    },
+    "dark": {
+      "ink": "#E0E8F4",
+      "accent": "#92B4FF",
+      "water": "#92B4FF",
+      "canvas": "#202935"
+    },
+    "selected": {
+      "ink": "#2F6CF5",
+      "accent": "#2F6CF5",
+      "water": "#2F6CF5",
+      "canvas": "#EAF0FF"
+    },
+    "selected-dark": {
+      "ink": "#A2BFFF",
+      "accent": "#A2BFFF",
+      "water": "#A2BFFF",
+      "canvas": "#293E63"
+    }
+  },
+  "categories": [
+    "主导航",
+    "记录工具",
+    "AI与故事",
+    "生活来源",
+    "连接与同步",
+    "隐私与设置",
+    "状态与账号",
+    "基础操作",
+    "常用操作",
+    "功能扩展"
+  ],
+  "icons": [
+    {
+      "id": "river",
+      "label": "River / 品牌",
+      "category": "主导航",
+      "water": false,
+      "asset": "RiverGlyphRiver",
+      "selectedAsset": "RiverGlyphRiverSelected",
+      "svg": {
+        "light": "SVG/light/river.svg",
+        "dark": "SVG/dark/river.svg",
+        "selected": "SVG/selected/river.svg",
+        "selected-dark": "SVG/selected-dark/river.svg"
+      }
+    },
+    {
+      "id": "today",
+      "label": "今天",
+      "category": "主导航",
+      "water": false,
+      "asset": "RiverGlyphToday",
+      "selectedAsset": "RiverGlyphTodaySelected",
+      "svg": {
+        "light": "SVG/light/today.svg",
+        "dark": "SVG/dark/today.svg",
+        "selected": "SVG/selected/today.svg",
+        "selected-dark": "SVG/selected-dark/today.svg"
+      }
+    },
+    {
+      "id": "footprints",
+      "label": "足迹",
+      "category": "主导航",
+      "water": false,
+      "asset": "RiverGlyphFootprints",
+      "selectedAsset": "RiverGlyphFootprintsSelected",
+      "svg": {
+        "light": "SVG/light/footprints.svg",
+        "dark": "SVG/dark/footprints.svg",
+        "selected": "SVG/selected/footprints.svg",
+        "selected-dark": "SVG/selected-dark/footprints.svg"
+      }
+    },
+    {
+      "id": "confirmations",
+      "label": "待确认",
+      "category": "主导航",
+      "water": true,
+      "asset": "RiverGlyphConfirmations",
+      "selectedAsset": "RiverGlyphConfirmationsSelected",
+      "svg": {
+        "light": "SVG/light/confirmations.svg",
+        "dark": "SVG/dark/confirmations.svg",
+        "selected": "SVG/selected/confirmations.svg",
+        "selected-dark": "SVG/selected-dark/confirmations.svg"
+      }
+    },
+    {
+      "id": "memory",
+      "label": "记忆",
+      "category": "主导航",
+      "water": true,
+      "asset": "RiverGlyphMemory",
+      "selectedAsset": "RiverGlyphMemorySelected",
+      "svg": {
+        "light": "SVG/light/memory.svg",
+        "dark": "SVG/dark/memory.svg",
+        "selected": "SVG/selected/memory.svg",
+        "selected-dark": "SVG/selected-dark/memory.svg"
+      }
+    },
+    {
+      "id": "review",
+      "label": "回顾",
+      "category": "主导航",
+      "water": false,
+      "asset": "RiverGlyphReview",
+      "selectedAsset": "RiverGlyphReviewSelected",
+      "svg": {
+        "light": "SVG/light/review.svg",
+        "dark": "SVG/dark/review.svg",
+        "selected": "SVG/selected/review.svg",
+        "selected-dark": "SVG/selected-dark/review.svg"
+      }
+    },
+    {
+      "id": "profile",
+      "label": "我的",
+      "category": "主导航",
+      "water": false,
+      "asset": "RiverGlyphProfile",
+      "selectedAsset": "RiverGlyphProfileSelected",
+      "svg": {
+        "light": "SVG/light/profile.svg",
+        "dark": "SVG/dark/profile.svg",
+        "selected": "SVG/selected/profile.svg",
+        "selected-dark": "SVG/selected-dark/profile.svg"
+      }
+    },
+    {
+      "id": "timeline",
+      "label": "时间线",
+      "category": "主导航",
+      "water": false,
+      "asset": "RiverGlyphTimeline",
+      "selectedAsset": "RiverGlyphTimelineSelected",
+      "svg": {
+        "light": "SVG/light/timeline.svg",
+        "dark": "SVG/dark/timeline.svg",
+        "selected": "SVG/selected/timeline.svg",
+        "selected-dark": "SVG/selected-dark/timeline.svg"
+      }
+    },
+    {
+      "id": "journal",
+      "label": "日记",
+      "category": "记录工具",
+      "water": false,
+      "asset": "RiverGlyphJournal",
+      "selectedAsset": "RiverGlyphJournalSelected",
+      "svg": {
+        "light": "SVG/light/journal.svg",
+        "dark": "SVG/dark/journal.svg",
+        "selected": "SVG/selected/journal.svg",
+        "selected-dark": "SVG/selected-dark/journal.svg"
+      }
+    },
+    {
+      "id": "edit",
+      "label": "编辑",
+      "category": "记录工具",
+      "water": false,
+      "asset": "RiverGlyphEdit",
+      "selectedAsset": "RiverGlyphEditSelected",
+      "svg": {
+        "light": "SVG/light/edit.svg",
+        "dark": "SVG/dark/edit.svg",
+        "selected": "SVG/selected/edit.svg",
+        "selected-dark": "SVG/selected-dark/edit.svg"
+      }
+    },
+    {
+      "id": "quick-note",
+      "label": "随手记",
+      "category": "记录工具",
+      "water": false,
+      "asset": "RiverGlyphQuickNote",
+      "selectedAsset": "RiverGlyphQuickNoteSelected",
+      "svg": {
+        "light": "SVG/light/quick-note.svg",
+        "dark": "SVG/dark/quick-note.svg",
+        "selected": "SVG/selected/quick-note.svg",
+        "selected-dark": "SVG/selected-dark/quick-note.svg"
+      }
+    },
+    {
+      "id": "calendar",
+      "label": "日期",
+      "category": "记录工具",
+      "water": true,
+      "asset": "RiverGlyphCalendar",
+      "selectedAsset": "RiverGlyphCalendarSelected",
+      "svg": {
+        "light": "SVG/light/calendar.svg",
+        "dark": "SVG/dark/calendar.svg",
+        "selected": "SVG/selected/calendar.svg",
+        "selected-dark": "SVG/selected-dark/calendar.svg"
+      }
+    },
+    {
+      "id": "search",
+      "label": "搜索",
+      "category": "记录工具",
+      "water": false,
+      "asset": "RiverGlyphSearch",
+      "selectedAsset": "RiverGlyphSearchSelected",
+      "svg": {
+        "light": "SVG/light/search.svg",
+        "dark": "SVG/dark/search.svg",
+        "selected": "SVG/selected/search.svg",
+        "selected-dark": "SVG/selected-dark/search.svg"
+      }
+    },
+    {
+      "id": "filter",
+      "label": "筛选",
+      "category": "记录工具",
+      "water": false,
+      "asset": "RiverGlyphFilter",
+      "selectedAsset": "RiverGlyphFilterSelected",
+      "svg": {
+        "light": "SVG/light/filter.svg",
+        "dark": "SVG/dark/filter.svg",
+        "selected": "SVG/selected/filter.svg",
+        "selected-dark": "SVG/selected-dark/filter.svg"
+      }
+    },
+    {
+      "id": "bookmark",
+      "label": "收藏",
+      "category": "记录工具",
+      "water": false,
+      "asset": "RiverGlyphBookmark",
+      "selectedAsset": "RiverGlyphBookmarkSelected",
+      "svg": {
+        "light": "SVG/light/bookmark.svg",
+        "dark": "SVG/dark/bookmark.svg",
+        "selected": "SVG/selected/bookmark.svg",
+        "selected-dark": "SVG/selected-dark/bookmark.svg"
+      }
+    },
+    {
+      "id": "tag",
+      "label": "标签",
+      "category": "记录工具",
+      "water": false,
+      "asset": "RiverGlyphTag",
+      "selectedAsset": "RiverGlyphTagSelected",
+      "svg": {
+        "light": "SVG/light/tag.svg",
+        "dark": "SVG/dark/tag.svg",
+        "selected": "SVG/selected/tag.svg",
+        "selected-dark": "SVG/selected-dark/tag.svg"
+      }
+    },
+    {
+      "id": "insight",
+      "label": "洞察",
+      "category": "AI与故事",
+      "water": false,
+      "asset": "RiverGlyphInsight",
+      "selectedAsset": "RiverGlyphInsightSelected",
+      "svg": {
+        "light": "SVG/light/insight.svg",
+        "dark": "SVG/dark/insight.svg",
+        "selected": "SVG/selected/insight.svg",
+        "selected-dark": "SVG/selected-dark/insight.svg"
+      }
+    },
+    {
+      "id": "understanding",
+      "label": "我的理解",
+      "category": "AI与故事",
+      "water": false,
+      "asset": "RiverGlyphUnderstanding",
+      "selectedAsset": "RiverGlyphUnderstandingSelected",
+      "svg": {
+        "light": "SVG/light/understanding.svg",
+        "dark": "SVG/dark/understanding.svg",
+        "selected": "SVG/selected/understanding.svg",
+        "selected-dark": "SVG/selected-dark/understanding.svg"
+      }
+    },
+    {
+      "id": "chat",
+      "label": "对话",
+      "category": "AI与故事",
+      "water": true,
+      "asset": "RiverGlyphChat",
+      "selectedAsset": "RiverGlyphChatSelected",
+      "svg": {
+        "light": "SVG/light/chat.svg",
+        "dark": "SVG/dark/chat.svg",
+        "selected": "SVG/selected/chat.svg",
+        "selected-dark": "SVG/selected-dark/chat.svg"
+      }
+    },
+    {
+      "id": "reunion",
+      "label": "记忆重逢",
+      "category": "AI与故事",
+      "water": false,
+      "asset": "RiverGlyphReunion",
+      "selectedAsset": "RiverGlyphReunionSelected",
+      "svg": {
+        "light": "SVG/light/reunion.svg",
+        "dark": "SVG/dark/reunion.svg",
+        "selected": "SVG/selected/reunion.svg",
+        "selected-dark": "SVG/selected-dark/reunion.svg"
+      }
+    },
+    {
+      "id": "chapter",
+      "label": "人生章节",
+      "category": "AI与故事",
+      "water": true,
+      "asset": "RiverGlyphChapter",
+      "selectedAsset": "RiverGlyphChapterSelected",
+      "svg": {
+        "light": "SVG/light/chapter.svg",
+        "dark": "SVG/dark/chapter.svg",
+        "selected": "SVG/selected/chapter.svg",
+        "selected-dark": "SVG/selected-dark/chapter.svg"
+      }
+    },
+    {
+      "id": "replay",
+      "label": "故事回放",
+      "category": "AI与故事",
+      "water": false,
+      "asset": "RiverGlyphReplay",
+      "selectedAsset": "RiverGlyphReplaySelected",
+      "svg": {
+        "light": "SVG/light/replay.svg",
+        "dark": "SVG/dark/replay.svg",
+        "selected": "SVG/selected/replay.svg",
+        "selected-dark": "SVG/selected-dark/replay.svg"
+      }
+    },
+    {
+      "id": "future-letter",
+      "label": "未来来信",
+      "category": "AI与故事",
+      "water": true,
+      "asset": "RiverGlyphFutureLetter",
+      "selectedAsset": "RiverGlyphFutureLetterSelected",
+      "svg": {
+        "light": "SVG/light/future-letter.svg",
+        "dark": "SVG/dark/future-letter.svg",
+        "selected": "SVG/selected/future-letter.svg",
+        "selected-dark": "SVG/selected-dark/future-letter.svg"
+      }
+    },
+    {
+      "id": "experiment",
+      "label": "生活小实验",
+      "category": "AI与故事",
+      "water": false,
+      "asset": "RiverGlyphExperiment",
+      "selectedAsset": "RiverGlyphExperimentSelected",
+      "svg": {
+        "light": "SVG/light/experiment.svg",
+        "dark": "SVG/dark/experiment.svg",
+        "selected": "SVG/selected/experiment.svg",
+        "selected-dark": "SVG/selected-dark/experiment.svg"
+      }
+    },
+    {
+      "id": "health",
+      "label": "健康",
+      "category": "生活来源",
+      "water": false,
+      "asset": "RiverGlyphHealth",
+      "selectedAsset": "RiverGlyphHealthSelected",
+      "svg": {
+        "light": "SVG/light/health.svg",
+        "dark": "SVG/dark/health.svg",
+        "selected": "SVG/selected/health.svg",
+        "selected-dark": "SVG/selected-dark/health.svg"
+      }
+    },
+    {
+      "id": "sleep",
+      "label": "睡眠",
+      "category": "生活来源",
+      "water": false,
+      "asset": "RiverGlyphSleep",
+      "selectedAsset": "RiverGlyphSleepSelected",
+      "svg": {
+        "light": "SVG/light/sleep.svg",
+        "dark": "SVG/dark/sleep.svg",
+        "selected": "SVG/selected/sleep.svg",
+        "selected-dark": "SVG/selected-dark/sleep.svg"
+      }
+    },
+    {
+      "id": "steps",
+      "label": "步数",
+      "category": "生活来源",
+      "water": false,
+      "asset": "RiverGlyphSteps",
+      "selectedAsset": "RiverGlyphStepsSelected",
+      "svg": {
+        "light": "SVG/light/steps.svg",
+        "dark": "SVG/dark/steps.svg",
+        "selected": "SVG/selected/steps.svg",
+        "selected-dark": "SVG/selected-dark/steps.svg"
+      }
+    },
+    {
+      "id": "movement",
+      "label": "运动",
+      "category": "生活来源",
+      "water": false,
+      "asset": "RiverGlyphMovement",
+      "selectedAsset": "RiverGlyphMovementSelected",
+      "svg": {
+        "light": "SVG/light/movement.svg",
+        "dark": "SVG/dark/movement.svg",
+        "selected": "SVG/selected/movement.svg",
+        "selected-dark": "SVG/selected-dark/movement.svg"
+      }
+    },
+    {
+      "id": "location",
+      "label": "地点",
+      "category": "生活来源",
+      "water": false,
+      "asset": "RiverGlyphLocation",
+      "selectedAsset": "RiverGlyphLocationSelected",
+      "svg": {
+        "light": "SVG/light/location.svg",
+        "dark": "SVG/dark/location.svg",
+        "selected": "SVG/selected/location.svg",
+        "selected-dark": "SVG/selected-dark/location.svg"
+      }
+    },
+    {
+      "id": "map",
+      "label": "地图",
+      "category": "生活来源",
+      "water": false,
+      "asset": "RiverGlyphMap",
+      "selectedAsset": "RiverGlyphMapSelected",
+      "svg": {
+        "light": "SVG/light/map.svg",
+        "dark": "SVG/dark/map.svg",
+        "selected": "SVG/selected/map.svg",
+        "selected-dark": "SVG/selected-dark/map.svg"
+      }
+    },
+    {
+      "id": "photo",
+      "label": "照片",
+      "category": "生活来源",
+      "water": false,
+      "asset": "RiverGlyphPhoto",
+      "selectedAsset": "RiverGlyphPhotoSelected",
+      "svg": {
+        "light": "SVG/light/photo.svg",
+        "dark": "SVG/dark/photo.svg",
+        "selected": "SVG/selected/photo.svg",
+        "selected-dark": "SVG/selected-dark/photo.svg"
+      }
+    },
+    {
+      "id": "microphone",
+      "label": "语音",
+      "category": "生活来源",
+      "water": false,
+      "asset": "RiverGlyphMicrophone",
+      "selectedAsset": "RiverGlyphMicrophoneSelected",
+      "svg": {
+        "light": "SVG/light/microphone.svg",
+        "dark": "SVG/dark/microphone.svg",
+        "selected": "SVG/selected/microphone.svg",
+        "selected-dark": "SVG/selected-dark/microphone.svg"
+      }
+    },
+    {
+      "id": "activity",
+      "label": "活动",
+      "category": "连接与同步",
+      "water": false,
+      "asset": "RiverGlyphActivity",
+      "selectedAsset": "RiverGlyphActivitySelected",
+      "svg": {
+        "light": "SVG/light/activity.svg",
+        "dark": "SVG/dark/activity.svg",
+        "selected": "SVG/selected/activity.svg",
+        "selected-dark": "SVG/selected-dark/activity.svg"
+      }
+    },
+    {
+      "id": "desktop",
+      "label": "Mac",
+      "category": "连接与同步",
+      "water": true,
+      "asset": "RiverGlyphDesktop",
+      "selectedAsset": "RiverGlyphDesktopSelected",
+      "svg": {
+        "light": "SVG/light/desktop.svg",
+        "dark": "SVG/dark/desktop.svg",
+        "selected": "SVG/selected/desktop.svg",
+        "selected-dark": "SVG/selected-dark/desktop.svg"
+      }
+    },
+    {
+      "id": "phone",
+      "label": "iPhone",
+      "category": "连接与同步",
+      "water": true,
+      "asset": "RiverGlyphPhone",
+      "selectedAsset": "RiverGlyphPhoneSelected",
+      "svg": {
+        "light": "SVG/light/phone.svg",
+        "dark": "SVG/dark/phone.svg",
+        "selected": "SVG/selected/phone.svg",
+        "selected-dark": "SVG/selected-dark/phone.svg"
+      }
+    },
+    {
+      "id": "link",
+      "label": "连接",
+      "category": "连接与同步",
+      "water": false,
+      "asset": "RiverGlyphLink",
+      "selectedAsset": "RiverGlyphLinkSelected",
+      "svg": {
+        "light": "SVG/light/link.svg",
+        "dark": "SVG/dark/link.svg",
+        "selected": "SVG/selected/link.svg",
+        "selected-dark": "SVG/selected-dark/link.svg"
+      }
+    },
+    {
+      "id": "sync",
+      "label": "同步",
+      "category": "连接与同步",
+      "water": false,
+      "asset": "RiverGlyphSync",
+      "selectedAsset": "RiverGlyphSyncSelected",
+      "svg": {
+        "light": "SVG/light/sync.svg",
+        "dark": "SVG/dark/sync.svg",
+        "selected": "SVG/selected/sync.svg",
+        "selected-dark": "SVG/selected-dark/sync.svg"
+      }
+    },
+    {
+      "id": "cloud",
+      "label": "云端档案",
+      "category": "连接与同步",
+      "water": false,
+      "asset": "RiverGlyphCloud",
+      "selectedAsset": "RiverGlyphCloudSelected",
+      "svg": {
+        "light": "SVG/light/cloud.svg",
+        "dark": "SVG/dark/cloud.svg",
+        "selected": "SVG/selected/cloud.svg",
+        "selected-dark": "SVG/selected-dark/cloud.svg"
+      }
+    },
+    {
+      "id": "backup",
+      "label": "备份",
+      "category": "连接与同步",
+      "water": false,
+      "asset": "RiverGlyphBackup",
+      "selectedAsset": "RiverGlyphBackupSelected",
+      "svg": {
+        "light": "SVG/light/backup.svg",
+        "dark": "SVG/dark/backup.svg",
+        "selected": "SVG/selected/backup.svg",
+        "selected-dark": "SVG/selected-dark/backup.svg"
+      }
+    },
+    {
+      "id": "restore",
+      "label": "恢复",
+      "category": "连接与同步",
+      "water": false,
+      "asset": "RiverGlyphRestore",
+      "selectedAsset": "RiverGlyphRestoreSelected",
+      "svg": {
+        "light": "SVG/light/restore.svg",
+        "dark": "SVG/dark/restore.svg",
+        "selected": "SVG/selected/restore.svg",
+        "selected-dark": "SVG/selected-dark/restore.svg"
+      }
+    },
+    {
+      "id": "export",
+      "label": "导出",
+      "category": "隐私与设置",
+      "water": false,
+      "asset": "RiverGlyphExport",
+      "selectedAsset": "RiverGlyphExportSelected",
+      "svg": {
+        "light": "SVG/light/export.svg",
+        "dark": "SVG/dark/export.svg",
+        "selected": "SVG/selected/export.svg",
+        "selected-dark": "SVG/selected-dark/export.svg"
+      }
+    },
+    {
+      "id": "share",
+      "label": "分享",
+      "category": "隐私与设置",
+      "water": false,
+      "asset": "RiverGlyphShare",
+      "selectedAsset": "RiverGlyphShareSelected",
+      "svg": {
+        "light": "SVG/light/share.svg",
+        "dark": "SVG/dark/share.svg",
+        "selected": "SVG/selected/share.svg",
+        "selected-dark": "SVG/selected-dark/share.svg"
+      }
+    },
+    {
+      "id": "privacy",
+      "label": "隐私",
+      "category": "隐私与设置",
+      "water": false,
+      "asset": "RiverGlyphPrivacy",
+      "selectedAsset": "RiverGlyphPrivacySelected",
+      "svg": {
+        "light": "SVG/light/privacy.svg",
+        "dark": "SVG/dark/privacy.svg",
+        "selected": "SVG/selected/privacy.svg",
+        "selected-dark": "SVG/selected-dark/privacy.svg"
+      }
+    },
+    {
+      "id": "lock",
+      "label": "应用锁",
+      "category": "隐私与设置",
+      "water": false,
+      "asset": "RiverGlyphLock",
+      "selectedAsset": "RiverGlyphLockSelected",
+      "svg": {
+        "light": "SVG/light/lock.svg",
+        "dark": "SVG/dark/lock.svg",
+        "selected": "SVG/selected/lock.svg",
+        "selected-dark": "SVG/selected-dark/lock.svg"
+      }
+    },
+    {
+      "id": "key",
+      "label": "密钥",
+      "category": "隐私与设置",
+      "water": false,
+      "asset": "RiverGlyphKey",
+      "selectedAsset": "RiverGlyphKeySelected",
+      "svg": {
+        "light": "SVG/light/key.svg",
+        "dark": "SVG/dark/key.svg",
+        "selected": "SVG/selected/key.svg",
+        "selected-dark": "SVG/selected-dark/key.svg"
+      }
+    },
+    {
+      "id": "shield",
+      "label": "资料保护",
+      "category": "隐私与设置",
+      "water": false,
+      "asset": "RiverGlyphShield",
+      "selectedAsset": "RiverGlyphShieldSelected",
+      "svg": {
+        "light": "SVG/light/shield.svg",
+        "dark": "SVG/dark/shield.svg",
+        "selected": "SVG/selected/shield.svg",
+        "selected-dark": "SVG/selected-dark/shield.svg"
+      }
+    },
+    {
+      "id": "settings",
+      "label": "设置",
+      "category": "隐私与设置",
+      "water": false,
+      "asset": "RiverGlyphSettings",
+      "selectedAsset": "RiverGlyphSettingsSelected",
+      "svg": {
+        "light": "SVG/light/settings.svg",
+        "dark": "SVG/dark/settings.svg",
+        "selected": "SVG/selected/settings.svg",
+        "selected-dark": "SVG/selected-dark/settings.svg"
+      }
+    },
+    {
+      "id": "appearance",
+      "label": "外观",
+      "category": "隐私与设置",
+      "water": false,
+      "asset": "RiverGlyphAppearance",
+      "selectedAsset": "RiverGlyphAppearanceSelected",
+      "svg": {
+        "light": "SVG/light/appearance.svg",
+        "dark": "SVG/dark/appearance.svg",
+        "selected": "SVG/selected/appearance.svg",
+        "selected-dark": "SVG/selected-dark/appearance.svg"
+      }
+    },
+    {
+      "id": "notifications",
+      "label": "提醒",
+      "category": "状态与账号",
+      "water": false,
+      "asset": "RiverGlyphNotifications",
+      "selectedAsset": "RiverGlyphNotificationsSelected",
+      "svg": {
+        "light": "SVG/light/notifications.svg",
+        "dark": "SVG/dark/notifications.svg",
+        "selected": "SVG/selected/notifications.svg",
+        "selected-dark": "SVG/selected-dark/notifications.svg"
+      }
+    },
+    {
+      "id": "account",
+      "label": "账号",
+      "category": "状态与账号",
+      "water": true,
+      "asset": "RiverGlyphAccount",
+      "selectedAsset": "RiverGlyphAccountSelected",
+      "svg": {
+        "light": "SVG/light/account.svg",
+        "dark": "SVG/dark/account.svg",
+        "selected": "SVG/selected/account.svg",
+        "selected-dark": "SVG/selected-dark/account.svg"
+      }
+    },
+    {
+      "id": "logout",
+      "label": "退出",
+      "category": "状态与账号",
+      "water": false,
+      "asset": "RiverGlyphLogout",
+      "selectedAsset": "RiverGlyphLogoutSelected",
+      "svg": {
+        "light": "SVG/light/logout.svg",
+        "dark": "SVG/dark/logout.svg",
+        "selected": "SVG/selected/logout.svg",
+        "selected-dark": "SVG/selected-dark/logout.svg"
+      }
+    },
+    {
+      "id": "help",
+      "label": "帮助",
+      "category": "状态与账号",
+      "water": false,
+      "asset": "RiverGlyphHelp",
+      "selectedAsset": "RiverGlyphHelpSelected",
+      "svg": {
+        "light": "SVG/light/help.svg",
+        "dark": "SVG/dark/help.svg",
+        "selected": "SVG/selected/help.svg",
+        "selected-dark": "SVG/selected-dark/help.svg"
+      }
+    },
+    {
+      "id": "success",
+      "label": "成功",
+      "category": "状态与账号",
+      "water": false,
+      "asset": "RiverGlyphSuccess",
+      "selectedAsset": "RiverGlyphSuccessSelected",
+      "svg": {
+        "light": "SVG/light/success.svg",
+        "dark": "SVG/dark/success.svg",
+        "selected": "SVG/selected/success.svg",
+        "selected-dark": "SVG/selected-dark/success.svg"
+      }
+    },
+    {
+      "id": "warning",
+      "label": "警告",
+      "category": "状态与账号",
+      "water": false,
+      "asset": "RiverGlyphWarning",
+      "selectedAsset": "RiverGlyphWarningSelected",
+      "svg": {
+        "light": "SVG/light/warning.svg",
+        "dark": "SVG/dark/warning.svg",
+        "selected": "SVG/selected/warning.svg",
+        "selected-dark": "SVG/selected-dark/warning.svg"
+      }
+    },
+    {
+      "id": "error",
+      "label": "失败",
+      "category": "状态与账号",
+      "water": false,
+      "asset": "RiverGlyphError",
+      "selectedAsset": "RiverGlyphErrorSelected",
+      "svg": {
+        "light": "SVG/light/error.svg",
+        "dark": "SVG/dark/error.svg",
+        "selected": "SVG/selected/error.svg",
+        "selected-dark": "SVG/selected-dark/error.svg"
+      }
+    },
+    {
+      "id": "info",
+      "label": "信息",
+      "category": "状态与账号",
+      "water": false,
+      "asset": "RiverGlyphInfo",
+      "selectedAsset": "RiverGlyphInfoSelected",
+      "svg": {
+        "light": "SVG/light/info.svg",
+        "dark": "SVG/dark/info.svg",
+        "selected": "SVG/selected/info.svg",
+        "selected-dark": "SVG/selected-dark/info.svg"
+      }
+    },
+    {
+      "id": "add",
+      "label": "新增",
+      "category": "基础操作",
+      "water": false,
+      "asset": "RiverGlyphAdd",
+      "selectedAsset": "RiverGlyphAddSelected",
+      "svg": {
+        "light": "SVG/light/add.svg",
+        "dark": "SVG/dark/add.svg",
+        "selected": "SVG/selected/add.svg",
+        "selected-dark": "SVG/selected-dark/add.svg"
+      }
+    },
+    {
+      "id": "close",
+      "label": "关闭",
+      "category": "基础操作",
+      "water": false,
+      "asset": "RiverGlyphClose",
+      "selectedAsset": "RiverGlyphCloseSelected",
+      "svg": {
+        "light": "SVG/light/close.svg",
+        "dark": "SVG/dark/close.svg",
+        "selected": "SVG/selected/close.svg",
+        "selected-dark": "SVG/selected-dark/close.svg"
+      }
+    },
+    {
+      "id": "back",
+      "label": "返回",
+      "category": "基础操作",
+      "water": false,
+      "asset": "RiverGlyphBack",
+      "selectedAsset": "RiverGlyphBackSelected",
+      "svg": {
+        "light": "SVG/light/back.svg",
+        "dark": "SVG/dark/back.svg",
+        "selected": "SVG/selected/back.svg",
+        "selected-dark": "SVG/selected-dark/back.svg"
+      }
+    },
+    {
+      "id": "forward",
+      "label": "前往",
+      "category": "基础操作",
+      "water": false,
+      "asset": "RiverGlyphForward",
+      "selectedAsset": "RiverGlyphForwardSelected",
+      "svg": {
+        "light": "SVG/light/forward.svg",
+        "dark": "SVG/dark/forward.svg",
+        "selected": "SVG/selected/forward.svg",
+        "selected-dark": "SVG/selected-dark/forward.svg"
+      }
+    },
+    {
+      "id": "expand",
+      "label": "展开",
+      "category": "基础操作",
+      "water": false,
+      "asset": "RiverGlyphExpand",
+      "selectedAsset": "RiverGlyphExpandSelected",
+      "svg": {
+        "light": "SVG/light/expand.svg",
+        "dark": "SVG/dark/expand.svg",
+        "selected": "SVG/selected/expand.svg",
+        "selected-dark": "SVG/selected-dark/expand.svg"
+      }
+    },
+    {
+      "id": "send",
+      "label": "发送",
+      "category": "基础操作",
+      "water": false,
+      "asset": "RiverGlyphSend",
+      "selectedAsset": "RiverGlyphSendSelected",
+      "svg": {
+        "light": "SVG/light/send.svg",
+        "dark": "SVG/dark/send.svg",
+        "selected": "SVG/selected/send.svg",
+        "selected-dark": "SVG/selected-dark/send.svg"
+      }
+    },
+    {
+      "id": "play",
+      "label": "播放",
+      "category": "基础操作",
+      "water": false,
+      "asset": "RiverGlyphPlay",
+      "selectedAsset": "RiverGlyphPlaySelected",
+      "svg": {
+        "light": "SVG/light/play.svg",
+        "dark": "SVG/dark/play.svg",
+        "selected": "SVG/selected/play.svg",
+        "selected-dark": "SVG/selected-dark/play.svg"
+      }
+    },
+    {
+      "id": "pause",
+      "label": "暂停",
+      "category": "基础操作",
+      "water": false,
+      "asset": "RiverGlyphPause",
+      "selectedAsset": "RiverGlyphPauseSelected",
+      "svg": {
+        "light": "SVG/light/pause.svg",
+        "dark": "SVG/dark/pause.svg",
+        "selected": "SVG/selected/pause.svg",
+        "selected-dark": "SVG/selected-dark/pause.svg"
+      }
+    },
+    {
+      "id": "trash",
+      "label": "删除",
+      "category": "常用操作",
+      "water": false,
+      "asset": "RiverGlyphTrash",
+      "selectedAsset": "RiverGlyphTrashSelected",
+      "svg": {
+        "light": "SVG/light/trash.svg",
+        "dark": "SVG/dark/trash.svg",
+        "selected": "SVG/selected/trash.svg",
+        "selected-dark": "SVG/selected-dark/trash.svg"
+      }
+    },
+    {
+      "id": "undo",
+      "label": "撤销",
+      "category": "常用操作",
+      "water": false,
+      "asset": "RiverGlyphUndo",
+      "selectedAsset": "RiverGlyphUndoSelected",
+      "svg": {
+        "light": "SVG/light/undo.svg",
+        "dark": "SVG/dark/undo.svg",
+        "selected": "SVG/selected/undo.svg",
+        "selected-dark": "SVG/selected-dark/undo.svg"
+      }
+    },
+    {
+      "id": "copy",
+      "label": "复制",
+      "category": "常用操作",
+      "water": false,
+      "asset": "RiverGlyphCopy",
+      "selectedAsset": "RiverGlyphCopySelected",
+      "svg": {
+        "light": "SVG/light/copy.svg",
+        "dark": "SVG/dark/copy.svg",
+        "selected": "SVG/selected/copy.svg",
+        "selected-dark": "SVG/selected-dark/copy.svg"
+      }
+    },
+    {
+      "id": "refresh",
+      "label": "刷新",
+      "category": "常用操作",
+      "water": false,
+      "asset": "RiverGlyphRefresh",
+      "selectedAsset": "RiverGlyphRefreshSelected",
+      "svg": {
+        "light": "SVG/light/refresh.svg",
+        "dark": "SVG/dark/refresh.svg",
+        "selected": "SVG/selected/refresh.svg",
+        "selected-dark": "SVG/selected-dark/refresh.svg"
+      }
+    },
+    {
+      "id": "eye",
+      "label": "显示",
+      "category": "常用操作",
+      "water": false,
+      "asset": "RiverGlyphEye",
+      "selectedAsset": "RiverGlyphEyeSelected",
+      "svg": {
+        "light": "SVG/light/eye.svg",
+        "dark": "SVG/dark/eye.svg",
+        "selected": "SVG/selected/eye.svg",
+        "selected-dark": "SVG/selected-dark/eye.svg"
+      }
+    },
+    {
+      "id": "eye-off",
+      "label": "隐藏",
+      "category": "常用操作",
+      "water": false,
+      "asset": "RiverGlyphEyeOff",
+      "selectedAsset": "RiverGlyphEyeOffSelected",
+      "svg": {
+        "light": "SVG/light/eye-off.svg",
+        "dark": "SVG/dark/eye-off.svg",
+        "selected": "SVG/selected/eye-off.svg",
+        "selected-dark": "SVG/selected-dark/eye-off.svg"
+      }
+    },
+    {
+      "id": "download",
+      "label": "下载",
+      "category": "常用操作",
+      "water": false,
+      "asset": "RiverGlyphDownload",
+      "selectedAsset": "RiverGlyphDownloadSelected",
+      "svg": {
+        "light": "SVG/light/download.svg",
+        "dark": "SVG/dark/download.svg",
+        "selected": "SVG/selected/download.svg",
+        "selected-dark": "SVG/selected-dark/download.svg"
+      }
+    },
+    {
+      "id": "context-pack",
+      "label": "上下文包",
+      "category": "常用操作",
+      "water": true,
+      "asset": "RiverGlyphContextPack",
+      "selectedAsset": "RiverGlyphContextPackSelected",
+      "svg": {
+        "light": "SVG/light/context-pack.svg",
+        "dark": "SVG/dark/context-pack.svg",
+        "selected": "SVG/selected/context-pack.svg",
+        "selected-dark": "SVG/selected-dark/context-pack.svg"
+      }
+    },
+    {
+      "id": "habit",
+      "label": "习惯",
+      "category": "功能扩展",
+      "water": false,
+      "asset": "RiverGlyphHabit",
+      "selectedAsset": "RiverGlyphHabitSelected",
+      "svg": {
+        "light": "SVG/light/habit.svg",
+        "dark": "SVG/dark/habit.svg",
+        "selected": "SVG/selected/habit.svg",
+        "selected-dark": "SVG/selected-dark/habit.svg"
+      }
+    },
+    {
+      "id": "goal",
+      "label": "目标",
+      "category": "功能扩展",
+      "water": false,
+      "asset": "RiverGlyphGoal",
+      "selectedAsset": "RiverGlyphGoalSelected",
+      "svg": {
+        "light": "SVG/light/goal.svg",
+        "dark": "SVG/dark/goal.svg",
+        "selected": "SVG/selected/goal.svg",
+        "selected-dark": "SVG/selected-dark/goal.svg"
+      }
+    },
+    {
+      "id": "progress",
+      "label": "进展",
+      "category": "功能扩展",
+      "water": false,
+      "asset": "RiverGlyphProgress",
+      "selectedAsset": "RiverGlyphProgressSelected",
+      "svg": {
+        "light": "SVG/light/progress.svg",
+        "dark": "SVG/dark/progress.svg",
+        "selected": "SVG/selected/progress.svg",
+        "selected-dark": "SVG/selected-dark/progress.svg"
+      }
+    },
+    {
+      "id": "database",
+      "label": "资料库",
+      "category": "功能扩展",
+      "water": false,
+      "asset": "RiverGlyphDatabase",
+      "selectedAsset": "RiverGlyphDatabaseSelected",
+      "svg": {
+        "light": "SVG/light/database.svg",
+        "dark": "SVG/dark/database.svg",
+        "selected": "SVG/selected/database.svg",
+        "selected-dark": "SVG/selected-dark/database.svg"
+      }
+    },
+    {
+      "id": "source",
+      "label": "记录来源",
+      "category": "功能扩展",
+      "water": false,
+      "asset": "RiverGlyphSource",
+      "selectedAsset": "RiverGlyphSourceSelected",
+      "svg": {
+        "light": "SVG/light/source.svg",
+        "dark": "SVG/dark/source.svg",
+        "selected": "SVG/selected/source.svg",
+        "selected-dark": "SVG/selected-dark/source.svg"
+      }
+    },
+    {
+      "id": "evidence",
+      "label": "原始依据",
+      "category": "功能扩展",
+      "water": false,
+      "asset": "RiverGlyphEvidence",
+      "selectedAsset": "RiverGlyphEvidenceSelected",
+      "svg": {
+        "light": "SVG/light/evidence.svg",
+        "dark": "SVG/dark/evidence.svg",
+        "selected": "SVG/selected/evidence.svg",
+        "selected-dark": "SVG/selected-dark/evidence.svg"
+      }
+    },
+    {
+      "id": "more",
+      "label": "更多",
+      "category": "功能扩展",
+      "water": false,
+      "asset": "RiverGlyphMore",
+      "selectedAsset": "RiverGlyphMoreSelected",
+      "svg": {
+        "light": "SVG/light/more.svg",
+        "dark": "SVG/dark/more.svg",
+        "selected": "SVG/selected/more.svg",
+        "selected-dark": "SVG/selected-dark/more.svg"
+      }
+    },
+    {
+      "id": "chevron-down",
+      "label": "下拉",
+      "category": "功能扩展",
+      "water": false,
+      "asset": "RiverGlyphChevronDown",
+      "selectedAsset": "RiverGlyphChevronDownSelected",
+      "svg": {
+        "light": "SVG/light/chevron-down.svg",
+        "dark": "SVG/dark/chevron-down.svg",
+        "selected": "SVG/selected/chevron-down.svg",
+        "selected-dark": "SVG/selected-dark/chevron-down.svg"
+      }
+    }
+  ]
+}
