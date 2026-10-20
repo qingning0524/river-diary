@@ -1,0 +1,24 @@
+{
+  "reportSchema": 1,
+  "generatedAtUTC": "2026-10-20T05:09:39.784105+00:00",
+  "app": "/private/tmp/river-provenance-app/River Diary.app",
+  "launchMode": "qa-isolated",
+  "bundleContainsSnapshot": false,
+  "observedSeconds": 12,
+  "processAlive": true,
+  "crashReports": [],
+  "createdFiles": [
+    "Library/Application Support/RiverDiaryMac/Database/V2/river-v2.db",
+    "Library/Application Support/RiverDiaryMac/journal-encryption.key"
+  ],
+  "createdLocalDatabaseBeforeSignIn": true,
+  "windows": [
+    "13549|0|River Diary|1400x861"
+  ],
+  "screenshot": "/tmp/empty4.png",
+  "verdict": "pass",
+  "reason": "",
+  "logTail": [
+    "sandbox_extension_issue_file_to_process failed for /var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/RiverDiary-empty-launch.AWK7gm/RiverDiaryMacQA.app: 1 (Operation not permitted)"
+  ]
+}

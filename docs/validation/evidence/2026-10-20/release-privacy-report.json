@@ -1,0 +1,30 @@
+{
+  "reportSchema": 1,
+  "generatedAtUTC": "2026-10-20T05:06:06.416465+00:00",
+  "sourceRevision": "5bbe3e4ee7c05e5896b8bf9e7f2642f14637ea66",
+  "syntheticMarker": "RIVER_SYNTHETIC_SECRET_20261020T050058Z_dfb9b0029606",
+  "plantedSnapshotFiles": 4,
+  "leakHitsTotal": 0,
+  "scans": [
+    {
+      "label": "mac-app",
+      "target": "/var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/RiverDiary-release-privacy.nUKarT/mac/River Diary.app",
+      "markerHits": 0,
+      "files": []
+    },
+    {
+      "label": "ios-app",
+      "target": "/var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/RiverDiary-release-privacy.nUKarT/ios-derived/Build/Products/Release-iphonesimulator/RiverDiary.app",
+      "markerHits": 0,
+      "files": []
+    },
+    {
+      "label": "published-site",
+      "target": "/var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/RiverDiary-release-privacy.nUKarT/site-published",
+      "markerHits": 0,
+      "files": []
+    }
+  ],
+  "negativeControl": "detected",
+  "verdict": "pass"
+}
