@@ -2794,7 +2794,11 @@ final class V2Store {
     /// 这类多语句写各自跑在 autocommit 里——中间失败会永久丢掉旧结果。
     /// 传入的闭包返回 false 时回滚并返回 false（lastError 已由内部语句设置）。
     private func transaction(_ work: () -> Bool) -> Bool {
-        guard db != nil else { return false }
+        guard db != nil else {
+            // 退出登录后数据库上下文已关闭；写入必须给出原因，而不是静默失败。
+            lastError = "数据库未打开：请先登录或完成资料认领。"
+            return false
+        }
         guard execute("BEGIN IMMEDIATE") else { return false }
         if work() {
             guard execute("COMMIT") else {

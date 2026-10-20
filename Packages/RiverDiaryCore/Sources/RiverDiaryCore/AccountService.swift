@@ -204,6 +204,7 @@ public final class RiverAccountSessionStore: ObservableObject {
             await revokeUnstored(response)
             throw RiverAccountAPIError(status: 403, code: "local_profile_account_mismatch")
         }
+        let previousBinding = vault.read(profileBindingStoreKey)
         do {
             try vault.write(Data(response.user.id.utf8), key: profileBindingStoreKey)
         } catch {
@@ -213,6 +214,9 @@ public final class RiverAccountSessionStore: ObservableObject {
         do {
             try save(response, email: email.trimmingCharacters(in: .whitespacesAndNewlines))
         } catch {
+            // 会话没保存成功就不能把设备永久绑到这个账号上，否则下一次登录
+            // 另一个账号会被 local_profile_account_mismatch 挡住。
+            restoreProfileBinding(previousBinding)
             await revokeUnstored(response)
             throw error
         }
@@ -355,6 +359,14 @@ public final class RiverAccountSessionStore: ObservableObject {
         refreshTask = (taskID, task)
         defer { if refreshTask?.id == taskID { refreshTask = nil } }
         try await task.value
+    }
+
+    private func restoreProfileBinding(_ previous: Data?) {
+        if let previous {
+            try? vault.write(previous, key: profileBindingStoreKey)
+        } else {
+            try? vault.remove(profileBindingStoreKey)
+        }
     }
 
     private func save(_ response: TokenResponse, email: String) throws {

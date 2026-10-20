@@ -150,6 +150,42 @@ final class AccountSessionTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(logouts, 1)
     }
 
+    func testFailedSessionWriteDoesNotLeaveADanglingProfileBinding() async throws {
+        let server = AccountTestServer()
+        let vault = AccountTestVault()
+        vault.failSessionWrite = true
+        let store = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated login", vault: vault,
+            transport: { try await server.send($0) }
+        )
+
+        do {
+            try await store.loginWithPassword(
+                email: "test@example.invalid",
+                password: "test-only-password",
+                idempotencyKey: UUID().uuidString
+            )
+            XCTFail("login must fail when the session cannot be persisted")
+        } catch {
+            // expected
+        }
+        XCTAssertFalse(store.isSignedIn)
+        XCTAssertNil(vault.values["account-session-v1"])
+        XCTAssertNil(vault.values["account-profile-binding-v1"],
+                     "a failed login must not bind the device to that account")
+
+        // 钥匙串恢复后同一账号仍能正常登录，并写入绑定。
+        vault.failSessionWrite = false
+        try await store.loginWithPassword(
+            email: "test@example.invalid",
+            password: "test-only-password",
+            idempotencyKey: UUID().uuidString
+        )
+        XCTAssertTrue(store.isSignedIn)
+        let binding = try XCTUnwrap(vault.values["account-profile-binding-v1"])
+        XCTAssertEqual(String(decoding: binding, as: UTF8.self), "user-a")
+    }
+
     func testOldUnauthorizedRefreshCannotClearANewerLogin() async throws {
         let server = AccountTestServer()
         let store = try makeStore(server: server)
@@ -167,8 +203,12 @@ final class AccountSessionTests: XCTestCase {
 private final class AccountTestVault: RiverAccountVaultStorage {
     var values: [String: Data] = [:]
     var failSessionRemoval = false
+    var failSessionWrite = false
     func read(_ key: String) -> Data? { values[key] }
-    func write(_ data: Data, key: String) throws { values[key] = data }
+    func write(_ data: Data, key: String) throws {
+        if failSessionWrite && key == "account-session-v1" { throw URLError(.cannotWriteToFile) }
+        values[key] = data
+    }
     func remove(_ key: String) throws {
         if failSessionRemoval && key == "account-session-v1" { throw URLError(.cannotWriteToFile) }
         values.removeValue(forKey: key)
