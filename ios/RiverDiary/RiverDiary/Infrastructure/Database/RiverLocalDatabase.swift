@@ -113,13 +113,26 @@ final class RiverLocalDatabase: ObservableObject {
         if let db { sqlite3_close(db) }
     }
 
-    private static func defaultDatabaseURL() throws -> URL {
+    /// 正式库的预期路径，只计算不创建。未绑定账号的首次启动用它判断库是否存在。
+    static func defaultDatabaseFileURL() -> URL? {
         guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            throw RiverLocalDatabaseError.open("Application Support 目录不可用")
+            return nil
         }
         return base.appendingPathComponent("RiverDiary", isDirectory: true)
             .appendingPathComponent("Database", isDirectory: true)
             .appendingPathComponent("river-node.sqlite")
+    }
+
+    static func databaseFileExists() -> Bool {
+        guard let url = defaultDatabaseFileURL() else { return false }
+        return FileManager.default.fileExists(atPath: url.path)
+    }
+
+    private static func defaultDatabaseURL() throws -> URL {
+        guard let url = defaultDatabaseFileURL() else {
+            throw RiverLocalDatabaseError.open("Application Support 目录不可用")
+        }
+        return url
     }
 
     private static func protectDirectory(_ url: URL) throws {

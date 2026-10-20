@@ -19,7 +19,17 @@ struct RiverDiaryApp: App {
         _accountSession = StateObject(wrappedValue: account)
         RiverDiaryQAReset.resetLocalStoreIfRequested()
         let store = DiaryStore()
-        let riverNode = RiverNodeStore()
+        // 资料生命周期：首次未绑定账号时不创建正式库。已有库、已有登录会话或
+        // QA 隔离包才立即打开；否则等登录后由 openIfNeeded() 建库。
+        #if DEBUG
+        let isQABundle = Bundle.main.bundleIdentifier == "studio.riverdiary.ios.qa"
+        #else
+        let isQABundle = false
+        #endif
+        let shouldOpenLibrary = account.isSignedIn
+            || RiverLocalDatabase.databaseFileExists()
+            || isQABundle
+        let riverNode = RiverNodeStore(opensImmediately: shouldOpenLibrary)
         riverNode.locationCollector?.setSessionActive(account.isSignedIn)
         if !account.isSignedIn { riverNode.motionCollector?.stop() }
         store.onScoreChanged = { entry, score in
@@ -58,6 +68,7 @@ struct RiverDiaryApp: App {
                 .task { await accountSession.retryPendingSignOuts() }
                 .onAppear {
                     if accountSession.isSignedIn {
+                        riverNode.openIfNeeded()
                         riverNode.restoreLANReplicationPreference(using: store.drive)
                         riverNode.motionCollector?.start()
                         riverNode.aiStore?.refreshAutomaticSchedule()
@@ -84,6 +95,8 @@ struct RiverDiaryApp: App {
                 }
                 .onChange(of: accountSession.isSignedIn) { _, signedIn in
                     if signedIn {
+                        // 登录前被延迟的正式库在这里打开，随后才接上采集与同步。
+                        riverNode.openIfNeeded()
                         riverNode.locationCollector?.setSessionActive(true)
                         Task {
                             await store.refreshFromICloud()

@@ -77,12 +77,19 @@ final class RiverNodeStore: ObservableObject {
     @Published private(set) var backupMessage: String?
     var onMoodScoresChanged: (([String: Int], Set<String>) -> Void)?
 
-    init(databaseURL: URL? = nil, testDeviceID: RiverDeviceID? = nil) {
+    /// `opensImmediately: false` 用于首次未绑定账号的启动：只建观察者，不打开正式库。
+    /// 登录后由 `openIfNeeded()` 打开并接上采集/AI。
+    init(databaseURL: URL? = nil, testDeviceID: RiverDeviceID? = nil, opensImmediately: Bool = true) {
         localStateObserver = NotificationCenter.default.addObserver(
             forName: .riverLocalNodeStateDidChange, object: nil, queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in self?.markLocalStateChanged() }
         }
+        guard opensImmediately else { return }
+        openDatabase(databaseURL: databaseURL, testDeviceID: testDeviceID)
+    }
+
+    private func openDatabase(databaseURL: URL?, testDeviceID: RiverDeviceID?) {
         do {
             if let testDeviceID {
                 database = try RiverLocalDatabase(databaseURL: databaseURL, testDeviceID: testDeviceID)
@@ -98,9 +105,17 @@ final class RiverNodeStore: ObservableObject {
                 restoreDiagnosticTimestamps(deviceID: database.deviceID)
                 retryPendingLegacyDiaryMigration()
             }
+            initializationError = nil
         } catch {
             initializationError = error.localizedDescription
         }
+    }
+
+    /// 登录（或显式认领）后幂等打开此前被延迟的正式库。
+    @discardableResult
+    func openIfNeeded() -> Bool {
+        if database == nil { retryOpen() }
+        return database != nil
     }
 
     deinit {

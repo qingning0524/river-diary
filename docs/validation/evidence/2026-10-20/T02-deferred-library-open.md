@@ -1,7 +1,7 @@
 # T02 首次未绑定不再创建正式库
 
 日期：2026-10-20（Asia/Shanghai）
-状态：**T02 第一切片完成（Mac 延迟开库 + 退出关库 + Dock/菜单/提醒门禁）；iOS 延迟开库、旧安装救援界面与真实登录/退出旅程仍待。**
+状态：**T02 第一切片完成：Mac 延迟开库/退出关库/入口门禁，iOS 延迟开库；iOS 退出关库、旧安装救援界面与真实登录/退出旅程仍待。**
 
 ## 1. 问题
 
@@ -54,10 +54,33 @@ macOS 全量：**423 项测试、0 失败**（原 420 + 新增 3）。
 
 **限制（必须如实记录）：** 这是“已登录会话存在”的接线验证，不是真实账号登录。当 QA 构建重新签名后，系统会为旧签名写入的钥匙串条目弹出“想要访问钥匙串”的授权框并卡住启动；`security add-generic-password` 的 `-A` 在同时指定 `-a` 时会被忽略，无法做完全无人值守的会话注入。因此该路径只作一次性人工观察，不能当作可重复通过的自动化验收；测试后已删除全部 `.qa` 钥匙串条目。
 
-## 4. 仍待完成（T02 其余范围）
+## 4. iOS 端延迟开库
 
-- iOS 端仍是启动即构造 `RiverNodeStore()`，未做同样的延迟开库；这是 T02 的下一块（需要先恢复 iOS 测试 runner，或至少保留可回退的编译与人工证据）。
-- 后台任务与 Shortcuts/Intent：macOS 没有 AppIntent，Dock/菜单栏已按登录态收口；iOS 的 Shortcuts 入口与后台刷新仍需逐项核对。
+改动与 Mac 同构，但用 iOS 自己的存储路径：
+
+| 位置 | 改动 |
+|---|---|
+| `RiverLocalDatabase` | 新增无副作用的 `defaultDatabaseFileURL()` / `databaseFileExists()`，不再为了判断路径而建目录 |
+| `RiverNodeStore` | 新增 `opensImmediately` 参数与 `openIfNeeded()`；延迟模式下只注册本地状态观察者 |
+| `RiverDiaryApp.init` | 先建账号会话，再按“已登录 ∨ 已有库文件 ∨ QA 隔离包”决定是否打开正式库 |
+| 登录 | `.onAppear` 与登录态变化时先 `riverNode.openIfNeeded()`，再接位置/运动/照片/AI/同步 |
+| 退出 | 仍只停采集、LAN 同步与健康排程；**未关闭数据库连接**（见下） |
+
+验证（Debug 模拟器构建）：
+
+- 全新模拟器（`simctl erase` 后）安装启动；
+- 首屏为登录页（截图在测试机 `/tmp/ios-t02-fresh.png`，不纳入仓库）；
+- `simctl get_app_container` 检查：`Library/Application Support` 下 **0 个文件**，没有 `RiverDiary/Database/river-node.sqlite`。
+
+限制：
+
+- 登录后建库只有代码路径保证；iOS 单元测试 runner 仍无法连接（T23），因此没有自动化验证，也没有真实账号登录。
+- `RiverLocalDatabase` 目前没有安全关闭接口，连接随对象释放才关闭；iOS 退出关库需要先补接口与引用清理，不能照搬 Mac 的 `close()`。
+
+## 5. 仍待完成（T02 其余范围）
+
+- iOS 登录后开库缺少自动化测试（runner 待修）；iOS 退出关库、后台/Shortcuts 入口逐项核对仍未做。
+- 后台任务与 Shortcuts/Intent：macOS 没有 AppIntent，Dock/菜单栏已按登录态收口；iOS 的 Shortcuts 入口（`LogAppActivityIntent`）、后台健康同步与场景刷新仍需逐项核对。
 - 旧安装的显式救援界面：现在保证旧资料可读，还没有“认领/导出/备份”的引导。
 - 真实账号的登录与退出旅程（含 401 刷新、退出后旧回写被拒）未验证；本轮只证明门禁接线。
 - 首次启动仍会写入复制节点身份（`.qa` 命名空间的 `local.riverdiary.node.qa`），虽然不是日记正文，但属于“绑定前就有的持久身份”，应在统一生命周期里决定是否也延迟。
