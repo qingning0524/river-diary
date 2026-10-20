@@ -56,10 +56,11 @@ if [[ ! -x "$binary" ]]; then
 fi
 
 # 包内不得包含个人快照。
-if /usr/bin/find "$app_path/Contents" -type f \
-    \( -name data.json -o -name ios-user-data.json -o -name river-diary-user-data.json \) \
-    -print -quit | /usr/bin/grep -q .; then
-  print -u2 "FAIL: app bundle contains a personal diary snapshot"
+snapshot_in_bundle="$(/usr/bin/find "$app_path/Contents" -type f \
+  \( -name data.json -o -name ios-user-data.json -o -name river-diary-user-data.json \) \
+  -print -quit)"
+if [[ -n "$snapshot_in_bundle" ]]; then
+  print -u2 "FAIL: app bundle contains a personal diary snapshot: $snapshot_in_bundle"
   exit 1
 fi
 
@@ -151,7 +152,7 @@ fi
 # 首次启动实际创建的文件。
 created_files="$(cd "$launch_home" && /usr/bin/find . -type f 2>/dev/null | sed 's|^\./||' | sort)"
 db_created=0
-if print -r -- "$created_files" | /usr/bin/grep -q "river-v2.db"; then
+if [[ "$created_files" == *"river-v2.db"* ]]; then
   db_created=1
 fi
 

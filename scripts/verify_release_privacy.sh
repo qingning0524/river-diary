@@ -33,7 +33,7 @@ fail() {
 }
 
 # 合成标记：可安全搜索的随机串，不会与真实内容撞车。
-marker="RIVER_SYNTHETIC_SECRET_$(date -u +%Y%m%dT%H%M%SZ)_$(LC_ALL=C tr -dc 'a-f0-9' </dev/urandom | head -c 12)"
+marker="RIVER_SYNTHETIC_SECRET_$(date -u +%Y%m%dT%H%M%SZ)_$(openssl rand -hex 6)"
 
 snapshot_targets=(
   "data/data.json"
@@ -146,7 +146,7 @@ scan_tree() {
     print -r -- "  PASS  $label (0 hits)"
   else
     print -u2 "  LEAK  $label ($count hits)"
-    print -r -- "$hits" | head -10 >&2
+    print -r -- "$hits" | /usr/bin/sed -n '1,10p' >&2
   fi
   return 0
 }
