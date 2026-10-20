@@ -1,4 +1,4 @@
-.PHONY: build test check verify backup web ios mac swift-test verify-all gate clean clean-preview user-console-test
+.PHONY: build test check verify backup web ios mac mac-signed swift-test verify-all gate clean clean-preview user-console-test
 
 check: test
 	python3 -m compileall -q build.py pipeline
@@ -38,6 +38,18 @@ ios: test
 
 mac:
 	./macos/RiverDiaryMac/make_app.sh
+
+# 本机日常使用请用这个目标：用开发者证书做稳定签名，钥匙串授权点一次
+# “始终允许”后，重新构建也不会再反复弹密码。
+mac-signed:
+	@identity="$$(security find-identity -v -p codesigning \
+		| sed -nE 's/.*"(Apple Development[^"]*)".*/\1/p' | head -1)"; \
+	if [ -z "$$identity" ]; then \
+		echo "没有找到 Apple Development 证书；请先在 Xcode 登录开发者账号。" >&2; \
+		exit 1; \
+	fi; \
+	echo "Signing with: $$identity"; \
+	CODESIGN_IDENTITY="$$identity" ./macos/RiverDiaryMac/make_app.sh
 
 verify-all: check swift-test ios
 
