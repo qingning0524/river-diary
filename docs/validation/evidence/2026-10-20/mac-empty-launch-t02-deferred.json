@@ -1,7 +1,7 @@
 {
   "reportSchema": 1,
-  "generatedAtUTC": "2026-10-20T05:38:45.575732+00:00",
-  "app": "/private/tmp/river-t02-final/River Diary.app",
+  "generatedAtUTC": "2026-10-20T05:42:47.221151+00:00",
+  "app": "/private/tmp/river-t02-final2/River Diary.app",
   "launchMode": "qa-isolated",
   "bundleContainsSnapshot": false,
   "observedSeconds": 12,
@@ -11,12 +11,12 @@
   "createdLocalDatabaseBeforeSignIn": false,
   "expectation": "no-library-before-binding",
   "windows": [
-    "13773|0|River Diary|1400x861"
+    "13795|0|River Diary|1400x861"
   ],
   "screenshot": null,
   "verdict": "pass",
   "reason": "",
   "logTail": [
-    "sandbox_extension_issue_file_to_process failed for /var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/RiverDiary-empty-launch.Iy7mDG/RiverDiaryMacQA.app: 1 (Operation not permitted)"
+    "sandbox_extension_issue_file_to_process failed for /var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/RiverDiary-empty-launch.6t19Pa/RiverDiaryMacQA.app: 1 (Operation not permitted)"
   ]
 }

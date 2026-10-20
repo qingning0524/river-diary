@@ -33,11 +33,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Dock 右键菜单：应用常驻设计下，用户不应该只能靠点图标找回主窗口。
+    /// 写入/采集只在已登录时出现，退出登录后同一门禁立即生效。
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
         menu.addItem(Self.menuItem("打开河流日记", command: "reopenMain"))
-        menu.addItem(Self.menuItem("写一句…", command: "writeNote"))
-        menu.addItem(Self.menuItem("立即采集一次", command: "captureNow"))
+        if AccountMenuPresence.isSignedIn {
+            menu.addItem(Self.menuItem("写一句…", command: "writeNote"))
+            menu.addItem(Self.menuItem("立即采集一次", command: "captureNow"))
+        }
         return menu
     }
 
@@ -47,6 +50,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.representedObject = command
         return item
     }
+}
+
+/// 菜单与 Dock 共用的登录态快照：AppKit 的 Dock 菜单拿不到 SwiftUI 环境，
+/// 用同一份状态保证“没登录就不出现写入/采集入口”。
+@MainActor
+enum AccountMenuPresence {
+    static var isSignedIn = false
 }
 
 /// Dock 菜单的 action 落点：统一走 riverCommand 总线，由 shell 执行。
@@ -206,6 +216,7 @@ struct RiverDiaryMacApp: App {
     /// 登录完成后才打开此前被延迟的正式库，并让已存在的 store 重新读一次共享状态。
     /// 已有库的用户在启动时就已经打开，这里只是幂等确认。
     private func activateSignedInLibrary() {
+        AccountMenuPresence.isSignedIn = true
         v2Store.openIfNeeded()
         store.reloadSharedTimelineAnnotations()
         store.applySharedDiaryRecords(v2Store.sharedUserRecords())
@@ -260,6 +271,7 @@ struct RiverDiaryMacApp: App {
             .onChange(of: accountSession.isSignedIn) { _, signedIn in
                 if signedIn { activateSignedInLibrary() }
                 else {
+                    AccountMenuPresence.isSignedIn = false
                     pendingDailyRebuild?.cancel()
                     pendingDailyRebuild = nil
                     activity.setAccountServicesActive(false)
@@ -267,6 +279,8 @@ struct RiverDiaryMacApp: App {
                     location.disconnect()
                     // 主动退出后关闭数据库上下文：登录页面上不再有可用的本机事实库。
                     v2Store.close()
+                    // 已排定的晚间提醒在退出后不再弹给一个未登录的应用。
+                    EveningReminderStore().cancelScheduled()
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .riverCanonicalSyncDidChange)) { notification in
@@ -380,7 +394,7 @@ struct AppCommands: Commands {
     var activity: ActivityStore
     var ai: AIAssistantStore
     var feedback: FeedbackCenter
-    var account: RiverAccountSessionStore
+    @ObservedObject var account: RiverAccountSessionStore
     var database: V2Store? = nil
 
     /// 打开应用自建的设置窗口。
@@ -417,16 +431,21 @@ struct AppCommands: Commands {
         }
         CommandGroup(replacing: .newItem) {
             Button("写一句…") { postCommand(.riverCommand, "writeNote") }
+            .disabled(!account.isSignedIn)
                 .keyboardShortcut("n", modifiers: .command)
             Button("命令面板…") { postCommand(.riverCommand, "openCommandPalette") }
+            .disabled(!account.isSignedIn)
                 .keyboardShortcut("k", modifiers: .command)
         }
         CommandMenu("前往") {
             Button("返回上一页面") { postCommand(.riverCommand, "navigationBack") }
+            .disabled(!account.isSignedIn)
                 .keyboardShortcut("[", modifiers: [.command, .option])
             Button("前往下一页面") { postCommand(.riverCommand, "navigationForward") }
+            .disabled(!account.isSignedIn)
                 .keyboardShortcut("]", modifiers: [.command, .option])
             Button("展开或收起侧栏") { postCommand(.riverCommand, "toggleSidebar") }
+            .disabled(!account.isSignedIn)
                 .keyboardShortcut("s", modifiers: [.command, .control])
             Divider()
             ForEach(RiverNavigationGroup.allCases) { group in
@@ -457,19 +476,24 @@ struct AppCommands: Commands {
             Divider()
             // Existing date shortcuts remain independent from page history.
             Button("上一天") { postCommand(.riverCommand, "previousDay") }
+            .disabled(!account.isSignedIn)
                 .keyboardShortcut("[", modifiers: .command)
             Button("下一天") { postCommand(.riverCommand, "nextDay") }
+            .disabled(!account.isSignedIn)
                 .keyboardShortcut("]", modifiers: .command)
             Button("回到今天") { postCommand(.riverCommand, "backToToday") }
+            .disabled(!account.isSignedIn)
         }
         CommandMenu("数据") {
             Button("立即采集一次") { postCommand(.riverCommand, "captureNow") }
+            .disabled(!account.isSignedIn)
                 .keyboardShortcut("r", modifiers: .command)
                 .disabled(!ingestion.enabled)
             Button("打开数据源页") { postNavigation(.sources) }
             Divider()
             // 导入面板只有 shell 里一份实现（非模态）；这里只负责发指令。
             Button("导入 iOS 数据…") { postCommand(.riverCommand, "importSource") }
+            .disabled(!account.isSignedIn)
         }
     }
 }

@@ -37,6 +37,12 @@ final class EveningReminderStore: ObservableObject {
         }
     }
 
+    /// 退出登录时调用：撤掉已排定的提醒，但不改用户偏好；
+    /// 再次登录会由 `reinstateIfEnabled()` 按原偏好补排。
+    func cancelScheduled() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [Self.requestID])
+    }
+
     /// 启动时调用：开关是开的但排定丢失（重装/通知被系统清空）时补排一次。
     func reinstateIfEnabled() async {
         guard isEnabled else { return }
