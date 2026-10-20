@@ -47,11 +47,24 @@ struct RiverAutomaticTodayView: View {
     }
     private var automaticEventCount: Int { capturedEvents.filter { $0.source != "manual" && !$0.kind.hasPrefix("manual.") }.count }
     private var observedMetrics: [RiverEventMetrics] { capturedEvents.sorted { $0.observedAt > $1.observedAt }.compactMap { (try? JSONDecoder().decode(RiverEventPayload.self, from: $0.payload))?.metrics } }
+    private var sleepNight: SleepNight? {
+        health.nights.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+    }
+
     private var sleep: Double? {
         observedMetrics.compactMap(\.sleepHours).first
-            ?? health.nights.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
-                .flatMap { $0.hasAsleepSamples ? $0.totalHours : nil }
+            ?? sleepNight.flatMap { $0.hasAsleepSamples ? $0.totalHours : nil }
             ?? legacy?.health?.sleepHours
+    }
+
+    /// 总睡眠含午睡，但要把午睡单独说出来，避免把“补觉”当成整夜睡眠。
+    private var healthCaption: String {
+        if sleep == nil && steps == nil && calories == nil { return "暂无可用健康数据" }
+        if let night = sleepNight, night.hasAsleepSamples, night.nap > 0 {
+            let minutes = max(1, Int((night.nap / 60).rounded()))
+            return "来自健康摘要 · 含午睡 \(minutes) 分钟"
+        }
+        return "来自健康摘要"
     }
     private var steps: Int? { observedMetrics.compactMap(\.steps).first ?? legacy?.health?.steps.map { Int($0) } }
     private var calories: Double? { observedMetrics.compactMap(\.activeEnergyKcal).first ?? legacy?.health?.activeEnergyKilocalories }
@@ -143,7 +156,7 @@ struct RiverAutomaticTodayView: View {
             number("睡眠", sleep.map { String(format: "%.1f 小时", $0) } ?? "—")
             number("步数", steps.map { $0.formatted() } ?? "—")
             number("活动热量", calories.map { String(format: "%.0f kcal", $0) } ?? "—")
-            Text(sleep == nil && steps == nil && calories == nil ? "暂无可用健康数据" : "来自健康摘要").font(.caption2).foregroundStyle(theme.secondaryInk)
+            Text(healthCaption).font(.caption2).foregroundStyle(theme.secondaryInk)
         }
     }
     private var insightTile: some View {
