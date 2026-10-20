@@ -70,7 +70,8 @@ run_simple_step() {
   print -r -- "== $name =="
   if "$@" > "$log" 2>&1; then
     local summary=""
-    summary="$(grep -E 'Test run with [0-9]+ tests|Executed [0-9]+ tests|# pass [0-9]+|^Ran [0-9]+ tests|Top-level tests passed' "$log" | tail -1 || true)"
+    summary="$(grep -E 'Test run with [0-9]+ tests|Executed [0-9]+ tests|# pass [0-9]+|^Ran [0-9]+ tests|Top-level tests passed' "$log" \
+      | grep -v 'Test run with 0 tests' | tail -1 || true)"
     record "$name" "pass" "$summary"
   else
     tail -15 "$log" >&2
