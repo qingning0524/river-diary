@@ -150,6 +150,32 @@ final class AccountSessionTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(logouts, 1)
     }
 
+    func testKeychainReadFailureStartsSignedOutWithoutErasingSession() throws {
+        let server = AccountTestServer()
+        let vault = AccountTestVault()
+        _ = try makeStore(vault: vault, server: server)
+        let persisted = try XCTUnwrap(vault.values["account-session-v1"])
+
+        // 钥匙串暂时读不到（例如被锁定）：本次启动只能按未登录处理。
+        vault.failSessionRead = true
+        let locked = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Locked keychain", vault: vault,
+            transport: { try await server.send($0) }
+        )
+        XCTAssertFalse(locked.isSignedIn)
+        // 读失败不能顺手把会话删掉。
+        XCTAssertEqual(vault.values["account-session-v1"], persisted)
+
+        // 解锁后再次启动，原会话仍在。
+        vault.failSessionRead = false
+        let unlocked = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Unlocked keychain", vault: vault,
+            transport: { try await server.send($0) }
+        )
+        XCTAssertTrue(unlocked.isSignedIn)
+        XCTAssertEqual(unlocked.session?.accessToken, "old-access")
+    }
+
     func testPersistedSessionCheckHonoursRevocationTombstones() throws {
         // 系统入口（Shortcuts）用它决定是否允许创建本机资料库。
         let vault = AccountTestVault()
@@ -230,7 +256,11 @@ private final class AccountTestVault: RiverAccountVaultStorage {
     var values: [String: Data] = [:]
     var failSessionRemoval = false
     var failSessionWrite = false
-    func read(_ key: String) -> Data? { values[key] }
+    var failSessionRead = false
+    func read(_ key: String) -> Data? {
+        if failSessionRead && key == "account-session-v1" { return nil }
+        return values[key]
+    }
     func write(_ data: Data, key: String) throws {
         if failSessionWrite && key == "account-session-v1" { throw URLError(.cannotWriteToFile) }
         values[key] = data

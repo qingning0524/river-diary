@@ -49,6 +49,15 @@ T02 让 Mac 在退出登录时 `v2Store.close()`。但 `V2Store.transaction()` �
 
 账号用例由 8 项增至 **9 项**。
 
+### 钥匙串读不到时按未登录处理，但不抹掉会话
+
+`testKeychainReadFailureStartsSignedOutWithoutErasingSession`
+
+1. 正常持久化一份会话；
+2. 让钥匙串读取会话失败（模拟锁定）：新启动的 store `isSignedIn == false`；
+3. 断言会话数据仍在（读失败不能顺手删除）；
+4. 恢复读取：再次启动仍是已登录，令牌未变。
+
 ## 3. 结果
 
 - Core：**67 项 Swift Testing + 9 项 XCTest** 通过；

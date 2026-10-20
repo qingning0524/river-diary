@@ -37,6 +37,17 @@
 - 写入返回 nil，不假装成功；
 - `openIfNeeded()` 仍失败且状态保持关闭，不会被当成“空的正常库”。
 
+### 提交阶段失败：不半提交
+
+`SQLFailureTests.testCommitFailureDoesNotHalfCommitAndKeepsPreviousState`
+
+1. 正常打开数据库并写入一条状态操作；
+2. 目录改为不可写（SQLite 无法写回滚日志）：第二条写入的提交必然失败；
+3. 断言写入返回 nil、`lastError` 有值；
+4. 恢复目录、关闭并重新打开：只有第一条操作，没有半提交。
+
+这覆盖了“SQL 提交失败仍保留旧值、不半提交”，但仍然不是 `prepare` 阶段失败或真实 `ENOSPC`。
+
 ## 3. 保存失败：保留旧值、重试不重复
 
 文件：`macos/RiverDiaryMac/Tests/RiverDiaryMacTests/SaveFailureTests.swift`
