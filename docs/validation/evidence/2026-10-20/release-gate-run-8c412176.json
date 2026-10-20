@@ -1,0 +1,51 @@
+{
+  "reportSchema": 1,
+  "generatedAtUTC": "2026-10-20T14:37:00.067505+00:00",
+  "sourceRevision": "8c412176a8e31b51f704c5a464b73f21d3ba2bce",
+  "failures": 0,
+  "unverified": 1,
+  "verdict": "blocked",
+  "steps": [
+    {
+      "name": "python-node",
+      "status": "pass",
+      "note": "# pass 35"
+    },
+    {
+      "name": "core-tests",
+      "status": "pass",
+      "note": "✔ Test run with 74 tests in 4 suites passed after 0.087 seconds."
+    },
+    {
+      "name": "mac-tests",
+      "status": "pass",
+      "note": "  Executed 432 tests, with 0 failures (0 unexpected) in 26.015 (26.030) seconds"
+    },
+    {
+      "name": "server-tests",
+      "status": "pass",
+      "note": "Top-level tests passed: 62"
+    },
+    {
+      "name": "mac-tests-cover",
+      "status": "pass",
+      "note": "432 项"
+    },
+    {
+      "name": "ios-test-build",
+      "status": "pass",
+      "note": ""
+    },
+    {
+      "name": "ios-tests",
+      "status": "unverified",
+      "note": "本轮显式允许不运行（T23 runner 未修复）"
+    },
+    {
+      "name": "privacy-scan",
+      "status": "pass",
+      "note": ""
+    }
+  ],
+  "note": "Clean-clone gate after T19 policy work: Core 74, macOS 432, server 62 with zero skips, iOS test build and privacy scan pass. Blocked only by the unrunnable iOS unit tests (T23)."
+}
