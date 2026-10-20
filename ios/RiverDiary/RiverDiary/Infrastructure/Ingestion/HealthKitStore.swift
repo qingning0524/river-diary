@@ -266,7 +266,8 @@ final class HealthKitStore: ObservableObject {
             return ObservedSleepInterval(
                 start: categorySample.startDate,
                 end: categorySample.endDate,
-                stage: stage
+                stage: stage,
+                sourcePriority: sleepSourcePriority(for: categorySample)
             )
         }
 
@@ -281,6 +282,16 @@ final class HealthKitStore: ObservableObject {
                 hasAsleepSamples: night.hasAsleepSamples
             )
         }
+    }
+
+    /// 同一段睡眠被多个来源上报时，Apple Watch 的分期最可信，其次是 iPhone，
+    /// 其他来源（第三方 App、手动记录）最后。
+    private nonisolated static func sleepSourcePriority(for sample: HKCategorySample) -> Int {
+        let source = sample.sourceRevision.source
+        let identity = (source.name + " " + source.bundleIdentifier).lowercased()
+        if identity.contains("watch") { return 20 }
+        if identity.contains("iphone") || identity.contains("phone") { return 10 }
+        return 5
     }
 
     private nonisolated static func sleepStage(for value: Int) -> ObservedSleepInterval.Stage? {

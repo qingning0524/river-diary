@@ -24,11 +24,15 @@ public struct ObservedSleepInterval: Sendable, Hashable {
     public let start: Date
     public let end: Date
     public let stage: Stage
+    /// 同一段睡眠被多个来源同时上报时，数值更大者优先（例如 Apple Watch > iPhone > 其他）。
+    /// 相同优先级之间仍按并集去重，不互相覆盖。
+    public let sourcePriority: Int
 
-    public init(start: Date, end: Date, stage: Stage) {
+    public init(start: Date, end: Date, stage: Stage, sourcePriority: Int = 0) {
         self.start = start
         self.end = end
         self.stage = stage
+        self.sourcePriority = sourcePriority
     }
 }
 
@@ -86,21 +90,88 @@ public enum SleepNightAggregator {
         }
 
         return groups.map { day, samples in
-            let asleep = samples.filter { $0.stage.isAsleep }
+            // 先按来源优先级裁掉被更高优先级覆盖的部分，再做并集：
+            // Watch 报的睡着不会被 iPhone 同时报的清醒覆盖，反之亦然。
+            let retained = prioritizedPieces(samples)
+            let asleep = retained.filter { $0.stage.isAsleep }
             var coverage: [ObservedSleepInterval.Stage: TimeInterval] = [:]
             for stage in ObservedSleepInterval.Stage.allCases {
-                let seconds = unionSeconds(samples.filter { $0.stage == stage }.map { ($0.start, $0.end) })
+                let seconds = unionSeconds(retained.filter { $0.stage == stage }.map { ($0.start, $0.end) })
                 if seconds > 0 { coverage[stage] = seconds }
             }
             return ObservedSleepNight(
                 day: day,
                 asleepSeconds: unionSeconds(asleep.map { ($0.start, $0.end) }),
-                awakeSeconds: unionSeconds(samples.filter { $0.stage == .awake }.map { ($0.start, $0.end) }),
+                awakeSeconds: unionSeconds(retained.filter { $0.stage == .awake }.map { ($0.start, $0.end) }),
                 stageCoverage: coverage,
                 hasAsleepSamples: !asleep.isEmpty
             )
         }
         .sorted { $0.day > $1.day }
+    }
+
+    private struct RetainedPiece {
+        let start: Date
+        let end: Date
+        let stage: ObservedSleepInterval.Stage
+    }
+
+    /// 从高优先级到低优先级依次认领时间；被更高优先级占用的部分会被裁掉。
+    /// 同优先级之间不互斥，保留完整区间，后续并集去重。
+    private static func prioritizedPieces(_ samples: [ObservedSleepInterval]) -> [RetainedPiece] {
+        let ordered = samples.sorted {
+            if $0.sourcePriority != $1.sourcePriority { return $0.sourcePriority > $1.sourcePriority }
+            return $0.start < $1.start
+        }
+        var claimed: [(Date, Date)] = []
+        var retained: [RetainedPiece] = []
+        var index = 0
+        while index < ordered.count {
+            let priority = ordered[index].sourcePriority
+            var group: [ObservedSleepInterval] = []
+            while index < ordered.count, ordered[index].sourcePriority == priority {
+                group.append(ordered[index])
+                index += 1
+            }
+            for sample in group {
+                for (start, end) in subtract(claimed, from: (sample.start, sample.end)) {
+                    retained.append(RetainedPiece(start: start, end: end, stage: sample.stage))
+                }
+            }
+            // 这一层完整认领，即使部分已被更高优先级覆盖也不影响后续裁剪。
+            claimed = mergeRanges(claimed + group.map { ($0.start, $0.end) })
+        }
+        return retained
+    }
+
+    /// 返回 `interval` 中未被 `covered` 覆盖的片段。
+    static func subtract(_ covered: [(Date, Date)], from interval: (Date, Date)) -> [(Date, Date)] {
+        var pieces: [(Date, Date)] = []
+        var cursor = interval.0
+        for (start, end) in mergeRanges(covered) where end > interval.0 && start < interval.1 {
+            if start > cursor {
+                pieces.append((cursor, min(start, interval.1)))
+            }
+            cursor = max(cursor, end)
+            if cursor >= interval.1 { break }
+        }
+        if cursor < interval.1 {
+            pieces.append((cursor, interval.1))
+        }
+        return pieces.filter { $0.1 > $0.0 }
+    }
+
+    private static func mergeRanges(_ ranges: [(Date, Date)]) -> [(Date, Date)] {
+        let sorted = ranges.filter { $0.1 > $0.0 }.sorted { $0.0 < $1.0 }
+        var merged: [(Date, Date)] = []
+        for range in sorted {
+            if let last = merged.last, range.0 <= last.1 {
+                merged[merged.count - 1] = (last.0, max(last.1, range.1))
+            } else {
+                merged.append(range)
+            }
+        }
+        return merged
     }
 
     /// 重叠区间的并集时长。相邻区间（结束等于下一次开始）同样合并。

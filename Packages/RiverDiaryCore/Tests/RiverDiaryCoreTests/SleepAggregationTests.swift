@@ -99,6 +99,61 @@ struct SleepAggregationTests {
         #expect(nights[1].asleepSeconds == 8 * 3600)
     }
 
+    @Test func higherPrioritySourceWinsSleepConflicts() {
+        // Watch 说睡着了，iPhone 同时说清醒：以优先级高的 Watch 为准。
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(20, 23), end: date(21, 7), stage: .core, sourcePriority: 20),
+            .init(start: date(21, 2), end: date(21, 3), stage: .awake, sourcePriority: 10)
+        ], calendar: calendar)
+
+        #expect(nights[0].asleepSeconds == 8 * 3600)
+        #expect(nights[0].awakeSeconds == 0)
+    }
+
+    @Test func lowerPrioritySourceFillsUnclaimedTime() {
+        // 高优先级只覆盖 23-7，低优先级仍可补上 7-9。
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(20, 23), end: date(21, 7), stage: .core, sourcePriority: 20),
+            .init(start: date(21, 6), end: date(21, 9), stage: .core, sourcePriority: 10)
+        ], calendar: calendar)
+
+        #expect(nights[0].asleepSeconds == 10 * 3600)
+        #expect(nights[0].coverage(for: .core) == 10 * 3600)
+    }
+
+    @Test func higherPriorityAwakeBeatsLowerPrioritySleep() {
+        // Watch 明确记录 3-4 清醒，iPhone 笼统报 23-7 睡着：清醒只能算 1 小时。
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(21, 3), end: date(21, 4), stage: .awake, sourcePriority: 20),
+            .init(start: date(20, 23), end: date(21, 7), stage: .core, sourcePriority: 10)
+        ], calendar: calendar)
+
+        #expect(nights[0].asleepSeconds == 7 * 3600)
+        #expect(nights[0].awakeSeconds == 1 * 3600)
+        #expect(nights[0].coverage(for: .core) == 7 * 3600)
+    }
+
+    @Test func samePriorityOverlapStillDeduplicates() {
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(20, 23), end: date(21, 7), stage: .core, sourcePriority: 10),
+            .init(start: date(20, 23), end: date(21, 7), stage: .core, sourcePriority: 10)
+        ], calendar: calendar)
+
+        #expect(nights[0].asleepSeconds == 8 * 3600)
+    }
+
+    @Test func higherPriorityStageClipsLowerPriorityStageCoverage() {
+        // 高优先级的 core 覆盖会裁掉低优先级 deep 的重叠部分。
+        let nights = SleepNightAggregator.aggregate([
+            .init(start: date(20, 23), end: date(21, 5), stage: .core, sourcePriority: 20),
+            .init(start: date(21, 3), end: date(21, 7), stage: .deep, sourcePriority: 10)
+        ], calendar: calendar)
+
+        #expect(nights[0].asleepSeconds == 8 * 3600)
+        #expect(nights[0].coverage(for: .core) == 6 * 3600)
+        #expect(nights[0].coverage(for: .deep) == 2 * 3600)
+    }
+
     @Test func unionHandlesNestedAndAdjacentIntervals() {
         let base = date(20, 0)
         let total = SleepNightAggregator.unionSeconds([
