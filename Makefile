@@ -1,4 +1,4 @@
-.PHONY: build test check verify backup web ios mac swift-test verify-all clean clean-preview user-console-test
+.PHONY: build test check verify backup web ios mac swift-test verify-all gate clean clean-preview user-console-test
 
 check: test
 	python3 -m compileall -q build.py pipeline
@@ -40,6 +40,11 @@ mac:
 	./macos/RiverDiaryMac/make_app.sh
 
 verify-all: check swift-test ios
+
+# 统一发布门禁：必须在干净检出里运行；未跑的关键验证（目前是 iOS 单测）
+# 会让门禁返回非零，而不是悄悄跳过。
+gate:
+	./scripts/release_gate.sh
 
 swift-test:
 	./scripts/test_macos_isolated.sh --disable-sandbox
