@@ -48,6 +48,15 @@
 
 这覆盖了“SQL 提交失败仍保留旧值、不半提交”，但仍然不是 `prepare` 阶段失败或真实 `ENOSPC`。
 
+### prepare 阶段失败：报告而不崩溃
+
+`SQLPrepareFailureTests.testPrepareFailureIsReportedAndKeepsStoreAlive`
+
+1. 正常写入一条状态操作；
+2. 用第二个 SQLCipher 连接 `DROP TABLE state_operations`，模拟数据库文件被外部破坏/降级；
+3. 再次写入：返回 nil、`lastError` 有值，进程不崩溃；
+4. 关闭后重新打开仍可初始化，store 不会因为缺表而不可用。
+
 ## 3. 保存失败：保留旧值、重试不重复
 
 文件：`macos/RiverDiaryMac/Tests/RiverDiaryMacTests/SaveFailureTests.swift`
