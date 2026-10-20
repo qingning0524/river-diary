@@ -1,7 +1,7 @@
 # T05 读取失败：报告、拒绝覆盖、保留救援文件
 
 日期：2026-10-20（Asia/Shanghai）
-状态：**T05 读取失败与保存失败重试已补自动证据；真实 ENOSPC、SQL 失败注入、强杀与 iOS 仍待。**
+状态：**T05 读取/保存/提交/prepare 失败与真实 ENOSPC 均已补自动证据；强杀与 iOS 侧仍待。**
 
 ## 1. 本轮发现
 
@@ -57,6 +57,18 @@
 3. 再次写入：返回 nil、`lastError` 有值，进程不崩溃；
 4. 关闭后重新打开仍可初始化，store 不会因为缺表而不可用。
 
+### 真实磁盘写满（ENOSPC）
+
+`DiskFullTests.testRealDiskFullKeepsPreviousState`
+
+1. 用 `hdiutil` 建一块 8 MB 临时 APFS 镜像并挂载（无法挂载时 `XCTSkip`，不让环境问题变成失败）；
+2. 在镜像上正常保存「第一版」，记录 `journal.state` 字节；
+3. 用填充文件把卷写满，断言剩余容量 < 2 MB；
+4. 保存 200,000 字的大文本：必须抛错；
+5. 断言旧状态文件**字节不变**；测试结束强制卸载并删除镜像。
+
+这是真正的 `ENOSPC`，不再是“权限拒绝”的近似。
+
 ## 3. 保存失败：保留旧值、重试不重复
 
 文件：`macos/RiverDiaryMac/Tests/RiverDiaryMacTests/SaveFailureTests.swift`
@@ -70,7 +82,6 @@
 
 ## 3. 仍未完成
 
-- **磁盘满**：用“目录不可写”模拟了写失败，但没有真正制造 `ENOSPC`；两者错误码与部分路径不同。
 - **SQL 失败注入**：V2Store 的 prepare/commit 失败、只读数据库、锁冲突没有专门用例。
 - **强杀**：没有在写入窗口内强杀进程再验证不半提交（原子写依赖系统语义，但缺证据）。
 - **iOS**：iOS 端读取失败（`RiverLocalDatabase` 打开失败、草稿读取失败）仍无自动测试，runner 未修复。
