@@ -1,0 +1,51 @@
+{
+  "reportSchema": 1,
+  "generatedAtUTC": "2026-10-20T15:20:42.972960+00:00",
+  "sourceRevision": "a1d32628ba0290456796874e32c159874ee3db43",
+  "failures": 0,
+  "unverified": 1,
+  "verdict": "blocked",
+  "steps": [
+    {
+      "name": "python-node",
+      "status": "pass",
+      "note": "# pass 35"
+    },
+    {
+      "name": "core-tests",
+      "status": "pass",
+      "note": "✔ Test run with 85 tests in 5 suites passed after 0.124 seconds."
+    },
+    {
+      "name": "mac-tests",
+      "status": "pass",
+      "note": "  Executed 437 tests, with 0 failures (0 unexpected) in 30.189 (30.210) seconds"
+    },
+    {
+      "name": "server-tests",
+      "status": "pass",
+      "note": "Top-level tests passed: 62"
+    },
+    {
+      "name": "mac-tests-cover",
+      "status": "pass",
+      "note": "437 项"
+    },
+    {
+      "name": "ios-test-build",
+      "status": "pass",
+      "note": ""
+    },
+    {
+      "name": "ios-tests",
+      "status": "unverified",
+      "note": "本轮显式允许不运行（T23 runner 未修复）"
+    },
+    {
+      "name": "privacy-scan",
+      "status": "pass",
+      "note": ""
+    }
+  ],
+  "note": "Final gate of this session at a1d32628: Core 85, macOS 437, server 62 with zero skips, iOS test build and privacy scan pass. Only the unrunnable iOS unit tests keep it blocked (T23, admin xcode-select)."
+}
