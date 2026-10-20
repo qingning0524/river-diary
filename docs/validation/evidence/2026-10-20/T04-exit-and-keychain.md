@@ -79,10 +79,21 @@ T02 让 Mac 在退出登录时 `v2Store.close()`。但 `V2Store.transaction()` �
 
 限制：已经发出的请求无法撤回；正在执行的 Task 也没有被取消，只是不再发起下一次外发。
 
+### 退出后同步请求被忽略
+
+`SyncSettingsStore.synchronize()` 以 `sessionActive` 为门禁，退出时 `setSessionActive(false)`。
+
+`SyncExitGateTests` 锁定两条行为：
+
+- 未登录会话：调用 `synchronize()` 不开始同步、状态与 `lastRunAt` 不变；
+- 已登录但没有选择目录：只提示“请先选择 iCloud Drive 文件夹”，不会被当成同步成功。
+
+仍未覆盖：已连接目录后退出是否真的停止 LAN 广播、正在进行的传输是否被取消。
+
 ## 3. 结果
 
 - Core：**67 项 Swift Testing + 9 项 XCTest** 通过；
-- macOS：当轮 429 项起通过，当前全量 434 项。
+- macOS：当轮 429 项起通过，当前全量 436 项。
 
 ## 4. 仍未完成
 
