@@ -150,6 +150,32 @@ final class AccountSessionTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(logouts, 1)
     }
 
+    func testPersistedSessionCheckHonoursRevocationTombstones() throws {
+        // 系统入口（Shortcuts）用它决定是否允许创建本机资料库。
+        let vault = AccountTestVault()
+        XCTAssertFalse(RiverAccountSessionStore.hasUsablePersistedSession(in: vault))
+
+        vault.values["account-session-v1"] = try JSONEncoder().encode(RiverAccountSession(
+            email: "test@example.invalid", userID: "user-a", accessToken: "access",
+            refreshToken: "refresh", revokeToken: "revoke-a",
+            accessExpiresAt: Date().addingTimeInterval(3600)
+        ))
+        XCTAssertTrue(RiverAccountSessionStore.hasUsablePersistedSession(in: vault))
+
+        // 待撤销的是别的令牌：会话仍算可用。
+        vault.values["account-pending-revocations-v1"] = try JSONEncoder().encode(["revoke-other"])
+        XCTAssertTrue(RiverAccountSessionStore.hasUsablePersistedSession(in: vault))
+
+        // 会话自己的撤销令牌还没撤销成功：不能再当作已登录。
+        vault.values["account-pending-revocations-v1"] = try JSONEncoder().encode(["revoke-a"])
+        XCTAssertFalse(RiverAccountSessionStore.hasUsablePersistedSession(in: vault))
+
+        // 损坏的会话数据也不能被当成已登录。
+        vault.values.removeValue(forKey: "account-pending-revocations-v1")
+        vault.values["account-session-v1"] = Data("not-json".utf8)
+        XCTAssertFalse(RiverAccountSessionStore.hasUsablePersistedSession(in: vault))
+    }
+
     func testFailedSessionWriteDoesNotLeaveADanglingProfileBinding() async throws {
         let server = AccountTestServer()
         let vault = AccountTestVault()

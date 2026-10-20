@@ -1,7 +1,7 @@
 # T02 首次未绑定不再创建正式库
 
 日期：2026-10-20（Asia/Shanghai）
-状态：**T02 第一切片完成：Mac 延迟开库/退出关库/入口门禁（含 Dock 菜单测试），iOS 延迟开库；iOS 退出关库、后台/Shortcuts 核对、旧安装救援界面与真实登录/退出旅程仍待。**
+状态：**T02 第一切片完成：Mac 延迟开库/退出关库/入口门禁，iOS 延迟开库与 Shortcuts 门禁；iOS 退出关库、其余后台入口、旧安装救援界面与真实登录/退出旅程仍待。**
 
 ## 1. 问题
 
@@ -86,10 +86,28 @@ macOS 全量：**423 项测试、0 失败**（原 420 + 新增 3）。
 - 登录后建库只有代码路径保证；iOS 单元测试 runner 仍无法连接（T23），因此没有自动化验证，也没有真实账号登录。
 - `RiverLocalDatabase` 目前没有安全关闭接口，连接随对象释放才关闭；iOS 退出关库需要先补接口与引用清理，不能照搬 Mac 的 `close()`。
 
+## 4.1 系统入口：Shortcuts 不再绕过门禁
+
+`LogAppActivityIntent.perform()` 原本无条件 `RiverLocalDatabase(rebuildDerivedProjectionsOnOpen: false)`：
+即使未登录、甚至全新安装，用户从 Shortcuts 触发一次“记录应用活动”就会创建一个正式库并写入事件，
+把 T02 的延迟开库整个绕过去。
+
+修复：
+
+- 入口先判断 `RiverLocalDatabase.databaseFileExists() || RiverAccountSessionStore.hasUsablePersistedSession()`；
+- 两者都不满足时直接报错：请先在 River Diary 登录账号，未绑定账号时不会创建本机资料库；
+- 新增 `RiverAccountSessionStore.hasUsablePersistedSession()`：只读钥匙串里的会话与待撤销令牌，
+  **不创建 client instance、不写钥匙串**，避免判断本身又制造一个绑定前的持久身份。
+
+测试：`testPersistedSessionCheckHonoursRevocationTombstones`（账号用例第 10 项）覆盖无会话、正常会话、
+其他令牌待撤销、会话自身待撤销、会话数据损坏五种情况。
+
+限制：没有在真机 Shortcuts 中实际执行；后台健康同步、照片分析等其他入口仍需逐项核对。
+
 ## 5. 仍待完成（T02 其余范围）
 
 - iOS 登录后开库缺少自动化测试（runner 待修）；iOS 退出关库、后台/Shortcuts 入口逐项核对仍未做。
-- 后台任务与 Shortcuts/Intent：macOS 没有 AppIntent，Dock/菜单栏已按登录态收口；iOS 的 Shortcuts 入口（`LogAppActivityIntent`）、后台健康同步与场景刷新仍需逐项核对。
+- 后台入口：Shortcuts 已加门禁；iOS 后台健康同步、照片分析、场景刷新在未登录时的行为仍需逐项核对，真机 Shortcuts 未执行。
 - 旧安装的显式救援界面：现在保证旧资料可读，还没有“认领/导出/备份”的引导。
 - 真实账号的登录与退出旅程（含 401 刷新、退出后旧回写被拒）未验证；本轮只证明门禁接线。
 - 首次启动仍会写入复制节点身份（`.qa` 命名空间的 `local.riverdiary.node.qa`），虽然不是日记正文，但属于“绑定前就有的持久身份”，应在统一生命周期里决定是否也延迟。

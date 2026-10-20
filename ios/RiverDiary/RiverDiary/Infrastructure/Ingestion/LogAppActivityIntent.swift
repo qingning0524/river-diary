@@ -29,6 +29,10 @@ struct LogAppActivityIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         try await MainActor.run {
+            // 生命周期门禁：未登录且本机还没有资料库时，系统入口不能替用户创建正式库。
+            guard RiverLocalDatabase.databaseFileExists() || RiverAccountSessionStore.hasUsablePersistedSession() else {
+                throw RiverLocalDatabaseError.sql("请先在 River Diary 登录账号；未绑定账号时不会创建本机资料库。")
+            }
             let database = try RiverLocalDatabase(rebuildDerivedProjectionsOnOpen: false)
             _ = try RiverAppActivityRecorder.record(
                 displayName: displayName,

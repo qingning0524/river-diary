@@ -126,6 +126,28 @@ public final class RiverAccountSessionStore: ObservableObject {
         }
     }
 
+    /// 给系统入口（Shortcuts、后台任务）用：不创建客户端实例、不写钥匙串，
+    /// 只回答“现在是否有可用的持久登录会话”。没有会话且本机也没有资料库时，
+    /// 系统入口不应创建正式库。
+    public static func hasUsablePersistedSession() -> Bool {
+        hasUsablePersistedSession(in: RiverAccountVault())
+    }
+
+    static func hasUsablePersistedSession(in vault: RiverAccountVaultStorage) -> Bool {
+        guard let bytes = vault.read("account-session-v1"),
+              let stored = try? JSONDecoder().decode(RiverAccountSession.self, from: bytes) else {
+            return false
+        }
+        let pending: [String]
+        if let pendingBytes = vault.read("account-pending-revocations-v1"),
+           let decoded = try? JSONDecoder().decode([String].self, from: pendingBytes) {
+            pending = decoded
+        } else {
+            pending = []
+        }
+        return !pending.contains(stored.revokeToken)
+    }
+
     public func requestEmailCode(_ email: String) async throws -> String {
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.count <= 320, trimmed.contains("@") else { throw RiverAccountAPIError(status: 400, code: "invalid_request") }
