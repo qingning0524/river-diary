@@ -35,3 +35,25 @@ final class StoreCloseTests: XCTestCase {
         store.close()
     }
 }
+
+/// T05：数据库打不开时必须如实报错，不能表现为“空库”。
+@MainActor
+final class StoreOpenFailureTests: XCTestCase {
+    func testUnopenableDatabaseReportsFailureAndStaysClosed() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("river-open-failure-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let databasePath = directory.appendingPathComponent("river-v2.db", isDirectory: true)
+        try FileManager.default.createDirectory(at: databasePath, withIntermediateDirectories: true)
+
+        let store = V2Store(databaseURL: databasePath)
+        XCTAssertFalse(store.isOpen, "a directory at the database path must not open as a database")
+        XCTAssertNotNil(store.lastError)
+
+        XCTAssertNil(store.appendStateOperation(
+            targetID: "day", fieldKey: "note", operationType: "test.set", payload: Data("v".utf8)
+        ))
+        XCTAssertFalse(store.openIfNeeded())
+        XCTAssertFalse(store.isOpen)
+    }
+}

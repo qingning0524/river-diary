@@ -28,6 +28,15 @@
 
 结果：3 项通过；macOS 全量测试从 423 增至 **426 项**。
 
+### 数据库打不开时如实报错
+
+`StoreOpenFailureTests.testUnopenableDatabaseReportsFailureAndStaysClosed`：
+在数据库路径放一个目录再构造 `V2Store`：
+
+- `isOpen == false`、`lastError` 有值；
+- 写入返回 nil，不假装成功；
+- `openIfNeeded()` 仍失败且状态保持关闭，不会被当成“空的正常库”。
+
 ## 3. 保存失败：保留旧值、重试不重复
 
 文件：`macos/RiverDiaryMac/Tests/RiverDiaryMacTests/SaveFailureTests.swift`
