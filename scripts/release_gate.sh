@@ -69,8 +69,8 @@ run_simple_step() {
   print -r -- ""
   print -r -- "== $name =="
   if "$@" > "$log" 2>&1; then
-    local summary
-    summary="$(grep -E 'Executed [0-9]+ tests|# pass [0-9]+|^Ran [0-9]+ tests|Top-level tests passed' "$log" | tail -1)"
+    local summary=""
+    summary="$(grep -E 'Executed [0-9]+ tests|# pass [0-9]+|^Ran [0-9]+ tests|Top-level tests passed' "$log" | tail -1 || true)"
     record "$name" "pass" "$summary"
   else
     tail -15 "$log" >&2
@@ -128,24 +128,37 @@ done
 
 if [[ -n "$report_path" ]]; then
   mkdir -p "$(dirname "$report_path")"
-  {
-    print -r -- "{" 
-    print -r -- "  \"reportSchema\": 1,"
-    print -r -- "  \"generatedAtUTC\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
-    print -r -- "  \"sourceRevision\": \"$commit\","
-    print -r -- "  \"failures\": $failures,"
-    print -r -- "  \"unverified\": $unverified,"
-    print -r -- "  \"steps\": ["
-    for i in {1..${#step_names[@]}}; do
-      local_sep=","
-      [[ "$i" -eq "${#step_names[@]}" ]] && local_sep=""
-      note="${step_notes[$i]//\"/\\\"}"
-      print -r -- "    {\"name\": \"${step_names[$i]}\", \"status\": \"${step_status[$i]}\", \"note\": \"$note\"}$local_sep"
-    done
-    print -r -- "  ]"
-    print -r -- "}"
-  } > "$report_path"
-  print -r -- "Report written: $report_path"
+  steps_tsv="$work_root/gate-steps.tsv"
+  : > "$steps_tsv"
+  for i in {1..${#step_names[@]}}; do
+    safe_note="${step_notes[$i]//$'\n'/ }"
+    safe_note="${safe_note//$'\t'/ }"
+    print -r -- "${step_names[$i]}	${step_status[$i]}	${safe_note}" >> "$steps_tsv"
+  done
+  python3 - "$report_path" "$commit" "$failures" "$unverified" "$steps_tsv" <<'PY'
+import json
+import sys
+from datetime import datetime, timezone
+
+path, commit, failures, unverified, steps_path = sys.argv[1:6]
+steps = []
+with open(steps_path, encoding="utf-8") as handle:
+    for line in handle:
+        name, status, note = (line.rstrip("\n").split("\t") + ["", ""])[:3]
+        steps.append({"name": name, "status": status, "note": note})
+report = {
+    "reportSchema": 1,
+    "generatedAtUTC": datetime.now(timezone.utc).isoformat(),
+    "sourceRevision": commit,
+    "failures": int(failures),
+    "unverified": int(unverified),
+    "verdict": "pass" if int(failures) == 0 and int(unverified) == 0 else "blocked",
+    "steps": steps,
+}
+with open(path, "w", encoding="utf-8") as handle:
+    handle.write(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+print(f"Report written: {path}")
+PY
 fi
 
 print -r -- ""
