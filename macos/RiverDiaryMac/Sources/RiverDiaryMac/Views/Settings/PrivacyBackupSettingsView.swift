@@ -186,7 +186,7 @@ struct PrivacyBackupSettingsView: View {
                         Spacer()
                     }
 
-                    Text("换机或重装前必须保存这串恢复码。只存在本机钥匙串里的密钥会随设备一起丢失；没有它，加密备份和同步对象都无法解密。")
+                    Text("恢复码用于 iCloud 加密复制和 iPhone 备份。Mac 的完整备份还依赖本机钥匙串；换 Mac 前请先确认 iCloud 复制可用，或从 iPhone 导出可移植备份。只存在本机钥匙串里的密钥会随设备一起丢失。")
                         .font(AppTypography.micro())
                         .foregroundStyle(AppTheme.warning)
                         .fixedSize(horizontal: false, vertical: true)
@@ -391,7 +391,7 @@ struct PrivacyBackupSettingsView: View {
                         .foregroundStyle(AppTheme.warning)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                RiverPanelRow(title: "导出加密备份", detail: "包含日记、修改、快记与两个事实库的加密快照") {
+                RiverPanelRow(title: "导出加密备份", detail: "包含日记、修改、快记与两个事实库；仅同一台 Mac/保留原钥匙串时可恢复，不是跨机备份") {
                     HStack(spacing: AppSpacing.sm) {
                         Button { exportBackup() } label: {
                             Label("导出", systemImage: "externaldrive.badge.timemachine")
@@ -425,7 +425,7 @@ struct PrivacyBackupSettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                RiverPanelRow(title: "恢复备份", detail: "备份不含密钥；从仍有密钥的设备复制转移码，在此设备导入后恢复") {
+                RiverPanelRow(title: "恢复备份", detail: "仅支持同一台 Mac 或保留原钥匙串的恢复；跨 Mac 请使用 iCloud 加密复制或 iPhone 备份。可先用「检查备份文件」只读校验。") {
                     HStack(spacing: AppSpacing.sm) {
                         Button { importBackup() } label: {
                             Label("恢复", systemImage: "square.and.arrow.down")
@@ -618,15 +618,16 @@ struct PrivacyBackupSettingsView: View {
         \(code)
 
         用途
-        - 换 Mac、重装或恢复备份时，在「设置 → 隐私与备份」导入同一恢复码，再选择备份恢复。
+        - 重装同一台 Mac 或恢复 iCloud 复制时，在「设置 → 隐私与备份」导入同一恢复码。
+        - Mac 完整备份还依赖本机钥匙串，不能只凭恢复码跨 Mac 恢复；跨 Mac 请使用 iCloud 加密复制或 iPhone 备份。
         - 恢复码只保存在本机钥匙串；这个文件是明文，请放在加密磁盘或密码管理器，不要发到聊天群。
-        - 没有恢复码，加密备份和同步对象都无法解密。
 
         步骤
         1. 安装同一版本的 River Diary。
         2. 打开「设置 → 隐私与备份」。
-        3. 在同步密钥处粘贴恢复码并导入。
-        4. 选择「恢复备份」，先点「检查备份文件」，确认内容与日期后再恢复。
+        3. 在同步密钥处粘贴恢复码并导入（用于 iCloud 复制）。
+        4. 同一台 Mac 重装时，才使用「恢复备份」；先点「检查备份文件」，确认内容与日期后再恢复。
+        5. 换 Mac 时不要用这份本机完整备份，改用 iCloud 加密复制或 iPhone 备份。
 
         注意：恢复会替换当前本机数据；恢复前应用会自动保存一个恢复点。
         """
@@ -645,7 +646,7 @@ struct PrivacyBackupSettingsView: View {
         }
         let days = Int((now - lastExportAt) / 86_400)
         guard days >= 7 else { return nil }
-        return "上次加密备份已是 \(days) 天前。换机或重装前，请再导出一份并确认恢复码可用。"
+        return "上次加密备份已是 \(days) 天前。重装同一台 Mac 前请再导出一份；换 Mac 请改用 iCloud 加密复制或 iPhone 备份。"
     }
 
     private func inspectBackup() {
