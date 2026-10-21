@@ -122,6 +122,130 @@ enum DatabaseCipher {
         return try Data(contentsOf: snapshotURL)
     }
 
+    /// 把本机密钥加密的快照转成明文 SQLite 字节，仅用于用户主动导出的可移植备份。
+    /// 明文只在临时目录内短暂存在，外层容器必须再用恢复码加密。
+    static func plaintextSnapshot(
+        fromEncrypted snapshot: Data,
+        purpose: String,
+        in directory: URL
+    ) throws -> Data {
+        let working = directory.appendingPathComponent("PortableSnapshots", isDirectory: true)
+        try LocalStorageProtection.ensurePrivateDirectory(at: working)
+        let encryptedURL = working.appendingPathComponent("source-\(UUID().uuidString).db")
+        let plaintextURL = working.appendingPathComponent("plain-\(UUID().uuidString).db")
+        defer {
+            try? removeSQLiteSidecars(for: encryptedURL)
+            try? removeSQLiteSidecars(for: plaintextURL)
+            try? FileManager.default.removeItem(at: encryptedURL)
+            try? FileManager.default.removeItem(at: plaintextURL)
+        }
+        try snapshot.write(to: encryptedURL, options: .atomic)
+        try LocalStorageProtection.protectFile(at: encryptedURL)
+        try LocalStorageProtection.protectFile(at: plaintextURL)
+
+        var target: OpaquePointer?
+        do {
+            let status = sqlite3_open_v2(
+                plaintextURL.path,
+                &target,
+                SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
+                nil
+            )
+            guard status == SQLITE_OK, let opened = target else {
+                let message = target.map(errorMessage(from:)) ?? "明文副本无法创建"
+                throw DatabaseCipherError.invalidDatabase(message)
+            }
+            let key = try key(for: purpose)
+            let escapedPath = encryptedURL.path.replacingOccurrences(of: "'", with: "''")
+            let escapedKey = key.replacingOccurrences(of: "'", with: "''")
+            try execute("ATTACH DATABASE '\(escapedPath)' AS encrypted KEY '\(escapedKey)'", on: opened)
+            try execute("SELECT sqlcipher_export('main','encrypted')", on: opened)
+            try execute("DETACH DATABASE encrypted", on: opened)
+            guard sqlite3_close(opened) == SQLITE_OK else {
+                throw DatabaseCipherError.invalidDatabase("明文副本关闭失败")
+            }
+            target = nil
+            try validatePlaintextFile(at: plaintextURL)
+            return try Data(contentsOf: plaintextURL)
+        } catch {
+            if let target { sqlite3_close(target) }
+            throw error
+        }
+    }
+
+    /// 把可移植备份里的明文 SQLite 字节重新用当前 Mac 的本机密钥加密。
+    static func encryptedSnapshot(
+        fromPlaintext plaintext: Data,
+        purpose: String,
+        in directory: URL
+    ) throws -> Data {
+        let working = directory.appendingPathComponent("PortableSnapshots", isDirectory: true)
+        try LocalStorageProtection.ensurePrivateDirectory(at: working)
+        let plaintextURL = working.appendingPathComponent("plain-\(UUID().uuidString).db")
+        let encryptedURL = working.appendingPathComponent("encrypted-\(UUID().uuidString).db")
+        defer {
+            try? removeSQLiteSidecars(for: plaintextURL)
+            try? removeSQLiteSidecars(for: encryptedURL)
+            try? FileManager.default.removeItem(at: plaintextURL)
+            try? FileManager.default.removeItem(at: encryptedURL)
+        }
+        try plaintext.write(to: plaintextURL, options: .atomic)
+        try validatePlaintextFile(at: plaintextURL)
+
+        var target: OpaquePointer?
+        do {
+            let status = sqlite3_open_v2(
+                encryptedURL.path,
+                &target,
+                SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
+                nil
+            )
+            guard status == SQLITE_OK, let opened = target else {
+                let message = target.map(errorMessage(from:)) ?? "加密副本无法创建"
+                throw DatabaseCipherError.invalidDatabase(message)
+            }
+            let key = try key(for: purpose)
+            try apply(key, to: opened)
+            try execute("PRAGMA journal_mode=DELETE", on: opened)
+            try execute("PRAGMA synchronous=FULL", on: opened)
+            let escaped = plaintextURL.path.replacingOccurrences(of: "'", with: "''")
+            try execute("ATTACH DATABASE '\(escaped)' AS plaintext KEY ''", on: opened)
+            try execute("SELECT sqlcipher_export('main','plaintext')", on: opened)
+            try execute("DETACH DATABASE plaintext", on: opened)
+            guard sqlite3_close(opened) == SQLITE_OK else {
+                throw DatabaseCipherError.invalidDatabase("加密副本关闭失败")
+            }
+            target = nil
+            try LocalStorageProtection.protectFile(at: encryptedURL)
+            try validateEncryptedFile(at: encryptedURL, key: key)
+            return try Data(contentsOf: encryptedURL)
+        } catch {
+            if let target { sqlite3_close(target) }
+            throw error
+        }
+    }
+
+    static func validatePlaintextFile(at url: URL) throws {
+        var database: OpaquePointer?
+        let status = sqlite3_open_v2(url.path, &database, SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX, nil)
+        guard status == SQLITE_OK, let database else {
+            let message = database.map(errorMessage(from:)) ?? "明文数据库无法打开"
+            throw DatabaseCipherError.invalidDatabase(message)
+        }
+        defer { sqlite3_close(database) }
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, "PRAGMA integrity_check", -1, &statement, nil) == SQLITE_OK,
+              let statement else {
+            throw DatabaseCipherError.invalidDatabase(errorMessage(from: database))
+        }
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_step(statement) == SQLITE_ROW,
+              let text = sqlite3_column_text(statement, 0),
+              String(cString: text) == "ok" else {
+            throw DatabaseCipherError.invalidDatabase("明文备份未通过 SQLite 完整性检查")
+        }
+    }
+
     static func validateEncryptedSnapshot(_ snapshot: Data, purpose: String, in directory: URL) throws {
         let validationDirectory = directory.appendingPathComponent("SnapshotValidation", isDirectory: true)
         try LocalStorageProtection.ensurePrivateDirectory(at: validationDirectory)

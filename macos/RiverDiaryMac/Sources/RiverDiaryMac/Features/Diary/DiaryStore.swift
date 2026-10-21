@@ -1326,18 +1326,16 @@ final class DiaryStore: ObservableObject {
         }
     }
 
-    func exportFullBackup(
-        to url: URL,
+    func makeBackupPayload(
         activitySessions exportedActivity: [ActivitySession] = [],
         legacyDatabaseSnapshot: Data? = nil,
         v2DatabaseSnapshot: Data? = nil
-    ) throws {
+    ) throws -> LocalBackupPayload {
         guard data != nil || hasPersistentLocalEdits || !exportedActivity.isEmpty
                 || legacyDatabaseSnapshot != nil || v2DatabaseSnapshot != nil else {
             throw NSError(domain: "RiverDiaryMac", code: 10, userInfo: [NSLocalizedDescriptionKey: "没有可备份的数据"])
         }
-
-        let payload = LocalBackupPayload(
+        return LocalBackupPayload(
             exportedAt: Date(),
             sourcePath: externalSourceURL?.path,
             data: data,
@@ -1358,7 +1356,19 @@ final class DiaryStore: ObservableObject {
             legacyDatabaseSnapshot: legacyDatabaseSnapshot,
             v2DatabaseSnapshot: v2DatabaseSnapshot
         )
+    }
 
+    func exportFullBackup(
+        to url: URL,
+        activitySessions exportedActivity: [ActivitySession] = [],
+        legacyDatabaseSnapshot: Data? = nil,
+        v2DatabaseSnapshot: Data? = nil
+    ) throws {
+        let payload = try makeBackupPayload(
+            activitySessions: exportedActivity,
+            legacyDatabaseSnapshot: legacyDatabaseSnapshot,
+            v2DatabaseSnapshot: v2DatabaseSnapshot
+        )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         encoder.dateEncodingStrategy = .iso8601

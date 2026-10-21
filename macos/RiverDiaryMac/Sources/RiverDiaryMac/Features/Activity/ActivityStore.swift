@@ -152,6 +152,18 @@ final class ActivityStore: ObservableObject {
         }
     }
 
+    func plaintextV2Snapshot() throws -> Data {
+        try v2Store.plaintextSnapshot()
+    }
+
+    func validatePlaintextV2Snapshot(_ snapshot: Data) throws {
+        try v2Store.validatePlaintextSnapshot(snapshot)
+    }
+
+    func encryptedV2Snapshot(fromPlaintext plaintext: Data) throws -> Data {
+        try v2Store.encryptedSnapshot(fromPlaintext: plaintext)
+    }
+
     func encryptedV2Snapshot() throws -> Data {
         try v2Store.encryptedSnapshot()
     }

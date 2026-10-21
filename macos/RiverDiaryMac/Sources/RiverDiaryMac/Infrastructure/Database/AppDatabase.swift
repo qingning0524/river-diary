@@ -95,6 +95,51 @@ final class AppDatabase {
         }
     }
 
+    /// 可移植备份：解密成明文 SQLite 字节；只应交给外层恢复码加密容器。
+    func plaintextSnapshot() throws -> Data {
+        try queue.sync {
+            guard let db, let path = databasePath else {
+                throw DatabaseCipherError.invalidDatabase("兼容数据库尚未打开")
+            }
+            return try DatabaseCipher.plaintextSnapshot(
+                fromEncrypted: try DatabaseCipher.encryptedSnapshot(
+                    of: db,
+                    purpose: "legacy-records-v1",
+                    in: path.deletingLastPathComponent()
+                ),
+                purpose: "legacy-records-v1",
+                in: path.deletingLastPathComponent()
+            )
+        }
+    }
+
+    func validatePlaintextSnapshot(_ snapshot: Data) throws {
+        guard let path = databasePath else {
+            throw DatabaseCipherError.invalidDatabase("兼容数据库路径不可用")
+        }
+        let url = try temporaryPlaintextURL(snapshot, in: path.deletingLastPathComponent())
+        defer { try? FileManager.default.removeItem(at: url) }
+        try DatabaseCipher.validatePlaintextFile(at: url)
+    }
+
+    func encryptedSnapshot(fromPlaintext plaintext: Data) throws -> Data {
+        guard let path = databasePath else {
+            throw DatabaseCipherError.invalidDatabase("兼容数据库路径不可用")
+        }
+        return try DatabaseCipher.encryptedSnapshot(
+            fromPlaintext: plaintext,
+            purpose: "legacy-records-v1",
+            in: path.deletingLastPathComponent()
+        )
+    }
+
+    private func temporaryPlaintextURL(_ data: Data, in directory: URL) throws -> URL {
+        let url = directory.appendingPathComponent("PortableValidation-\(UUID().uuidString).db")
+        try data.write(to: url, options: .atomic)
+        try LocalStorageProtection.protectFile(at: url)
+        return url
+    }
+
     func validateEncryptedSnapshot(_ snapshot: Data) throws {
         guard let path = databasePath else {
             throw DatabaseCipherError.invalidDatabase("兼容数据库路径不可用")

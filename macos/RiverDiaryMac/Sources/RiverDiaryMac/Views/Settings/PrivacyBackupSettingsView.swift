@@ -186,7 +186,7 @@ struct PrivacyBackupSettingsView: View {
                         Spacer()
                     }
 
-                    Text("恢复码用于 iCloud 加密复制和 iPhone 备份。Mac 的完整备份还依赖本机钥匙串；换 Mac 前请先确认 iCloud 复制可用，或从 iPhone 导出可移植备份。只存在本机钥匙串里的密钥会随设备一起丢失。")
+                    Text("恢复码用于 iCloud 加密复制、iPhone 备份和 Mac 可移植备份。Mac 的「本机完整备份」仍依赖本机钥匙串；换 Mac 请使用下方「可移植备份」，或 iCloud/iPhone 备份。只存在本机钥匙串里的密钥会随设备一起丢失。")
                         .font(AppTypography.micro())
                         .foregroundStyle(AppTheme.warning)
                         .fixedSize(horizontal: false, vertical: true)
@@ -399,6 +399,24 @@ struct PrivacyBackupSettingsView: View {
                         .buttonStyle(.plain)
                         .smallAction(dark: true)
                     }
+                }
+
+                RiverPanelRow(title: "导出可移植备份", detail: "用恢复码加密，可跨 Mac；包含日记状态与两个事实库。恢复码丢失后无法解密。") {
+                    Button { exportPortableBackup() } label: {
+                        Label("导出…", systemImage: "arrow.up.doc")
+                    }
+                    .buttonStyle(.plain)
+                    .smallAction()
+                    .accessibilityIdentifier("settings.backup.portable.export")
+                }
+
+                RiverPanelRow(title: "恢复可移植备份", detail: "先导入恢复码；会先校验内容，再替换当前 Mac 数据并保留恢复点") {
+                    Button { restorePortableBackup() } label: {
+                        Label("恢复…", systemImage: "arrow.down.doc")
+                    }
+                    .buttonStyle(.plain)
+                    .smallAction()
+                    .accessibilityIdentifier("settings.backup.portable.restore")
                 }
 
                 RiverPanelRow(title: "网页控制台副本", detail: "导出 river.memory-mirror 只读 JSON；在 user.flowriver.xyz 导入后只读查看。包含当前设备可读的日记与双端“设备上下文”，不含密钥、健康原库或完整浏览器 URL。") {
@@ -619,7 +637,7 @@ struct PrivacyBackupSettingsView: View {
 
         用途
         - 重装同一台 Mac 或恢复 iCloud 复制时，在「设置 → 隐私与备份」导入同一恢复码。
-        - Mac 完整备份还依赖本机钥匙串，不能只凭恢复码跨 Mac 恢复；跨 Mac 请使用 iCloud 加密复制或 iPhone 备份。
+        - 换 Mac 请使用「导出可移植备份」；它用同一个恢复码加密。Mac 的本机完整备份仍依赖原钥匙串，不能只凭恢复码跨 Mac 恢复。
         - 恢复码只保存在本机钥匙串；这个文件是明文，请放在加密磁盘或密码管理器，不要发到聊天群。
 
         步骤
@@ -627,7 +645,7 @@ struct PrivacyBackupSettingsView: View {
         2. 打开「设置 → 隐私与备份」。
         3. 在同步密钥处粘贴恢复码并导入（用于 iCloud 复制）。
         4. 同一台 Mac 重装时，才使用「恢复备份」；先点「检查备份文件」，确认内容与日期后再恢复。
-        5. 换 Mac 时不要用这份本机完整备份，改用 iCloud 加密复制或 iPhone 备份。
+        5. 换 Mac 时使用「导出可移植备份」/「恢复可移植备份」，或 iCloud/iPhone 备份。
 
         注意：恢复会替换当前本机数据；恢复前应用会自动保存一个恢复点。
         """
@@ -646,7 +664,7 @@ struct PrivacyBackupSettingsView: View {
         }
         let days = Int((now - lastExportAt) / 86_400)
         guard days >= 7 else { return nil }
-        return "上次加密备份已是 \(days) 天前。重装同一台 Mac 前请再导出一份；换 Mac 请改用 iCloud 加密复制或 iPhone 备份。"
+        return "上次加密备份已是 \(days) 天前。重装同一台 Mac 前请再导出一份；换 Mac 请改用「可移植备份」、iCloud 加密复制或 iPhone 备份。"
     }
 
     private func inspectBackup() {
@@ -669,6 +687,87 @@ struct PrivacyBackupSettingsView: View {
                 (databases.isEmpty ? "" : " · 含 \(databases)")
         } catch {
             inspectionResult = "校验失败：\(UserFacingError.message(for: error))"
+        }
+    }
+
+    private func exportPortableBackup() {
+        sync.revealOrCreateKey()
+        guard let key = try? RiverSecureStore.loadSyncKey() else {
+            report("无法读取恢复码；请先在同步设置中创建或导入恢复码。", kind: .error)
+            return
+        }
+        do {
+            let journalPayload = try store.makeBackupPayload(
+                activitySessions: activity.allSessionsIncludingActive(),
+                legacyDatabaseSnapshot: nil,
+                v2DatabaseSnapshot: nil
+            )
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            let journal = try encoder.encode(journalPayload)
+            let legacyPlaintext = try AppDatabase.shared.plaintextSnapshot()
+            let v2Plaintext = try activity.plaintextV2Snapshot()
+            let data = try PortableBackupArchive.seal(
+                journal: journal,
+                legacyDatabasePlaintext: legacyPlaintext,
+                v2DatabasePlaintext: v2Plaintext,
+                using: key
+            )
+            let panel = NSSavePanel()
+            panel.title = "导出可移植备份"
+            panel.nameFieldStringValue = "RiverDiary-Portable-\(DiaryEntry.dateFormatter.string(from: Date())).riverportable"
+            panel.allowedContentTypes = [UTType(exportedAs: "studio.riverdiary.mac.portable-backup", conformingTo: .data)]
+            panel.canCreateDirectories = true
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            try data.write(to: url, options: .atomic)
+            report("可移植备份已导出：\(url.lastPathComponent)。换 Mac 时用同一恢复码恢复。", kind: .success)
+        } catch {
+            report("可移植备份导出失败：\(UserFacingError.message(for: error))", kind: .error)
+        }
+    }
+
+    private func restorePortableBackup() {
+        guard let key = try? RiverSecureStore.loadSyncKey() else {
+            report("请先在同步设置中导入恢复码，再恢复可移植备份。", kind: .error)
+            return
+        }
+        let panel = NSOpenPanel()
+        panel.title = "选择可移植备份"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.data]
+        panel.message = "选择 River Diary 导出的 .riverportable；校验通过后才会替换当前数据"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let temporaryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("portable-restore-\(UUID().uuidString).riverbackup")
+        defer { try? FileManager.default.removeItem(at: temporaryURL) }
+        do {
+            let data = try Data(contentsOf: url)
+            let payload = try PortableBackupArchive.open(data, using: key)
+            if let legacy = payload.legacyDatabasePlaintext {
+                try AppDatabase.shared.validatePlaintextSnapshot(legacy)
+            }
+            if let v2 = payload.v2DatabasePlaintext {
+                try activity.validatePlaintextV2Snapshot(v2)
+            }
+            let legacySnapshot = try payload.legacyDatabasePlaintext.map {
+                try AppDatabase.shared.encryptedSnapshot(fromPlaintext: $0)
+            }
+            let v2Snapshot = try payload.v2DatabasePlaintext.map {
+                try activity.encryptedV2Snapshot(fromPlaintext: $0)
+            }
+            let localBackup = try PortableBackupArchive.localBackupData(
+                from: payload,
+                legacyDatabaseSnapshot: legacySnapshot,
+                v2DatabaseSnapshot: v2Snapshot
+            )
+            try localBackup.write(to: temporaryURL, options: .atomic)
+            performRestore(from: temporaryURL)
+        } catch {
+            report("可移植备份恢复失败：\(UserFacingError.message(for: error))", kind: .error)
         }
     }
 
@@ -710,6 +809,11 @@ struct PrivacyBackupSettingsView: View {
 
     private func restoreBackup() {
         guard let url = pendingRestoreURL else { return }
+        pendingRestoreURL = nil
+        performRestore(from: url)
+    }
+
+    private func performRestore(from url: URL) {
         do {
             let previousActivity = activity.allSessionsIncludingActive()
             let previousLegacySnapshot = try AppDatabase.shared.encryptedSnapshot()
@@ -764,7 +868,6 @@ struct PrivacyBackupSettingsView: View {
         } catch {
             report("恢复失败：\(UserFacingError.message(for: error))", kind: .error)
         }
-        pendingRestoreURL = nil
     }
 
     private func revealStateFolder() {

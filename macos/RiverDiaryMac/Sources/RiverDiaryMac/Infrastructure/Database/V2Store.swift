@@ -668,6 +668,44 @@ final class V2Store {
         )
     }
 
+    func plaintextSnapshot() throws -> Data {
+        guard let db, let databaseURL else {
+            throw DatabaseCipherError.invalidDatabase("V2 数据库尚未打开")
+        }
+        return try DatabaseCipher.plaintextSnapshot(
+            fromEncrypted: try DatabaseCipher.encryptedSnapshot(
+                of: db,
+                purpose: "v2-facts-v1",
+                in: databaseURL.deletingLastPathComponent()
+            ),
+            purpose: "v2-facts-v1",
+            in: databaseURL.deletingLastPathComponent()
+        )
+    }
+
+    func validatePlaintextSnapshot(_ snapshot: Data) throws {
+        guard let databaseURL else {
+            throw DatabaseCipherError.invalidDatabase("V2 数据库路径不可用")
+        }
+        let url = databaseURL.deletingLastPathComponent()
+            .appendingPathComponent("PortableValidation-\(UUID().uuidString).db")
+        try snapshot.write(to: url, options: .atomic)
+        try LocalStorageProtection.protectFile(at: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        try DatabaseCipher.validatePlaintextFile(at: url)
+    }
+
+    func encryptedSnapshot(fromPlaintext plaintext: Data) throws -> Data {
+        guard let databaseURL else {
+            throw DatabaseCipherError.invalidDatabase("V2 数据库路径不可用")
+        }
+        return try DatabaseCipher.encryptedSnapshot(
+            fromPlaintext: plaintext,
+            purpose: "v2-facts-v1",
+            in: databaseURL.deletingLastPathComponent()
+        )
+    }
+
     func validateEncryptedSnapshot(_ snapshot: Data) throws {
         guard let databaseURL else {
             throw DatabaseCipherError.invalidDatabase("V2 数据库路径不可用")
