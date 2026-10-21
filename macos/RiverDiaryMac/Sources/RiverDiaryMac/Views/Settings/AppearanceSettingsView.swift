@@ -1,3 +1,4 @@
+import RiverDiaryCore
 import SwiftUI
 
 struct AppearanceSettingsView: View {
@@ -57,6 +58,23 @@ struct AppearanceSettingsView: View {
                             label: { RiverDensity(rawValue: $0)?.title ?? $0 }
                         )
                     }
+                }
+            }
+
+            SettingsGroup(
+                title: "关于",
+                detail: "版本 \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—") · 隐私、条款与服务状态都在官网，不把法律文本塞进应用包。"
+            ) {
+                RiverPanel {
+                    Link(destination: RiverLegalLinks.privacyPolicy) {
+                        RiverPanelRow(title: "隐私政策", detail: "账号、云空间与本机数据的边界", systemImage: "hand.raised")
+                    }.buttonStyle(.plain)
+                    Link(destination: RiverLegalLinks.terms) {
+                        RiverPanelRow(title: "服务条款", detail: "账号、云空间与可接受使用", systemImage: "doc.text")
+                    }.buttonStyle(.plain)
+                    Link(destination: RiverLegalLinks.serviceStatus) {
+                        RiverPanelRow(title: "服务状态", detail: "账号 API 与下载分发是否响应", systemImage: "waveform.path.ecg", showsDivider: false)
+                    }.buttonStyle(.plain)
                 }
             }
         }

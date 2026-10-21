@@ -357,7 +357,25 @@ struct SettingsView: View {
             Section("记录") { Button("日记与过往记录") { showsJournal = true }; Button("情绪与长期回顾") { showsInsights = true } }
         }
     }
-    private var aboutPage: some View { settingsPage("关于 River") { Section { Text("River Diary").font(theme.titleFont); Text("生活归你，记录也归你。"); Text("版本 \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")") }; Section { Button("日记与过往记录") { showsJournal = true }; Button("情绪与长期回顾") { showsInsights = true } } } }
+    private var aboutPage: some View {
+        settingsPage("关于 River") {
+            Section {
+                Text("River Diary").font(theme.titleFont)
+                Text("生活归你，记录也归你。")
+                Text("版本 \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
+            }
+            Section("日记") {
+                Button("日记与过往记录") { showsJournal = true }
+                Button("情绪与长期回顾") { showsInsights = true }
+            }
+            Section("法律与状态") {
+                Link("隐私政策", destination: RiverLegalLinks.privacyPolicy)
+                Link("服务条款", destination: RiverLegalLinks.terms)
+                Link("服务状态", destination: RiverLegalLinks.serviceStatus)
+                Link("安全联系", destination: RiverLegalLinks.securityContact)
+            }
+        }
+    }
 
     private func settingsEntry(_ title: String, detail: String, symbol: String) -> some View {
         HStack(spacing: 12) {

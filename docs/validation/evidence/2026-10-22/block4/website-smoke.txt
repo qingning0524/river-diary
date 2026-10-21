@@ -1,0 +1,21 @@
+# Static site smoke test 2026-10-21T18:16:28Z
+/status.html                     200 text/html
+/.well-known/security.txt        200 text/plain
+/assets/status.css               200 text/css
+/assets/status.js                200 text/javascript
+/privacy.html                    200 text/html
+/terms.html                      200 text/html
+
+# security.txt
+Contact: mailto:account@mail.flowriver.xyz
+Expires: 2027-04-22T00:00:00Z
+Preferred-Languages: zh-CN, en
+Canonical: https://flowriver.xyz/.well-known/security.txt
+Policy: https://flowriver.xyz/privacy.html
+
+# page versions
+PRIVACY · privacy-2 · 2026-10-22
+TERMS · terms-2 · 2026-10-22
+
+# Caddy redirect
+48:	redir /status /status.html permanent

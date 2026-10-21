@@ -1,0 +1,1308 @@
+Swift toolchain: /Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift
+macOS SDK: /Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk
+Building for debugging...
+[Planning 149 / 156]
+[Planning deferred tasks]
+[2 / 15]
+[3 / 16] RiverDiaryCore
+/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore/Sources/RiverDiaryCore/CloudMirror.swift:327:5: warning: 'public' modifier is redundant for static property declared in a public extension
+325 | 
+326 | public extension MemoryMirrorArchive {
+327 |     public static let healthSectionKinds: Set<String> = ["health", "workout", "stateOfMind"]
+    |     `- warning: 'public' modifier is redundant for static property declared in a public extension
+328 | 
+329 |     var containsHealthSections: Bool {
+[5 / 17] RiverDiaryCore
+[9 / 19] RiverDiaryMac-product
+[21 / 31] RiverDiaryMac
+[22 / 31] RiverDiaryMac
+[22 / 31] RiverDiaryMac-product
+[24 / 32] RiverDiaryMac
+[27 / 37] RiverDiaryMac
+[29 / 36] RiverDiaryMacTests-product
+[31 / 36] RiverDiaryMacTests-product
+[42 / 47] RiverDiaryMacTests-product
+[44 / 47] RiverDiaryMacTests-product
+[45 / 47] RiverDiaryMacTests-product
+[46 / 50] RiverDiaryMacTests-product
+Build complete! (9.91秒)
+Test Suite 'All tests' started at 2026-10-22 02:15:14.524.
+Test Suite 'RiverDiaryMacTests.xctest' started at 2026-10-22 02:15:14.524.
+Test Suite 'AIGateTests' started at 2026-10-22 02:15:14.524.
+Test Case '-[RiverDiaryMacTests.AIGateTests testSignedOutStoreSendsNoRequest]' started.
+Test Case '-[RiverDiaryMacTests.AIGateTests testSignedOutStoreSendsNoRequest]' passed (0.005 seconds).
+Test Suite 'AIGateTests' passed at 2026-10-22 02:15:14.529.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.005 (0.005) seconds
+Test Suite 'AIPayloadPreviewTests' started at 2026-10-22 02:15:14.529.
+Test Case '-[RiverDiaryMacTests.AIPayloadPreviewTests testNilRangeKeepsLegacyBehaviour]' started.
+Test Case '-[RiverDiaryMacTests.AIPayloadPreviewTests testNilRangeKeepsLegacyBehaviour]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AIPayloadPreviewTests testPreviewOnlyCountsRecordsInsideTheRange]' started.
+Test Case '-[RiverDiaryMacTests.AIPayloadPreviewTests testPreviewOnlyCountsRecordsInsideTheRange]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AIPayloadPreviewTests testTitlesAreOnlyCountedWhenTheyWillBeSent]' started.
+Test Case '-[RiverDiaryMacTests.AIPayloadPreviewTests testTitlesAreOnlyCountedWhenTheyWillBeSent]' passed (0.001 seconds).
+Test Suite 'AIPayloadPreviewTests' passed at 2026-10-22 02:15:14.531.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'AccountCollectionLifecycleTests' started at 2026-10-22 02:15:14.531.
+Test Case '-[RiverDiaryMacTests.AccountCollectionLifecycleTests testSignedOutStartupAndPausePreserveCollectionPreference]' started.
+Test Case '-[RiverDiaryMacTests.AccountCollectionLifecycleTests testSignedOutStartupAndPausePreserveCollectionPreference]' passed (0.151 seconds).
+Test Suite 'AccountCollectionLifecycleTests' passed at 2026-10-22 02:15:14.682.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.151 (0.151) seconds
+Test Suite 'ActivityClassifierSelfExclusionTests' started at 2026-10-22 02:15:14.682.
+Test Case '-[RiverDiaryMacTests.ActivityClassifierSelfExclusionTests testOrdinaryAppsAndSystemSurfacesAreUnaffected]' started.
+Test Case '-[RiverDiaryMacTests.ActivityClassifierSelfExclusionTests testOrdinaryAppsAndSystemSurfacesAreUnaffected]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityClassifierSelfExclusionTests testRenamedBuildsOfTheRecorderAreNeverRecorded]' started.
+Test Case '-[RiverDiaryMacTests.ActivityClassifierSelfExclusionTests testRenamedBuildsOfTheRecorderAreNeverRecorded]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityClassifierSelfExclusionTests testSelfSessionsAreDroppedBeforeTheyBecomeDiaryRows]' started.
+Test Case '-[RiverDiaryMacTests.ActivityClassifierSelfExclusionTests testSelfSessionsAreDroppedBeforeTheyBecomeDiaryRows]' passed (0.000 seconds).
+Test Suite 'ActivityClassifierSelfExclusionTests' passed at 2026-10-22 02:15:14.683.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'ActivityFusionTests' started at 2026-10-22 02:15:14.683.
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testDualSourcesGetHigherConfidenceThanSingleMinuteEvidence]' started.
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testDualSourcesGetHigherConfidenceThanSingleMinuteEvidence]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testEmptySignalsHaveZeroConfidence]' started.
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testEmptySignalsHaveZeroConfidence]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testHourlyStatsSplitASessionAtTheLocalHourBoundary]' started.
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testHourlyStatsSplitASessionAtTheLocalHourBoundary]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testLiveDurationDoesNotDoubleAddWhenPipelineAppDetailIsComplete]' started.
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testLiveDurationDoesNotDoubleAddWhenPipelineAppDetailIsComplete]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testLiveStatsAndTimelineUseTheSameOverlapDeduplication]' started.
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testLiveStatsAndTimelineUseTheSameOverlapDeduplication]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testRangeConfidencePenalizesSparseCoverage]' started.
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testRangeConfidencePenalizesSparseCoverage]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testSingleMinuteLiveSessionDoesNotInflateConfidence]' started.
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testSingleMinuteLiveSessionDoesNotInflateConfidence]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testUnmatchedLiveFillsUnattributedPipelineTimeWithoutExceedingTotal]' started.
+Test Case '-[RiverDiaryMacTests.ActivityFusionTests testUnmatchedLiveFillsUnattributedPipelineTimeWithoutExceedingTotal]' passed (0.000 seconds).
+Test Suite 'ActivityFusionTests' passed at 2026-10-22 02:15:14.686.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.002 (0.003) seconds
+Test Suite 'ActivityLifecycleTests' started at 2026-10-22 02:15:14.686.
+Test Case '-[RiverDiaryMacTests.ActivityLifecycleTests testLastActivityIsClosedBeforeTerminationNotificationReturns]' started.
+Test Case '-[RiverDiaryMacTests.ActivityLifecycleTests testLastActivityIsClosedBeforeTerminationNotificationReturns]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityLifecycleTests testRemovedObserverDoesNotAccumulateAfterRestartingTracking]' started.
+Test Case '-[RiverDiaryMacTests.ActivityLifecycleTests testRemovedObserverDoesNotAccumulateAfterRestartingTracking]' passed (0.000 seconds).
+Test Suite 'ActivityLifecycleTests' passed at 2026-10-22 02:15:14.686.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'ActivityTimelineTests' started at 2026-10-22 02:15:14.686.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testActivityTimelineItemCanBePersistedAsAnExactAnalysisRecoveryInput]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testActivityTimelineItemCanBePersistedAsAnExactAnalysisRecoveryInput]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testBackdatedDiaryNoteIsKeptOutsideTheClockTimeline]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testBackdatedDiaryNoteIsKeptOutsideTheClockTimeline]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testCategoryChangesLongGapsAndLongBlocksStaySeparate]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testCategoryChangesLongGapsAndLongBlocksStaySeparate]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testClipsBothMidnightBoundariesAndDropsInvalidSessions]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testClipsBothMidnightBoundariesAndDropsInvalidSessions]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testDayClippingUsesCalendarAcrossDaylightSaving]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testDayClippingUsesCalendarAcrossDaylightSaving]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testDayIntervalUsesCalendarLengthAcrossDSTTransitions]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testDayIntervalUsesCalendarLengthAcrossDSTTransitions]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testDuplicateAndOverlappingImportsNeverDoubleCount]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testDuplicateAndOverlappingImportsNeverDoubleCount]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testExportContainsOriginalEvidenceAndExplicitGaps]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testExportContainsOriginalEvidenceAndExplicitGaps]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testGroupsNearbySameCategoryButPreservesRawEvidence]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testGroupsNearbySameCategoryButPreservesRawEvidence]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testLockScreenDoesNotBecomeThirteenHoursOfDiaryActivity]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testLockScreenDoesNotBecomeThirteenHoursOfDiaryActivity]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testLongestFocusUsesRecordedDurationRatherThanGroupedSpan]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testLongestFocusUsesRecordedDurationRatherThanGroupedSpan]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testQuickNotesAreChronologicalAndDoNotAddScreenTime]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testQuickNotesAreChronologicalAndDoNotAddScreenTime]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testRemoteLocationMarkersJoinThePersonTimelineWithoutAddingScreenTime]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testRemoteLocationMarkersJoinThePersonTimelineWithoutAddingScreenTime]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testSearchMatchesEveryWindowTitleAndCombinesWithCategory]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testSearchMatchesEveryWindowTitleAndCombinesWithCategory]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testStableSelectionIdentityAsActiveSessionGrows]' started.
+Test Case '-[RiverDiaryMacTests.ActivityTimelineTests testStableSelectionIdentityAsActiveSessionGrows]' passed (0.000 seconds).
+Test Suite 'ActivityTimelineTests' passed at 2026-10-22 02:15:14.692.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.005 (0.006) seconds
+Test Suite 'AnalysisInterconnectTests' started at 2026-10-22 02:15:14.692.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testAnalysisRecoverySnapshotPreservesExactPromptAndTimelineValidationInputs]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testAnalysisRecoverySnapshotPreservesExactPromptAndTimelineValidationInputs]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testAnalysisRunRecordsFilterByTaskAndTime]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testAnalysisRunRecordsFilterByTaskAndTime]' passed (0.102 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testAssemblePersistsSnapshotAndFingerprintReactstoRuleChanges]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testAssemblePersistsSnapshotAndFingerprintReactstoRuleChanges]' passed (0.110 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testAssemblerIncludesOnlyActiveUserConfirmedRules]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testAssemblerIncludesOnlyActiveUserConfirmedRules]' passed (0.118 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testConclusionSearchMatchesQueryBigrams]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testConclusionSearchMatchesQueryBigrams]' passed (0.099 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testConclusionSummariesPreferDigestHeadline]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testConclusionSummariesPreferDigestHeadline]' passed (0.098 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testConfirmedMemoryLinesOnlyIncludeConfirmed]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testConfirmedMemoryLinesOnlyIncludeConfirmed]' passed (0.118 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testCurrentDayRebuildDetectsStaleArtifactAndQueuedCurrentFrontier]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testCurrentDayRebuildDetectsStaleArtifactAndQueuedCurrentFrontier]' passed (0.261 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testDigestExtractionStripsCommentAndClamps]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testDigestExtractionStripsCommentAndClamps]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testDigestFallbackUsesFirstMeaningfulLine]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testDigestFallbackUsesFirstMeaningfulLine]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testKeyedUpsertKeepsOnlyLatestPerDedupKey]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testKeyedUpsertKeepsOnlyLatestPerDedupKey]' passed (0.100 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testLegacyRowsWithoutKeysRemainReadable]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testLegacyRowsWithoutKeysRemainReadable]' passed (0.103 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testMemoryCandidateParserRejectsGarbage]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testMemoryCandidateParserRejectsGarbage]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testMemoryCandidateParserValidatesKindsAndEvidence]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testMemoryCandidateParserValidatesKindsAndEvidence]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testMonthlyLetterCarriesWeeklySummary]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testMonthlyLetterCarriesWeeklySummary]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testQueuedAnalysisJobReplaysSameFrontierAndCompletesItsArtifact]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testQueuedAnalysisJobReplaysSameFrontierAndCompletesItsArtifact]' passed (0.165 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testRemoteAnalysisRequiresConsentBeforeSendingPersonalData]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testRemoteAnalysisRequiresConsentBeforeSendingPersonalData]' passed (0.150 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testRestorePrefersV2ResultLayer]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testRestorePrefersV2ResultLayer]' passed (0.256 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testRiverTaskKindMappingIsNoLongerLossy]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testRiverTaskKindMappingIsNoLongerLossy]' passed (0.098 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testStoredEvidenceRefsReadFromResultLayer]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testStoredEvidenceRefsReadFromResultLayer]' passed (0.098 seconds).
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testTimelineDigestClarificationBecomesSharedAndAnnotationClosesIt]' started.
+Test Case '-[RiverDiaryMacTests.AnalysisInterconnectTests testTimelineDigestClarificationBecomesSharedAndAnnotationClosesIt]' passed (0.144 seconds).
+Test Suite 'AnalysisInterconnectTests' passed at 2026-10-22 02:15:16.717.
+	 Executed 21 tests, with 0 failures (0 unexpected) in 2.024 (2.025) seconds
+Test Suite 'AppleNotesPayloadTests' started at 2026-10-22 02:15:16.717.
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testCollapsesExcessBlankLines]' started.
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testCollapsesExcessBlankLines]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testExtractsBodyAndStripsTitle]' started.
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testExtractsBodyAndStripsTitle]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testKeepsBodyWhenFirstLineIsNotTitle]' started.
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testKeepsBodyWhenFirstLineIsNotTitle]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testRejectsNonGzipData]' started.
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testRejectsNonGzipData]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testRejectsTruncatedGzipData]' started.
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testRejectsTruncatedGzipData]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testReturnsNilForEmptyBody]' started.
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testReturnsNilForEmptyBody]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testTruncatesLongBodyWithMarker]' started.
+Test Case '-[RiverDiaryMacTests.AppleNotesPayloadTests testTruncatesLongBodyWithMarker]' passed (0.000 seconds).
+Test Suite 'AppleNotesPayloadTests' passed at 2026-10-22 02:15:16.719.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'AuditFixRegressionTests' started at 2026-10-22 02:15:16.719.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testDigestParserHandlesMultilineJSON]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testDigestParserHandlesMultilineJSON]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testDiscardTransientAnswerKeepsArchivedResult]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testDiscardTransientAnswerKeepsArchivedResult]' passed (0.099 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testEveryThreeDaysBlockMathIsMonotonic]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testEveryThreeDaysBlockMathIsMonotonic]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testEvidenceExtractionFindsCJKAdjacentReferences]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testEvidenceExtractionFindsCJKAdjacentReferences]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testFutureValidFromRuleIsExcludedFromContext]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testFutureValidFromRuleIsExcludedFromContext]' passed (0.106 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testHourlyTimelineDoesNotLeakSecondsAcrossHours]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testHourlyTimelineDoesNotLeakSecondsAcrossHours]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testInvalidAccuracyLocationSamplesAreIgnored]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testInvalidAccuracyLocationSamplesAreIgnored]' passed (0.151 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testLateNightSegmentDoesNotAbsorbDaytimeSessions]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testLateNightSegmentDoesNotAbsorbDaytimeSessions]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testMemoryCandidateParserDistinguishesGarbageFromEmpty]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testMemoryCandidateParserDistinguishesGarbageFromEmpty]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testMissingPlaceDataDoesNotReaskPlaceScopedRule]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testMissingPlaceDataDoesNotReaskPlaceScopedRule]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testOnlyTheseExamplesExcludesMarkedDaysFromNewCandidates]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testOnlyTheseExamplesExcludesMarkedDaysFromNewCandidates]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testSessionsRangeQueryClipsBoundarySessions]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testSessionsRangeQueryClipsBoundarySessions]' passed (0.102 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testSetMemoryConfirmationKeepsLayersConsistent]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testSetMemoryConfirmationKeepsLayersConsistent]' passed (0.115 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testUpsertAnalysisRunKeepsSingleRowPerKey]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testUpsertAnalysisRunKeepsSingleRowPerKey]' passed (0.099 seconds).
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testWeeklyAnalysisScalesWithRequestedRange]' started.
+Test Case '-[RiverDiaryMacTests.AuditFixRegressionTests testWeeklyAnalysisScalesWithRequestedRange]' passed (0.000 seconds).
+Test Suite 'AuditFixRegressionTests' passed at 2026-10-22 02:15:17.395.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.676 (0.677) seconds
+Test Suite 'BackupInspectionTests' started at 2026-10-22 02:15:17.395.
+Test Case '-[RiverDiaryMacTests.BackupInspectionTests testInspectionRejectsCorruptBackupAndLeavesStateUntouched]' started.
+Test Case '-[RiverDiaryMacTests.BackupInspectionTests testInspectionRejectsCorruptBackupAndLeavesStateUntouched]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.BackupInspectionTests testInspectionReportsContentWithoutChangingLocalState]' started.
+Test Case '-[RiverDiaryMacTests.BackupInspectionTests testInspectionReportsContentWithoutChangingLocalState]' passed (0.338 seconds).
+Test Suite 'BackupInspectionTests' passed at 2026-10-22 02:15:17.736.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.340 (0.341) seconds
+Test Suite 'BrowserHistoryReaderTests' started at 2026-10-22 02:15:17.736.
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testChromiumReadsTodaysVisitsAndBrowserName]' started.
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testChromiumReadsTodaysVisitsAndBrowserName]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testDedupeKeepsNewestVisitPerURLAndSecond]' started.
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testDedupeKeepsNewestVisitPerURLAndSecond]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testMissingPathIsUnreadableNotEmpty]' started.
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testMissingPathIsUnreadableNotEmpty]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testSafariReadsOnlyTodaysHTTPVisits]' started.
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testSafariReadsOnlyTodaysHTTPVisits]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testTopDomainsCountsVisits]' started.
+Test Case '-[RiverDiaryMacTests.BrowserHistoryReaderTests testTopDomainsCountsVisits]' passed (0.000 seconds).
+Test Suite 'BrowserHistoryReaderTests' passed at 2026-10-22 02:15:17.741.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
+Test Suite 'CalendarContextEventsTests' started at 2026-10-22 02:15:17.741.
+Test Case '-[RiverDiaryMacTests.CalendarContextEventsTests testEmptySnapshotProducesNoEvents]' started.
+Test Case '-[RiverDiaryMacTests.CalendarContextEventsTests testEmptySnapshotProducesNoEvents]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.CalendarContextEventsTests testEventSnapshotBecomesCalendarRawEvent]' started.
+Test Case '-[RiverDiaryMacTests.CalendarContextEventsTests testEventSnapshotBecomesCalendarRawEvent]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.CalendarContextEventsTests testReminderBecomesCompletedRawEvent]' started.
+Test Case '-[RiverDiaryMacTests.CalendarContextEventsTests testReminderBecomesCompletedRawEvent]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.CalendarContextEventsTests testSameSnapshotProducesStableIDs]' started.
+Test Case '-[RiverDiaryMacTests.CalendarContextEventsTests testSameSnapshotProducesStableIDs]' passed (0.000 seconds).
+Test Suite 'CalendarContextEventsTests' passed at 2026-10-22 02:15:17.741.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'CategoryOverrideTests' started at 2026-10-22 02:15:17.741.
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testAppOptionsSortByDurationAndDeduplicateByBundle]' started.
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testAppOptionsSortByDurationAndDeduplicateByBundle]' passed (0.110 seconds).
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testNoOverrideLeavesDerivedCategoriesAlone]' started.
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testNoOverrideLeavesDerivedCategoriesAlone]' passed (0.101 seconds).
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testOverrideCorrectsHistoryAndSurvivesAReload]' started.
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testOverrideCorrectsHistoryAndSurvivesAReload]' passed (0.264 seconds).
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testOverrideDoesNotTouchTheEvidenceStore]' started.
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testOverrideDoesNotTouchTheEvidenceStore]' passed (0.263 seconds).
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testRemovingOverrideFallsBackToTitleDerivedCategory]' started.
+Test Case '-[RiverDiaryMacTests.CategoryOverrideTests testRemovingOverrideFallsBackToTitleDerivedCategory]' passed (0.101 seconds).
+Test Suite 'CategoryOverrideTests' passed at 2026-10-22 02:15:18.581.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.839 (0.840) seconds
+Test Suite 'CommandPaletteSelectionTests' started at 2026-10-22 02:15:18.581.
+Test Case '-[RiverDiaryMacTests.CommandPaletteSelectionTests testArrowNavigationMovesThroughFilteredResultsAndClampsAtEnds]' started.
+Test Case '-[RiverDiaryMacTests.CommandPaletteSelectionTests testArrowNavigationMovesThroughFilteredResultsAndClampsAtEnds]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.CommandPaletteSelectionTests testChangingQueryResetsSelectionToFirstResult]' started.
+Test Case '-[RiverDiaryMacTests.CommandPaletteSelectionTests testChangingQueryResetsSelectionToFirstResult]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.CommandPaletteSelectionTests testEmptyResultsCannotBeSelected]' started.
+Test Case '-[RiverDiaryMacTests.CommandPaletteSelectionTests testEmptyResultsCannotBeSelected]' passed (0.000 seconds).
+Test Suite 'CommandPaletteSelectionTests' passed at 2026-10-22 02:15:18.582.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'DailyGoalTests' started at 2026-10-22 02:15:18.582.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testDailyGoalPersistsAndReloadsFromEncryptedLocalState]' started.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testDailyGoalPersistsAndReloadsFromEncryptedLocalState]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testDailyGoalsRoundTripInUserStateAndBackup]' started.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testDailyGoalsRoundTripInUserStateAndBackup]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testEncryptedBackupRoundTripsBothDatabaseSnapshots]' started.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testEncryptedBackupRoundTripsBothDatabaseSnapshots]' passed (0.003 seconds).
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testFailedActivityRestoreDoesNotCommitDiaryState]' started.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testFailedActivityRestoreDoesNotCommitDiaryState]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testFailedDatabaseRestoreRollsBackActivityAndDiaryState]' started.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testFailedDatabaseRestoreRollsBackActivityAndDiaryState]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testInvalidDatabaseSnapshotDoesNotMutateCurrentBackupState]' started.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testInvalidDatabaseSnapshotDoesNotMutateCurrentBackupState]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testJournalDraftIsEncryptedAndRestoredAcrossEditorRestart]' started.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testJournalDraftIsEncryptedAndRestoredAcrossEditorRestart]' passed (0.818 seconds).
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testJournalDraftPersistenceFailureKeepsTextEditable]' started.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testJournalDraftPersistenceFailureKeepsTextEditable]' passed (0.874 seconds).
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testLegacyStateAndBackupWithoutGoalsRemainReadable]' started.
+Test Case '-[RiverDiaryMacTests.DailyGoalTests testLegacyStateAndBackupWithoutGoalsRemainReadable]' passed (0.001 seconds).
+Test Suite 'DailyGoalTests' passed at 2026-10-22 02:15:20.285.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 1.702 (1.704) seconds
+Test Suite 'DataSafetyTests' started at 2026-10-22 02:15:20.285.
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testCorruptActivityDayFileIsQuarantinedNotDeleted]' started.
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testCorruptActivityDayFileIsQuarantinedNotDeleted]' passed (0.135 seconds).
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testLegacyDatabaseRoundTripsLongUnicodeText]' started.
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testLegacyDatabaseRoundTripsLongUnicodeText]' passed (0.080 seconds).
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testRemoveSavedQueryRollsBackWhenPersistFails]' started.
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testRemoveSavedQueryRollsBackWhenPersistFails]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testV2RestoreReopensSiblingConnectionsOntoRestoredFile]' started.
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testV2RestoreReopensSiblingConnectionsOntoRestoredFile]' passed (1.129 seconds).
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testValidActivityFilesSurviveQuarantineAndLoad]' started.
+Test Case '-[RiverDiaryMacTests.DataSafetyTests testValidActivityFilesSurviveQuarantineAndLoad]' passed (0.108 seconds).
+Test Suite 'DataSafetyTests' passed at 2026-10-22 02:15:21.738.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 1.452 (1.452) seconds
+Test Suite 'DatabaseCipherTests' started at 2026-10-22 02:15:21.738.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testActivityBackupRestoreStagesEncryptedFilesAndResumesTracking]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testActivityBackupRestoreStagesEncryptedFilesAndResumesTracking]' passed (0.111 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testActivityStoreRecoversPreviousDirectoryAfterInterruptedSwap]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testActivityStoreRecoversPreviousDirectoryAfterInterruptedSwap]' passed (0.103 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testEncryptedDatabaseRejectsWrongKeyAndContainsNoPlaintext]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testEncryptedDatabaseRejectsWrongKeyAndContainsNoPlaintext]' passed (0.228 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testEncryptedV2SnapshotRestoresAllFactTables]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testEncryptedV2SnapshotRestoresAllFactTables]' passed (0.923 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testFailedFullBackupRestoreRollsBackLegacyV2AndJournalState]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testFailedFullBackupRestoreRollsBackLegacyV2AndJournalState]' passed (2.463 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testFullEncryptedBackupRestoresLegacyAndV2DatabasesTogether]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testFullEncryptedBackupRestoresLegacyAndV2DatabasesTogether]' passed (2.069 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testFutureBackupVersionIsRejectedWithoutChangingLocalState]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testFutureBackupVersionIsRejectedWithoutChangingLocalState]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testInterruptedMigrationRestoresOriginalThenRetries]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testInterruptedMigrationRestoresOriginalThenRetries]' passed (0.381 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testLegacyAppDatabaseEncryptsPlaintextDuringStartupAndReopens]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testLegacyAppDatabaseEncryptsPlaintextDuringStartupAndReopens]' passed (0.459 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testLegacyEncryptedSnapshotRestoresFullDatabase]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testLegacyEncryptedSnapshotRestoresFullDatabase]' passed (0.689 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testPlaintextDatabaseMigratesToEncryptedAndRemainsReadable]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testPlaintextDatabaseMigratesToEncryptedAndRemainsReadable]' passed (0.304 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testV2StoreEncryptsExistingPlaintextDatabaseAndPreservesRows]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testV2StoreEncryptsExistingPlaintextDatabaseAndPreservesRows]' passed (0.326 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testWriteAheadLogDoesNotExposePlaintext]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testWriteAheadLogDoesNotExposePlaintext]' passed (0.077 seconds).
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testWrongMigrationKeyLeavesEncryptedDatabaseUntouched]' started.
+Test Case '-[RiverDiaryMacTests.DatabaseCipherTests testWrongMigrationKeyLeavesEncryptedDatabaseUntouched]' passed (0.152 seconds).
+Test Suite 'DatabaseCipherTests' passed at 2026-10-22 02:15:30.024.
+	 Executed 14 tests, with 0 failures (0 unexpected) in 8.285 (8.286) seconds
+Test Suite 'DatabasePreviewWindowTests' started at 2026-10-22 02:15:30.024.
+Test Case '-[RiverDiaryMacTests.DatabasePreviewWindowTests testEmptyAndShortCollectionsNeedNoPagination]' started.
+Test Case '-[RiverDiaryMacTests.DatabasePreviewWindowTests testEmptyAndShortCollectionsNeedNoPagination]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.DatabasePreviewWindowTests testNewerReturnsToNewestPageAndResetStartsThere]' started.
+Test Case '-[RiverDiaryMacTests.DatabasePreviewWindowTests testNewerReturnsToNewestPageAndResetStartsThere]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.DatabasePreviewWindowTests testPagesCoverAllRowsWithoutGapsOrDuplicates]' started.
+Test Case '-[RiverDiaryMacTests.DatabasePreviewWindowTests testPagesCoverAllRowsWithoutGapsOrDuplicates]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.DatabasePreviewWindowTests testShrinkingCollectionClampsTheCurrentPage]' started.
+Test Case '-[RiverDiaryMacTests.DatabasePreviewWindowTests testShrinkingCollectionClampsTheCurrentPage]' passed (0.000 seconds).
+Test Suite 'DatabasePreviewWindowTests' passed at 2026-10-22 02:15:30.025.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'DateContextTests' started at 2026-10-22 02:15:30.025.
+Test Case '-[RiverDiaryMacTests.DateContextTests testDirectDateSelectionPersistsAcrossStoreReloads]' started.
+Test Case '-[RiverDiaryMacTests.DateContextTests testDirectDateSelectionPersistsAcrossStoreReloads]' passed (0.003 seconds).
+Test Case '-[RiverDiaryMacTests.DateContextTests testForwardNavigationClampsToTodayInsteadOfOpeningFutureDate]' started.
+Test Case '-[RiverDiaryMacTests.DateContextTests testForwardNavigationClampsToTodayInsteadOfOpeningFutureDate]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.DateContextTests testForwardNavigationFromTodayDoesNotMoveIntoFuture]' started.
+Test Case '-[RiverDiaryMacTests.DateContextTests testForwardNavigationFromTodayDoesNotMoveIntoFuture]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.DateContextTests testGoTodayResetsDate]' started.
+Test Case '-[RiverDiaryMacTests.DateContextTests testGoTodayResetsDate]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.DateContextTests testMoveDayChangesOnlySelectedDate]' started.
+Test Case '-[RiverDiaryMacTests.DateContextTests testMoveDayChangesOnlySelectedDate]' passed (0.000 seconds).
+Test Suite 'DateContextTests' passed at 2026-10-22 02:15:30.029.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.004 (0.004) seconds
+Test Suite 'DiskFullTests' started at 2026-10-22 02:15:30.029.
+Test Case '-[RiverDiaryMacTests.DiskFullTests testRealDiskFullKeepsPreviousState]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/DiskFullTests.swift:28: -[RiverDiaryMacTests.DiskFullTests testRealDiskFullKeepsPreviousState] : Test skipped - could not attach a temporary disk image
+Test Case '-[RiverDiaryMacTests.DiskFullTests testRealDiskFullKeepsPreviousState]' skipped (1.379 seconds).
+Test Suite 'DiskFullTests' passed at 2026-10-22 02:15:31.407.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 1.379 (1.379) seconds
+Test Suite 'EvidenceReferenceTests' started at 2026-10-22 02:15:31.407.
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testExtractPullsReferencesOutOfModelProse]' started.
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testExtractPullsReferencesOutOfModelProse]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testParsesEverySupportedKind]' started.
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testParsesEverySupportedKind]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testRejectsMalformedAndUnknownForms]' started.
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testRejectsMalformedAndUnknownForms]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testSanitizeDeduplicatesWhileKeepingOrder]' started.
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testSanitizeDeduplicatesWhileKeepingOrder]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testSanitizeDropsReferencesThatDoNotExistLocally]' started.
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testSanitizeDropsReferencesThatDoNotExistLocally]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testStableDigestIsProcessStable]' started.
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testStableDigestIsProcessStable]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testVerifiedAnswerHasNoConclusionWhenThereAreNoCitations]' started.
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testVerifiedAnswerHasNoConclusionWhenThereAreNoCitations]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testVerifiedAnswerKeepsOnlyReferencesFromTheRequest]' started.
+Test Case '-[RiverDiaryMacTests.EvidenceReferenceTests testVerifiedAnswerKeepsOnlyReferencesFromTheRequest]' passed (0.000 seconds).
+Test Suite 'EvidenceReferenceTests' passed at 2026-10-22 02:15:31.413.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.004 (0.006) seconds
+Test Suite 'FeatureLogicTests' started at 2026-10-22 02:15:31.413.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testAIAnalysisFormatterCompletesTraceableStructure]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testAIAnalysisFormatterCompletesTraceableStructure]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testAISearchAnswerFormatterAddsSectionsToUnstructuredOutput]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testAISearchAnswerFormatterAddsSectionsToUnstructuredOutput]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testAISearchAnswerFormatterNormalizesRequiredHeadings]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testAISearchAnswerFormatterNormalizesRequiredHeadings]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testAISearchAnswerFormatterSplitsInlineHeading]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testAISearchAnswerFormatterSplitsInlineHeading]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testInsightRequestRoundTripPreservesArchiveIdentity]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testInsightRequestRoundTripPreservesArchiveIdentity]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testLegacyQuickCaptureDecodeKeepsTagEmpty]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testLegacyQuickCaptureDecodeKeepsTagEmpty]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testLifeSegmentGroupsSessionsWithoutEmptySegments]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testLifeSegmentGroupsSessionsWithoutEmptySegments]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testOldUserStateDecodesWithoutSavedQueries]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testOldUserStateDecodesWithoutSavedQueries]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testPearsonDetectsPositiveAndNegativeCorrelation]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testPearsonDetectsPositiveAndNegativeCorrelation]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testQuickCapturePinnedOrderingSurvivesRoundTrip]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testQuickCapturePinnedOrderingSurvivesRoundTrip]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testQuickCaptureTagSurvivesRoundTrip]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testQuickCaptureTagSurvivesRoundTrip]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testRiverLetterRequiresThirtyDays]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testRiverLetterRequiresThirtyDays]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testRiverLetterUsesTheLowestScoredDayAsQuietDay]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testRiverLetterUsesTheLowestScoredDayAsQuietDay]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testSavedQueryRoundTripPreservesRangeAndUsageMetadata]' started.
+Test Case '-[RiverDiaryMacTests.FeatureLogicTests testSavedQueryRoundTripPreservesRangeAndUsageMetadata]' passed (0.000 seconds).
+Test Suite 'FeatureLogicTests' passed at 2026-10-22 02:15:31.421.
+	 Executed 14 tests, with 0 failures (0 unexpected) in 0.006 (0.008) seconds
+Test Suite 'FocusCalculatorTests' started at 2026-10-22 02:15:31.421.
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testGapOverFiveMinutesStartsNewBlock]' started.
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testGapOverFiveMinutesStartsNewBlock]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testLongDistractionSplitsBlocks]' started.
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testLongDistractionSplitsBlocks]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testNonFocusOnlyIsEmpty]' started.
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testNonFocusOnlyIsEmpty]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testShortDistractionDoesNotBreakBlock]' started.
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testShortDistractionDoesNotBreakBlock]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testThirtyMinuteFocusIsOneBlock]' started.
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testThirtyMinuteFocusIsOneBlock]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testTwentyMinuteFocusIsIgnored]' started.
+Test Case '-[RiverDiaryMacTests.FocusCalculatorTests testTwentyMinuteFocusIsIgnored]' passed (0.000 seconds).
+Test Suite 'FocusCalculatorTests' passed at 2026-10-22 02:15:31.423.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'FootprintMomentsTests' started at 2026-10-22 02:15:31.423.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testBackdatedWritingDoesNotAcquireAFictionalEventTime]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testBackdatedWritingDoesNotAcquireAFictionalEventTime]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testCardsUseRecordedMomentsInDescendingOrderAndExcludeGaps]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testCardsUseRecordedMomentsInDescendingOrderAndExcludeGaps]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testClearingAnnotationRemovesStaleDetailContextButKeepsRawEvidence]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testClearingAnnotationRemovesStaleDetailContextButKeepsRawEvidence]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testMapUsesOnlyFiniteRecordedCoordinates]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testMapUsesOnlyFiniteRecordedCoordinates]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testMovementRequiresExplicitCategoryOrUserContextNotWindowTitle]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testMovementRequiresExplicitCategoryOrUserContextNotWindowTitle]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testOlderPlaceMarkersDecodeWithoutInventedCoordinates]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testOlderPlaceMarkersDecodeWithoutInventedCoordinates]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testOpenDetailResolvesSavedAnnotationInsteadOfItsSelectionSnapshot]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testOpenDetailResolvesSavedAnnotationInsteadOfItsSelectionSnapshot]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testPlaceOverviewUsesOnlyPlaceEventsAndExplicitAnnotations]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testPlaceOverviewUsesOnlyPlaceEventsAndExplicitAnnotations]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testScopeAndSearchExpandFragmentMembersRatherThanHidingMatches]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testScopeAndSearchExpandFragmentMembersRatherThanHidingMatches]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testSharedPendingAndFavoritesAreCombinedWithOtherFilters]' started.
+Test Case '-[RiverDiaryMacTests.FootprintMomentsTests testSharedPendingAndFavoritesAreCombinedWithOtherFilters]' passed (0.001 seconds).
+Test Suite 'FootprintMomentsTests' passed at 2026-10-22 02:15:31.434.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.009 (0.011) seconds
+Test Suite 'FragmentRunShapeTests' started at 2026-10-22 02:15:31.434.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testDominanceIsWeightedByForegroundTimeNotSegmentCount]' started.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testDominanceIsWeightedByForegroundTimeNotSegmentCount]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testMixedShapeLeavesTheCompositionToTheRow]' started.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testMixedShapeLeavesTheCompositionToTheRow]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testNoDominantAppAcrossManyAppsReadsAsWandering]' started.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testNoDominantAppAcrossManyAppsReadsAsWandering]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testOneBlockOfDominantAppIsNotComposedWork]' started.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testOneBlockOfDominantAppIsNotComposedWork]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testRepeatedReturnsToADominantAppReadAsComposedWork]' started.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testRepeatedReturnsToADominantAppReadAsComposedWork]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testRunTitleUsesTheShape]' started.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testRunTitleUsesTheShape]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testSameAppMembersAreIntraAppSwitching]' started.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testSameAppMembersAreIntraAppSwitching]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testTwoMemberSwitchesStayNeutral]' started.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testTwoMemberSwitchesStayNeutral]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testZeroDurationMembersStillClassify]' started.
+Test Case '-[RiverDiaryMacTests.FragmentRunShapeTests testZeroDurationMembersStillClassify]' passed (0.000 seconds).
+Test Suite 'FragmentRunShapeTests' passed at 2026-10-22 02:15:31.437.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.002 (0.003) seconds
+Test Suite 'GitActivityReaderTests' started at 2026-10-22 02:15:31.437.
+Test Case '-[RiverDiaryMacTests.GitActivityReaderTests testDiscoversRepositoriesAndSkipsIgnoredDirectories]' started.
+Test Case '-[RiverDiaryMacTests.GitActivityReaderTests testDiscoversRepositoriesAndSkipsIgnoredDirectories]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.GitActivityReaderTests testMissingRootReportsIssue]' started.
+Test Case '-[RiverDiaryMacTests.GitActivityReaderTests testMissingRootReportsIssue]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.GitActivityReaderTests testReadsTodaysCommitCount]' started.
+Test Case '-[RiverDiaryMacTests.GitActivityReaderTests testReadsTodaysCommitCount]' passed (0.838 seconds).
+Test Case '-[RiverDiaryMacTests.GitActivityReaderTests testRootItselfCanBeARepository]' started.
+Test Case '-[RiverDiaryMacTests.GitActivityReaderTests testRootItselfCanBeARepository]' passed (0.001 seconds).
+Test Suite 'GitActivityReaderTests' passed at 2026-10-22 02:15:32.280.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.842 (0.842) seconds
+Test Suite 'HabitReviewRenderTests' started at 2026-10-22 02:15:32.280.
+Test Case '-[RiverDiaryMacTests.HabitReviewRenderTests testRendersAnsweredState]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewRenderTests testRendersAnsweredState]' passed (0.724 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewRenderTests testRendersEmptyState]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewRenderTests testRendersEmptyState]' passed (0.429 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewRenderTests testRendersFullPageWithBatch]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewRenderTests testRendersFullPageWithBatch]' passed (0.334 seconds).
+Test Suite 'HabitReviewRenderTests' passed at 2026-10-22 02:15:33.767.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 1.487 (1.487) seconds
+Test Suite 'HabitReviewTests' started at 2026-10-22 02:15:33.767.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testAnswerCreatesRuleAndSuppressesRegeneration]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testAnswerCreatesRuleAndSuppressesRegeneration]' passed (0.128 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testCadencePeriodMath]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testCadencePeriodMath]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testCandidatesRequireThreeIndependentDays]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testCandidatesRequireThreeIndependentDays]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testCardShapeFollowsDesignContract]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testCardShapeFollowsDesignContract]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testConsistentPlaceNameSurvivesOnlyWhenAllDaysNamed]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testConsistentPlaceNameSurvivesOnlyWhenAllDaysNamed]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testInterruptedAIGeneratedBatchRecoversFromSavedArtifactWithoutAnotherRequest]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testInterruptedAIGeneratedBatchRecoversFromSavedArtifactWithoutAnotherRequest]' passed (0.172 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testManualCadenceOnlyGeneratesOnDemand]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testManualCadenceOnlyGeneratesOnDemand]' passed (0.120 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testOneDayWithFragmentedSessionsCountsAsOneSample]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testOneDayWithFragmentedSessionsCountsAsOneSample]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testOnlyTheseExamplesDoesNotCreateRule]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testOnlyTheseExamplesDoesNotCreateRule]' passed (0.115 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testOnlyTheseExamplesExcludesMarkedDaysAndUsesLongerCooldown]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testOnlyTheseExamplesExcludesMarkedDaysAndUsesLongerCooldown]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testQuietPeriodGeneratesNothing]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testQuietPeriodGeneratesNothing]' passed (0.097 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testSkipEntersCooldownAndPeriodKeyPreventsRebuild]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testSkipEntersCooldownAndPeriodKeyPreventsRebuild]' passed (0.119 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testStalePatternsAreNotResurrected]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testStalePatternsAreNotResurrected]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testUndoRetiresRuleAndRestoresCard]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testUndoRetiresRuleAndRestoresCard]' passed (0.137 seconds).
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testWorthwhileFiltersActiveRuleAndCooling]' started.
+Test Case '-[RiverDiaryMacTests.HabitReviewTests testWorthwhileFiltersActiveRuleAndCooling]' passed (0.001 seconds).
+Test Suite 'HabitReviewTests' passed at 2026-10-22 02:15:34.660.
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.892 (0.893) seconds
+Test Suite 'HealthMoodDraftTests' started at 2026-10-22 02:15:34.660.
+Test Case '-[RiverDiaryMacTests.HealthMoodDraftTests testExistingScoreCanOnlySaveWhenChangedAndCancelRestoresIt]' started.
+Test Case '-[RiverDiaryMacTests.HealthMoodDraftTests testExistingScoreCanOnlySaveWhenChangedAndCancelRestoresIt]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.HealthMoodDraftTests testMovingSliderEnablesSaveAndCancelRestoresUnknown]' started.
+Test Case '-[RiverDiaryMacTests.HealthMoodDraftTests testMovingSliderEnablesSaveAndCancelRestoresUnknown]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.HealthMoodDraftTests testNewMoodCannotSaveDefaultMidpointBeforeUserConfirmsIt]' started.
+Test Case '-[RiverDiaryMacTests.HealthMoodDraftTests testNewMoodCannotSaveDefaultMidpointBeforeUserConfirmsIt]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.HealthMoodDraftTests testUserCanExplicitlyConfirmDefaultMidpointAsMoodScore]' started.
+Test Case '-[RiverDiaryMacTests.HealthMoodDraftTests testUserCanExplicitlyConfirmDefaultMidpointAsMoodScore]' passed (0.000 seconds).
+Test Suite 'HealthMoodDraftTests' passed at 2026-10-22 02:15:34.661.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'IngestionLifecycleTests' started at 2026-10-22 02:15:34.661.
+Test Case '-[RiverDiaryMacTests.IngestionLifecycleTests testStopCancelsTheScheduledCapture]' started.
+Test Case '-[RiverDiaryMacTests.IngestionLifecycleTests testStopCancelsTheScheduledCapture]' passed (0.001 seconds).
+Test Suite 'IngestionLifecycleTests' passed at 2026-10-22 02:15:34.661.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'KindleClippingsReaderTests' started at 2026-10-22 02:15:34.661.
+Test Case '-[RiverDiaryMacTests.KindleClippingsReaderTests testBookTitleKeepsParenthesesInsideTitle]' started.
+Test Case '-[RiverDiaryMacTests.KindleClippingsReaderTests testBookTitleKeepsParenthesesInsideTitle]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.KindleClippingsReaderTests testIgnoresYesterdayAndUndatedEntries]' started.
+Test Case '-[RiverDiaryMacTests.KindleClippingsReaderTests testIgnoresYesterdayAndUndatedEntries]' passed (0.016 seconds).
+Test Case '-[RiverDiaryMacTests.KindleClippingsReaderTests testMissingFileReportsIssue]' started.
+Test Case '-[RiverDiaryMacTests.KindleClippingsReaderTests testMissingFileReportsIssue]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.KindleClippingsReaderTests testParsesTodayHighlightAndBookTitle]' started.
+Test Case '-[RiverDiaryMacTests.KindleClippingsReaderTests testParsesTodayHighlightAndBookTitle]' passed (0.002 seconds).
+Test Suite 'KindleClippingsReaderTests' passed at 2026-10-22 02:15:34.681.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.019 (0.019) seconds
+Test Suite 'LibraryOpenPolicyTests' started at 2026-10-22 02:15:34.681.
+Test Case '-[RiverDiaryMacTests.LibraryOpenPolicyTests testDeferredStoreCreatesNothingUntilOpened]' started.
+Test Case '-[RiverDiaryMacTests.LibraryOpenPolicyTests testDeferredStoreCreatesNothingUntilOpened]' passed (0.253 seconds).
+Test Case '-[RiverDiaryMacTests.LibraryOpenPolicyTests testLegacyStateDetectionFindsEncryptedAndPlaintextFiles]' started.
+Test Case '-[RiverDiaryMacTests.LibraryOpenPolicyTests testLegacyStateDetectionFindsEncryptedAndPlaintextFiles]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.LibraryOpenPolicyTests testLocalFirstAlwaysOpensLocalLibrary]' started.
+Test Case '-[RiverDiaryMacTests.LibraryOpenPolicyTests testLocalFirstAlwaysOpensLocalLibrary]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.LibraryOpenPolicyTests testLocalProfileOwnerRoundTripsWithDatabase]' started.
+Test Case '-[RiverDiaryMacTests.LibraryOpenPolicyTests testLocalProfileOwnerRoundTripsWithDatabase]' passed (0.255 seconds).
+Test Suite 'LibraryOpenPolicyTests' passed at 2026-10-22 02:15:35.189.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.508 (0.508) seconds
+Test Suite 'LocalDayReportTests' started at 2026-10-22 02:15:35.189.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testCaptureOnlyDayIsReportedAsUserEvidenceNotEmptyData]' started.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testCaptureOnlyDayIsReportedAsUserEvidenceNotEmptyData]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testDiaryFallbackIsNeverLabeledAsObservedFacts]' started.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testDiaryFallbackIsNeverLabeledAsObservedFacts]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testEmptyAndSourceSnapshotFallbacksStayDistinct]' started.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testEmptyAndSourceSnapshotFallbacksStayDistinct]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testLongestSessionAlreadyShownInHeroIsNotRepeatedAsAnObservation]' started.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testLongestSessionAlreadyShownInHeroIsNotRepeatedAsAnObservation]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testMainAppHighlightUsesRecordedDurationRatherThanSessionCount]' started.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testMainAppHighlightUsesRecordedDurationRatherThanSessionCount]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testManualAnnotationIsTheFirstLinkableInsight]' started.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testManualAnnotationIsTheFirstLinkableInsight]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testObservedActivityOverridesArchiveFallbackClassification]' started.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testObservedActivityOverridesArchiveFallbackClassification]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testObservedDaySummaryListsTimeBucketsChronologicallyAcrossMidnight]' started.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testObservedDaySummaryListsTimeBucketsChronologicallyAcrossMidnight]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testOneSessionCrossingATimeBucketIsSplitAtTheBoundary]' started.
+Test Case '-[RiverDiaryMacTests.LocalDayReportTests testOneSessionCrossingATimeBucketIsSplitAtTheBoundary]' passed (0.000 seconds).
+Test Suite 'LocalDayReportTests' passed at 2026-10-22 02:15:35.192.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+Test Suite 'MacDayContextBuilderTests' started at 2026-10-22 02:15:35.192.
+Test Case '-[RiverDiaryMacTests.MacDayContextBuilderTests testBuildsReadableSectionsFromMacSources]' started.
+Test Case '-[RiverDiaryMacTests.MacDayContextBuilderTests testBuildsReadableSectionsFromMacSources]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacDayContextBuilderTests testEmptySourcesProduceNoSnapshot]' started.
+Test Case '-[RiverDiaryMacTests.MacDayContextBuilderTests testEmptySourcesProduceNoSnapshot]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacDayContextBuilderTests testFullBodiesOnlyWhenExplicitlyShared]' started.
+Test Case '-[RiverDiaryMacTests.MacDayContextBuilderTests testFullBodiesOnlyWhenExplicitlyShared]' passed (0.000 seconds).
+Test Suite 'MacDayContextBuilderTests' passed at 2026-10-22 02:15:35.192.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'MacQAStorageIsolationTests' started at 2026-10-22 02:15:35.192.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testProductionBundleDoesNotRequireQAEnvironment]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testProductionBundleDoesNotRequireQAEnvironment]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleAcceptsAnExplicitIsolatedTemporaryHome]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleAcceptsAnExplicitIsolatedTemporaryHome]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleFailsClosedWithoutIsolationEnvironment]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleFailsClosedWithoutIsolationEnvironment]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleRejectsAProductionApplicationSupportPath]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleRejectsAProductionApplicationSupportPath]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleRejectsProductionUserHome]' started.
+Test Case '-[RiverDiaryMacTests.MacQAStorageIsolationTests testQABundleRejectsProductionUserHome]' passed (0.000 seconds).
+Test Suite 'MacQAStorageIsolationTests' passed at 2026-10-22 02:15:35.193.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'MacRawEventBuilderTests' started at 2026-10-22 02:15:35.193.
+Test Case '-[RiverDiaryMacTests.MacRawEventBuilderTests testBrowserEventsAreCapped]' started.
+Test Case '-[RiverDiaryMacTests.MacRawEventBuilderTests testBrowserEventsAreCapped]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MacRawEventBuilderTests testNoteEventsCarryTitleBodyAndStableID]' started.
+Test Case '-[RiverDiaryMacTests.MacRawEventBuilderTests testNoteEventsCarryTitleBodyAndStableID]' passed (0.000 seconds).
+Test Suite 'MacRawEventBuilderTests' passed at 2026-10-22 02:15:35.194.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'MarkdownNoteReaderTests' started at 2026-10-22 02:15:35.194.
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testParseFallsBackToFileName]' started.
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testParseFallsBackToFileName]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testParseUsesFirstHeadingAndBody]' started.
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testParseUsesFirstHeadingAndBody]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testParseUsesFrontMatterTitleAndStripsIt]' started.
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testParseUsesFrontMatterTitleAndStripsIt]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testReadTodayIncludesOnlyTodayAndSkipsHiddenDirectories]' started.
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testReadTodayIncludesOnlyTodayAndSkipsHiddenDirectories]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testReadTodayReportsMissingFolder]' started.
+Test Case '-[RiverDiaryMacTests.MarkdownNoteReaderTests testReadTodayReportsMissingFolder]' passed (0.000 seconds).
+Test Suite 'MarkdownNoteReaderTests' passed at 2026-10-22 02:15:35.196.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+Test Suite 'MemoryLibraryTests' started at 2026-10-22 02:15:35.196.
+Test Case '-[RiverDiaryMacTests.MemoryLibraryTests testRefreshBuildsOneRevisitableLibrary]' started.
+Test Case '-[RiverDiaryMacTests.MemoryLibraryTests testRefreshBuildsOneRevisitableLibrary]' passed (0.111 seconds).
+Test Case '-[RiverDiaryMacTests.MemoryLibraryTests testRefreshDeduplicatesSharedSourcesAndOmitsMissingEpisodes]' started.
+Test Case '-[RiverDiaryMacTests.MemoryLibraryTests testRefreshDeduplicatesSharedSourcesAndOmitsMissingEpisodes]' passed (0.117 seconds).
+Test Case '-[RiverDiaryMacTests.MemoryLibraryTests testRefreshReplacesEpisodeLinksAfterMemoryUpdate]' started.
+Test Case '-[RiverDiaryMacTests.MemoryLibraryTests testRefreshReplacesEpisodeLinksAfterMemoryUpdate]' passed (0.110 seconds).
+Test Suite 'MemoryLibraryTests' passed at 2026-10-22 02:15:35.533.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.337 (0.338) seconds
+Test Suite 'MemorySearchTests' started at 2026-10-22 02:15:35.533.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testAISearchDateReferencesBecomeClickableDailyTargets]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testAISearchDateReferencesBecomeClickableDailyTargets]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testAskAICandidateTextRetainsManualLocationAndGoalProvenance]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testAskAICandidateTextRetainsManualLocationAndGoalProvenance]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testAskCandidateSetUsesCanonicalCapsWithoutDroppingCaptures]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testAskCandidateSetUsesCanonicalCapsWithoutDroppingCaptures]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testDailyGoalsAreSearchableAsUserAuthoredEvidence]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testDailyGoalsAreSearchableAsUserAuthoredEvidence]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testDateRangeIncludesEpisodeCrossingTheBoundary]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testDateRangeIncludesEpisodeCrossingTheBoundary]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testLastWeekFilterUsesThePreviousWeekRange]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testLastWeekFilterUsesThePreviousWeekRange]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testLocationQuestionIntentRecognizesKnownPlaceNamesOnly]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testLocationQuestionIntentRecognizesKnownPlaceNamesOnly]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testManualTimelinePlaceAnnotationIsSearchable]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testManualTimelinePlaceAnnotationIsSearchable]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testMonthAndThresholdFiltersAreReportedAndApplied]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testMonthAndThresholdFiltersAreReportedAndApplied]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testNaturalLanguageKeywordFiltersDiaries]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testNaturalLanguageKeywordFiltersDiaries]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testNaturalLanguageQuestionFindsFatigueSignal]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testNaturalLanguageQuestionFindsFatigueSignal]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testQuestionScaffoldingLeavesTheActualTopicWord]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testQuestionScaffoldingLeavesTheActualTopicWord]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testRecentArbitraryDayCountIsNotRoundedToSeven]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testRecentArbitraryDayCountIsNotRoundedToSeven]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testScoreThresholdDoesNotMatchAnUnratedDiary]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testScoreThresholdDoesNotMatchAnUnratedDiary]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testSearchAverageExcludesMissingScoresButIncludesAnExplicitZero]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testSearchAverageExcludesMissingScoresButIncludesAnExplicitZero]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testSearchIncludesDurableMemoriesAndSavedReflections]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testSearchIncludesDurableMemoriesAndSavedReflections]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testThisDayQuestionUsesSelectedDateInsteadOfSearchingAllHistory]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testThisDayQuestionUsesSelectedDateInsteadOfSearchingAllHistory]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testThisWeekScopeAppliesToArchiveMemoryAndReflection]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testThisWeekScopeAppliesToArchiveMemoryAndReflection]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testThresholdQuestionDoesNotTreatQuestionScaffoldingAsTopic]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testThresholdQuestionDoesNotTreatQuestionScaffoldingAsTopic]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testUnratedDiaryDoesNotBecomeAZeroScoreAnswer]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchTests testUnratedDiaryDoesNotBecomeAZeroScoreAnswer]' passed (0.000 seconds).
+Test Suite 'MemorySearchTests' passed at 2026-10-22 02:15:35.540.
+	 Executed 20 tests, with 0 failures (0 unexpected) in 0.006 (0.007) seconds
+Test Suite 'MemorySearchWeekBoundaryTests' started at 2026-10-22 02:15:35.540.
+Test Case '-[RiverDiaryMacTests.MemorySearchWeekBoundaryTests testLastWeekDoesNotIncludeCurrentWeekStartAtMidnight]' started.
+Test Case '-[RiverDiaryMacTests.MemorySearchWeekBoundaryTests testLastWeekDoesNotIncludeCurrentWeekStartAtMidnight]' passed (0.000 seconds).
+Test Suite 'MemorySearchWeekBoundaryTests' passed at 2026-10-22 02:15:35.540.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'MenuGateTests' started at 2026-10-22 02:15:35.540.
+Test Case '-[RiverDiaryMacTests.MenuGateTests testDockMenuFollowsLocalLibraryReady]' started.
+Test Case '-[RiverDiaryMacTests.MenuGateTests testDockMenuFollowsLocalLibraryReady]' passed (0.002 seconds).
+Test Suite 'MenuGateTests' passed at 2026-10-22 02:15:35.542.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+Test Suite 'ModelTests' started at 2026-10-22 02:15:35.542.
+Test Case '-[RiverDiaryMacTests.ModelTests testEntryDateFormattingStaysStable]' started.
+Test Case '-[RiverDiaryMacTests.ModelTests testEntryDateFormattingStaysStable]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ModelTests testLegacyEntryOverrideDecodeKeepsExistingJournalUsable]' started.
+Test Case '-[RiverDiaryMacTests.ModelTests testLegacyEntryOverrideDecodeKeepsExistingJournalUsable]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ModelTests testMoodAnalyzerExtractsRepeatedSignals]' started.
+Test Case '-[RiverDiaryMacTests.ModelTests testMoodAnalyzerExtractsRepeatedSignals]' passed (0.000 seconds).
+Test Suite 'ModelTests' passed at 2026-10-22 02:15:35.543.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'MonthlyLetterTests' started at 2026-10-22 02:15:35.543.
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testBackdatedNoteUsesAssignedMonthAndNoScoreIsInvented]' started.
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testBackdatedNoteUsesAssignedMonthAndNoScoreIsInvented]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testEditedFavoriteSurvivesStateAndBackupRoundTrip]' started.
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testEditedFavoriteSurvivesStateAndBackupRoundTrip]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testFiltersMonthDeduplicatesDaysAndExcludesFutureRecords]' started.
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testFiltersMonthDeduplicatesDaysAndExcludesFutureRecords]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testOldStateWithoutLettersStillLoads]' started.
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testOldStateWithoutLettersStillLoads]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testSessionCrossingMonthIsClipped]' started.
+Test Case '-[RiverDiaryMacTests.MonthlyLetterTests testSessionCrossingMonthIsClipped]' passed (0.000 seconds).
+Test Suite 'MonthlyLetterTests' passed at 2026-10-22 02:15:35.545.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'MoodInsightTests' started at 2026-10-22 02:15:35.545.
+Test Case '-[RiverDiaryMacTests.MoodInsightTests testDraftSubstanceScoreGrowsThroughAllThreeTiers]' started.
+Test Case '-[RiverDiaryMacTests.MoodInsightTests testDraftSubstanceScoreGrowsThroughAllThreeTiers]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.MoodInsightTests testDraftSubstanceScoreKeepsBoundaryValues]' started.
+Test Case '-[RiverDiaryMacTests.MoodInsightTests testDraftSubstanceScoreKeepsBoundaryValues]' passed (0.000 seconds).
+Test Suite 'MoodInsightTests' passed at 2026-10-22 02:15:35.545.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'PaletteDepthTests' started at 2026-10-22 02:15:35.545.
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testCanvasSitsOneStepBelowSurfaceInEveryPalette]' started.
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testCanvasSitsOneStepBelowSurfaceInEveryPalette]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testChipAndEditorAreDistinctFromBothSurfaceAndEachOther]' started.
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testChipAndEditorAreDistinctFromBothSurfaceAndEachOther]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testDarkHairlineAlphasStayInAWorkableRange]' started.
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testDarkHairlineAlphasStayInAWorkableRange]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testHairlinesAreVisibleInBothSchemes]' started.
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testHairlinesAreVisibleInBothSchemes]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testHoverFillAndSelectionFillAreNotTheSameColour]' started.
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testHoverFillAndSelectionFillAreNotTheSameColour]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testSecondaryAndTertiaryInkStayReadable]' started.
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testSecondaryAndTertiaryInkStayReadable]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testTimelineSpineIsVisibleButStillLighterThanASolidNode]' started.
+Test Case '-[RiverDiaryMacTests.PaletteDepthTests testTimelineSpineIsVisibleButStillLighterThanASolidNode]' passed (0.000 seconds).
+Test Suite 'PaletteDepthTests' passed at 2026-10-22 02:15:35.546.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'PaletteSwitchStabilityTests' started at 2026-10-22 02:15:35.546.
+Test Case '-[RiverDiaryMacTests.PaletteSwitchStabilityTests testBothWindowRootsRebuildTheirColorSubtree]' started.
+Test Case '-[RiverDiaryMacTests.PaletteSwitchStabilityTests testBothWindowRootsRebuildTheirColorSubtree]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.PaletteSwitchStabilityTests testPaletteIdentityIsNotBoundAboveTheWindowRoot]' started.
+Test Case '-[RiverDiaryMacTests.PaletteSwitchStabilityTests testPaletteIdentityIsNotBoundAboveTheWindowRoot]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.PaletteSwitchStabilityTests testShellPaletteIdentityComesBeforeLifecycleSideEffects]' started.
+Test Case '-[RiverDiaryMacTests.PaletteSwitchStabilityTests testShellPaletteIdentityComesBeforeLifecycleSideEffects]' passed (0.001 seconds).
+Test Suite 'PaletteSwitchStabilityTests' passed at 2026-10-22 02:15:35.548.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'PanelLayoutTests' started at 2026-10-22 02:15:35.548.
+Test Case '-[RiverDiaryMacTests.PanelLayoutTests testPanelPaddingIsAppliedOnceInsteadOfPerRow]' started.
+Test Case '-[RiverDiaryMacTests.PanelLayoutTests testPanelPaddingIsAppliedOnceInsteadOfPerRow]' passed (0.000 seconds).
+Test Suite 'PanelLayoutTests' passed at 2026-10-22 02:15:35.548.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'PortableBackupTests' started at 2026-10-22 02:15:35.548.
+Test Case '-[RiverDiaryMacTests.PortableBackupTests testPortableArchiveRestoresIntoCleanMacState]' started.
+Test Case '-[RiverDiaryMacTests.PortableBackupTests testPortableArchiveRestoresIntoCleanMacState]' passed (1.779 seconds).
+Test Suite 'PortableBackupTests' passed at 2026-10-22 02:15:37.328.
+	 Executed 1 test, with 0 failures (0 unexpected) in 1.779 (1.779) seconds
+Test Suite 'PortableCrossKeyTests' started at 2026-10-22 02:15:37.328.
+Test Case '-[RiverDiaryMacTests.PortableCrossKeyTests testPortableBackupRestoresAcrossDifferentLocalKeys]' started.
+Test Case '-[RiverDiaryMacTests.PortableCrossKeyTests testPortableBackupRestoresAcrossDifferentLocalKeys]' passed (2.710 seconds).
+Test Suite 'PortableCrossKeyTests' passed at 2026-10-22 02:15:40.038.
+	 Executed 1 test, with 0 failures (0 unexpected) in 2.710 (2.711) seconds
+Test Suite 'PortableSnapshotTests' started at 2026-10-22 02:15:40.038.
+Test Case '-[RiverDiaryMacTests.PortableSnapshotTests testCorruptPlaintextIsRejectedBeforeRestore]' started.
+Test Case '-[RiverDiaryMacTests.PortableSnapshotTests testCorruptPlaintextIsRejectedBeforeRestore]' passed (0.096 seconds).
+Test Case '-[RiverDiaryMacTests.PortableSnapshotTests testLegacyPlaintextRoundTripsThroughFreshEncryptedSnapshot]' started.
+Test Case '-[RiverDiaryMacTests.PortableSnapshotTests testLegacyPlaintextRoundTripsThroughFreshEncryptedSnapshot]' passed (0.846 seconds).
+Test Case '-[RiverDiaryMacTests.PortableSnapshotTests testPlaintextSnapshotRoundTripsIntoAnotherEncryptedStore]' started.
+Test Case '-[RiverDiaryMacTests.PortableSnapshotTests testPlaintextSnapshotRoundTripsIntoAnotherEncryptedStore]' passed (1.300 seconds).
+Test Suite 'PortableSnapshotTests' passed at 2026-10-22 02:15:42.280.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 2.241 (2.242) seconds
+Test Suite 'ProductPolishTests' started at 2026-10-22 02:15:42.280.
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testDecryptionFailureMapsToHumanMessage]' started.
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testDecryptionFailureMapsToHumanMessage]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testMissingFileMapsToHumanMessage]' started.
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testMissingFileMapsToHumanMessage]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testPermissionErrorMapsToActionableMessage]' started.
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testPermissionErrorMapsToActionableMessage]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testRetentionPolicyRequiresConfirmationOnlyWhenItWillPurgeOlderData]' started.
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testRetentionPolicyRequiresConfirmationOnlyWhenItWillPurgeOlderData]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testUnknownErrorFallsBackToLocalizedDescription]' started.
+Test Case '-[RiverDiaryMacTests.ProductPolishTests testUnknownErrorFallsBackToLocalizedDescription]' passed (0.000 seconds).
+Test Suite 'ProductPolishTests' passed at 2026-10-22 02:15:42.281.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'ProgressComparisonTests' started at 2026-10-22 02:15:42.281.
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testHistoricalProgressAnchorKeepsSelectedDay]' started.
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testHistoricalProgressAnchorKeepsSelectedDay]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testMissingMeasurementsRemainUnknownInsteadOfBecomingZero]' started.
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testMissingMeasurementsRemainUnknownInsteadOfBecomingZero]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testPeriodSummaryUsesOnlyScoredAndMeasuredDays]' started.
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testPeriodSummaryUsesOnlyScoredAndMeasuredDays]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testProgressWindowsAreAdjacentAndContainRequestedNumberOfDays]' started.
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testProgressWindowsAreAdjacentAndContainRequestedNumberOfDays]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testTodayProgressAnchorUsesLastCompletedDay]' started.
+Test Case '-[RiverDiaryMacTests.ProgressComparisonTests testTodayProgressAnchorUsesLastCompletedDay]' passed (0.000 seconds).
+Test Suite 'ProgressComparisonTests' passed at 2026-10-22 02:15:42.282.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'RestoreRecoveryJournalTests' started at 2026-10-22 02:15:42.282.
+Test Case '-[RiverDiaryMacTests.RestoreRecoveryJournalTests testFailedStartupRecoveryKeepsJournalAndDoesNotPartiallyRestoreLocalFiles]' started.
+Test Case '-[RiverDiaryMacTests.RestoreRecoveryJournalTests testFailedStartupRecoveryKeepsJournalAndDoesNotPartiallyRestoreLocalFiles]' passed (0.083 seconds).
+Test Case '-[RiverDiaryMacTests.RestoreRecoveryJournalTests testRecoveryBootstrapKeepsDataGateClosedAndJournalAvailableForRetry]' started.
+Test Case '-[RiverDiaryMacTests.RestoreRecoveryJournalTests testRecoveryBootstrapKeepsDataGateClosedAndJournalAvailableForRetry]' passed (0.153 seconds).
+Test Case '-[RiverDiaryMacTests.RestoreRecoveryJournalTests testStartupRecoveryRestoresAllLocalComponentsFromDurableJournal]' started.
+Test Case '-[RiverDiaryMacTests.RestoreRecoveryJournalTests testStartupRecoveryRestoresAllLocalComponentsFromDurableJournal]' passed (0.005 seconds).
+Test Case '-[RiverDiaryMacTests.RestoreRecoveryJournalTests testStartupRecoveryRestoresLegacyAndV2CiphertextSnapshots]' started.
+Test Case '-[RiverDiaryMacTests.RestoreRecoveryJournalTests testStartupRecoveryRestoresLegacyAndV2CiphertextSnapshots]' passed (1.525 seconds).
+Test Suite 'RestoreRecoveryJournalTests' passed at 2026-10-22 02:15:44.047.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 1.765 (1.765) seconds
+Test Suite 'RiverNavigationTests' started at 2026-10-22 02:15:44.047.
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testCatalogueExposesOnlyFivePrimaryWorkspaces]' started.
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testCatalogueExposesOnlyFivePrimaryWorkspaces]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testHistoryStopsAtBothEndsAndIgnoresRepeatedSelection]' started.
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testHistoryStopsAtBothEndsAndIgnoresRepeatedSelection]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testLegacySectionsResolveToTheirContainingWorkspace]' started.
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testLegacySectionsResolveToTheirContainingWorkspace]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testLongSessionKeepsBoundedHistoryAndCanTraverseAllRetainedPages]' started.
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testLongSessionKeepsBoundedHistoryAndCanTraverseAllRetainedPages]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testNewDestinationAfterGoingBackDiscardsForwardBranch]' started.
+Test Case '-[RiverDiaryMacTests.RiverNavigationTests testNewDestinationAfterGoingBackDiscardsForwardBranch]' passed (0.000 seconds).
+Test Suite 'RiverNavigationTests' passed at 2026-10-22 02:15:44.048.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'SQLFailureTests' started at 2026-10-22 02:15:44.048.
+Test Case '-[RiverDiaryMacTests.SQLFailureTests testCommitFailureDoesNotHalfCommitAndKeepsPreviousState]' started.
+Test Case '-[RiverDiaryMacTests.SQLFailureTests testCommitFailureDoesNotHalfCommitAndKeepsPreviousState]' passed (0.264 seconds).
+Test Suite 'SQLFailureTests' passed at 2026-10-22 02:15:44.312.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.264 (0.264) seconds
+Test Suite 'SQLPrepareFailureTests' started at 2026-10-22 02:15:44.312.
+Test Case '-[RiverDiaryMacTests.SQLPrepareFailureTests testPrepareFailureIsReportedAndKeepsStoreAlive]' started.
+Test Case '-[RiverDiaryMacTests.SQLPrepareFailureTests testPrepareFailureIsReportedAndKeepsStoreAlive]' passed (0.422 seconds).
+Test Suite 'SQLPrepareFailureTests' passed at 2026-10-22 02:15:44.734.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.422 (0.422) seconds
+Test Suite 'SaveFailureTests' started at 2026-10-22 02:15:44.734.
+Test Case '-[RiverDiaryMacTests.SaveFailureTests testFailedSaveKeepsPreviousTextAndRetryDoesNotDuplicate]' started.
+Test Case '-[RiverDiaryMacTests.SaveFailureTests testFailedSaveKeepsPreviousTextAndRetryDoesNotDuplicate]' passed (0.002 seconds).
+Test Suite 'SaveFailureTests' passed at 2026-10-22 02:15:44.735.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+Test Suite 'SelfReportFactsBridgeTests' started at 2026-10-22 02:15:44.735.
+Test Case '-[RiverDiaryMacTests.SelfReportFactsBridgeTests testEmptyCompletedItemTextIsNotCounted]' started.
+Test Case '-[RiverDiaryMacTests.SelfReportFactsBridgeTests testEmptyCompletedItemTextIsNotCounted]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.SelfReportFactsBridgeTests testFallsBackToRecordedScreenHoursWithoutPipeline]' started.
+Test Case '-[RiverDiaryMacTests.SelfReportFactsBridgeTests testFallsBackToRecordedScreenHoursWithoutPipeline]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.SelfReportFactsBridgeTests testMissingFactsStayNilInsteadOfZero]' started.
+Test Case '-[RiverDiaryMacTests.SelfReportFactsBridgeTests testMissingFactsStayNilInsteadOfZero]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.SelfReportFactsBridgeTests testPrefersPipelineScreenTimeAndMapsHealthAndCompletedItems]' started.
+Test Case '-[RiverDiaryMacTests.SelfReportFactsBridgeTests testPrefersPipelineScreenTimeAndMapsHealthAndCompletedItems]' passed (0.000 seconds).
+Test Suite 'SelfReportFactsBridgeTests' passed at 2026-10-22 02:15:44.736.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'SettingsChromeTests' started at 2026-10-22 02:15:44.736.
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testContentColumnFillsTheDefaultWindow]' started.
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testContentColumnFillsTheDefaultWindow]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testHeaderAndContentShareTheSameMeasure]' started.
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testHeaderAndContentShareTheSameMeasure]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testRailBlendIsVisibleButNotHeavy]' started.
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testRailBlendIsVisibleButNotHeavy]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testRailIsNarrowerThanTheMainSidebar]' started.
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testRailIsNarrowerThanTheMainSidebar]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testSettingsContentColumnFitsBesideTheRail]' started.
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testSettingsContentColumnFitsBesideTheRail]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testSettingsWindowIsLargerThanItsMinimum]' started.
+Test Case '-[RiverDiaryMacTests.SettingsChromeTests testSettingsWindowIsLargerThanItsMinimum]' passed (0.000 seconds).
+Test Suite 'SettingsChromeTests' passed at 2026-10-22 02:15:44.738.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'SettingsRailContrastTests' started at 2026-10-22 02:15:44.738.
+Test Case '-[RiverDiaryMacTests.SettingsRailContrastTests testRailIsDistinctFromCanvasInEveryPalette]' started.
+Test Case '-[RiverDiaryMacTests.SettingsRailContrastTests testRailIsDistinctFromCanvasInEveryPalette]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.SettingsRailContrastTests testRailStepsAwayFromCanvasInTheSameDirection]' started.
+Test Case '-[RiverDiaryMacTests.SettingsRailContrastTests testRailStepsAwayFromCanvasInTheSameDirection]' passed (0.000 seconds).
+Test Suite 'SettingsRailContrastTests' passed at 2026-10-22 02:15:44.738.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'SourceHealthTests' started at 2026-10-22 02:15:44.738.
+Test Case '-[RiverDiaryMacTests.SourceHealthTests testRecentPlaceStatusUsesResolvedName]' started.
+Test Case '-[RiverDiaryMacTests.SourceHealthTests testRecentPlaceStatusUsesResolvedName]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.SourceHealthTests testSourceHealthStatesUseExplicitUserFacingLabels]' started.
+Test Case '-[RiverDiaryMacTests.SourceHealthTests testSourceHealthStatesUseExplicitUserFacingLabels]' passed (0.000 seconds).
+Test Suite 'SourceHealthTests' passed at 2026-10-22 02:15:44.739.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'StorageReadFailureTests' started at 2026-10-22 02:15:44.739.
+Test Case '-[RiverDiaryMacTests.StorageReadFailureTests testCorruptEncryptedStateIsReportedAndNeverOverwritten]' started.
+Test Case '-[RiverDiaryMacTests.StorageReadFailureTests testCorruptEncryptedStateIsReportedAndNeverOverwritten]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.StorageReadFailureTests testCorruptLegacyStateIsNotDeletedOrReplaced]' started.
+Test Case '-[RiverDiaryMacTests.StorageReadFailureTests testCorruptLegacyStateIsNotDeletedOrReplaced]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.StorageReadFailureTests testReadFailureBlocksEveryUserFacingSavePath]' started.
+Test Case '-[RiverDiaryMacTests.StorageReadFailureTests testReadFailureBlocksEveryUserFacingSavePath]' passed (0.000 seconds).
+Test Suite 'StorageReadFailureTests' passed at 2026-10-22 02:15:44.740.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'StoreCloseTests' started at 2026-10-22 02:15:44.740.
+Test Case '-[RiverDiaryMacTests.StoreCloseTests testClosedStoreRejectsWritesAndReopensWithData]' started.
+Test Case '-[RiverDiaryMacTests.StoreCloseTests testClosedStoreRejectsWritesAndReopensWithData]' passed (0.266 seconds).
+Test Suite 'StoreCloseTests' passed at 2026-10-22 02:15:45.006.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.266 (0.266) seconds
+Test Suite 'StoreOpenFailureTests' started at 2026-10-22 02:15:45.006.
+Test Case '-[RiverDiaryMacTests.StoreOpenFailureTests testUnopenableDatabaseReportsFailureAndStaysClosed]' started.
+Test Case '-[RiverDiaryMacTests.StoreOpenFailureTests testUnopenableDatabaseReportsFailureAndStaysClosed]' passed (0.004 seconds).
+Test Suite 'StoreOpenFailureTests' passed at 2026-10-22 02:15:45.010.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.004 (0.004) seconds
+Test Suite 'SyncExitGateTests' started at 2026-10-22 02:15:45.010.
+Test Case '-[RiverDiaryMacTests.SyncExitGateTests testActiveSessionWithoutFolderOnlyReportsMissingFolder]' started.
+Test Case '-[RiverDiaryMacTests.SyncExitGateTests testActiveSessionWithoutFolderOnlyReportsMissingFolder]' passed (0.098 seconds).
+Test Case '-[RiverDiaryMacTests.SyncExitGateTests testInactiveSessionIgnoresSynchronizeRequests]' started.
+Test Case '-[RiverDiaryMacTests.SyncExitGateTests testInactiveSessionIgnoresSynchronizeRequests]' passed (0.092 seconds).
+Test Suite 'SyncExitGateTests' passed at 2026-10-22 02:15:45.200.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.190 (0.190) seconds
+Test Suite 'TimelineAnnotatableTests' started at 2026-10-22 02:15:45.200.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotatableTests testOnlyRealActivityBlocksCanBeAnnotated]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotatableTests testOnlyRealActivityBlocksCanBeAnnotated]' passed (0.001 seconds).
+Test Suite 'TimelineAnnotatableTests' passed at 2026-10-22 02:15:45.201.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'TimelineAnnotationTests' started at 2026-10-22 02:15:45.201.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testActiveSessionAppearsOnBothSidesOfMidnightWithoutInflatingEitherDay]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testActiveSessionAppearsOnBothSidesOfMidnightWithoutInflatingEitherDay]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testAnnotationKeySurvivesUUIDChangeAndSecondPrecisionPersistence]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testAnnotationKeySurvivesUUIDChangeAndSecondPrecisionPersistence]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testClearingAllPersonalFieldsRestoresAutomaticTitle]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testClearingAllPersonalFieldsRestoresAutomaticTitle]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testEditedSegmentIsNotSwallowedByAutomaticGrouping]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testEditedSegmentIsNotSwallowedByAutomaticGrouping]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testFavoriteOnlyAnnotationIsRetainedAndFieldsAreTrimmed]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testFavoriteOnlyAnnotationIsRetainedAndFieldsAreTrimmed]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testLegacyAnnotationDecodesWithoutManualCorrectionFields]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testLegacyAnnotationDecodesWithoutManualCorrectionFields]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testManualPlaceAndActivityLabelsAreTrimmedAndRetained]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testManualPlaceAndActivityLabelsAreTrimmedAndRetained]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testReviewedAnnotationIsRetainedWithoutTitleOrNote]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testReviewedAnnotationIsRetainedWithoutTitleOrNote]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testStateAndBackupRoundTripAndLegacyCompatibility]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testStateAndBackupRoundTripAndLegacyCompatibility]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testStoredCrossMidnightSessionIsClippedLikeTheLiveSnapshot]' started.
+Test Case '-[RiverDiaryMacTests.TimelineAnnotationTests testStoredCrossMidnightSessionIsClippedLikeTheLiveSnapshot]' passed (0.000 seconds).
+Test Suite 'TimelineAnnotationTests' passed at 2026-10-22 02:15:45.203.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'TimelineDayOverviewTests' started at 2026-10-22 02:15:45.203.
+Test Case '-[RiverDiaryMacTests.TimelineDayOverviewTests testDayOverviewComposesWithinTheContentWidth]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDayOverviewTests testDayOverviewComposesWithinTheContentWidth]' passed (0.077 seconds).
+Test Suite 'TimelineDayOverviewTests' passed at 2026-10-22 02:15:45.280.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.077 (0.077) seconds
+Test Suite 'TimelineDisplayListTests' started at 2026-10-22 02:15:45.280.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testChildRowIdentifiersCannotCollideWithTopLevelRows]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testChildRowIdentifiersCannotCollideWithTopLevelRows]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testCollapsedRunIsOneRowAndTheLastOneIsTrimmedAtTheEnd]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testCollapsedRunIsOneRowAndTheLastOneIsTrimmedAtTheEnd]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testExpandedRunInsertsItsMembersAndKeepsTheSpineGoing]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testExpandedRunInsertsItsMembersAndKeepsTheSpineGoing]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testExpandingTheOnlyRunMovesTheSpineEndToItsLastMember]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testExpandingTheOnlyRunMovesTheSpineEndToItsLastMember]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testNowRowTrimsTheSpineAtTheLastEvidenceRow]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testNowRowTrimsTheSpineAtTheLastEvidenceRow]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubCanSelectAQuickCaptureMarkerWithoutClaimingNearbyBlankTime]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubCanSelectAQuickCaptureMarkerWithoutClaimingNearbyBlankTime]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubDoesNotSelectANeighborForUnrecordedTime]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubDoesNotSelectANeighborForUnrecordedTime]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubInsideFragmentRunTargetsTheMemberAtThatMoment]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubInsideFragmentRunTargetsTheMemberAtThatMoment]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubLandsOnTheRowThatCoversTheMoment]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubLandsOnTheRowThatCoversTheMoment]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubOnAFoldedRunAsksForItToBeExpanded]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubOnAFoldedRunAsksForItToBeExpanded]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubOnAnEmptyDayDoesNothing]' started.
+Test Case '-[RiverDiaryMacTests.TimelineDisplayListTests testScrubOnAnEmptyDayDoesNothing]' passed (0.000 seconds).
+Test Suite 'TimelineDisplayListTests' passed at 2026-10-22 02:15:45.287.
+	 Executed 11 tests, with 0 failures (0 unexpected) in 0.006 (0.007) seconds
+Test Suite 'TimelineFragmentTests' started at 2026-10-22 02:15:45.287.
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testCapturesAndFavoritesBreakRuns]' started.
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testCapturesAndFavoritesBreakRuns]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testConsecutiveShortBlocksFoldIntoOneRun]' started.
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testConsecutiveShortBlocksFoldIntoOneRun]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testEvidenceLinePrefersTitleThenCompositionThenCoverage]' started.
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testEvidenceLinePrefersTitleThenCompositionThenCoverage]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testEvidenceLineUsesNotesTagsRunsAndGaps]' started.
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testEvidenceLineUsesNotesTagsRunsAndGaps]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testFlatteningFoldedListReturnsEveryEvidenceNode]' started.
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testFlatteningFoldedListReturnsEveryEvidenceNode]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testLoneShortBlockStaysARowAndRunsSplitAtSpanCap]' started.
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testLoneShortBlockStaysARowAndRunsSplitAtSpanCap]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testRunSplitsAtCountCap]' started.
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testRunSplitsAtCountCap]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testSamplingCountNeverReachesTheRowCopy]' started.
+Test Case '-[RiverDiaryMacTests.TimelineFragmentTests testSamplingCountNeverReachesTheRowCopy]' passed (0.000 seconds).
+Test Suite 'TimelineFragmentTests' passed at 2026-10-22 02:15:45.292.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
+Test Suite 'TimelineNodeTests' started at 2026-10-22 02:15:45.292.
+Test Case '-[RiverDiaryMacTests.TimelineNodeTests testActivityNodeIsSolidAccent]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRenderingTests.swift:282: warning: -[RiverDiaryMacTests.TimelineNodeTests testActivityNodeIsSolidAccent] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineNodeTests testActivityNodeIsSolidAccent]' passed (0.331 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineNodeTests testCaptureNodeIsSquareWhileActivityIsRound]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRenderingTests.swift:282: warning: -[RiverDiaryMacTests.TimelineNodeTests testCaptureNodeIsSquareWhileActivityIsRound] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineNodeTests testCaptureNodeIsSquareWhileActivityIsRound]' passed (0.008 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineNodeTests testGapNodeIsHollowAndNeutral]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRenderingTests.swift:282: warning: -[RiverDiaryMacTests.TimelineNodeTests testGapNodeIsHollowAndNeutral] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineNodeTests testGapNodeIsHollowAndNeutral]' passed (0.003 seconds).
+Test Suite 'TimelineNodeTests' passed at 2026-10-22 02:15:45.635.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.342 (0.343) seconds
+Test Suite 'TimelineRenderingTests' started at 2026-10-22 02:15:45.635.
+Test Case '-[RiverDiaryMacTests.TimelineRenderingTests testSpineIsCentredOnTheNodes]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRenderingTests.swift:30: warning: -[RiverDiaryMacTests.TimelineRenderingTests testSpineIsCentredOnTheNodes] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineRenderingTests testSpineIsCentredOnTheNodes]' passed (0.007 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineRenderingTests testSpineRunsThroughTheNodeCentre]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRenderingTests.swift:30: warning: -[RiverDiaryMacTests.TimelineRenderingTests testSpineRunsThroughTheNodeCentre] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineRenderingTests testSpineRunsThroughTheNodeCentre]' passed (0.006 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineRenderingTests testSpineStaysCentredOnTheNodesInCompactDensity]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRenderingTests.swift:30: warning: -[RiverDiaryMacTests.TimelineRenderingTests testSpineStaysCentredOnTheNodesInCompactDensity] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineRenderingTests testSpineStaysCentredOnTheNodesInCompactDensity]' passed (0.006 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineRenderingTests testSpineStopsAtTheLastNode]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRenderingTests.swift:30: warning: -[RiverDiaryMacTests.TimelineRenderingTests testSpineStopsAtTheLastNode] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineRenderingTests testSpineStopsAtTheLastNode]' passed (0.006 seconds).
+Test Suite 'TimelineRenderingTests' passed at 2026-10-22 02:15:45.660.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.025 (0.026) seconds
+Test Suite 'TimelineReviewCriteriaTests' started at 2026-10-22 02:15:45.660.
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testLongUnexplainedStretchIsTheOnlyThingInTheQueue]' started.
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testLongUnexplainedStretchIsTheOnlyThingInTheQueue]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testPlaceAnnotationExplainsTheStretchAndAppearsAsTheActivityTitle]' started.
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testPlaceAnnotationExplainsTheStretchAndAppearsAsTheActivityTitle]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testQueueIsEmptyOnAnOrdinaryDay]' started.
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testQueueIsEmptyOnAnOrdinaryDay]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testShortBlocksGapsAndFragmentRunsAreNeverInTheQueue]' started.
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testShortBlocksGapsAndFragmentRunsAreNeverInTheQueue]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testTitleAnnotationAndReviewedStateAllClearTheQueue]' started.
+Test Case '-[RiverDiaryMacTests.TimelineReviewCriteriaTests testTitleAnnotationAndReviewedStateAllClearTheQueue]' passed (0.000 seconds).
+Test Suite 'TimelineReviewCriteriaTests' passed at 2026-10-22 02:15:45.662.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+Test Suite 'TimelineRibbonTests' started at 2026-10-22 02:15:45.662.
+Test Case '-[RiverDiaryMacTests.TimelineRibbonTests testHourLabelsAreDrawnUnderTheTrack]' started.
+Test Case '-[RiverDiaryMacTests.TimelineRibbonTests testHourLabelsAreDrawnUnderTheTrack]' passed (0.006 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineRibbonTests testThePinnedHeaderLeavesThePageAlone]' started.
+Test Case '-[RiverDiaryMacTests.TimelineRibbonTests testThePinnedHeaderLeavesThePageAlone]' passed (0.014 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineRibbonTests testTheRibbonIsAFixedHeightComponent]' started.
+Test Case '-[RiverDiaryMacTests.TimelineRibbonTests testTheRibbonIsAFixedHeightComponent]' passed (0.005 seconds).
+Test Suite 'TimelineRibbonTests' passed at 2026-10-22 02:15:45.687.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.025 (0.025) seconds
+Test Suite 'TimelineRowAnatomyTests' started at 2026-10-22 02:15:45.687.
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testDetailChevronOnlyAppearsOnTheSelectedRow]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRowAnatomyTests.swift:29: warning: -[RiverDiaryMacTests.TimelineRowAnatomyTests testDetailChevronOnlyAppearsOnTheSelectedRow] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testDetailChevronOnlyAppearsOnTheSelectedRow]' passed (0.011 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testFragmentRunNodeIsARingWithACore]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRowAnatomyTests.swift:29: warning: -[RiverDiaryMacTests.TimelineRowAnatomyTests testFragmentRunNodeIsARingWithACore] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testFragmentRunNodeIsARingWithACore]' passed (0.005 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testFragmentRunShowsItsDisclosureWithoutHover]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRowAnatomyTests.swift:29: warning: -[RiverDiaryMacTests.TimelineRowAnatomyTests testFragmentRunShowsItsDisclosureWithoutHover] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testFragmentRunShowsItsDisclosureWithoutHover]' passed (0.003 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testSelectedRowCarriesItsOwnSurface]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRowAnatomyTests.swift:29: warning: -[RiverDiaryMacTests.TimelineRowAnatomyTests testSelectedRowCarriesItsOwnSurface] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testSelectedRowCarriesItsOwnSurface]' passed (0.010 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testSpineIsDrawnStronglyEnoughToRead]' started.
+/Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/Tests/RiverDiaryMacTests/TimelineRowAnatomyTests.swift:29: warning: -[RiverDiaryMacTests.TimelineRowAnatomyTests testSpineIsDrawnStronglyEnoughToRead] : Accessing FocusState's value outside of the body of a View. This will result in a constant Binding of the initial value and will not update.
+Test Case '-[RiverDiaryMacTests.TimelineRowAnatomyTests testSpineIsDrawnStronglyEnoughToRead]' passed (0.005 seconds).
+Test Suite 'TimelineRowAnatomyTests' passed at 2026-10-22 02:15:45.723.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.035 (0.035) seconds
+Test Suite 'TimelineSegmentCaptureTests' started at 2026-10-22 02:15:45.723.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentCaptureTests testQuickCaptureAttachesToSegmentWithoutSessions]' started.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentCaptureTests testQuickCaptureAttachesToSegmentWithoutSessions]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineSegmentCaptureTests testQuickCaptureOutsideSegmentIsNotAttached]' started.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentCaptureTests testQuickCaptureOutsideSegmentIsNotAttached]' passed (0.000 seconds).
+Test Suite 'TimelineSegmentCaptureTests' passed at 2026-10-22 02:15:45.723.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'TimelineSegmentNameStoreTests' started at 2026-10-22 02:15:45.723.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentNameStoreTests testCustomSegmentNamePersistsAndClears]' started.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentNameStoreTests testCustomSegmentNamePersistsAndClears]' passed (0.000 seconds).
+Test Suite 'TimelineSegmentNameStoreTests' passed at 2026-10-22 02:15:45.724.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'TimelineSegmentTests' started at 2026-10-22 02:15:45.724.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentTests testEmptyPeriodsStillHaveOrderedBounds]' started.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentTests testEmptyPeriodsStillHaveOrderedBounds]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineSegmentTests testFocusRatioAndSwitchCount]' started.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentTests testFocusRatioAndSwitchCount]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineSegmentTests testLateNightCombinesEarlyAndLateHours]' started.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentTests testLateNightCombinesEarlyAndLateHours]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.TimelineSegmentTests testSegmentsGroupSessionsIntoPeriods]' started.
+Test Case '-[RiverDiaryMacTests.TimelineSegmentTests testSegmentsGroupSessionsIntoPeriods]' passed (0.000 seconds).
+Test Suite 'TimelineSegmentTests' passed at 2026-10-22 02:15:45.725.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'TypographyGuardTests' started at 2026-10-22 02:15:45.725.
+Test Case '-[RiverDiaryMacTests.TypographyGuardTests testBareSystemFontSizeIsOnlyUsedForIconGlyphs]' started.
+Test Case '-[RiverDiaryMacTests.TypographyGuardTests testBareSystemFontSizeIsOnlyUsedForIconGlyphs]' passed (0.008 seconds).
+Test Case '-[RiverDiaryMacTests.TypographyGuardTests testBreakpointMatchesTheDefaultWindowWidth]' started.
+Test Case '-[RiverDiaryMacTests.TypographyGuardTests testBreakpointMatchesTheDefaultWindowWidth]' passed (0.000 seconds).
+Test Suite 'TypographyGuardTests' passed at 2026-10-22 02:15:45.733.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.008 (0.008) seconds
+Test Suite 'UIArchitectureTests' started at 2026-10-22 02:15:45.733.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testActivityCategoriesUseTheEvidenceDeskAccent]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testActivityCategoriesUseTheEvidenceDeskAccent]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testAIConnectionIsClearlyOptionalAndNeverBlocksStartup]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testAIConnectionIsClearlyOptionalAndNeverBlocksStartup]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testAppearanceOffersSystemLightAndDarkModes]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testAppearanceOffersSystemLightAndDarkModes]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testDesignTokensStayOnTheSharedScale]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testDesignTokensStayOnTheSharedScale]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testEveryWorkspaceHasADiscoverableUniqueKeyboardShortcut]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testEveryWorkspaceHasADiscoverableUniqueKeyboardShortcut]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testFeedbackCenterPublishesAnActionMessage]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testFeedbackCenterPublishesAnActionMessage]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testMemoryFavoritesIsAnExplicitScope]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testMemoryFavoritesIsAnExplicitScope]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testMemoryPresentationFiltersFavoriteReflections]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testMemoryPresentationFiltersFavoriteReflections]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testMemoryPresentationMapsEveryScopeToExpectedSections]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testMemoryPresentationMapsEveryScopeToExpectedSections]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testMemoryPresentationUsesOneQueryAcrossDurableMemories]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testMemoryPresentationUsesOneQueryAcrossDurableMemories]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testNavigationHasStableWorkspaceDestinations]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testNavigationHasStableWorkspaceDestinations]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testQuickCaptureRejectsBlankInputBeforePersistence]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testQuickCaptureRejectsBlankInputBeforePersistence]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testQuickCaptureReportsSuccessfulPersistence]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testQuickCaptureReportsSuccessfulPersistence]' passed (0.001 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testSameMinuteTimelineRangeIncludesSeconds]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testSameMinuteTimelineRangeIncludesSeconds]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testSettingsCategoriesHaveStableRoutes]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testSettingsCategoriesHaveStableRoutes]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testZeroDurationIsNotPresentedAsARecordedSubminuteActivity]' started.
+Test Case '-[RiverDiaryMacTests.UIArchitectureTests testZeroDurationIsNotPresentedAsARecordedSubminuteActivity]' passed (0.000 seconds).
+Test Suite 'UIArchitectureTests' passed at 2026-10-22 02:15:45.737.
+	 Executed 16 tests, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
+Test Suite 'V2DomainTests' started at 2026-10-22 02:15:45.737.
+Test Case '-[RiverDiaryMacTests.V2DomainTests testActivityDurationAndCategory]' started.
+Test Case '-[RiverDiaryMacTests.V2DomainTests testActivityDurationAndCategory]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.V2DomainTests testAnalysisRunIsDetachedFromFactLayer]' started.
+Test Case '-[RiverDiaryMacTests.V2DomainTests testAnalysisRunIsDetachedFromFactLayer]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.V2DomainTests testEpisodeEvidenceUnionDeduplicatesProvenance]' started.
+Test Case '-[RiverDiaryMacTests.V2DomainTests testEpisodeEvidenceUnionDeduplicatesProvenance]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.V2DomainTests testMemoryPreservesEpisodeProvenance]' started.
+Test Case '-[RiverDiaryMacTests.V2DomainTests testMemoryPreservesEpisodeProvenance]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.V2DomainTests testRawEventCodableRoundTrip]' started.
+Test Case '-[RiverDiaryMacTests.V2DomainTests testRawEventCodableRoundTrip]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.V2DomainTests testRawEventDefaultsAreDeterministicEnoughForEvidence]' started.
+Test Case '-[RiverDiaryMacTests.V2DomainTests testRawEventDefaultsAreDeterministicEnoughForEvidence]' passed (0.000 seconds).
+Test Suite 'V2DomainTests' passed at 2026-10-22 02:15:45.738.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'V2StorePerformanceTests' started at 2026-10-22 02:15:45.738.
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testAppendingAndRetryingBatchDoesNotScanOperationHistory]' started.
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testAppendingAndRetryingBatchDoesNotScanOperationHistory]' passed (0.862 seconds).
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testEpisodeLookupDeduplicatesAndChunksAtDatabaseParameterLimit]' started.
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testEpisodeLookupDeduplicatesAndChunksAtDatabaseParameterLimit]' passed (0.113 seconds).
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testImportIdentityConflictRollsBackEarlierOperationsAndFrontier]' started.
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testImportIdentityConflictRollsBackEarlierOperationsAndFrontier]' passed (0.102 seconds).
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testImportingAndRetryingBatchDoesNotScanOperationHistory]' started.
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testImportingAndRetryingBatchDoesNotScanOperationHistory]' passed (0.960 seconds).
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testMemoryConfirmationLookupChunksWithoutLosingDecisionsOrNotes]' started.
+Test Case '-[RiverDiaryMacTests.V2StorePerformanceTests testMemoryConfirmationLookupChunksWithoutLosingDecisionsOrNotes]' passed (0.270 seconds).
+Test Suite 'V2StorePerformanceTests' passed at 2026-10-22 02:15:48.046.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 2.307 (2.308) seconds
+Test Suite 'V2StoreTests' started at 2026-10-22 02:15:48.046.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testAnalysisJobsPersistTheirFrontierAndStateTransitions]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testAnalysisJobsPersistTheirFrontierAndStateTransitions]' passed (0.106 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testAnalyticalUserOperationInvalidatesArtifactsBehindItsFrontier]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testAnalyticalUserOperationInvalidatesArtifactsBehindItsFrontier]' passed (0.122 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testArtifactRevisionsPersistAndSelectOneCanonicalResult]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testArtifactRevisionsPersistAndSelectOneCanonicalResult]' passed (0.105 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testClearDerivedKeepsEvidence]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testClearDerivedKeepsEvidence]' passed (0.111 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testContextSnapshotCanBackAnalysisRunReference]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testContextSnapshotCanBackAnalysisRunReference]' passed (0.097 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testCurrentDeviceRecoversOwnEventsOperationsAndArtifactsFromReplicationFolder]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testCurrentDeviceRecoversOwnEventsOperationsAndArtifactsFromReplicationFolder]' passed (0.155 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testDatabaseAndParentDirectoryAreRestrictedToCurrentAccount]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testDatabaseAndParentDirectoryAreRestrictedToCurrentAccount]' passed (0.102 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testDeveloperDiagnosticsCountsSharedPendingTimelineConfirmations]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testDeveloperDiagnosticsCountsSharedPendingTimelineConfirmations]' passed (0.124 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testDiaryStoreProjectsImportedJournalLetterAndDeletion]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testDiaryStoreProjectsImportedJournalLetterAndDeletion]' passed (0.002 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testDiaryStoreWritesJournalLetterAndMoodToTheReplicationOutbox]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testDiaryStoreWritesJournalLetterAndMoodToTheReplicationOutbox]' passed (0.150 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testEpisodeRoundTripPreservesProvenance]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testEpisodeRoundTripPreservesProvenance]' passed (0.095 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testFailedMonthlyLetterDraftTombstoneResumesAfterStoreReload]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testFailedMonthlyLetterDraftTombstoneResumesAfterStoreReload]' passed (0.106 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testHabitReviewRecordsAreReplicatedAsOperationsAndRebuiltOnImport]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testHabitReviewRecordsAreReplicatedAsOperationsAndRebuiltOnImport]' passed (0.102 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testHandwrittenJournalAndMonthlyLetterUseSharedOperationRecords]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testHandwrittenJournalAndMonthlyLetterUseSharedOperationRecords]' passed (0.125 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testImportedEventBatchIsIdempotentAndAdvancesOnlyContiguousFrontier]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testImportedEventBatchIsIdempotentAndAdvancesOnlyContiguousFrontier]' passed (0.100 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testImportedPhoneVisitUsesSharedConfirmedPlaceNameInMacTimeline]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testImportedPhoneVisitUsesSharedConfirmedPlaceNameInMacTimeline]' passed (0.104 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLateEventInvalidatesArtifactThroughAppendOnlyOperationAndNewRevisionWins]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLateEventInvalidatesArtifactThroughAppendOnlyOperationAndNewRevisionWins]' passed (0.115 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLatestLocationEventRestoresCoordinateEvidence]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLatestLocationEventRestoresCoordinateEvidence]' passed (0.098 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLegacyHabitAndMemoryRowsMigrateDuringSyncRebuildAndRemainIdempotentAfterRestart]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLegacyHabitAndMemoryRowsMigrateDuringSyncRebuildAndRemainIdempotentAfterRestart]' passed (0.295 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLocalEventBatchesHaveStableSequencesAndIDs]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLocalEventBatchesHaveStableSequencesAndIDs]' passed (0.109 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLostSyncFolderBookmarkKeepsLocalNodeUsableAndRequestsReconnection]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testLostSyncFolderBookmarkKeepsLocalNodeUsableAndRequestsReconnection]' passed (0.105 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMacQuickCaptureEntersEventStreamAndDeletionReplicatesAsTombstone]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMacQuickCaptureEntersEventStreamAndDeletionReplicatesAsTombstone]' passed (0.108 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMemoryAndAnalysisRoundTrip]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMemoryAndAnalysisRoundTrip]' passed (0.102 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMemoryConfirmationIsReplicatedAndRebuildsBothStorageLayers]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMemoryConfirmationIsReplicatedAndRebuildsBothStorageLayers]' passed (0.112 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMemoryConfirmationRoundTripUpdatesEffectiveMemoryState]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMemoryConfirmationRoundTripUpdatesEffectiveMemoryState]' passed (0.113 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMemoryEvidenceReferencesSurviveStorageAndSharedProjection]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMemoryEvidenceReferencesSurviveStorageAndSharedProjection]' passed (0.102 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMonthlyLetterDraftIsSharedAndRemovedWhenSaved]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testMonthlyLetterDraftIsSharedAndRemovedWhenSaved]' passed (0.115 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testPendingConfirmationResolutionReplicatesUserCorrectionAndPlaceIdentity]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testPendingConfirmationResolutionReplicatesUserCorrectionAndPlaceIdentity]' passed (0.111 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testPhoneNaturalLanguageHabitRuleDecodesIntoTheSharedMacHabitModel]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testPhoneNaturalLanguageHabitRuleDecodesIntoTheSharedMacHabitModel]' passed (0.103 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testRawEventRoundTripAndEmptyState]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testRawEventRoundTripAndEmptyState]' passed (0.102 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testReopenedPlaceQuestionCanRejectAndClearItsEarlierUserIdentity]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testReopenedPlaceQuestionCanRejectAndClearItsEarlierUserIdentity]' passed (0.135 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testSchemaCreatesAllTables]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testSchemaCreatesAllTables]' passed (0.099 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testSharedMemoryDeletionRemovesMacProjectionAndSurvivesRebuild]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testSharedMemoryDeletionRemovesMacProjectionAndSurvivesRebuild]' passed (0.116 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testStateOperationBatchRollsBackAllWritesWhenOneIdentityConflicts]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testStateOperationBatchRollsBackAllWritesWhenOneIdentityConflicts]' passed (0.132 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testSyncDerivedReconciliationSkipsCleanStoreAndRunsAfterImportedBatch]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testSyncDerivedReconciliationSkipsCleanStoreAndRunsAfterImportedBatch]' passed (0.105 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testTimelineClarificationConfirmationSharesReviewedAnnotationAndClosesQuestion]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testTimelineClarificationConfirmationSharesReviewedAnnotationAndClosesQuestion]' passed (0.117 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testTwoV2StoresConvergeEventsAndSharedConfirmationThroughEncryptedFiles]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testTwoV2StoresConvergeEventsAndSharedConfirmationThroughEncryptedFiles]' passed (0.223 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testUserPrefsPersist]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testUserPrefsPersist]' passed (0.093 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testUserStateOperationsAreAppendOnlySequencedAndExportable]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testUserStateOperationsAreAppendOnlySequencedAndExportable]' passed (0.115 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testV2SyncRejectsCorruptedArtifactWithoutImportOrVerification]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testV2SyncRejectsCorruptedArtifactWithoutImportOrVerification]' passed (0.195 seconds).
+Test Case '-[RiverDiaryMacTests.V2StoreTests testV2SyncReportsMissingEventSequenceAndCannotVerify]' started.
+Test Case '-[RiverDiaryMacTests.V2StoreTests testV2SyncReportsMissingEventSequenceAndCannotVerify]' passed (0.199 seconds).
+Test Suite 'V2StoreTests' passed at 2026-10-22 02:15:52.972.
+	 Executed 41 tests, with 0 failures (0 unexpected) in 4.923 (4.926) seconds
+Test Suite 'WeatherContextTests' started at 2026-10-22 02:15:52.972.
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testConditionMapping]' started.
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testConditionMapping]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testDecodeIncludesPrecipitation]' started.
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testDecodeIncludesPrecipitation]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testDecodeOpenMeteoFixture]' started.
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testDecodeOpenMeteoFixture]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testDecodeRejectsEmptyArrays]' started.
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testDecodeRejectsEmptyArrays]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testLatestCoordinateSkipsInvalidCoordinates]' started.
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testLatestCoordinateSkipsInvalidCoordinates]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testLatestCoordinateUsesNewestValidObservation]' started.
+Test Case '-[RiverDiaryMacTests.WeatherContextTests testLatestCoordinateUsesNewestValidObservation]' passed (0.000 seconds).
+Test Suite 'WeatherContextTests' passed at 2026-10-22 02:15:52.973.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'WindowTitleSamplingTests' started at 2026-10-22 02:15:52.973.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAFailedReadNeverErasesAKnownTitle]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAFailedReadNeverErasesAKnownTitle]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAFlickeringTitleDoesNotSplitTheSession]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAFlickeringTitleDoesNotSplitTheSession]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAnEmptyTitleCountsAsMissing]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAnEmptyTitleCountsAsMissing]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAnUnreadBadgeCountIsNotATitleChange]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAnUnreadBadgeCountIsNotATitleChange]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAOneCharacterTitleIsNotEvidence]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAOneCharacterTitleIsNotEvidence]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testASessionWithNoTitleAdoptsTheFirstReading]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testASessionWithNoTitleAdoptsTheFirstReading]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAStableNewTitleSplitsAtTheFirstSighting]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testAStableNewTitleSplitsAtTheFirstSighting]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testSplitClampsTheBoundaryIntoTheSession]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testSplitClampsTheBoundaryIntoTheSession]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testSplitGivesTheNewSegmentItsOwnIdentityAndCategory]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testSplitGivesTheNewSegmentItsOwnIdentityAndCategory]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testTwoDifferentNewTitlesInARowDoNotSplit]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testTwoDifferentNewTitlesInARowDoNotSplit]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testWhitespaceOnlyDifferencesAreNotATitleChange]' started.
+Test Case '-[RiverDiaryMacTests.WindowTitleSamplingTests testWhitespaceOnlyDifferencesAreNotATitleChange]' passed (0.000 seconds).
+Test Suite 'WindowTitleSamplingTests' passed at 2026-10-22 02:15:52.975.
+	 Executed 11 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'WorkspaceConsolidationTests' started at 2026-10-22 02:15:52.975.
+Test Case '-[RiverDiaryMacTests.WorkspaceConsolidationTests testCommandSearchFindsBodyOnlyTermAndAllPersistedWritingFields]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceConsolidationTests testCommandSearchFindsBodyOnlyTermAndAllPersistedWritingFields]' passed (0.004 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceConsolidationTests testDayQueueExcludesTheSameTargetAlreadyInTheSharedCentre]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceConsolidationTests testDayQueueExcludesTheSameTargetAlreadyInTheSharedCentre]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceConsolidationTests testDayQueueNeverPromotesGapsOrEmptyDayToReviewWork]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceConsolidationTests testDayQueueNeverPromotesGapsOrEmptyDayToReviewWork]' passed (0.000 seconds).
+Test Suite 'WorkspaceConsolidationTests' passed at 2026-10-22 02:15:52.980.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.004 (0.005) seconds
+Test Suite 'WorkspaceRefactorTests' started at 2026-10-22 02:15:52.980.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testEditorRetainsSeparateUnsavedDaysAndClearsOnlySavedDay]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testEditorRetainsSeparateUnsavedDaysAndClearsOnlySavedDay]' passed (0.163 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testEmptyLocalReviewDoesNotDescribeZeroMood]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testEmptyLocalReviewDoesNotDescribeZeroMood]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testEmptyWritingDoesNotResurrectOriginalDailyText]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testEmptyWritingDoesNotResurrectOriginalDailyText]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testExplicitMoodLeavesOtherMetricsUnknownAndCanBeUpdated]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testExplicitMoodLeavesOtherMetricsUnknownAndCanBeUpdated]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testExplicitMoodUpdatePreservesOtherSourceMetrics]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testExplicitMoodUpdatePreservesOtherSourceMetrics]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testLegacyScoredOverrideStillUsesOriginalComposite]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testLegacyScoredOverrideStillUsesOriginalComposite]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testLocalReviewIgnoresUnscoredDaysAndClipsSessions]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testLocalReviewIgnoresUnscoredDaysAndClipsSessions]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testLocalWritingMergesIntoNewExternalSnapshotOnce]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testLocalWritingMergesIntoNewExternalSnapshotOnce]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testMemoryIncludesCaptureOnlyDayAtAssignedDateAndSearchesIt]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testMemoryIncludesCaptureOnlyDayAtAssignedDateAndSearchesIt]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testMemorySearchIncludesTagsAndOriginalNotes]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testMemorySearchIncludesTagsAndOriginalNotes]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testRepoStrictDateParsingRejectsInvalidOrPartialDates]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testRepoStrictDateParsingRejectsInvalidOrPartialDates]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testSavedWritingReloadUsesSameMergeWithoutInventingScores]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testSavedWritingReloadUsesSameMergeWithoutInventingScores]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testTextEditPreservesSourceScoresAndLabels]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testTextEditPreservesSourceScoresAndLabels]' passed (0.000 seconds).
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testWritingWithoutMoodDoesNotInventMetrics]' started.
+Test Case '-[RiverDiaryMacTests.WorkspaceRefactorTests testWritingWithoutMoodDoesNotInventMetrics]' passed (0.000 seconds).
+Test Suite 'WorkspaceRefactorTests' passed at 2026-10-22 02:15:53.145.
+	 Executed 14 tests, with 0 failures (0 unexpected) in 0.164 (0.165) seconds
+Test Suite 'RiverDiaryMacTests.xctest' passed at 2026-10-22 02:15:53.145.
+	 Executed 495 tests, with 1 test skipped and 0 failures (0 unexpected) in 38.579 (38.621) seconds
+Test Suite 'All tests' passed at 2026-10-22 02:15:53.145.
+	 Executed 495 tests, with 1 test skipped and 0 failures (0 unexpected) in 38.579 (38.622) seconds
+习惯回顾已回答态渲染已写入：/var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/habit-review-answered.png
+习惯回顾空态渲染已写入：/var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/habit-review-empty.png
+习惯回顾整页渲染已写入：/var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/habit-review-render.png
+◇ Test run started.
+↳ Testing Library Version: 2078
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

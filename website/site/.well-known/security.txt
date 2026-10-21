@@ -1,0 +1,5 @@
+Contact: mailto:account@mail.flowriver.xyz
+Expires: 2027-04-22T00:00:00Z
+Preferred-Languages: zh-CN, en
+Canonical: https://flowriver.xyz/.well-known/security.txt
+Policy: https://flowriver.xyz/privacy.html

@@ -45,6 +45,7 @@ flowriver.xyz {
 	}
 	redir /terms /terms.html permanent
 	redir /privacy /privacy.html permanent
+	redir /status /status.html permanent
 	file_server
 }
 

@@ -495,6 +495,8 @@ sudo ss -lntp
 
 ## 第 10 步：配置并验证异机加密备份
 
+> **2026-10-22 现状校正：** 生产已改为「服务器每小时 `pg_dump → zstd → age(公钥)`，密文留本机 7 天；受控 Mac 每日 03:20 / 15:20 拉取并用私钥解密校验」。当前生产**没有** rclone 对象存储上传，也没有 `flowriver-backup.service/timer`。请以 [加密备份链路与恢复手册](ENCRYPTED_BACKUP_CHAIN.md) 为准。下面 10.2–10.4 的 rclone/`flowriver-backup` 是旧方案，不要按旧命令直接套到当前生产；保留它只为理解历史设计和未来接对象存储时的检查项。
+
 ### 10.1 在 Mac 生成解密私钥
 
 **Mac 操作。** 安装 age，然后在项目外生成密钥。命令遇到已有密钥文件时先停下，不替换现有恢复密钥。[age 官方用法](https://github.com/FiloSottile/age)

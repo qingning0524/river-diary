@@ -1,0 +1,311 @@
+warning: /Users/fa1lingdown/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/fa1lingdown/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+warning: /Users/fa1lingdown/Library/Caches/org.swift.swiftpm is not accessible or not writable, disabling user-level cache features.
+warning: 'riverdiarycore': failed storing manifest for 'riverdiarycore' in cache: attempt to write a readonly database
+Building for debugging...
+[1 / 3] RiverDiaryCore-product
+Build complete! (0.20秒)
+Test Suite 'All tests' started at 2026-10-22 02:16:23.436.
+Test Suite 'RiverDiaryCoreTests.xctest' started at 2026-10-22 02:16:23.437.
+Test Suite 'AccountSessionTests' started at 2026-10-22 02:16:23.437.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testAccountDeletionIsRejectedWhenSignedOut]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testAccountDeletionIsRejectedWhenSignedOut]' passed (0.001 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testAccountDeletionRequiresReauthAndClearsLocalSession]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testAccountDeletionRequiresReauthAndClearsLocalSession]' passed (0.002 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testConcurrentExpiredRequestsRefreshOnlyOnce]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testConcurrentExpiredRequestsRefreshOnlyOnce]' passed (0.001 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testEnforceLocalProfileOwnerSignsOutMismatchedSession]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testEnforceLocalProfileOwnerSignsOutMismatchedSession]' passed (0.001 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testFailedCredentialDeletionCannotRestoreSignedOutSessionOnRestart]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testFailedCredentialDeletionCannotRestoreSignedOutSessionOnRestart]' passed (0.001 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testFailedSessionWriteClearsClaimedOwner]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testFailedSessionWriteClearsClaimedOwner]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testFailedSessionWriteDoesNotLeaveADanglingProfileBinding]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testFailedSessionWriteDoesNotLeaveADanglingProfileBinding]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testFirstLoginClaimsLocalProfileOwner]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testFirstLoginClaimsLocalProfileOwner]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testKeychainReadFailureStartsSignedOutWithoutErasingSession]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testKeychainReadFailureStartsSignedOutWithoutErasingSession]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testLateEntitlementsCannotRepopulateSignedOutState]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testLateEntitlementsCannotRepopulateSignedOutState]' passed (0.001 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testLateRefreshCannotRestoreSignedOutSession]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testLateRefreshCannotRestoreSignedOutSession]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testLateSuccessfulRefreshCannotOverwriteANewerLogin]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testLateSuccessfulRefreshCannotOverwriteANewerLogin]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testLocalProfileOwnerMismatchRejectsLogin]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testLocalProfileOwnerMismatchRejectsLogin]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testOfflineSignOutPersistsOnlyRevocationAndRetriesAfterRestart]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testOfflineSignOutPersistsOnlyRevocationAndRetriesAfterRestart]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testOldUnauthorizedRefreshCannotClearANewerLogin]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testOldUnauthorizedRefreshCannotClearANewerLogin]' passed (0.001 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testOwnerWriteFailureRevokesLogin]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testOwnerWriteFailureRevokesLogin]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testPersistedSessionCheckHonoursRevocationTombstones]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testPersistedSessionCheckHonoursRevocationTombstones]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testRestartReusesThePersistedRefreshRequestID]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testRestartReusesThePersistedRefreshRequestID]' passed (0.000 seconds).
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testSeedOwnerFromKeychainOnlyWhenDatabaseOwnerIsEmpty]' started.
+Test Case '-[RiverDiaryCoreTests.AccountSessionTests testSeedOwnerFromKeychainOnlyWhenDatabaseOwnerIsEmpty]' passed (0.000 seconds).
+Test Suite 'AccountSessionTests' passed at 2026-10-22 02:16:23.448.
+	 Executed 19 tests, with 0 failures (0 unexpected) in 0.010 (0.011) seconds
+Test Suite 'MemoryMirrorExportTests' started at 2026-10-22 02:16:23.448.
+Test Case '-[RiverDiaryCoreTests.MemoryMirrorExportTests testEmptyOrInvalidDiaryDoesNotInventData]' started.
+Test Case '-[RiverDiaryCoreTests.MemoryMirrorExportTests testEmptyOrInvalidDiaryDoesNotInventData]' passed (0.001 seconds).
+Test Case '-[RiverDiaryCoreTests.MemoryMirrorExportTests testEncodedMirrorUsesWebKeys]' started.
+Test Case '-[RiverDiaryCoreTests.MemoryMirrorExportTests testEncodedMirrorUsesWebKeys]' passed (0.002 seconds).
+Test Case '-[RiverDiaryCoreTests.MemoryMirrorExportTests testLegacyDiaryBecomesStableMirror]' started.
+Test Case '-[RiverDiaryCoreTests.MemoryMirrorExportTests testLegacyDiaryBecomesStableMirror]' passed (0.001 seconds).
+Test Case '-[RiverDiaryCoreTests.MemoryMirrorExportTests testMirrorKeepsFactsAndSkipsInvalidEntries]' started.
+Test Case '-[RiverDiaryCoreTests.MemoryMirrorExportTests testMirrorKeepsFactsAndSkipsInvalidEntries]' passed (0.000 seconds).
+Test Suite 'MemoryMirrorExportTests' passed at 2026-10-22 02:16:23.452.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
+Test Suite 'RiverDiaryCoreTests.xctest' passed at 2026-10-22 02:16:23.452.
+	 Executed 23 tests, with 0 failures (0 unexpected) in 0.013 (0.015) seconds
+Test Suite 'All tests' passed at 2026-10-22 02:16:23.452.
+	 Executed 23 tests, with 0 failures (0 unexpected) in 0.013 (0.015) seconds
+◇ Test run started.
+↳ Testing Library Version: 2078
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite SleepAggregationTests started.
+◇ Suite HealthSourceStatusTests started.
+◇ Suite CloudMirrorTests started.
+◇ Suite DayContextSnapshotTests started.
+◇ Suite ReplicationCoreTests started.
+◇ Suite SyncCoordinatorTests started.
+◇ Suite VoiceMemoReadingTests started.
+◇ Suite StateOfMindReadingTests started.
+◇ Suite LegalLinksTests started.
+◇ Suite ObservedTimeDistributionTests started.
+◇ Suite SelfReportConsistencyTests started.
+◇ Test sameSampleBucketsByTheCallerTimeZone() started.
+◇ Test awakeAndInBedAloneAreUnknownNotZeroHours() started.
+◇ Test higherPrioritySourceWinsSleepConflicts() started.
+◇ Test longDaytimeSleepIsNotANap() started.
+◇ Test shortEarlyMorningSleepIsNotANap() started.
+◇ Test nightsAreGroupedByWakeDayAndSortedNewestFirst() started.
+◇ Test unionHandlesNestedAndAdjacentIntervals() started.
+◇ Test multipleNapsAddUpWithoutDoubleCounting() started.
+◇ Test afternoonNapIsSeparatedFromNightSleep() started.
+◇ Test higherPriorityStageClipsLowerPriorityStageCoverage() started.
+◇ Test lowerPrioritySourceFillsUnclaimedTime() started.
+◇ Test samePriorityOverlapStillDeduplicates() started.
+◇ Test crossMidnightSleepBelongsToTheWakeDay() started.
+◇ Test unsegmentedSleepStillCountsAsSleep() started.
+◇ Test overlappingDuplicateSourcesAreCountedOnce() started.
+◇ Test policyVersionAndTimeZoneAreRecorded() started.
+◇ Test napThresholdComesFromThePolicy() started.
+◇ Test overlappingStagesKeepCoverageSeparateFromTotal() started.
+◇ Test samplesWithoutTimestampStayUnknown() started.
+◇ Test zeroLengthAndInvertedIntervalsAreIgnored() started.
+◇ Test samplesSpeakEvenWhenAuthorizationIsUnknown() started.
+◇ Test recentSampleIsHealthy() started.
+◇ Test failureWinsOverAuthorization() started.
+◇ Test oldSampleIsStaleNotHealthy() started.
+◇ Test customStalePolicyIsHonoured() started.
+◇ Test higherPriorityAwakeBeatsLowerPrioritySleep() started.
+◇ Test staleBoundaryIsExclusive() started.
+◇ Test healthKitStyleUnknownAuthorizationIsUnknownWithoutSamples() started.
+◇ Test unsupportedSourceWinsOverEverything() started.
+◇ Test aSecondCleanDirectoryCanOpenTheCiphertext() started.
+◇ Test wrongPassphraseAndTamperingFailClosed() started.
+◇ Test passphrasePolicyIsEnforced() started.
+◇ Test authorizedWithoutSamplesIsNoSamplesNotUnknown() started.
+◇ Test decodesLegacyEnvelopesWithoutConsentMetadata() started.
+◇ Test explicitDenialIsNotUnknown() started.
+◇ Test envelopeRoundTripsAndSummaryCountsWithoutPlaintext() started.
+◇ Test decryptsAnEnvelopeProducedByTheWebConsole() started.
+◇ Test healthSectionsRequireExplicitConsent() started.
+◇ Test unknownSharedRecordKindSurvivesDecodeAndReencoding() started.
+◇ Test roundTripsISO8601JSON() started.
+◇ Test mirrorEntryKeepsContextReadableAndStable() started.
+◇ Test replicationDirectoryIsIdempotentAndRejectsMutationOfPublishedObject() started.
+◇ Test analysisFingerprintsSeparateArtifactInputsFromProviderRequestIdentity() started.
+◇ Test sessionBuilderRepairsMissingCloseAtNextAppAndLeavesFinalOpenProvisional() started.
+◇ Test concurrentUserEditsAreRetainedAndNewestClockWins() started.
+◇ Test sessionBuilderAppendsMonotonicTailEquivalentToFullRebuild() started.
+◇ Test analysisJobsHaveStableIdentityAndPriorityOrdering() started.
+◇ Test sessionBuilderRejectsOutOfOrderTailForFullRebuild() started.
+◇ Test syncObjectsEncryptVerifyAndRejectTampering() started.
+◇ Test coordinatedFileIOReadsAndAtomicallyWritesSelectedFiles() started.
+◇ Test syncVerificationWaitsForEveryActivePeerAcknowledgement() started.
+◇ Test nonFiniteBecomesNeutral() started.
+◇ Test clampsToHealthKitRange() started.
+◇ Test monthlyLetterDraftUsesStableSharedIdentityAndDeletionChangesState() started.
+◇ Test sharedHabitStateRecordKeepsPortableIdentityAndPayload() started.
+◇ Test journalAndMonthlyLetterRecordsUseStableSharedIdentity() started.
+◇ Test capsVeryLongText() started.
+◇ Test localBackupRoundTripsOnlyInsideAnAuthenticatedEncryptedEnvelope() started.
+◇ Test trimsAndRejectsEmpty() started.
+◇ Test logicalClockBreaksSameMillisecondTiesDeterministically() started.
+◇ Test missingEventSequencePreventsVerifiedStatus() started.
+◇ Test corruptedArtifactFileCannotImportOrReportVerified() started.
+◇ Test pairedNodesConvergeUserOperationsAndOfflineArtifactConflict() started.
+◇ Test sharedHabitAndMemoryDecisionsConvergeThroughEncryptedOperations() started.
+◇ Test twoPairedOfflineNodesConvergeAfterBothExchangeImmutableBatches() started.
+◇ Test qaBundleIdentifiersUseIsolatedKeychainServices() started.
+◇ Test placeConfirmationIsStableAndUserResolutionChangesAnalyticalState() started.
+◇ Test replicationObjectWithInvalidProtocolVersionCannotImportOrVerify() started.
+◇ Test deletedSharedMemoryOutranksConcurrentGeneratedCandidate() started.
+◇ Test duplicateLanThenICloudDeliveryKeepsOneEventByEventID() started.
+◇ Test handwrittenEntriesAndMonthlyLettersConvergeThroughEncryptedOperations() started.
+◇ Test onlyUserDecisionsInvalidateGeneratedAnalysisFrontiers() started.
+◇ Test sequenceScanKeepsHighestSeparateFromContiguousWatermark() started.
+◇ Test artifactResolutionIsOrderIndependentWhenFrontiersAreEqual() started.
+◇ Test sessionBuilderCapsUnclosedSessionWhenNextAppArrivesTooLate() started.
+◇ Test incrementalProjectionKeepsOpenStateBehindItsCappedDisplayRow() started.
+◇ Test timelineClarificationUsesSharedAnnotationIdentityAndEvidence() started.
+◇ Test userJournalEditOutranksConcurrentLegacyDiaryMigration() started.
+◇ Test legalLinksAreHTTPSOnThePublicSiteAndUseDistinctPaths() started.
+◇ Test reinstalledNodeRestoresItsOwnPublishedObjectsFromTheSelectedFolder() started.
+◇ Test explicitConfirmationAndHabitAnswerOutrankLaterGeneratedRecords() started.
+◇ Test explicitUserReopenOutranksThePreviouslyAnsweredQuestion() started.
+◇ Test sessionBuilderIgnoresNonAppEventsWhenResolvingOpenSessions() started.
+◇ Test largestRemainderPercentagesStillTotalOneHundred() started.
+◇ Test quickCaptureMetadataRecordHasStableIdentityAndSharedPinState() started.
+◇ Test canonicalDigestIncludesRecordedTimeAndObservedTimezone() started.
+◇ Test sessionFusionNestsShortPhoneInterruptionInsideLongerMacActivity() started.
+◇ Test noDurationDoesNotRequireTheUserToFillAnActivity() started.
+◇ Test eventBatchRejectsMixedDeviceAndSequenceGaps() started.
+◇ Test nothingDoneClaimAgainstCompletedItemsGetsASentence() started.
+◇ Test overlappingObservedSourcesAreNotDoubleCounted() started.
+◇ Test observedAppActivityBuildsWithoutManualTextOrUserConfirmation() started.
+◇ Test onlyOneSentenceEvenWhenSeveralFactsContradict() started.
+◇ Test negatedSleepClaimIsNotTreatedAsPositive() started.
+◇ Test placeClusterUsesStableGroupingAndUserAuthorityOverridesMapGuess() started.
+◇ Test artifactResolutionUsesUserAuthorityThenDominatingFrontierThenStableTieBreak() started.
+◇ Test canonicalDigestDoesNotDependOnDeliveryOrder() started.
+◇ Test onlyObservedIntervalsInsideTheSelectedDayContribute() started.
+◇ Test noObjectiveFactsMeansNoObservation() started.
+◇ Test thresholdsAreConservativeAtTheBoundary() started.
+◇ Test screenClaimAgainstHighScreenTimeGetsASentence() started.
+◇ Test artifactResolverDoesNotUseProviderOrModelAsArtifactIdentity() started.
+◇ Test doubleNegationDoesNotBecomeAClaim() started.
+◇ Test ordinaryTirednessWithoutAClaimStaysSilent() started.
+◇ Test sessionBuilderResultsCanBeRebuiltIndependentlyPerDevice() started.
+◇ Test keyExportCanBeTransferredAndWrongKeyCannotDecrypt() started.
+◇ Test stepClaimAgainstLowStepCountGetsASentence() started.
+◇ Test sleepClaimAgainstShortSleepGetsOneNonJudgmentalSentence() started.
+◇ Test sleepClaimWithoutContradictionStaysSilent() started.
+◇ Test sessionBuilderUsesObservedCloseAndMacSessionBoundary() started.
+✔ Test unionHandlesNestedAndAdjacentIntervals() passed after 0.005 seconds.
+✔ Test longDaytimeSleepIsNotANap() passed after 0.006 seconds.
+✔ Test shortEarlyMorningSleepIsNotANap() passed after 0.006 seconds.
+✔ Test lowerPrioritySourceFillsUnclaimedTime() passed after 0.006 seconds.
+✔ Test multipleNapsAddUpWithoutDoubleCounting() passed after 0.006 seconds.
+✔ Test awakeAndInBedAloneAreUnknownNotZeroHours() passed after 0.006 seconds.
+✔ Test afternoonNapIsSeparatedFromNightSleep() passed after 0.006 seconds.
+✔ Test higherPrioritySourceWinsSleepConflicts() passed after 0.006 seconds.
+✔ Test nightsAreGroupedByWakeDayAndSortedNewestFirst() passed after 0.006 seconds.
+✔ Test higherPriorityStageClipsLowerPriorityStageCoverage() passed after 0.006 seconds.
+✔ Test samePriorityOverlapStillDeduplicates() passed after 0.006 seconds.
+✔ Test sameSampleBucketsByTheCallerTimeZone() passed after 0.006 seconds.
+✔ Test overlappingDuplicateSourcesAreCountedOnce() passed after 0.006 seconds.
+✔ Test unsegmentedSleepStillCountsAsSleep() passed after 0.006 seconds.
+✔ Test crossMidnightSleepBelongsToTheWakeDay() passed after 0.007 seconds.
+✔ Test policyVersionAndTimeZoneAreRecorded() passed after 0.007 seconds.
+✔ Test samplesWithoutTimestampStayUnknown() passed after 0.007 seconds.
+✔ Test samplesSpeakEvenWhenAuthorizationIsUnknown() passed after 0.007 seconds.
+✔ Test overlappingStagesKeepCoverageSeparateFromTotal() passed after 0.007 seconds.
+✔ Test oldSampleIsStaleNotHealthy() passed after 0.007 seconds.
+✔ Test napThresholdComesFromThePolicy() passed after 0.007 seconds.
+✔ Test zeroLengthAndInvertedIntervalsAreIgnored() passed after 0.007 seconds.
+✔ Test customStalePolicyIsHonoured() passed after 0.007 seconds.
+✔ Test failureWinsOverAuthorization() passed after 0.007 seconds.
+✔ Test higherPriorityAwakeBeatsLowerPrioritySleep() passed after 0.007 seconds.
+✔ Test recentSampleIsHealthy() passed after 0.007 seconds.
+✔ Test staleBoundaryIsExclusive() passed after 0.008 seconds.
+✔ Test unsupportedSourceWinsOverEverything() passed after 0.008 seconds.
+✔ Test healthKitStyleUnknownAuthorizationIsUnknownWithoutSamples() passed after 0.008 seconds.
+✔ Test authorizedWithoutSamplesIsNoSamplesNotUnknown() passed after 0.008 seconds.
+✔ Test explicitDenialIsNotUnknown() passed after 0.008 seconds.
+✔ Test passphrasePolicyIsEnforced() passed after 0.008 seconds.
+✔ Test roundTripsISO8601JSON() passed after 0.008 seconds.
+✔ Test mirrorEntryKeepsContextReadableAndStable() passed after 0.008 seconds.
+✔ Test analysisFingerprintsSeparateArtifactInputsFromProviderRequestIdentity() passed after 0.008 seconds.
+✔ Test concurrentUserEditsAreRetainedAndNewestClockWins() passed after 0.008 seconds.
+✔ Test analysisJobsHaveStableIdentityAndPriorityOrdering() passed after 0.008 seconds.
+✔ Test sessionBuilderRepairsMissingCloseAtNextAppAndLeavesFinalOpenProvisional() passed after 0.008 seconds.
+✔ Test sessionBuilderRejectsOutOfOrderTailForFullRebuild() passed after 0.008 seconds.
+✔ Test sessionBuilderAppendsMonotonicTailEquivalentToFullRebuild() passed after 0.008 seconds.
+✔ Test syncObjectsEncryptVerifyAndRejectTampering() passed after 0.008 seconds.
+✔ Test syncVerificationWaitsForEveryActivePeerAcknowledgement() passed after 0.008 seconds.
+✔ Test nonFiniteBecomesNeutral() passed after 0.008 seconds.
+✔ Test unknownSharedRecordKindSurvivesDecodeAndReencoding() passed after 0.008 seconds.
+✔ Test clampsToHealthKitRange() passed after 0.008 seconds.
+✔ Test monthlyLetterDraftUsesStableSharedIdentityAndDeletionChangesState() passed after 0.008 seconds.
+✔ Test sharedHabitStateRecordKeepsPortableIdentityAndPayload() passed after 0.008 seconds.
+✔ Test journalAndMonthlyLetterRecordsUseStableSharedIdentity() passed after 0.008 seconds.
+✔ Test capsVeryLongText() passed after 0.008 seconds.
+✔ Test logicalClockBreaksSameMillisecondTiesDeterministically() passed after 0.008 seconds.
+✔ Test qaBundleIdentifiersUseIsolatedKeychainServices() passed after 0.007 seconds.
+✔ Test localBackupRoundTripsOnlyInsideAnAuthenticatedEncryptedEnvelope() passed after 0.008 seconds.
+✔ Test deletedSharedMemoryOutranksConcurrentGeneratedCandidate() passed after 0.007 seconds.
+✔ Test placeConfirmationIsStableAndUserResolutionChangesAnalyticalState() passed after 0.007 seconds.
+✔ Test onlyUserDecisionsInvalidateGeneratedAnalysisFrontiers() passed after 0.007 seconds.
+✔ Test artifactResolutionIsOrderIndependentWhenFrontiersAreEqual() passed after 0.007 seconds.
+✔ Test timelineClarificationUsesSharedAnnotationIdentityAndEvidence() passed after 0.007 seconds.
+✔ Test sequenceScanKeepsHighestSeparateFromContiguousWatermark() passed after 0.007 seconds.
+✔ Test sessionBuilderCapsUnclosedSessionWhenNextAppArrivesTooLate() passed after 0.007 seconds.
+✔ Test incrementalProjectionKeepsOpenStateBehindItsCappedDisplayRow() passed after 0.007 seconds.
+✔ Test legalLinksAreHTTPSOnThePublicSiteAndUseDistinctPaths() passed after 0.007 seconds.
+✔ Test sessionBuilderIgnoresNonAppEventsWhenResolvingOpenSessions() passed after 0.007 seconds.
+✔ Test explicitUserReopenOutranksThePreviouslyAnsweredQuestion() passed after 0.007 seconds.
+✔ Test largestRemainderPercentagesStillTotalOneHundred() passed after 0.007 seconds.
+✔ Test canonicalDigestIncludesRecordedTimeAndObservedTimezone() passed after 0.007 seconds.
+✔ Test trimsAndRejectsEmpty() passed after 0.008 seconds.
+✔ Test sessionFusionNestsShortPhoneInterruptionInsideLongerMacActivity() passed after 0.007 seconds.
+✔ Test quickCaptureMetadataRecordHasStableIdentityAndSharedPinState() passed after 0.007 seconds.
+✔ Test noDurationDoesNotRequireTheUserToFillAnActivity() passed after 0.007 seconds.
+✔ Test nothingDoneClaimAgainstCompletedItemsGetsASentence() passed after 0.007 seconds.
+✔ Test coordinatedFileIOReadsAndAtomicallyWritesSelectedFiles() passed after 0.008 seconds.
+✔ Test overlappingObservedSourcesAreNotDoubleCounted() passed after 0.007 seconds.
+✔ Test observedAppActivityBuildsWithoutManualTextOrUserConfirmation() passed after 0.007 seconds.
+✔ Test onlyOneSentenceEvenWhenSeveralFactsContradict() passed after 0.007 seconds.
+✔ Test eventBatchRejectsMixedDeviceAndSequenceGaps() passed after 0.007 seconds.
+✔ Test artifactResolutionUsesUserAuthorityThenDominatingFrontierThenStableTieBreak() passed after 0.007 seconds.
+✔ Test canonicalDigestDoesNotDependOnDeliveryOrder() passed after 0.007 seconds.
+✔ Test negatedSleepClaimIsNotTreatedAsPositive() passed after 0.007 seconds.
+✔ Test noObjectiveFactsMeansNoObservation() passed after 0.007 seconds.
+✔ Test onlyObservedIntervalsInsideTheSelectedDayContribute() passed after 0.007 seconds.
+✔ Test thresholdsAreConservativeAtTheBoundary() passed after 0.007 seconds.
+✔ Test screenClaimAgainstHighScreenTimeGetsASentence() passed after 0.007 seconds.
+✔ Test doubleNegationDoesNotBecomeAClaim() passed after 0.007 seconds.
+✔ Test ordinaryTirednessWithoutAClaimStaysSilent() passed after 0.007 seconds.
+✔ Test artifactResolverDoesNotUseProviderOrModelAsArtifactIdentity() passed after 0.007 seconds.
+✔ Test stepClaimAgainstLowStepCountGetsASentence() passed after 0.007 seconds.
+✔ Test placeClusterUsesStableGroupingAndUserAuthorityOverridesMapGuess() passed after 0.007 seconds.
+✔ Test sleepClaimAgainstShortSleepGetsOneNonJudgmentalSentence() passed after 0.007 seconds.
+✔ Test sleepClaimWithoutContradictionStaysSilent() passed after 0.007 seconds.
+✔ Test keyExportCanBeTransferredAndWrongKeyCannotDecrypt() passed after 0.007 seconds.
+✔ Test sessionBuilderUsesObservedCloseAndMacSessionBoundary() passed after 0.007 seconds.
+✔ Suite SleepAggregationTests passed after 0.009 seconds.
+✔ Suite HealthSourceStatusTests passed after 0.009 seconds.
+✔ Suite DayContextSnapshotTests passed after 0.009 seconds.
+✔ Suite StateOfMindReadingTests passed after 0.009 seconds.
+✔ Suite VoiceMemoReadingTests passed after 0.009 seconds.
+✔ Test sessionBuilderResultsCanBeRebuiltIndependentlyPerDevice() passed after 0.007 seconds.
+✔ Suite ObservedTimeDistributionTests passed after 0.009 seconds.
+✔ Suite SelfReportConsistencyTests passed after 0.009 seconds.
+✔ Suite LegalLinksTests passed after 0.009 seconds.
+✔ Test replicationDirectoryIsIdempotentAndRejectsMutationOfPublishedObject() passed after 0.010 seconds.
+✔ Suite ReplicationCoreTests passed after 0.011 seconds.
+✔ Test decryptsAnEnvelopeProducedByTheWebConsole() passed after 0.017 seconds.
+✔ Test decodesLegacyEnvelopesWithoutConsentMetadata() passed after 0.021 seconds.
+✔ Test envelopeRoundTripsAndSummaryCountsWithoutPlaintext() passed after 0.031 seconds.
+✔ Test wrongPassphraseAndTamperingFailClosed() passed after 0.042 seconds.
+✔ Test aSecondCleanDirectoryCanOpenTheCiphertext() passed after 0.043 seconds.
+✔ Test healthSectionsRequireExplicitConsent() passed after 0.055 seconds.
+✔ Suite CloudMirrorTests passed after 0.056 seconds.
+✔ Test handwrittenEntriesAndMonthlyLettersConvergeThroughEncryptedOperations() passed after 0.100 seconds.
+✔ Test corruptedArtifactFileCannotImportOrReportVerified() passed after 0.101 seconds.
+✔ Test missingEventSequencePreventsVerifiedStatus() passed after 0.101 seconds.
+✔ Test reinstalledNodeRestoresItsOwnPublishedObjectsFromTheSelectedFolder() passed after 0.100 seconds.
+✔ Test explicitConfirmationAndHabitAnswerOutrankLaterGeneratedRecords() passed after 0.100 seconds.
+✔ Test twoPairedOfflineNodesConvergeAfterBothExchangeImmutableBatches() passed after 0.101 seconds.
+✔ Test pairedNodesConvergeUserOperationsAndOfflineArtifactConflict() passed after 0.101 seconds.
+✔ Test replicationObjectWithInvalidProtocolVersionCannotImportOrVerify() passed after 0.100 seconds.
+✔ Test userJournalEditOutranksConcurrentLegacyDiaryMigration() passed after 0.100 seconds.
+✔ Test sharedHabitAndMemoryDecisionsConvergeThroughEncryptedOperations() passed after 0.101 seconds.
+✔ Test duplicateLanThenICloudDeliveryKeepsOneEventByEventID() passed after 0.100 seconds.
+✔ Suite SyncCoordinatorTests passed after 0.102 seconds.
+✔ Test run with 110 tests in 11 suites passed after 0.102 seconds.
