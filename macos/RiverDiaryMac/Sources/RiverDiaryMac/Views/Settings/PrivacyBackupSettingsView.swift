@@ -60,6 +60,11 @@ struct PrivacyBackupSettingsView: View {
         } message: {
             Text("可移植备份已通过内容和数据库校验。恢复会替换当前 Mac 的日记与两个事实库，并先保存恢复点；失败会回滚。")
         }
+        .onChange(of: showsPortableRestoreConfirmation) { _, showing in
+            if !showing, pendingPortableRestoreURL != nil {
+                cancelPortableRestore()
+            }
+        }
         .fileExporter(
             isPresented: $showsDiagnosticsExport,
             document: diagnosticsDocument,
