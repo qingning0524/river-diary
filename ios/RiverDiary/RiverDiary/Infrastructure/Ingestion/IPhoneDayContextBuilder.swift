@@ -18,13 +18,16 @@ enum IPhoneDayContextBuilder {
         guard let end = calendar.date(byAdding: .day, value: 1, to: start) else { return nil }
         let events = (try? database.events(from: start, to: end)) ?? []
         var sections: [DayContextSection] = []
+        // 健康摘要若进入 dayContextSnapshot，就会随普通事件复制到 iCloud；
+        // 本机模式下必须把 health/workout/stateOfMind 三类一起排除。
+        let healthLocalOnly = UserDefaults.standard.object(forKey: "river.health.localOnly") as? Bool ?? true
 
         let payloads = events.compactMap { event -> (RiverEvent, RiverEventPayload)? in
             guard let payload = try? JSONDecoder().decode(RiverEventPayload.self, from: event.payload) else { return nil }
             return (event, payload)
         }
 
-        if let health = latestHealthMetrics(from: payloads) {
+        if !healthLocalOnly, let health = latestHealthMetrics(from: payloads) {
             var parts: [String] = []
             if let sleep = health.sleepHours { parts.append(String(format: "睡眠 %.1fh", sleep)) }
             if let steps = health.steps { parts.append("步数 \(steps)") }
@@ -38,7 +41,7 @@ enum IPhoneDayContextBuilder {
             }
         }
 
-        let workouts = payloads.filter { $0.0.kind == "health.workout" }
+        let workouts = healthLocalOnly ? [] : payloads.filter { $0.0.kind == "health.workout" }
         if !workouts.isEmpty {
             let items = workouts.prefix(10).map { event, payload in
                 DayContextItem(
@@ -55,7 +58,7 @@ enum IPhoneDayContextBuilder {
             ))
         }
 
-        let moods = payloads.filter { $0.0.kind == "health.stateOfMind" }
+        let moods = healthLocalOnly ? [] : payloads.filter { $0.0.kind == "health.stateOfMind" }
         if !moods.isEmpty {
             let valences = moods.compactMap { $0.1.metrics?.valence }
             let average = valences.isEmpty ? nil : valences.reduce(0, +) / Double(valences.count)

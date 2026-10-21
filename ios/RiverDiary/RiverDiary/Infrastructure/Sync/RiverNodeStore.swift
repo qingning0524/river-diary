@@ -158,11 +158,23 @@ final class RiverNodeStore: ObservableObject {
         }
     }
 
+    /// 健康数据边界：默认只在本机读取/展示，不写入跨设备事实库，也不进入
+    /// iCloud 加密复制。Apple 对 HealthKit 数据的云存储要求比普通日记更严格；
+    /// 跨设备健康摘要不是 D0 的必需能力。旧版本已写入的健康事件不会被删除，
+    /// 升级后不会再新增；正式上架前仍需做一次历史清理迁移。
+    static var healthLocalOnly: Bool {
+        UserDefaults.standard.object(forKey: "river.health.localOnly") as? Bool ?? true
+    }
+
     func recordHealthSnapshot(nights: [SleepNight], exerciseDays: [ExerciseDay],
                               intervals: [ExerciseInterval] = [],
                               workouts: [WorkoutSummary] = [],
                               stateOfMind: [StateOfMindSummary] = []) {
         guard let database else { return }
+        guard !Self.healthLocalOnly else {
+            lastCaptureError = nil
+            return
+        }
         let dayKey: (Date) -> String = { date in
             let formatter = DateFormatter()
             formatter.calendar = Calendar.current

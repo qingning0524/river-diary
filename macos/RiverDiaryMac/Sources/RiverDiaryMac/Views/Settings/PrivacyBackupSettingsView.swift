@@ -17,6 +17,7 @@ struct PrivacyBackupSettingsView: View {
     @State private var pendingRestoreURL: URL?
     @AppStorage("privacy.appLockEnabled") private var appLockEnabled = false
     @AppStorage("backup.lastExportAt") private var lastExportAt: Double = 0
+    @State private var inspectionResult: String?
     @AppStorage("river.developerMode.enabled") private var developerModeEnabled = false
     @State private var diagnosticsDocument: RiverMacDiagnosticsDocument?
     @State private var showsDiagnosticsExport = false
@@ -201,6 +202,9 @@ struct PrivacyBackupSettingsView: View {
                             Button("复制恢复码") { NSPasteboard.general.setString(code, forType: .string) }
                                 .buttonStyle(.plain)
                                 .smallAction()
+                            Button("导出恢复说明…") { exportRecoveryKit() }
+                                .buttonStyle(.plain)
+                                .smallAction()
                         }
                     }
                     if let code = sync.transferCode, showsSyncKey {
@@ -381,6 +385,12 @@ struct PrivacyBackupSettingsView: View {
                         .font(AppTypography.micro())
                         .foregroundStyle(Color.secondaryInk)
                 }
+                if let warning = backupAgeWarning {
+                    Text(warning)
+                        .font(AppTypography.micro())
+                        .foregroundStyle(AppTheme.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 RiverPanelRow(title: "导出加密备份", detail: "包含日记、修改、快记与两个事实库的加密快照") {
                     HStack(spacing: AppSpacing.sm) {
                         Button { exportBackup() } label: {
@@ -398,6 +408,21 @@ struct PrivacyBackupSettingsView: View {
                     .buttonStyle(.plain)
                     .smallAction()
                     .accessibilityIdentifier("settings.webExport")
+                }
+
+                RiverPanelRow(title: "检查备份文件", detail: "只读校验恢复码、日记内容和两个事实库快照；不修改现有数据") {
+                    Button { inspectBackup() } label: {
+                        Label("检查", systemImage: "checkmark.shield")
+                    }
+                    .buttonStyle(.plain)
+                    .smallAction()
+                    .accessibilityIdentifier("settings.backup.inspect")
+                }
+                if let inspectionResult {
+                    Text(inspectionResult)
+                        .font(AppTypography.micro())
+                        .foregroundStyle(inspectionResult.hasPrefix("备份有效") ? Color.green : AppTheme.warning)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 RiverPanelRow(title: "恢复备份", detail: "备份不含密钥；从仍有密钥的设备复制转移码，在此设备导入后恢复") {
@@ -570,6 +595,79 @@ struct PrivacyBackupSettingsView: View {
             report("已导出网页副本：\(url.lastPathComponent)", kind: .success)
         } catch {
             report("导出失败：\(UserFacingError.message(for: error))", kind: .error)
+        }
+    }
+
+    private func exportRecoveryKit() {
+        sync.revealOrCreateKey()
+        guard let code = sync.transferCode else {
+            report(sync.lastError ?? "恢复码暂时不可用，请先在钥匙串中创建。", kind: .error)
+            return
+        }
+        let panel = NSSavePanel()
+        panel.title = "导出恢复说明"
+        panel.nameFieldStringValue = "RiverDiary-恢复说明-\(DiaryEntry.dateFormatter.string(from: Date())).txt"
+        panel.allowedContentTypes = [.plainText]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let text = """
+        河流日记恢复说明
+        生成时间：\(Date().formatted(date: .numeric, time: .standard))
+
+        恢复码：
+        \(code)
+
+        用途
+        - 换 Mac、重装或恢复备份时，在「设置 → 隐私与备份」导入同一恢复码，再选择备份恢复。
+        - 恢复码只保存在本机钥匙串；这个文件是明文，请放在加密磁盘或密码管理器，不要发到聊天群。
+        - 没有恢复码，加密备份和同步对象都无法解密。
+
+        步骤
+        1. 安装同一版本的 River Diary。
+        2. 打开「设置 → 隐私与备份」。
+        3. 在同步密钥处粘贴恢复码并导入。
+        4. 选择「恢复备份」，先点「检查备份文件」，确认内容与日期后再恢复。
+
+        注意：恢复会替换当前本机数据；恢复前应用会自动保存一个恢复点。
+        """
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            report("恢复说明已导出：\(url.lastPathComponent)。请把它和备份分开存放。", kind: .success)
+        } catch {
+            report("恢复说明导出失败：\(UserFacingError.message(for: error))", kind: .error)
+        }
+    }
+
+    private var backupAgeWarning: String? {
+        let now = Date().timeIntervalSince1970
+        guard lastExportAt > 0 else {
+            return "还没有导出过加密备份。建议先导出一份，并把恢复码保存在本机之外；没有恢复码，备份无法解密。"
+        }
+        let days = Int((now - lastExportAt) / 86_400)
+        guard days >= 7 else { return nil }
+        return "上次加密备份已是 \(days) 天前。换机或重装前，请再导出一份并确认恢复码可用。"
+    }
+
+    private func inspectBackup() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.data]
+        panel.message = "选择 River Diary 生成的加密备份；检查不会修改当前数据"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let info = try store.validateFullBackup(at: url) { legacy, v2 in
+                if let legacy { try AppDatabase.shared.validateEncryptedSnapshot(legacy) }
+                if let v2 { try activity.validateV2Snapshot(v2) }
+            }
+            let date = info.exportedAt.formatted(date: .abbreviated, time: .shortened)
+            let databases = [info.includesLegacyDatabase ? "兼容库" : nil, info.includesV2Database ? "事实库" : nil]
+                .compactMap { $0 }.joined(separator: " + ")
+            inspectionResult = "备份有效 · \(date) · 日记 \(info.entryCount) · 快记 \(info.quickCaptureCount) · 足迹 \(info.activityCount) · 信件 \(info.monthlyLetterCount)" +
+                (databases.isEmpty ? "" : " · 含 \(databases)")
+        } catch {
+            inspectionResult = "校验失败：\(UserFacingError.message(for: error))"
         }
     }
 

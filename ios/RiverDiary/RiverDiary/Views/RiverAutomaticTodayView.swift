@@ -68,8 +68,19 @@ struct RiverAutomaticTodayView: View {
         }
         return "来自健康摘要"
     }
-    private var steps: Int? { observedMetrics.compactMap(\.steps).first ?? legacy?.health?.steps.map { Int($0) } }
-    private var calories: Double? { observedMetrics.compactMap(\.activeEnergyKcal).first ?? legacy?.health?.activeEnergyKilocalories }
+    private var healthExerciseDay: ExerciseDay? {
+        health.exerciseDays.first { Calendar.current.isDate($0.date, inSameDayAs: date) }
+    }
+    private var steps: Int? {
+        observedMetrics.compactMap(\.steps).first
+            ?? healthExerciseDay.map { Int($0.steps.rounded()) }
+            ?? legacy?.health?.steps.map { Int($0) }
+    }
+    private var calories: Double? {
+        observedMetrics.compactMap(\.activeEnergyKcal).first
+            ?? healthExerciseDay?.activeEnergyKilocalories
+            ?? legacy?.health?.activeEnergyKilocalories
+    }
     private var pendingCount: Int { (node.database?.sharedUserRecords ?? []).filter { ($0.kind == .pendingConfirmation && $0.status == "pending") || ($0.kind == .habitCard && ["bundled", "shown"].contains($0.status)) }.count }
     private var isCollecting: Bool {
         let locationStatus = node.locationCollector?.authorizationStatus

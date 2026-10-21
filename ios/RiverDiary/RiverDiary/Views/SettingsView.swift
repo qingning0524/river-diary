@@ -572,7 +572,7 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Text("HealthKit 只把已授权的睡眠和运动日汇总保存在本机；启用加密同步后才会复制到你的共享文件夹。")
+                    Text("HealthKit 的睡眠、运动与心情摘要只在本机读取和展示，不写入跨设备事实库，也不进入加密同步。旧版本已写入的健康事件需在正式上架前做一次单独清理。")
                         .font(.footnote)
                         .foregroundStyle(theme.secondaryInk)
                 } header: {

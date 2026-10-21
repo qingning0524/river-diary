@@ -33,6 +33,18 @@ struct LocalBackupPayload: Codable {
     var v2DatabaseSnapshot: Data? = nil
 }
 
+struct BackupInspection: Equatable {
+    let exportedAt: Date
+    let version: Int
+    let entryCount: Int
+    let quickCaptureCount: Int
+    let activityCount: Int
+    let monthlyLetterCount: Int
+    let savedQueryCount: Int
+    let includesLegacyDatabase: Bool
+    let includesV2Database: Bool
+}
+
 private struct BackupRestoreFileCheckpoint {
     let url: URL?
     let existed: Bool
@@ -1352,6 +1364,36 @@ final class DiaryStore: ObservableObject {
         encoder.dateEncodingStrategy = .iso8601
         let encrypted = try StateEncryption.encrypt(try encoder.encode(payload))
         try encrypted.write(to: url, options: .atomic)
+    }
+
+    /// 只读检查：解密、校验版本、验证两个数据库快照，不写恢复点、不改本机数据。
+    /// 用于“恢复前先确认这份备份真的是我要的”以及换机前的演练。
+    func validateFullBackup(
+        at url: URL,
+        validateDatabaseSnapshots: ((Data?, Data?) throws -> Void)? = nil
+    ) throws -> BackupInspection {
+        let raw = try Data(contentsOf: url)
+        guard let plaintext = try? StateEncryption.decrypt(raw) else {
+            throw NSError(domain: "RiverDiaryMac", code: 11, userInfo: [NSLocalizedDescriptionKey: "备份文件无法解密，请确认这是本应用生成的完整备份，并确认恢复码正确。"])
+        }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let payload = try decoder.decode(LocalBackupPayload.self, from: plaintext)
+        guard (1...LocalBackupPayload.currentVersion).contains(payload.version) else {
+            throw NSError(domain: "RiverDiaryMac", code: 16, userInfo: [NSLocalizedDescriptionKey: "备份版本高于当前应用支持范围；请使用更新版本的 River Diary 恢复。"])
+        }
+        try validateDatabaseSnapshots?(payload.legacyDatabaseSnapshot, payload.v2DatabaseSnapshot)
+        return BackupInspection(
+            exportedAt: payload.exportedAt,
+            version: payload.version,
+            entryCount: payload.data?.entries.count ?? 0,
+            quickCaptureCount: payload.quickCaptures.values.reduce(0) { $0 + $1.count },
+            activityCount: payload.activitySessions?.count ?? 0,
+            monthlyLetterCount: payload.monthlyLetters?.count ?? 0,
+            savedQueryCount: payload.savedQueries?.count ?? 0,
+            includesLegacyDatabase: payload.legacyDatabaseSnapshot != nil,
+            includesV2Database: payload.v2DatabaseSnapshot != nil
+        )
     }
 
     func restoreFullBackup(
