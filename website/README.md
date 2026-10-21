@@ -38,7 +38,7 @@ cd website/user && python3 -m http.server 8099
 
 ```sh
 # 1. 上传三套前端(在仓库根目录执行)
-rsync -av --exclude='downloads/' website/site/ root@198.23.189.187:/var/www/flowriver/site/
+rsync -av --exclude='downloads/' --exclude='tests/' website/site/ root@198.23.189.187:/var/www/flowriver/site/
 scp -r website/login/* root@198.23.189.187:/var/www/flowriver/login/
 scp -r website/user/* root@198.23.189.187:/var/www/flowriver/user/
 
