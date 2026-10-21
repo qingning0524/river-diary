@@ -376,7 +376,7 @@ struct AccountSettingsCard: View {
             if let email = account.accountEmail {
                 LabeledContent("登录账号", value: email)
             } else {
-                Text(account.isSignedIn ? "账号资料暂未加载，可刷新权益状态。" : "当前是本机模式。绑定账号后可使用官方 AI 额度、云副本与设备管理；不绑定也能继续写日记。")
+                Text(account.isSignedIn ? "账号资料暂未加载，可刷新权益状态。" : "当前是本机模式。绑定账号后可使用云副本与设备管理；不绑定也能继续写日记。")
                     .foregroundStyle(theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
                 Button("绑定 River Diary 账号") {

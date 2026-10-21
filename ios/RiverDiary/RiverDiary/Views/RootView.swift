@@ -165,7 +165,7 @@ private struct LocalFirstWelcomeView: View {
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 14) {
                 welcomeRow("iphone", title: "本机优先", detail: "不绑定账号也能写、能看、能搜索。")
-                welcomeRow("lock.shield", title: "账号可选", detail: "绑定后才使用官方 AI 额度、云副本与设备管理。")
+                welcomeRow("lock.shield", title: "账号可选", detail: "绑定后才使用云副本与设备管理。")
                 welcomeRow("arrow.up.right.square", title: "随时带走", detail: "加密备份需要恢复码；请把它保存在本机之外。")
             }
             Spacer(minLength: 4)

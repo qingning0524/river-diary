@@ -46,7 +46,7 @@ struct MacAccountLoginView: View {
                     Text("欢迎来到 River Diary")
                         .font(AppTypography.pageTitle())
                         .foregroundStyle(Color.ink)
-                    Text("账号用于官方 AI 额度、云副本与设备管理；不绑定也能继续写日记。绑定后这台设备上的本机资料会归当前账号。")
+                    Text("账号用于云副本与设备管理；不绑定也能继续写日记。绑定后这台设备上的本机资料会归当前账号。")
                         .font(AppTypography.secondary())
                         .foregroundStyle(Color.secondaryInk)
                     if showsLocalDataNotice {
@@ -183,7 +183,7 @@ struct MacAccountSettingsView: View {
                         if let email = account.accountEmail {
                             RiverValueRow(title: "登录账号", value: email)
                         } else {
-                            Text("当前是本机模式。绑定账号后可使用官方 AI 额度、云副本与设备管理；不绑定也能继续写日记。")
+                            Text("当前是本机模式。绑定账号后可使用云副本与设备管理；不绑定也能继续写日记。")
                                 .foregroundStyle(Color.secondaryInk)
                                 .fixedSize(horizontal: false, vertical: true)
                             Button("绑定 River Diary 账号") {

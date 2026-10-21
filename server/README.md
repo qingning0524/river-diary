@@ -100,7 +100,7 @@ make build-linux GOARCH=amd64  # 若服务器是 ARM，设 GOARCH=arm64
 - 已实现显式邮箱/Apple 身份绑定与身份撤销队列；撤销、账号删除和 Apple 授权撤回必须被异机安全日志确认后才变更/删除账号数据。
 - `deploy/backup.sh` 使用 `pg_dump`、age 公钥加密和 rclone 验证上传；安装前仍需配置异机 remote 生命周期、age 公钥和受限 rclone 凭据，并按月完成独立恢复演练。
 
-官方 AI 试用额度的服务端代理与配额表已实现，配置和边界见 [OFFICIAL_AI.md](OFFICIAL_AI.md)。生产未配置 Provider Key 时该端点保持关闭；客户端尚未接入，当前仍以 BYOK 为主。
+D05 官方 AI 额度已由 CEO 决定冻结：当前只做 BYOK，官方额度代理不在本周验收范围。保留的服务端代码见 `server/internal/httpapi/official_ai.go` 与 `OFFICIAL_AI.md`（内部冻结说明，不对外暴露）。
 - 首期异机数据库备份保留 7 天、安全变更日志保留 30 天；存储生命周期需在供应商侧配置，脚本不自动清理远端。`flowriver-backup.timer` 每小时运行。恢复仍要求停掉 API、从异机安全日志重放删除/身份撤销事件，再启动服务；日志读取/重放工具和恢复演练尚未完成。延长备份窗口时，必须同时延长安全日志覆盖范围。
 - Apple 账号删除只撤销 FlowRiver 的 Apple 身份；有独立邮箱身份时仍允许用户进入账号。邮箱与 Apple 不自动按邮箱合并。第三方 key、SMTP relay、Apple App ID、异机安全日志、真实 DNS 及服务器 SSH 尚需部署配置。
 - 账号 API 默认不上传资料库；用户显式开启的云空间只保存端到端加密密文，不能撤销旧 iCloud 同步密钥或擦除离线设备；账号登录门槛需客户端另行集成 `ProfileContext` 后才生效。

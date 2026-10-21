@@ -7,8 +7,13 @@
 #   - 合成敏感标记扫描 0 命中
 #
 # 用法：
-#   scripts/release_gate.sh [--report <json>] [--allow-unrun-ios]
+#   scripts/release_gate.sh [--report <json>] [--d-phase] [--allow-unrun-ios]
 #                           [--run-ios-tests] [--skip-privacy]
+#
+# D 阶段模式（--d-phase）：
+#   - iOS 单元测试不参与失败判定，显式记录为“D 阶段豁免，T23 欠账”；
+#   - iOS 测试目标仍会编译（除非显式 --run-ios-tests 实际运行）；
+#   - 报告 verdict 在其余步骤全通过时为 pass。
 #
 # 退出码：0 全部门禁通过；1 有失败或未验证；65 前置条件不满足。
 set -euo pipefail
@@ -20,15 +25,17 @@ report_path=""
 allow_unrun_ios=0
 run_ios_tests=0
 skip_privacy=0
+d_phase=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --report) report_path="$2"; shift 2 ;;
+    --d-phase) d_phase=1; shift ;;
     --allow-unrun-ios) allow_unrun_ios=1; shift ;;
     --run-ios-tests) run_ios_tests=1; shift ;;
     --skip-privacy) skip_privacy=1; shift ;;
     --help|-h)
-      print -r -- "usage: $0 [--report <json>] [--allow-unrun-ios] [--run-ios-tests] [--skip-privacy]"
+      print -r -- "usage: $0 [--report <json>] [--d-phase] [--allow-unrun-ios] [--run-ios-tests] [--skip-privacy]"
       exit 0 ;;
     *) print -u2 "unknown argument: $1"; exit 64 ;;
   esac
@@ -76,6 +83,7 @@ record() {
   case "$2" in
     pass) print -r -- "PASS        $1${3:+ — $3}" ;;
     unverified) print -u2 "UNVERIFIED  $1${3:+ — $3}" ;;
+    exempt) print -r -- "EXEMPT      $1${3:+ — $3}" ;;
     *) print -u2 "FAIL        $1${3:+ — $3}" ;;
   esac
 }
@@ -100,7 +108,7 @@ run_simple_step() {
 print -r -- "Release gate on $commit"
 
 run_simple_step "python-node" make test
-run_simple_step "core-tests" zsh -c 'source scripts/select_xcode.sh >/dev/null && swift test --package-path Packages/RiverDiaryCore'
+run_simple_step "core-tests" zsh -c 'source scripts/select_xcode.sh >/dev/null && swift test --disable-sandbox --package-path Packages/RiverDiaryCore'
 run_simple_step "mac-tests" ./scripts/test_macos_isolated.sh --disable-sandbox
 run_simple_step "server-tests" ./scripts/test_server_isolated.sh
 
@@ -124,6 +132,9 @@ run_simple_step "ios-test-build" xcodebuild -project ios/RiverDiary/RiverDiary.x
 if [[ "$run_ios_tests" -eq 1 ]]; then
   destination="${RIVER_IOS_TEST_DESTINATION:-platform=iOS Simulator,name=iPhone 17 Pro}"
   run_simple_step "ios-tests" ./scripts/test_ios_isolated.sh "$destination"
+elif [[ "$d_phase" -eq 1 ]]; then
+  print -r -- "D 阶段豁免：iOS 单元测试不参与 D 阶段发布门禁；T23 欠账（runner 未修复）。"
+  record "ios-tests" "exempt" "D 阶段豁免，T23 欠账；iOS 仅编译 test target，不运行单测"
 elif [[ "$allow_unrun_ios" -eq 1 ]]; then
   record "ios-tests" "unverified" "本轮显式允许不运行（T23 runner 未修复）"
 else
@@ -139,10 +150,12 @@ fi
 
 failures=0
 unverified=0
+exemptions=0
 for i in {1..${#step_names[@]}}; do
   case "${step_status[$i]}" in
     fail) failures=$(( failures + 1 )) ;;
     unverified) unverified=$(( unverified + 1 )) ;;
+    exempt) exemptions=$(( exemptions + 1 )) ;;
   esac
 done
 
@@ -155,12 +168,12 @@ if [[ -n "$report_path" ]]; then
     safe_note="${safe_note//$'\t'/ }"
     print -r -- "${step_names[$i]}	${step_status[$i]}	${safe_note}" >> "$steps_tsv"
   done
-  python3 - "$report_path" "$commit" "$failures" "$unverified" "$steps_tsv" <<'PY'
+  python3 - "$report_path" "$commit" "$failures" "$unverified" "$exemptions" "$d_phase" "$steps_tsv" <<'PY'
 import json
 import sys
 from datetime import datetime, timezone
 
-path, commit, failures, unverified, steps_path = sys.argv[1:6]
+path, commit, failures, unverified, exemptions, d_phase, steps_path = sys.argv[1:8]
 steps = []
 with open(steps_path, encoding="utf-8") as handle:
     for line in handle:
@@ -172,6 +185,8 @@ report = {
     "sourceRevision": commit,
     "failures": int(failures),
     "unverified": int(unverified),
+    "exemptions": int(exemptions),
+    "dPhase": bool(int(d_phase)),
     "verdict": "pass" if int(failures) == 0 and int(unverified) == 0 else "blocked",
     "steps": steps,
 }
@@ -183,11 +198,15 @@ fi
 
 print -r -- ""
 if [[ "$failures" -gt 0 ]]; then
-  print -u2 "GATE FAILED: $failures 步失败，$unverified 步未验证"
+  print -u2 "GATE FAILED: $failures 步失败，$unverified 步未验证，$exemptions 步豁免"
   exit 1
 fi
 if [[ "$unverified" -gt 0 ]]; then
   print -u2 "GATE NOT GREEN: 全部已跑步骤通过，但仍有 $unverified 步没有验证"
   exit 1
+fi
+if [[ "$d_phase" -eq 1 ]]; then
+  print -r -- "GATE PASSED (D 阶段): 所有参与门禁的步骤通过；$exemptions 步显式豁免（iOS 单测，T23 欠账）。"
+  exit 0
 fi
 print -r -- "GATE PASSED: 所有关键验证都实际运行并通过"

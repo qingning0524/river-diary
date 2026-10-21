@@ -1,4 +1,4 @@
-.PHONY: build test check verify backup web ios mac mac-signed swift-test verify-all gate clean clean-preview user-console-test privacy-scan-build dmg dmg-signed sponsor-kit portable-drill
+.PHONY: build test check verify backup web ios mac mac-signed swift-test verify-all gate gate-strict clean clean-preview user-console-test privacy-scan-build dmg dmg-signed sponsor-kit portable-drill
 
 check: test
 	python3 -m compileall -q build.py pipeline
@@ -71,9 +71,13 @@ mac-signed:
 
 verify-all: check swift-test ios
 
-# 统一发布门禁：必须在干净检出里运行；未跑的关键验证（目前是 iOS 单测）
-# 会让门禁返回非零，而不是悄悄跳过。
+# D 阶段统一门禁：iOS 单测移出失败判定，日志显式打印“D 阶段豁免，T23 欠账”。
+# 其余步骤（Python/Node/Core/Mac/Go/隐私扫描）仍必须实际运行并通过。
 gate:
+	./scripts/release_gate.sh --d-phase
+
+# 完整门禁（正式发布/赞助验证后使用）：iOS 单测未运行即 blocked。
+gate-strict:
 	./scripts/release_gate.sh
 
 swift-test:
