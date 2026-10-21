@@ -46,8 +46,8 @@
 
 - 备份：`/var/backups/flowriver/site-block4-20261021T182141Z/`（整站 `site.tar.gz` + 部署前 `Caddyfile.before`）；
 - 只上传 Block 4 涉及的 7 个文件，逐文件本地/远端 SHA-256 全部 MATCH；
-- 生产 Caddyfile 只插入一行 `redir /status /status.html permanent`，保留生产独有的 admin access log；`caddy validate` 通过后 `systemctl reload caddy`，服务 `active`；
-- 生产结果：`/status` **301 → `/status.html`**，`/status.html` **200 text/html**，`/.well-known/security.txt` **200 text/plain; charset=utf-8**，`privacy-2`、`terms-2` 已生效；
+- 生产 Caddyfile 只插入一行 `redir /status /status.html permanent`，保留生产独有的 admin access log；该日志块已回填仓库，仓库与生产一致；`caddy validate` 通过后 `systemctl reload caddy`，服务 `active`；
+- 生产结果：`/status` **301 → `/status.html`**，`/status.html` **200 text/html**（sha256 `1676e991e8d1eaa23e98063c67492235c85f53bce2c551995b212f5485c9455a`），`/.well-known/security.txt` **200 text/plain; charset=utf-8**，`privacy-2`、`terms-2` 已生效；
 - 生产无头 Chrome：`账号 API=可响应`，`下载分发=当前没有已开放的下载`（生产 macOS 当前确实未开放），`aria-busy=false`。截图：[生产桌面](evidence/2026-10-22/block4/status-production-desktop.png)、[生产手机](evidence/2026-10-22/block4/status-production-mobile.png)。
 
 完整哈希、Caddy 校验与回滚命令：[deployment.txt](evidence/2026-10-22/block4/deployment.txt)。回滚：恢复 `Caddyfile.before` 并 reload，再解压整站 tar 到 `/var/www/flowriver`。
