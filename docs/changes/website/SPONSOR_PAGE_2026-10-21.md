@@ -6,6 +6,7 @@
 - 首页导航与页脚新增「赞助」入口。
 - 首页 iOS 下载卡改为「自有设备验证中 / 暂不提供 TestFlight」，与 D0 实际状态一致。
 - 未修改 Caddy、未改动 `/var/www/flowriver/{login,user}`、未上传 DMG。
+- 部署后复核：`flowriver.xyz`、`sponsor.html`、`privacy.html`、`login.flowriver.xyz`、`user.flowriver.xyz`、`api.flowriver.xyz/health/live` 均返回 `200`。
 
 ## 部署范围
 
