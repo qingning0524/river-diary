@@ -64,6 +64,7 @@ final class SettingsWindowController {
             initiallyShowsDatabase: opensDatabase
         )
         .environmentObject(account)
+        .environmentObject(store)
         .environmentObject(feedback)
         .riverAppEnvironment(
             density: density,

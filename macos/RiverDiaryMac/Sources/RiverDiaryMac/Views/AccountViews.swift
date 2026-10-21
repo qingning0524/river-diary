@@ -165,11 +165,13 @@ struct MacAccountLoginView: View {
 
 struct MacAccountSettingsView: View {
     @EnvironmentObject private var account: RiverAccountSessionStore
+    @EnvironmentObject private var store: DiaryStore
     @State private var activationCode = ""
     @State private var redeemRequestID = UUID().uuidString
     @State private var message: String?
     @State private var showsSignOutConfirmation = false
     @State private var showsLogin = false
+    @State private var showsBindConfirmation = false
     @State private var errorMessage: String?
 
     var body: some View {
@@ -183,9 +185,11 @@ struct MacAccountSettingsView: View {
                             Text("当前是本机模式。绑定账号后可使用官方 AI 额度、云副本与设备管理；不绑定也能继续写日记。")
                                 .foregroundStyle(Color.secondaryInk)
                                 .fixedSize(horizontal: false, vertical: true)
-                            Button("绑定 River Diary 账号") { showsLogin = true }
-                                .buttonStyle(.borderedProminent)
-                                .accessibilityIdentifier("account.bind")
+                            Button("绑定 River Diary 账号") {
+                                if hasLocalData { showsBindConfirmation = true } else { showsLogin = true }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .accessibilityIdentifier("account.bind")
                         }
 
                         if account.hasPremiumEntitlement {
@@ -249,6 +253,16 @@ struct MacAccountSettingsView: View {
                 .environmentObject(account)
                 .frame(minWidth: 620, minHeight: 620)
         }
+        .confirmationDialog("绑定后，本机已有的日记会归当前账号", isPresented: $showsBindConfirmation, titleVisibility: .visible) {
+            Button("继续绑定") { showsLogin = true }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("这台 Mac 已有本机日记或快记。绑定成功后，本机资料归当前账号；换另一个账号登录会被拒绝。未绑定时数据仍在本机。")
+        }
+    }
+
+    private var hasLocalData: Bool {
+        !store.entries.isEmpty || !store.quickCaptures.isEmpty || store.hasLocalChanges
     }
 
     @MainActor private func redeem() async {
