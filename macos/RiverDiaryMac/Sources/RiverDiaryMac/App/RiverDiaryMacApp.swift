@@ -151,6 +151,9 @@ struct RiverDiaryMacApp: App {
         }
         AccountMenuPresence.isLibraryReady = sharedV2.isOpen
         let diaryStore = DiaryStore()
+        #if DEBUG
+        MacDemoSeed.seedIfNeeded(diary: diaryStore, v2: sharedV2)
+        #endif
         let activityStore = ActivityStore(v2Store: sharedV2, startsAutomatically: true)
         #if DEBUG
         if MacSoftVisualSession.isActive {
