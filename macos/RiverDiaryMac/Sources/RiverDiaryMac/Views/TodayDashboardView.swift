@@ -405,7 +405,7 @@ struct TodayDashboardView: View {
             RiverSoftMetric(
                 title: isSelectedDateToday ? "今日步数" : "当天步数",
                 value: s.entry.health?.steps.map { $0.formatted() } ?? "—",
-                detail: s.entry.health?.steps == nil ? "等待 iPhone 健康摘要" : "来自已同步的健康摘要",
+                detail: s.entry.health?.steps == nil ? "健康摘要只留在 iPhone 本机" : "来自旧版导入的健康摘要",
                 symbol: "figure.walk", tint: AppTheme.ok, action: onOpenHealth
             )
             RiverSoftMetric(

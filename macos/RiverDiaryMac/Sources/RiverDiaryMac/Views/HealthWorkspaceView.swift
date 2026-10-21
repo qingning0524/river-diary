@@ -46,7 +46,7 @@ struct HealthWorkspaceView: View {
                 if entry.health == nil {
                     RiverPanel(title: "健康摘要", systemImage: "heart", accent: AppTheme.accent) {
                         VStack(alignment: .leading, spacing: 14) {
-                            Text("连接 iPhone 健康来源后，这里会显示睡眠、步数和活动。你也可以先记录自己的心情。")
+                            Text("健康数据默认只留在 iPhone 本机，不进入跨设备复制。这里只显示你手动导入或旧版已有的摘要；你也可以先记录自己的心情。")
                                 .font(AppTypography.secondary()).foregroundStyle(Color.secondaryInk)
                                 .fixedSize(horizontal: false, vertical: true)
                             Button("管理数据来源", action: onOpenSources).secondaryCTA()

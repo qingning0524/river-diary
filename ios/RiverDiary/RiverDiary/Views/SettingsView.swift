@@ -30,6 +30,7 @@ struct SettingsView: View {
     @State private var backupDocument: RiverNodeBackupDocument?
     @State private var showsBackupExport = false
     @State private var showsBackupImport = false
+    @AppStorage("backup.lastExportAt") private var lastExportAt: Double = 0
     @State private var diagnosticDocument: RiverDiagnosticsDocument?
     @State private var showsDiagnosticExport = false
     @State private var readableDiaryDocument: ReadableDiaryDocument?
@@ -86,7 +87,9 @@ struct SettingsView: View {
                 defaultFilename: "RiverDiary-iPhone-\(Date.now.formatted(.iso8601.year().month().day())).riverbackup"
             ) { result in
                 switch result {
-                case .success(let url): node.setBackupMessage("加密备份已导出到 \(url.lastPathComponent)")
+                case .success(let url):
+                    lastExportAt = Date().timeIntervalSince1970
+                    node.setBackupMessage("加密备份已导出到 \(url.lastPathComponent)")
                 case .failure(let error): node.setBackupMessage("备份无法导出：\(error.localizedDescription)")
                 }
             }
@@ -551,6 +554,18 @@ struct SettingsView: View {
                     Text("备份包含原始事件、用户决定和 Artifact，并使用同步密钥加密。重装后恢复需要保留或重新导入同一同步密钥。")
                         .font(.footnote)
                         .foregroundStyle(theme.secondaryInk)
+                    if lastExportAt == 0 {
+                        Text("还没有导出过加密备份。建议今天先导出一份，并把恢复码保存在本机之外。")
+                            .font(.footnote)
+                            .foregroundStyle(theme.warning)
+                    } else {
+                        let days = Int((Date().timeIntervalSince1970 - lastExportAt) / 86_400)
+                        if days >= 7 {
+                            Text("上次加密备份已是 \(days) 天前。换机或重装前，请再导出一份并确认恢复码可用。")
+                                .font(.footnote)
+                                .foregroundStyle(theme.warning)
+                        }
+                    }
                     Button("导出加密本地备份") {
                         if !showsSyncKey {
                             node.revealOrCreateSyncKey()
