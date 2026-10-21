@@ -267,11 +267,6 @@ struct RiverShellView: View {
             .sheet(isPresented: $showsCapture) {
                 QuickNoteSheet(store: store, date: dateContext.selectedDate)
             }
-            .onAppear {
-                guard !hasSeenLocalWelcome,
-                      !ProcessInfo.processInfo.arguments.contains("--skip-onboarding") else { return }
-                showsLocalWelcome = true
-            }
             .sheet(isPresented: $showsCommandPalette) {
                 CommandPaletteView(
                     onNavigate: { destination = $0 },
@@ -336,6 +331,10 @@ struct RiverShellView: View {
                 if MacSoftVisualSession.isActive {
                     memoryLibrary.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
                     return
+                }
+                if !hasSeenLocalWelcome,
+                   !ProcessInfo.processInfo.arguments.contains("--skip-onboarding") {
+                    showsLocalWelcome = true
                 }
                 ingestion.attach(to: store, activity: activity, ai: ai)
                 memoryLibrary.refresh(entries: store.entries, captures: store.quickCaptures, letters: store.monthlyLetters)
@@ -1149,7 +1148,7 @@ private struct MacLocalFirstWelcomeView: View {
         VStack(alignment: .leading, spacing: AppSpacing.lg) {
             HStack {
                 Text("RIVER DIARY")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(AppTypography.kicker())
                     .tracking(1.6)
                     .foregroundStyle(Color.secondaryInk)
                 Spacer()
@@ -1157,11 +1156,11 @@ private struct MacLocalFirstWelcomeView: View {
                     .foregroundStyle(AppTheme.accent)
             }
             Text("先写下来，账号可以以后再说。")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(AppTypography.brand())
                 .foregroundStyle(Color.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Text("河流日记是本地优先的。日记默认只在这台设备；自动记录、AI 和账号都是可选的增强。")
-                .font(.system(size: 13))
+                .font(AppTypography.secondary())
                 .foregroundStyle(Color.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 14) {
@@ -1192,8 +1191,8 @@ private struct MacLocalFirstWelcomeView: View {
                 .frame(width: 34, height: 34)
                 .background(AppTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 11))
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.ink)
-                Text(detail).font(.system(size: 12)).foregroundStyle(Color.secondaryInk).fixedSize(horizontal: false, vertical: true)
+                Text(title).font(AppTypography.rowTitle()).foregroundStyle(Color.ink)
+                Text(detail).font(AppTypography.label()).foregroundStyle(Color.secondaryInk).fixedSize(horizontal: false, vertical: true)
             }
         }
     }

@@ -54,6 +54,11 @@ if [[ ! -f "$checkout/scripts/release_gate.sh" ]]; then
   print -u2 "FAIL: 无法创建干净检出"
   exit 65
 fi
+# 隐私扫描需要一个可验证的 clean git 树；临时检出初始化成一次性仓库。
+git -C "$checkout" init -q
+git -C "$checkout" add -A
+git -C "$checkout" -c user.name="Release Gate" -c user.email="release-gate@flowriver.invalid" \
+  commit -qm "release gate clean checkout"
 cd "$checkout"
 typeset -a step_names=()
 typeset -a step_status=()
