@@ -1,0 +1,278 @@
+python3 -m unittest discover -s tests -p "test_*.py" -v
+test_built_assets_contain_new_features_and_are_valid_enough (test_build.BuildTests.test_built_assets_contain_new_features_and_are_valid_enough) ... ok
+test_clean_data_adds_summary_and_quality (test_build.BuildTests.test_clean_data_adds_summary_and_quality) ... ok
+test_clean_data_fills_missing_stable_page_id (test_build.BuildTests.test_clean_data_fills_missing_stable_page_id) ... ok
+test_clean_data_normalizes_counts_sites_and_today (test_build.BuildTests.test_clean_data_normalizes_counts_sites_and_today) ... ok
+test_clean_data_rejects_invalid_metric (test_build.BuildTests.test_clean_data_rejects_invalid_metric) ... ok
+test_clean_site_name_repairs_markdown_and_annotations (test_build.BuildTests.test_clean_site_name_repairs_markdown_and_annotations) ... ok
+test_merge_ingested_user_data_adds_health_summary (test_build.BuildTests.test_merge_ingested_user_data_adds_health_summary) ... 已合并采集健康摘要: 1 天
+ok
+test_merge_ingested_user_data_overrides_score (test_build.BuildTests.test_merge_ingested_user_data_overrides_score) ... ok
+test_production_data_includes_summary_and_quality (test_build.BuildTests.test_production_data_includes_summary_and_quality) ... ok
+test_production_snapshot_is_valid (test_build.BuildTests.test_production_snapshot_is_valid) ... ok
+test_web_template_contains_required_anchor_and_new_controls (test_build.BuildTests.test_web_template_contains_required_anchor_and_new_controls) ... ok
+test_write_daily_outputs_creates_manifest_and_removes_stale_files (test_build.BuildTests.test_write_daily_outputs_creates_manifest_and_removes_stale_files) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.006s
+
+OK
+python3 -c 'from pipeline import build_assets; build_assets()'
+node --check web-preview/js/app.js
+cd website/user && node --test tests/*.test.mjs
+TAP version 13
+# Subtest: cookie helpers parse only complete sessions and respect the FlowRiver domain
+ok 1 - cookie helpers parse only complete sessions and respect the FlowRiver domain
+  ---
+  duration_ms: 1.087208
+  type: 'test'
+  ...
+# Subtest: freshness and accepted payloads preserve the client instance and refresh key
+ok 2 - freshness and accepted payloads preserve the client instance and refresh key
+  ---
+  duration_ms: 0.787917
+  type: 'test'
+  ...
+# Subtest: a fresh session skips the refresh endpoint
+ok 3 - a fresh session skips the refresh endpoint
+  ---
+  duration_ms: 0.109875
+  type: 'test'
+  ...
+# Subtest: 401 forces a refresh before the advertised expiry and replays with the new token
+ok 4 - 401 forces a refresh before the advertised expiry and replays with the new token
+  ---
+  duration_ms: 0.27025
+  type: 'test'
+  ...
+# Subtest: refresh retries keep the same request key and a final 401 clears the cookie
+ok 5 - refresh retries keep the same request key and a final 401 clears the cookie
+  ---
+  duration_ms: 0.359333
+  type: 'test'
+  ...
+# Subtest: missing sessions fail closed without making a request
+ok 6 - missing sessions fail closed without making a request
+  ---
+  duration_ms: 0.105625
+  type: 'test'
+  ...
+# Subtest: error text maps known server codes and falls back honestly
+ok 7 - error text maps known server codes and falls back honestly
+  ---
+  duration_ms: 7.434958
+  type: 'test'
+  ...
+# Subtest: logout clears the cookie only after the server accepts the revocation
+ok 8 - logout clears the cookie only after the server accepts the revocation
+  ---
+  duration_ms: 0.281084
+  type: 'test'
+  ...
+# Subtest: cloud envelope round-trips the mirror without exposing plaintext
+ok 9 - cloud envelope round-trips the mirror without exposing plaintext
+  ---
+  duration_ms: 21.497917
+  type: 'test'
+  ...
+# Subtest: wrong passphrase and tampering fail closed
+ok 10 - wrong passphrase and tampering fail closed
+  ---
+  duration_ms: 22.431875
+  type: 'test'
+  ...
+# Subtest: passphrase policy and base64 helpers are strict
+ok 11 - passphrase policy and base64 helpers are strict
+  ---
+  duration_ms: 0.201708
+  type: 'test'
+  ...
+# Subtest: cloud payload carries mirror v2 contexts
+ok 12 - cloud payload carries mirror v2 contexts
+  ---
+  duration_ms: 14.573334
+  type: 'test'
+  ...
+# Subtest: health sections are excluded unless this upload explicitly opts in
+ok 13 - health sections are excluded unless this upload explicitly opts in
+  ---
+  duration_ms: 29.253208
+  type: 'test'
+  ...
+# Subtest: decrypts an envelope produced by the native Swift core
+ok 14 - decrypts an envelope produced by the native Swift core
+  ---
+  duration_ms: 14.631792
+  type: 'test'
+  ...
+# Subtest: normalizes the synthetic mirror without losing stable ids or relations
+ok 15 - normalizes the synthetic mirror without losing stable ids or relations
+  ---
+  duration_ms: 1.015709
+  type: 'test'
+  ...
+# Subtest: maps a legacy data.json entry into body, facts and source
+ok 16 - maps a legacy data.json entry into body, facts and source
+  ---
+  duration_ms: 0.231
+  type: 'test'
+  ...
+# Subtest: rejects empty and invalid archives without inventing entries
+ok 17 - rejects empty and invalid archives without inventing entries
+  ---
+  duration_ms: 0.145167
+  type: 'test'
+  ...
+# Subtest: date keys reject impossible dates and accept leap day
+ok 18 - date keys reject impossible dates and accept leap day
+  ---
+  duration_ms: 0.202042
+  type: 'test'
+  ...
+# Subtest: entry normalization clamps tags and keeps an explicit safe id
+ok 19 - entry normalization clamps tags and keeps an explicit safe id
+  ---
+  duration_ms: 0.259792
+  type: 'test'
+  ...
+# Subtest: stats describe days, places, tags and favourites without a score
+ok 20 - stats describe days, places, tags and favourites without a score
+  ---
+  duration_ms: 0.442416
+  type: 'test'
+  ...
+# Subtest: month grouping is newest first and labels months in Chinese
+ok 21 - month grouping is newest first and labels months in Chinese
+  ---
+  duration_ms: 0.233834
+  type: 'test'
+  ...
+# Subtest: filters cover day, year, favourite, tag, place and collection
+ok 22 - filters cover day, year, favourite, tag, place and collection
+  ---
+  duration_ms: 0.196959
+  type: 'test'
+  ...
+# Subtest: date intent understands last autumn, year-month and recent spans
+ok 23 - date intent understands last autumn, year-month and recent spans
+  ---
+  duration_ms: 0.436333
+  type: 'test'
+  ...
+# Subtest: search removes question filler and finds the Shanghai trip
+ok 24 - search removes question filler and finds the Shanghai trip
+  ---
+  duration_ms: 0.453792
+  type: 'test'
+  ...
+# Subtest: search ranks the running thread and answer can take the earliest mention
+ok 25 - search ranks the running thread and answer can take the earliest mention
+  ---
+  duration_ms: 1.129666
+  type: 'test'
+  ...
+# Subtest: answers stay extractive and honest when nothing matches or there is no data
+ok 26 - answers stay extractive and honest when nothing matches or there is no data
+  ---
+  duration_ms: 0.19775
+  type: 'test'
+  ...
+# Subtest: on this day only returns previous years and forgotten finds an older unstarred entry
+ok 27 - on this day only returns previous years and forgotten finds an older unstarred entry
+  ---
+  duration_ms: 0.161667
+  type: 'test'
+  ...
+# Subtest: places, tags and related memories keep their provenance
+ok 28 - places, tags and related memories keep their provenance
+  ---
+  duration_ms: 0.589834
+  type: 'test'
+  ...
+# Subtest: highlight escapes content before marking query terms
+ok 29 - highlight escapes content before marking query terms
+  ---
+  duration_ms: 0.158292
+  type: 'test'
+  ...
+# Subtest: import report states what was read without claiming a full library
+ok 30 - import report states what was read without claiming a full library
+  ---
+  duration_ms: 0.110208
+  type: 'test'
+  ...
+# Subtest: normalizes a device context entry without losing its source
+ok 31 - normalizes a device context entry without losing its source
+  ---
+  duration_ms: 0.081125
+  type: 'test'
+  ...
+# Subtest: maps mirror v2 device contexts into read-only cards
+ok 32 - maps mirror v2 device contexts into read-only cards
+  ---
+  duration_ms: 0.168583
+  type: 'test'
+  ...
+# Subtest: the console is a complete accessible document without inline scripts
+ok 33 - the console is a complete accessible document without inline scripts
+  ---
+  duration_ms: 0.775292
+  type: 'test'
+  ...
+# Subtest: all local asset references exist and no third-party runtime is loaded
+ok 34 - all local asset references exist and no third-party runtime is loaded
+  ---
+  duration_ms: 0.334291
+  type: 'test'
+  ...
+# Subtest: the visual system exposes three appearances and soft/inset materials
+ok 35 - the visual system exposes three appearances and soft/inset materials
+  ---
+  duration_ms: 0.070708
+  type: 'test'
+  ...
+# Subtest: River Glyph v2 is reused as a local sprite with theme-aware strokes
+ok 36 - River Glyph v2 is reused as a local sprite with theme-aware strokes
+  ---
+  duration_ms: 0.105792
+  type: 'test'
+  ...
+# Subtest: memory stays local unless the user explicitly enables an encrypted cloud mirror
+ok 37 - memory stays local unless the user explicitly enables an encrypted cloud mirror
+  ---
+  duration_ms: 0.684792
+  type: 'test'
+  ...
+# Subtest: the demo is clearly synthetic and never reads the repository snapshot
+ok 38 - the demo is clearly synthetic and never reads the repository snapshot
+  ---
+  duration_ms: 0.0925
+  type: 'test'
+  ...
+# Subtest: the shell exposes the eight intended spaces and account subsections
+ok 39 - the shell exposes the eight intended spaces and account subsections
+  ---
+  duration_ms: 0.203042
+  type: 'test'
+  ...
+# Subtest: dialogs and form controls preserve keyboard and failure paths
+ok 40 - dialogs and form controls preserve keyboard and failure paths
+  ---
+  duration_ms: 0.259625
+  type: 'test'
+  ...
+# Subtest: cloud is a standalone space with health opt-in off by default
+ok 41 - cloud is a standalone space with health opt-in off by default
+  ---
+  duration_ms: 0.3495
+  type: 'test'
+  ...
+1..41
+# tests 41
+# suites 0
+# pass 41
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 136.045625

@@ -1,0 +1,80 @@
+name: gate
+
+# Push 门禁：只跑可在标准 runner 上复现的 Python/Node/Core/Server 测试。
+# macOS app 与 iOS 单测不在 CI 运行：D 阶段显式豁免（T23 欠账），
+# 仍由本机 scripts/release_gate.sh --d-phase 负责 Mac 全量测试与 iOS 编译。
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-node:
+    name: Python + Node
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: make test
+        run: make test
+
+  core:
+    name: Core (Swift)
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: swift test
+        run: swift test --disable-sandbox --package-path Packages/RiverDiaryCore
+
+  server:
+    name: Server (Go + PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: flowriver
+          POSTGRES_PASSWORD: flowriver
+          POSTGRES_DB: flowriver_gate_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U flowriver -d flowriver_gate_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://flowriver:flowriver@127.0.0.1:5432/flowriver_gate_test?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: go test ./...
+        working-directory: server
+        run: go test -count=1 -v ./...
+
+  # 显式占位：不在 CI 假装 macOS/iOS 已通过。D 阶段豁免，T23 欠账。
+  apple-d-phase-exempt:
+    name: macOS/iOS (D 阶段豁免，T23)
+    if: ${{ false }}
+    runs-on: macos-15
+    steps:
+      - name: D 阶段豁免说明
+        run: echo "D 阶段豁免：macOS app 与 iOS 单测不在 CI 运行；T23 欠账由本机 gate 记录。"
