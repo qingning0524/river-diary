@@ -33,6 +33,7 @@
 - [10月20日用户加密云空间验收](validation/USER_MEMORY_CLOUD_2026-10-20.md)
 - [10月20日原生网页副本导出验收](validation/NATIVE_WEB_EXPORT_2026-10-20.md)
 - [10月21日异机备份就绪检查](validation/BACKUP_READINESS_2026-10-21.md)
+- [10月22日可移植恢复演练](validation/PORTABLE_RESTORE_DRILL_2026-10-22.md)
 
 - [图标库统一修复验收](validation/ICON_LIBRARY_UNIFICATION_2026-10-19.md)
 

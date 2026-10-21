@@ -1,4 +1,4 @@
-.PHONY: build test check verify backup web ios mac mac-signed swift-test verify-all gate clean clean-preview user-console-test privacy-scan-build dmg dmg-signed sponsor-kit
+.PHONY: build test check verify backup web ios mac mac-signed swift-test verify-all gate clean clean-preview user-console-test privacy-scan-build dmg dmg-signed sponsor-kit portable-drill
 
 check: test
 	python3 -m compileall -q build.py pipeline
@@ -52,6 +52,10 @@ dmg-signed: mac-signed
 # 把 DMG、安装说明、试用清单、演示截图打成可直接发给种子用户的 zip。
 sponsor-kit:
 	./scripts/make_sponsor_kit.sh
+
+# 两进程/两用户目录/两套 Keychain 命名空间的可移植恢复演练。
+portable-drill:
+	./scripts/run_portable_restore_drill.sh
 
 # 本机日常使用请用这个目标：用开发者证书做稳定签名，钥匙串授权点一次
 # “始终允许”后，重新构建也不会再反复弹密码。

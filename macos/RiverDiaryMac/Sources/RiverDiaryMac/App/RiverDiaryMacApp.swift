@@ -96,6 +96,11 @@ struct RiverDiaryMacApp: App {
     private let v2Store: V2Store
 
     init() {
+        #if DEBUG
+        if let status = MacPortableDrill.runIfRequested() {
+            exit(status)
+        }
+        #endif
         if let isolationError = MacQAStorageIsolation.startupError(
             bundleIdentifier: Bundle.main.bundleIdentifier,
             environment: ProcessInfo.processInfo.environment,
