@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -50,6 +51,11 @@ type Config struct {
 	SecurityJournalMode     string
 
 	DownloadDir string
+
+	OfficialAIBaseURL           string
+	OfficialAIAPIKey            string
+	OfficialAIModel             string
+	OfficialAIMonthlyTokenLimit int64
 }
 
 func Load() (Config, error) {
@@ -101,6 +107,9 @@ func load(adminOnly bool) (Config, error) {
 		SecurityJournalToken:    os.Getenv("SECURITY_JOURNAL_TOKEN"),
 		SecurityJournalMode:     env("SECURITY_JOURNAL_MODE", "offsite"),
 		DownloadDir:             strings.TrimSpace(os.Getenv("DOWNLOAD_DIR")),
+		OfficialAIBaseURL:       strings.TrimSpace(os.Getenv("OFFICIAL_AI_BASE_URL")),
+		OfficialAIAPIKey:        strings.TrimSpace(os.Getenv("OFFICIAL_AI_API_KEY")),
+		OfficialAIModel:         env("OFFICIAL_AI_MODEL", "deepseek-chat"),
 	}
 
 	var err error
@@ -163,6 +172,22 @@ func load(adminOnly bool) (Config, error) {
 	}
 	if c.DownloadDir != "" && !filepath.IsAbs(c.DownloadDir) {
 		return Config{}, fmt.Errorf("DOWNLOAD_DIR must be an absolute path when set")
+	}
+	if c.OfficialAIBaseURL != "" {
+		parsed, err := url.Parse(c.OfficialAIBaseURL)
+		if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Host == "" {
+			return Config{}, fmt.Errorf("OFFICIAL_AI_BASE_URL must be an http(s) URL")
+		}
+	}
+	limitText := strings.TrimSpace(os.Getenv("OFFICIAL_AI_MONTHLY_TOKEN_LIMIT"))
+	if limitText == "" {
+		c.OfficialAIMonthlyTokenLimit = 200_000
+	} else {
+		limit, err := strconv.ParseInt(limitText, 10, 64)
+		if err != nil || limit <= 0 {
+			return Config{}, fmt.Errorf("OFFICIAL_AI_MONTHLY_TOKEN_LIMIT must be a positive integer")
+		}
+		c.OfficialAIMonthlyTokenLimit = limit
 	}
 	journalConfigured := c.SecurityJournalEndpoint != "" || c.SecurityJournalToken != "" || len(c.SecurityJournalKey) > 0
 	if c.SecurityJournalMode == "login_only" && journalConfigured {

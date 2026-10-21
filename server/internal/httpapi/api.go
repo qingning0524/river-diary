@@ -129,6 +129,8 @@ func (a *API) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/auth/logout", a.logout)
 	mux.HandleFunc("GET /v1/me", a.me)
 	mux.HandleFunc("GET /v1/me/entitlements", a.entitlements)
+	mux.HandleFunc("GET /v1/ai/quota", a.officialAIQuota)
+	mux.HandleFunc("POST /v1/ai/chat", a.officialAIChat)
 	mux.HandleFunc("POST /v1/me/activation-codes/redeem", a.redeemActivationCode)
 	mux.HandleFunc("GET /v1/me/devices", a.devices)
 	mux.HandleFunc("POST /v1/me/devices/{id}/revoke", a.revokeDevice)

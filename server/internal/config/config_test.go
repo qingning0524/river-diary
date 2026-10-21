@@ -67,3 +67,29 @@ func TestProductionRequiresAllAuthenticationAndJournalProviders(t *testing.T) {
 		}
 	})
 }
+
+func TestOfficialAIConfigIsOptionalButValidated(t *testing.T) {
+	testProductionEnv(t)
+	t.Setenv("OFFICIAL_AI_BASE_URL", "https://api.example.test")
+	t.Setenv("OFFICIAL_AI_API_KEY", "test-only-provider-key")
+	t.Setenv("OFFICIAL_AI_MODEL", "test-model")
+	t.Setenv("OFFICIAL_AI_MONTHLY_TOKEN_LIMIT", "12345")
+	c, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error=%v", err)
+	}
+	if c.OfficialAIBaseURL != "https://api.example.test" || c.OfficialAIAPIKey != "test-only-provider-key" ||
+		c.OfficialAIModel != "test-model" || c.OfficialAIMonthlyTokenLimit != 12345 {
+		t.Fatalf("official AI config not loaded: %+v", c)
+	}
+
+	t.Setenv("OFFICIAL_AI_MONTHLY_TOKEN_LIMIT", "0")
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "OFFICIAL_AI_MONTHLY_TOKEN_LIMIT") {
+		t.Fatalf("zero limit error=%v", err)
+	}
+	t.Setenv("OFFICIAL_AI_MONTHLY_TOKEN_LIMIT", "12345")
+	t.Setenv("OFFICIAL_AI_BASE_URL", "not-a-url")
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "OFFICIAL_AI_BASE_URL") {
+		t.Fatalf("bad base URL error=%v", err)
+	}
+}
