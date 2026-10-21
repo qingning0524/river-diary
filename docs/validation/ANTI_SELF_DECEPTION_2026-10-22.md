@@ -1,6 +1,6 @@
 # 反自欺最小能力验收 · 2026-10-22
 
-状态：**规则版已实现，Core 11 项 + Mac 4 项映射测试通过；只在本机渲染，不接模型、不发网络请求。** 本轮只做 PM 指定的一条能力：自述与同一天客观记录明显矛盾时，给一句无评判提示。阈值是保守初值，尚未用真实用户文本做误报率评估。
+状态：**规则版已实现，Core 11 项 + Mac 4 项映射测试通过，D 阶段门禁在提交 `2b7d2fe` 上 PASSED；只在本机渲染，不接模型、不发网络请求。** 本轮只做 PM 指定的一条能力：自述与同一天客观记录明显矛盾时，给一句无评判提示。阈值是保守初值，尚未用真实用户文本做误报率评估。
 
 ## 1. 规则边界
 
@@ -71,7 +71,7 @@ swift test --disable-sandbox --package-path Packages/RiverDiaryCore
 
 结果：**495 项执行，0 failure，1 项环境跳过**（`DiskFullTests` 因沙箱无法挂载临时磁盘镜像；与上一块相同，未算作通过）。
 
-iOS app 编译：`** BUILD SUCCEEDED **`。D 阶段门禁随后在同一提交上复跑，结果见文末。
+iOS app 编译：`** BUILD SUCCEEDED **`。D 阶段门禁随后在同一提交上复跑，结果见第 6 节。
 
 > 说明：规则测试验证的是输入到句子的映射，不是“真实用户看到后觉得被冒犯”的产品验收。语气、阈值和平台差异仍需真实日记样本与人工阅读。
 
@@ -88,3 +88,26 @@ iOS app 编译：`** BUILD SUCCEEDED **`。D 阶段门禁随后在同一提交�
 1. 用 20–30 条真实（脱敏）日记做误报/漏报标注，再决定是否调整阈值；不因为“看起来聪明”而放宽。
 2. 在 Mac 与 iPhone 各截一张有提示/无提示的对照图，补 VoiceOver 走查。
 3. 若 PM 认为提示打扰，可增加“这一天不再提示”的本机偏好；本轮没有加，避免扩大范围。
+
+
+## 6. D 阶段门禁
+
+```sh
+./scripts/release_gate.sh --d-phase --report /tmp/river-gate-block3-report.json
+```
+
+结果：**GATE PASSED (D 阶段)**，0 失败、0 未验证、1 步显式豁免（iOS 单测，T23 欠账），报告绑定提交 `2b7d2fe9b9a7b6ea912a92c69b7804e12b53c3eb`。
+
+| 步骤 | 结果 |
+|---|---|
+| privacy-scan | PASS |
+| python-node | PASS，# pass 41 |
+| core-tests | PASS，109 tests / 10 suites |
+| mac-tests | PASS，495 项执行，0 failure |
+| server-tests | PASS，65 个顶层测试 |
+| mac-tests-cover | PASS，495 项执行；1 项环境跳过：`DiskFullTests` 沙箱无法挂载临时磁盘镜像 |
+| ios-test-build | PASS |
+| ios-tests | EXEMPT，D 阶段豁免，T23 欠账 |
+| build-privacy | PASS |
+
+完整输出：[gate.log](evidence/2026-10-22/anti-self-deception/gate.log)，JSON：[gate-report.json](evidence/2026-10-22/anti-self-deception/gate-report.json)。这份门禁仍只证明编译、规则单测和既有回归，不证明真机上的语气/布局可接受。

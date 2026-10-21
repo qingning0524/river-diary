@@ -1,0 +1,29 @@
+Release gate on 2b7d2fe9b9a7b6ea912a92c69b7804e12b53c3eb
+
+== privacy-scan ==
+PASS        privacy-scan
+
+== python-node ==
+PASS        python-node — # pass 41
+
+== core-tests ==
+PASS        core-tests — ✔ Test run with 109 tests in 10 suites passed after 0.098 seconds.
+
+== mac-tests ==
+PASS        mac-tests — 	 Executed 495 tests, with 1 test skipped and 0 failures (0 unexpected) in 39.954 (39.995) seconds
+
+== server-tests ==
+PASS        server-tests — Top-level tests passed: 65
+PASS        mac-tests-cover — 495 项执行；1 项环境跳过：DiskFullTests 无法挂载临时磁盘镜像
+
+== ios-test-build ==
+PASS        ios-test-build
+D 阶段豁免：iOS 单元测试不参与 D 阶段发布门禁；T23 欠账（runner 未修复）。
+EXEMPT      ios-tests — D 阶段豁免，T23 欠账；iOS 仅编译 test target，不运行单测
+
+== build-privacy ==
+PASS        build-privacy
+Report written: /tmp/river-gate-block3-report.json
+
+GATE PASSED (D 阶段): 所有参与门禁的步骤通过；1 步显式豁免（iOS 单测，T23 欠账）。
+EXIT:0
