@@ -60,6 +60,23 @@ struct TodayDashboardView: View {
         let stats: FusedDayStats
         let timeline: ActivityTimeline
         let localReport: LocalDayReport
+
+        /// 只在用户自己写下的当天文字与同一天客观记录明显相反时出现一句。
+        /// 客观数据缺失时返回 nil，不用“0”代替未知。
+        var selfReportObservation: String? {
+            let report = entry.displayOverview.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !report.isEmpty else { return nil }
+            var entryWithStatsHealth = entry
+            if entryWithStatsHealth.health == nil { entryWithStatsHealth.health = stats.health }
+            return SelfReportConsistency.observation(
+                selfReport: report,
+                facts: SelfReportFactsBridge.facts(
+                    entry: entryWithStatsHealth,
+                    pipelineAvailable: stats.pipelineAvailable,
+                    pipelineTotal: stats.pipelineTotal
+                )
+            )
+        }
     }
 
     private func makeSnapshot() -> Snapshot {
@@ -364,6 +381,24 @@ struct TodayDashboardView: View {
                     .font(AppTypography.secondary()).foregroundStyle(Color.secondaryInk)
                     .lineSpacing(5).lineLimit(isBriefExpanded ? nil : 4)
                     .fixedSize(horizontal: false, vertical: true)
+                if let observation = s.selfReportObservation {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "circle.dashed")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.secondaryInk)
+                            .padding(.top, 2)
+                        Text(observation)
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.secondaryInk)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(11)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.secondaryInk.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("River 注意到：\(observation)")
+                }
                 ZStack {
                     RiverQuietFlow().stroke(AppTheme.accent.opacity(0.65), lineWidth: 1.1)
                     RiverQuietFlow().stroke(AppTheme.accent.opacity(0.23), lineWidth: 1).offset(y: 10)

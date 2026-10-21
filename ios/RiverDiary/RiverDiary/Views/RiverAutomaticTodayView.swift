@@ -81,6 +81,22 @@ struct RiverAutomaticTodayView: View {
             ?? healthExerciseDay?.activeEnergyKilocalories
             ?? legacy?.health?.activeEnergyKilocalories
     }
+    /// 只在同一天的自述与睡眠/步数/屏幕记录明显相反时出现一句；无数据不猜。
+    private var selfReportObservation: String? {
+        guard let legacy else { return nil }
+        let report = (legacy.daily?.isEmpty == false ? legacy.daily : legacy.overview)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !report.isEmpty else { return nil }
+        return SelfReportConsistency.observation(
+            selfReport: report,
+            facts: SelfReportFacts(
+                sleepHours: sleep,
+                steps: steps,
+                screenMinutes: legacy.screenHours.map { Int(($0 * 60).rounded()) },
+                completedItems: nil
+            )
+        )
+    }
     private var pendingCount: Int { (node.database?.sharedUserRecords ?? []).filter { ($0.kind == .pendingConfirmation && $0.status == "pending") || ($0.kind == .habitCard && ["bundled", "shown"].contains($0.status)) }.count }
     private var isCollecting: Bool {
         let locationStatus = node.locationCollector?.authorizationStatus
@@ -221,6 +237,17 @@ struct RiverAutomaticTodayView: View {
                 HStack { RiverIconChip(symbol: "book"); VStack(alignment: .leading, spacing: 3) { Text(Calendar.current.isDateInToday(date) ? "今日自动小结" : "当日自动小结").font(.headline); Text(node.aiStore?.isGenerating == true ? "River 正在整理生活线索" : analysis.statusText).font(.caption2).foregroundStyle(theme.secondaryInk) }; Spacer(minLength: 2); RiverStatusPill(text: isCollecting ? "自动采集中" : "手机来源待启用", tone: isCollecting ? .positive : .neutral) }
                 Text(analysis.overview ?? (automaticFacts.isEmpty ? "开启记录来源后，生活线索会自动保存。连接 AI 并授权资料范围后，River 会自动生成日记。手动补充是可选项。" : awaitingAISetup ? "已自动留下 \(automaticEventCount) 条生活线索。连接 AI 后，River 会把这些记录整理成今日小结。" : "已自动留下 \(automaticEventCount) 条生活线索，River 将根据新的记录自动整理今日小结。"))
                     .font(.subheadline).lineSpacing(5).frame(maxWidth: .infinity, alignment: .leading).padding(15).riverNeumorphic(inset: true, radius: 17)
+                if let observation = selfReportObservation {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "circle.dashed").font(.system(size: 12, weight: .medium)).foregroundStyle(theme.secondaryInk).padding(.top, 2)
+                        Text(observation).font(.caption).lineSpacing(3).foregroundStyle(theme.secondaryInk).fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(11)
+                    .background(theme.secondaryInk.opacity(0.055), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("River 注意到：\(observation)")
+                }
                 HStack(spacing: 12) {
                     if let steps { badge("\(steps.formatted()) 步", theme.success) }
                     if automaticEventCount == 0 && legacy == nil {
