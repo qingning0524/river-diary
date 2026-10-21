@@ -1,4 +1,4 @@
-.PHONY: build test check verify backup web ios mac mac-signed swift-test verify-all gate clean clean-preview user-console-test privacy-scan-build dmg dmg-signed
+.PHONY: build test check verify backup web ios mac mac-signed swift-test verify-all gate clean clean-preview user-console-test privacy-scan-build dmg dmg-signed sponsor-kit
 
 check: test
 	python3 -m compileall -q build.py pipeline
@@ -48,6 +48,10 @@ dmg: mac
 # 用稳定的 Apple Development 证书签名后再打 DMG；避免每次重构建触发钥匙串 ACL。
 dmg-signed: mac-signed
 	./scripts/make_mac_dmg.sh
+
+# 把 DMG、安装说明、试用清单、演示截图打成可直接发给种子用户的 zip。
+sponsor-kit:
+	./scripts/make_sponsor_kit.sh
 
 # 本机日常使用请用这个目标：用开发者证书做稳定签名，钥匙串授权点一次
 # “始终允许”后，重新构建也不会再反复弹密码。
