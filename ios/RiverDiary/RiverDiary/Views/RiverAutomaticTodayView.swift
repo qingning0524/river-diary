@@ -210,8 +210,17 @@ struct RiverAutomaticTodayView: View {
                 HStack { RiverIconChip(symbol: "book"); VStack(alignment: .leading, spacing: 3) { Text(Calendar.current.isDateInToday(date) ? "今日自动小结" : "当日自动小结").font(.headline); Text(node.aiStore?.isGenerating == true ? "River 正在整理生活线索" : analysis.statusText).font(.caption2).foregroundStyle(theme.secondaryInk) }; Spacer(minLength: 2); RiverStatusPill(text: isCollecting ? "自动采集中" : "手机来源待启用", tone: isCollecting ? .positive : .neutral) }
                 Text(analysis.overview ?? (automaticFacts.isEmpty ? "开启记录来源后，生活线索会自动保存。连接 AI 并授权资料范围后，River 会自动生成日记。手动补充是可选项。" : awaitingAISetup ? "已自动留下 \(automaticEventCount) 条生活线索。连接 AI 后，River 会把这些记录整理成今日小结。" : "已自动留下 \(automaticEventCount) 条生活线索，River 将根据新的记录自动整理今日小结。"))
                     .font(.subheadline).lineSpacing(5).frame(maxWidth: .infinity, alignment: .leading).padding(15).riverNeumorphic(inset: true, radius: 17)
-                HStack {
+                HStack(spacing: 12) {
                     if let steps { badge("\(steps.formatted()) 步", theme.success) }
+                    if automaticEventCount == 0 && legacy == nil {
+                        Button("写第一句") { coordinator.presentJournal(on: date) }
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(theme.accentText)
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 38)
+                            .background(theme.accentSoft, in: Capsule())
+                            .accessibilityIdentifier("river.today.writeFirst")
+                    }
                     if analysis.overview != nil { Button("阅读全文 ›") { reading = true }.font(.caption).foregroundStyle(theme.accentText) }
                     Spacer(minLength: 0)
                     if !isCollecting || awaitingAISetup { Button("连接记录来源 ›") { settings = true }.font(.caption).foregroundStyle(theme.accentText) }

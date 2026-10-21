@@ -22,6 +22,7 @@
 ## 操作与验证
 
 - [服务器部署操作](operations/FLOWRIVER_SERVER_DEPLOYMENT_TUTORIAL.md)
+- [Mac 演示版试用清单](operations/DEMO_QA_CHECKLIST.md)
 - [SMTP与DNS](operations/FLOWRIVER_SELF_HOSTED_SMTP_DNS.md)
 - [激活码操作](operations/FLOWRIVER_ACTIVATION_CODES.md)
 - [River验收](validation/RIVER_DIARY_ACCEPTANCE.md) · [账号验收](validation/BACKEND_ACCOUNT_ACCEPTANCE.md)

@@ -4,6 +4,8 @@ Go API 和后台任务共用一个进程，PostgreSQL 保存账号、身份、�
 
 Ubuntu 24.04 服务器部署步骤见 [服务器落地教程](../docs/operations/FLOWRIVER_SERVER_DEPLOYMENT_TUTORIAL.md)。`make release-linux` 会构建管理员前端，并打包 Linux amd64/arm64 安装包。教程包含 Mac 构建、DNS、数据库、生产配置、HTTPS、备份和更新方法。
 
+`deploy/Caddyfile` 只包含 api/admin 两个站点，适合纯账号 API 主机。若同一台主机还承载官网、登录页或用户控制台，必须使用 `website/deploy/Caddyfile`（六站点），或把 api/admin 站点块合并进现有配置；直接覆盖 `/etc/caddy/Caddyfile` 会让官网/登录/控制台 404。
+
 管理员后台已整合在同一 Go 服务的 `127.0.0.1:8081` 专用监听端口，Caddy 在 `admin.flowriver.xyz` 终止 TLS 并反向代理。独立的管理员账户使用 Argon2id 密码、TOTP、HttpOnly 会话 Cookie、Origin/CSRF 校验、IP/CIDR 限制、限速及设备撤销逐次审计。部署后通过 SSH 的 `admin bootstrap` 一次性创建第一个管理员。
 
 用户首登邮箱验证码和激活码权益流程已纳入 iOS/macOS 客户端；后台支持按批次生成/导入、统计、查看尾号和撤销未用兑换码。部署与权益边界见[账号登录与权益兑换说明](../docs/operations/FLOWRIVER_ACTIVATION_CODES.md)。

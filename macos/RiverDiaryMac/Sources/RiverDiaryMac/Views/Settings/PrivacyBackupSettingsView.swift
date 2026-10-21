@@ -16,6 +16,7 @@ struct PrivacyBackupSettingsView: View {
     @State private var showsRestoreConfirmation = false
     @State private var pendingRestoreURL: URL?
     @AppStorage("privacy.appLockEnabled") private var appLockEnabled = false
+    @AppStorage("backup.lastExportAt") private var lastExportAt: Double = 0
     @AppStorage("river.developerMode.enabled") private var developerModeEnabled = false
     @State private var diagnosticsDocument: RiverMacDiagnosticsDocument?
     @State private var showsDiagnosticsExport = false
@@ -184,15 +185,20 @@ struct PrivacyBackupSettingsView: View {
                         Spacer()
                     }
 
+                    Text("换机或重装前必须保存这串恢复码。只存在本机钥匙串里的密钥会随设备一起丢失；没有它，加密备份和同步对象都无法解密。")
+                        .font(AppTypography.micro())
+                        .foregroundStyle(AppTheme.warning)
+                        .fixedSize(horizontal: false, vertical: true)
+
                     HStack(spacing: AppSpacing.sm) {
-                        Button(showsSyncKey ? "隐藏密钥" : "显示或创建同步密钥") {
+                        Button(showsSyncKey ? "隐藏恢复码" : "显示或创建恢复码") {
                             if !showsSyncKey { sync.revealOrCreateKey() }
                             showsSyncKey.toggle()
                         }
                         .buttonStyle(.plain)
                         .smallAction()
                         if let code = sync.transferCode, showsSyncKey {
-                            Button("复制密钥") { NSPasteboard.general.setString(code, forType: .string) }
+                            Button("复制恢复码") { NSPasteboard.general.setString(code, forType: .string) }
                                 .buttonStyle(.plain)
                                 .smallAction()
                         }
@@ -370,6 +376,11 @@ struct PrivacyBackupSettingsView: View {
                     .labelsHidden()
                 }
 
+                if lastExportAt > 0 {
+                    Text("上次加密备份：\(Date(timeIntervalSince1970: lastExportAt).formatted(date: .abbreviated, time: .shortened))")
+                        .font(AppTypography.micro())
+                        .foregroundStyle(Color.secondaryInk)
+                }
                 RiverPanelRow(title: "导出加密备份", detail: "包含日记、修改、快记与两个事实库的加密快照") {
                     HStack(spacing: AppSpacing.sm) {
                         Button { exportBackup() } label: {
@@ -579,6 +590,7 @@ struct PrivacyBackupSettingsView: View {
                 legacyDatabaseSnapshot: legacySnapshot,
                 v2DatabaseSnapshot: v2Snapshot
             )
+            lastExportAt = Date().timeIntervalSince1970
             report("已创建加密备份：\(url.lastPathComponent)", kind: .success)
         } catch {
             report("备份失败：\(UserFacingError.message(for: error))", kind: .error)

@@ -114,6 +114,7 @@ fi
 
 if [[ "$skip_privacy" -eq 0 ]]; then
   run_simple_step "privacy-scan" ./scripts/verify_release_privacy.sh --report "$work_root/privacy-report.json"
+  run_simple_step "build-privacy" ./scripts/verify_build_privacy.sh
 else
   record "privacy-scan" "unverified" "本轮显式跳过"
 fi

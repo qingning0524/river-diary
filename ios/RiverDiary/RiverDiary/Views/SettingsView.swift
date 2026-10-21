@@ -439,7 +439,10 @@ struct SettingsView: View {
                         .font(.footnote)
                         .foregroundStyle(theme.secondaryInk)
 
-                    Button(showsSyncKey ? "隐藏密钥" : "显示或创建同步密钥") {
+                    Text("换机或重装前必须把这串恢复码保存到本机之外。只存在钥匙串里的密钥会随设备丢失；没有它，加密备份和同步对象都无法解密。")
+                        .font(.footnote)
+                        .foregroundStyle(theme.warning)
+                    Button(showsSyncKey ? "隐藏恢复码" : "显示或创建恢复码") {
                         if !showsSyncKey {
                             node.revealOrCreateSyncKey()
                             node.restoreLANReplicationPreference(using: drive)
@@ -451,7 +454,7 @@ struct SettingsView: View {
                             .font(.caption.monospaced())
                             .textSelection(.enabled)
                             .lineLimit(3)
-                        Button("复制同步密钥") {
+                        Button("复制恢复码") {
                             UIPasteboard.general.string = code
                         }
                     }
@@ -468,7 +471,7 @@ struct SettingsView: View {
                         syncKeyText = ""
                     }
                     .disabled(syncKeyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    Text("两台设备选择同一个 iCloud Drive 文件夹，并导入同一密钥。密钥只保存在本机钥匙串；同步文件不包含明文密钥。")
+                    Text("两台设备选择同一个 iCloud Drive 文件夹，并导入同一恢复码。恢复码只保存在本机钥匙串，请自行离线保存；同步文件不包含明文密钥。")
                         .font(.footnote)
                         .foregroundStyle(theme.secondaryInk)
                     if !node.devices.isEmpty {
@@ -873,6 +876,24 @@ private struct IPhoneAISettings: View {
             }.frame(minHeight: 44)
         }
         Section {
+            Menu {
+                Button("DeepSeek") {
+                    ai.endpoint = "https://api.deepseek.com/chat/completions"
+                    ai.model = "deepseek-chat"
+                }
+                Button("OpenAI 兼容") {
+                    ai.endpoint = "https://api.openai.com/v1/chat/completions"
+                    ai.model = "gpt-4o-mini"
+                }
+                Button("本机 Ollama") {
+                    ai.endpoint = "http://127.0.0.1:11434/v1/chat/completions"
+                    ai.model = "llama3.1"
+                }
+            } label: {
+                Label("填入常用服务（仍可自定义）", systemImage: "wand.and.stars")
+                    .font(.footnote)
+            }
+            .accessibilityIdentifier("river.ai.preset")
             VStack(alignment: .leading, spacing: 8) {
                 Text("服务地址").font(.footnote).foregroundStyle(theme.secondaryInk)
                 TextField("API 基础地址或完整接口地址", text: $ai.endpoint)

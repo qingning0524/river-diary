@@ -415,6 +415,12 @@ curl --fail --silent --show-error http://127.0.0.1:8081/admin-api/v1/auth/sessio
 sudo chmod 600 /etc/flowriver/server.env
 sudo systemctl disable --now flowriver-admin-only
 sudo systemctl enable --now flowriver-api
+
+# 多站点主机不要直接覆盖：deploy/Caddyfile 只有 api/admin 两个站点。
+# 如果这台主机还承载官网/登录/用户控制台，先备份，再把 api/admin 块合并进
+# 现有 /etc/caddy/Caddyfile（完整六站点见 website/deploy/Caddyfile），
+# 或直接使用 website/deploy/Caddyfile。直接覆盖会让官网/登录/控制台 404。
+sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.before-flowriver 2>/dev/null || true
 sudo install -m 0644 "$HOME/flowriver-upload/deploy/Caddyfile" /etc/caddy/Caddyfile
 sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 sudo systemctl reload caddy
@@ -468,6 +474,8 @@ sudo systemctl start flowriver-api
 
 ```sh
 sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.before-flowriver
+# 同上：server/deploy/Caddyfile 只含 api/admin；已有官网/登录/控制台时
+# 必须合并站点块，或改用 website/deploy/Caddyfile。不要直接覆盖。
 sudo install -m 0644 "$HOME/flowriver-upload/deploy/Caddyfile" /etc/caddy/Caddyfile
 sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 if sudo systemctl is-active --quiet caddy; then sudo systemctl reload caddy; else sudo systemctl enable --now caddy; fi

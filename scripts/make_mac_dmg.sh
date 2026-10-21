@@ -11,7 +11,15 @@ app="${RIVER_APP_PATH:-$repo_root/dist/River Diary.app}"
 version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist" 2>/dev/null || print 1.0.0)"
 arch="$(/usr/bin/file "$app/Contents/MacOS/RiverDiary" | sed -nE 's/.*(arm64|x86_64).*/\1/p' | head -1)"
 [[ -n "$arch" ]] || arch="unknown"
-name="RiverDiary-${version}-${arch}"
+authority="$(/usr/bin/codesign -dv --verbose=4 "$app" 2>&1 | sed -nE 's/^Authority=(.*)$/\1/p' | head -1)"
+if [[ -n "$authority" ]]; then
+  signature_tag="signed"
+  signature_line="签名：$authority（未公证）"
+else
+  signature_tag="adhoc"
+  signature_line="签名：ad-hoc（每次重新构建可能变化；首次打开可能要求钥匙串授权）"
+fi
+name="RiverDiary-${version}-${arch}-${signature_tag}"
 out="$repo_root/dist/${name}.dmg"
 stage="$(/usr/bin/mktemp -d "${TMPDIR%/}/riverdmg.XXXXXX")"
 trap 'rm -rf "$stage"' EXIT
@@ -21,6 +29,7 @@ ln -s /Applications "$stage/Applications"
 
 cat > "$stage/安装说明.txt" <<TXT
 河流日记 River Diary ${version}（赞助演示版 · ${arch}）
+${signature_line}
 
 系统要求
 - macOS 14 或更高
