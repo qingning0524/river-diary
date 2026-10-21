@@ -29,14 +29,61 @@ func (a *API) checkOrigin(r *http.Request) error {
 	return nil
 }
 
-func (a *API) consumeAuthLimit(ctx context.Context, r *http.Request, purpose, identity string, windowSeconds, maximum int) (bool, error) {
-	if purpose == "login" {
-		ipAllowed, err := a.consumeBucket(ctx, purpose+"-source", a.requestIP(r), windowSeconds, maximum)
-		if err != nil || !ipAllowed {
-			return ipAllowed, err
-		}
+const (
+	loginFailureWindow = 15 * time.Minute
+	loginFailureLimit  = 5
+)
+
+// Administrator login throttling is account-scoped. The deployment sits behind
+// a tunnel, so every request can arrive from the same loopback address; an IP
+// bucket would either throttle every administrator together or none at all.
+// Failures share the durable admin_auth_buckets table with the other admin
+// limits, but this bucket is removed on a fully successful login.
+type rowQuerier interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+type rowExecer interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}
+
+func (a *API) loginFailureBucket(adminID string) []byte {
+	return secure.MAC(a.cfg.AdminAuditHMACKey, "admin-auth-limit", "login-failure", adminID)
+}
+
+func (a *API) loginFailureCount(ctx context.Context, q rowQuerier, adminID string) (int, error) {
+	var count int
+	err := q.QueryRow(ctx, `
+		SELECT CASE WHEN window_start > now()-make_interval(secs=>$2) THEN hits ELSE 0 END
+		FROM admin_auth_buckets WHERE bucket_mac=$1`, a.loginFailureBucket(adminID), int(loginFailureWindow.Seconds())).Scan(&count)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, nil
 	}
-	return a.consumeBucket(ctx, purpose, identity, windowSeconds, maximum)
+	return count, err
+}
+
+func (a *API) recordLoginFailure(ctx context.Context, q rowQuerier, adminID string) (int, error) {
+	bucket := a.loginFailureBucket(adminID)
+	var count int
+	err := q.QueryRow(ctx, `
+		INSERT INTO admin_auth_buckets(bucket_mac,window_start,hits,expires_at)
+		VALUES($1,now(),1,now()+make_interval(secs=>$2))
+		ON CONFLICT(bucket_mac) DO UPDATE SET
+		  window_start=CASE WHEN admin_auth_buckets.window_start<=now()-make_interval(secs=>$2) THEN now() ELSE admin_auth_buckets.window_start END,
+		  hits=CASE WHEN admin_auth_buckets.window_start<=now()-make_interval(secs=>$2) THEN 1 ELSE LEAST(admin_auth_buckets.hits+1,100000) END,
+		  expires_at=now()+make_interval(secs=>$2)
+		RETURNING hits`, bucket, int(loginFailureWindow.Seconds())).Scan(&count)
+	return count, err
+}
+
+func (a *API) clearLoginFailures(ctx context.Context, q rowExecer, adminID string) error {
+	_, err := q.Exec(ctx, `DELETE FROM admin_auth_buckets WHERE bucket_mac=$1`, a.loginFailureBucket(adminID))
+	return err
+}
+
+func (a *API) loginThrottled(ctx context.Context, q rowQuerier, adminID string) (bool, error) {
+	count, err := a.loginFailureCount(ctx, q, adminID)
+	return count >= loginFailureLimit, err
 }
 
 func (a *API) consumeBucket(ctx context.Context, purpose, identity string, windowSeconds, maximum int) (bool, error) {
@@ -85,37 +132,50 @@ func (a *API) login(w http.ResponseWriter, r *http.Request) {
 	if !validUsername {
 		username = "invalid"
 	}
-	allowed, err := a.consumeAuthLimit(r.Context(), r, "login", username, 900, 10)
-	if err != nil {
-		writeError(w, apiError{Status: 503, Code: "temporarily_unavailable"})
-		return
-	}
-	if !allowed {
-		writeError(w, apiError{Status: 429, Code: "temporarily_throttled"})
-		return
-	}
-	if len(input.Password) == 0 || len(input.Password) > 128 {
-		writeError(w, apiError{Status: 401, Code: "invalid_credentials"})
-		return
-	}
-	if err := a.acquirePasswordSlot(r.Context()); err != nil {
-		writeError(w, err)
-		return
-	}
 	var adminID, encodedHash string
 	var disabled bool
 	lookupErr := a.db.QueryRow(r.Context(), `SELECT id::text,password_hash,disabled_at IS NOT NULL FROM admin_accounts WHERE username=$1`, username).
 		Scan(&adminID, &encodedHash, &disabled)
-	found := lookupErr == nil && validUsername
-	if !found {
-		encodedHash = a.fakeHash
+	if lookupErr != nil && !errors.Is(lookupErr, pgx.ErrNoRows) {
+		writeError(w, apiError{Status: 503, Code: "temporarily_unavailable"})
+		return
 	}
-	passwordValid := verifyPassword(encodedHash, input.Password)
-	a.releasePasswordSlot()
-	if !found || !passwordValid || disabled {
-		if lookupErr != nil && !errors.Is(lookupErr, pgx.ErrNoRows) {
+	found := lookupErr == nil && validUsername
+	if found {
+		throttled, err := a.loginThrottled(r.Context(), a.db, adminID)
+		if err != nil {
 			writeError(w, apiError{Status: 503, Code: "temporarily_unavailable"})
 			return
+		}
+		if throttled {
+			if err := a.audit(r.Context(), adminID, "admin.login.throttled", "", "", "", "denied", a.ipMAC(r)); err != nil {
+				writeError(w, apiError{Status: 503, Code: "temporarily_unavailable"})
+				return
+			}
+			writeError(w, apiError{Status: 429, Code: "rate_limited"})
+			return
+		}
+	}
+
+	invalidPassword := len(input.Password) == 0 || len(input.Password) > 128
+	passwordValid := false
+	if !invalidPassword {
+		if err := a.acquirePasswordSlot(r.Context()); err != nil {
+			writeError(w, err)
+			return
+		}
+		if !found {
+			encodedHash = a.fakeHash
+		}
+		passwordValid = verifyPassword(encodedHash, input.Password)
+		a.releasePasswordSlot()
+	}
+	if !found || invalidPassword || !passwordValid || disabled {
+		if found {
+			if _, err := a.recordLoginFailure(r.Context(), a.db, adminID); err != nil {
+				writeError(w, apiError{Status: 503, Code: "temporarily_unavailable"})
+				return
+			}
 		}
 		if err := a.audit(r.Context(), adminID, "admin.login.password", "", "", "", "denied", a.ipMAC(r)); err != nil {
 			writeError(w, apiError{Status: 503, Code: "temporarily_unavailable"})
@@ -152,15 +212,6 @@ func (a *API) completeMFA(w http.ResponseWriter, r *http.Request) {
 		writeError(w, apiError{Status: 400, Code: "invalid_request"})
 		return
 	}
-	allowed, err := a.consumeAuthLimit(r.Context(), r, "mfa", a.requestIP(r), 600, 8)
-	if err != nil {
-		a.mfaUnavailable(w, r, "rate_limit_database", err)
-		return
-	}
-	if !allowed {
-		writeError(w, apiError{Status: 429, Code: "temporarily_throttled"})
-		return
-	}
 	if err := a.acquirePasswordSlot(r.Context()); err != nil {
 		if apiErr, ok := err.(apiError); ok && apiErr.Status == 503 {
 			a.mfaUnavailable(w, r, "password_slot_context", err)
@@ -194,6 +245,23 @@ func (a *API) completeMFA(w http.ResponseWriter, r *http.Request) {
 		writeError(w, apiError{Status: 401, Code: "invalid_challenge"})
 		return
 	}
+	throttled, err := a.loginThrottled(r.Context(), tx, adminID)
+	if err != nil {
+		a.mfaUnavailable(w, r, "login_throttle_read", err)
+		return
+	}
+	if throttled {
+		if err := tx.Rollback(r.Context()); err != nil {
+			a.mfaUnavailable(w, r, "throttle_rollback", err)
+			return
+		}
+		if err := a.audit(r.Context(), adminID, "admin.login.throttled", "", "", "", "denied", challengeIP); err != nil {
+			a.mfaUnavailable(w, r, "throttle_audit", err)
+			return
+		}
+		writeError(w, apiError{Status: 429, Code: "rate_limited"})
+		return
+	}
 	secret, err := a.totpBox.Open(sealed, []byte("flowriver-admin-totp:"+adminID))
 	if err != nil {
 		a.mfaUnavailable(w, r, "totp_secret_unseal", err)
@@ -202,6 +270,10 @@ func (a *API) completeMFA(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().UTC()
 	step, valid := acceptTOTP(secret, input.Code, now, lastStep)
 	if !valid {
+		if _, err := a.recordLoginFailure(r.Context(), tx, adminID); err != nil {
+			a.mfaUnavailable(w, r, "invalid_code_throttle_update", err)
+			return
+		}
 		if _, err := tx.Exec(r.Context(), `UPDATE admin_login_challenges SET attempts=attempts+1 WHERE challenge_mac=$1`, secure.Digest(input.Challenge)); err != nil {
 			a.mfaUnavailable(w, r, "invalid_code_attempt_update", err)
 			return
@@ -238,6 +310,10 @@ func (a *API) completeMFA(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, err := tx.Exec(r.Context(), `DELETE FROM admin_login_challenges WHERE challenge_mac=$1`, secure.Digest(input.Challenge)); err != nil {
 		a.mfaUnavailable(w, r, "challenge_delete", err)
+		return
+	}
+	if err := a.clearLoginFailures(r.Context(), tx, adminID); err != nil {
+		a.mfaUnavailable(w, r, "login_throttle_clear", err)
 		return
 	}
 	if err := a.auditTx(r.Context(), tx, adminID, "admin.login.mfa", "", "", "", "success", challengeIP); err != nil {
@@ -387,7 +463,7 @@ func (a *API) reauthenticate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	allowed, err := a.consumeAuthLimit(r.Context(), r, "reauth", s.AdminID, 600, 8)
+	allowed, err := a.consumeBucket(r.Context(), "reauth", s.AdminID, 600, 8)
 	if err != nil {
 		writeError(w, apiError{Status: 503, Code: "temporarily_unavailable"})
 		return
