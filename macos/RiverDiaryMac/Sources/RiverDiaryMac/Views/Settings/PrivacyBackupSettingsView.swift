@@ -15,6 +15,8 @@ struct PrivacyBackupSettingsView: View {
     @State private var showsClearConfirmation = false
     @State private var showsRestoreConfirmation = false
     @State private var pendingRestoreURL: URL?
+    @State private var showsPortableRestoreConfirmation = false
+    @State private var pendingPortableRestoreURL: URL?
     @AppStorage("privacy.appLockEnabled") private var appLockEnabled = false
     @AppStorage("backup.lastExportAt") private var lastExportAt: Double = 0
     @State private var inspectionResult: String?
@@ -51,6 +53,12 @@ struct PrivacyBackupSettingsView: View {
             Button("取消", role: .cancel) {}
         } message: {
             Text("恢复前会校验快照并加密保存当前数据的恢复点。运行中失败会回滚；若应用意外退出，下次启动会先尝试恢复旧数据，成功前不会打开数据页面。")
+        }
+        .confirmationDialog("要用这个可移植备份替换当前数据吗？", isPresented: $showsPortableRestoreConfirmation, titleVisibility: .visible) {
+            Button("恢复可移植备份", role: .destructive) { completePortableRestore() }
+            Button("取消", role: .cancel) { cancelPortableRestore() }
+        } message: {
+            Text("可移植备份已通过内容和数据库校验。恢复会替换当前 Mac 的日记与两个事实库，并先保存恢复点；失败会回滚。")
         }
         .fileExporter(
             isPresented: $showsDiagnosticsExport,
@@ -744,7 +752,6 @@ struct PrivacyBackupSettingsView: View {
 
         let temporaryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("portable-restore-\(UUID().uuidString).riverbackup")
-        defer { try? FileManager.default.removeItem(at: temporaryURL) }
         do {
             let data = try Data(contentsOf: url)
             let payload = try PortableBackupArchive.open(data, using: key)
@@ -766,10 +773,27 @@ struct PrivacyBackupSettingsView: View {
                 v2DatabaseSnapshot: v2Snapshot
             )
             try localBackup.write(to: temporaryURL, options: .atomic)
-            performRestore(from: temporaryURL)
+            cancelPortableRestore()
+            pendingPortableRestoreURL = temporaryURL
+            showsPortableRestoreConfirmation = true
         } catch {
+            try? FileManager.default.removeItem(at: temporaryURL)
             report("可移植备份恢复失败：\(UserFacingError.message(for: error))", kind: .error)
         }
+    }
+
+    private func completePortableRestore() {
+        guard let url = pendingPortableRestoreURL else { return }
+        pendingPortableRestoreURL = nil
+        performRestore(from: url)
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    private func cancelPortableRestore() {
+        if let url = pendingPortableRestoreURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        pendingPortableRestoreURL = nil
     }
 
     private func exportBackup() {
