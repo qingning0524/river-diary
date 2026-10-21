@@ -25,19 +25,26 @@ if [[ -f "$root/output/analysis/mac-demo-data.png" ]]; then
   /usr/bin/sips -Z 1600 "$root/output/analysis/mac-demo-data.png" --out "$stage/RiverDiary-D0/演示截图.png" >/dev/null
 fi
 
-/usr/bin/hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$dmg" >/dev/null
-if [[ -f "$mnt/安装说明.txt" ]]; then
-  cp "$mnt/安装说明.txt" "$stage/RiverDiary-D0/安装说明.txt"
+install_note="$root/dist/安装说明.txt"
+if [[ -f "$install_note" ]]; then
+  cp "$install_note" "$stage/RiverDiary-D0/安装说明.txt"
+else
+  # 兼容旧 dist：没有根目录安装说明时，从 DMG 里取。
+  /usr/bin/hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$dmg" >/dev/null
+  if [[ -f "$mnt/安装说明.txt" ]]; then
+    cp "$mnt/安装说明.txt" "$stage/RiverDiary-D0/安装说明.txt"
+  fi
+  /usr/bin/hdiutil detach "$mnt" >/dev/null
+  trap - EXIT
+  /bin/rm -rf "$mnt"
 fi
-/usr/bin/hdiutil detach "$mnt" >/dev/null
-trap - EXIT
-/bin/rm -rf "$mnt"
 
 cat > "$stage/RiverDiary-D0/先读我.txt" <<'TXT'
 河流日记 D0 赞助演示包（macOS / Apple Silicon）
 
 这个包只给种子用户/赞助者试用，不是正式发布版。
-- 先看《安装说明.txt》，首次打开需要右键 → 打开，或执行 xattr 命令。
+- 先看《安装说明.txt》：先核对 SHA-256，再右键 → 打开；被拦截时执行里面的 xattr 命令。
+- 校验命令：在 DMG 与 .sha256 所在目录执行 `shasum -a 256 -c *.dmg.sha256`，看到 OK 才打开。
 - 不要把这个包重新上传到公开网盘或应用市场。
 - 反馈时只发版本、芯片、复现步骤；不要发日记正文、恢复码、API Key。
 - 先写日记后绑定账号；不绑定也能用。绑定后本机资料归当前账号。
@@ -54,6 +61,7 @@ TXT
 mkdir -p "$root/dist"
 out="$root/dist/RiverDiary-D0-Sponsor-Kit-$version-$(date +%Y%m%d).zip"
 (cd "$stage" && /usr/bin/zip -q -r -X "$out" RiverDiary-D0)
-/usr/bin/shasum -a 256 "$out" > "$out.sha256"
+base="$(basename "$out")"
+(cd "$(dirname "$out")" && /usr/bin/shasum -a 256 "$base" > "$base.sha256")
 print "Created: $out"
-print "SHA-256: $(cat "$out.sha256")"
+print "SHA-256: $(cut -d' ' -f1 "$out.sha256")"

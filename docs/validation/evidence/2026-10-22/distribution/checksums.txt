@@ -1,0 +1,2 @@
+RiverDiary-1.0.0-arm64-signed.dmg: OK
+RiverDiary-D0-Sponsor-Kit-1.0.0-20261022.zip: OK
