@@ -159,6 +159,9 @@ struct RiverShellView: View {
     @State private var inspectorReturnFocusID: String?
     @FocusState private var inspectorSourceFocusID: String?
     @State private var showsCapture = false
+    @AppStorage("onboarding.localFirst.v1") private var hasSeenLocalWelcome = false
+    @State private var showsLocalWelcome = false
+    @State private var welcomeWantsWrite = false
     @State private var shouldExpandJournalEditor = false
     @State private var showsCommandPalette = false
     @State private var askQuery = "这周主要做了什么？"
@@ -243,8 +246,31 @@ struct RiverShellView: View {
             }
             .background(Color.workspace)
             .environmentObject(feedback)
+            .sheet(isPresented: $showsLocalWelcome, onDismiss: {
+                if welcomeWantsWrite {
+                    welcomeWantsWrite = false
+                    showsCapture = true
+                }
+            }) {
+                MacLocalFirstWelcomeView(
+                    onWrite: {
+                        hasSeenLocalWelcome = true
+                        welcomeWantsWrite = true
+                        showsLocalWelcome = false
+                    },
+                    onSkip: {
+                        hasSeenLocalWelcome = true
+                        showsLocalWelcome = false
+                    }
+                )
+            }
             .sheet(isPresented: $showsCapture) {
                 QuickNoteSheet(store: store, date: dateContext.selectedDate)
+            }
+            .onAppear {
+                guard !hasSeenLocalWelcome,
+                      !ProcessInfo.processInfo.arguments.contains("--skip-onboarding") else { return }
+                showsLocalWelcome = true
             }
             .sheet(isPresented: $showsCommandPalette) {
                 CommandPaletteView(
@@ -1112,5 +1138,63 @@ struct QuickNoteSheet: View {
         .background(Color.strongSurface)
         // ⌘N 唤起后光标必须已经在输入框里，不能让用户再去拿鼠标。
         .onAppear { editorFocused = true }
+    }
+}
+
+private struct MacLocalFirstWelcomeView: View {
+    let onWrite: () -> Void
+    let onSkip: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.lg) {
+            HStack {
+                Text("RIVER DIARY")
+                    .font(.system(size: 11, weight: .semibold))
+                    .tracking(1.6)
+                    .foregroundStyle(Color.secondaryInk)
+                Spacer()
+                Image(systemName: "water.waves")
+                    .foregroundStyle(AppTheme.accent)
+            }
+            Text("先写下来，账号可以以后再说。")
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("河流日记是本地优先的。日记默认只在这台设备；自动记录、AI 和账号都是可选的增强。")
+                .font(.system(size: 13))
+                .foregroundStyle(Color.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 14) {
+                welcomeRow("laptopcomputer", "本机优先", "不绑定账号也能写、能看、能搜索。")
+                welcomeRow("person.crop.circle.badge.checkmark", "账号可选", "绑定后才使用官方 AI 额度、云副本与设备管理。")
+                welcomeRow("arrow.up.right.square", "随时带走", "加密备份需要恢复码；请把它保存在本机之外。")
+            }
+            HStack(spacing: AppSpacing.sm) {
+                Button("开始写第一句", action: onWrite)
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppTheme.accent)
+                Button("先随便看看", action: onSkip)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.secondaryInk)
+            }
+            .padding(.top, AppSpacing.xs)
+        }
+        .padding(28)
+        .frame(width: 520)
+        .background(Color.workspace)
+    }
+
+    private func welcomeRow(_ symbol: String, _ title: String, _ detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppTheme.accent)
+                .frame(width: 34, height: 34)
+                .background(AppTheme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 11))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.system(size: 13, weight: .semibold)).foregroundStyle(Color.ink)
+                Text(detail).font(.system(size: 12)).foregroundStyle(Color.secondaryInk).fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }

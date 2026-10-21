@@ -39,9 +39,22 @@ if [[ -n "$(git status --porcelain)" ]]; then
   exit 65
 fi
 commit="$(git rev-parse HEAD)"
+# 报告路径必须相对原始仓库解析；下面会进入只含已跟踪文件的临时检出。
+if [[ -n "$report_path" && "$report_path" != /* ]]; then
+  report_path="$repo_root/$report_path"
+fi
 source "$repo_root/scripts/select_xcode.sh" >/dev/null
 
 work_root="$(mktemp -d "${TMPDIR%/}/RiverDiary-release-gate.XXXXXX")"
+checkout="$work_root/checkout"
+mkdir -p "$checkout"
+# 只导出已跟踪文件：忽略的个人快照、派生 .app、.simbuild 等不得进入门禁。
+git archive "$commit" | tar -x -C "$checkout"
+if [[ ! -f "$checkout/scripts/release_gate.sh" ]]; then
+  print -u2 "FAIL: 无法创建干净检出"
+  exit 65
+fi
+cd "$checkout"
 typeset -a step_names=()
 typeset -a step_status=()
 typeset -a step_notes=()

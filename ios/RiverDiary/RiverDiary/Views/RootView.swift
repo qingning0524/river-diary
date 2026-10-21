@@ -11,6 +11,9 @@ struct RootView: View {
     @StateObject private var drafts = RiverLocalDraftStore()
     @State private var qaLoginCompleted = false
     @State private var journalFeedback: RiverFeedback?
+    @AppStorage("onboarding.localFirst.v1") private var hasSeenLocalWelcome = false
+    @State private var showsLocalWelcome = false
+    @State private var welcomeWantsWrite = false
 
     private var activeTheme: RiverThemeContext { themeStore.context(for: colorScheme) }
 
@@ -76,6 +79,31 @@ struct RootView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(activeTheme.canvas.ignoresSafeArea())
+        .sheet(isPresented: $showsLocalWelcome, onDismiss: {
+            if welcomeWantsWrite {
+                welcomeWantsWrite = false
+                coordinator.presentJournal(on: Date())
+            }
+        }) {
+            LocalFirstWelcomeView(
+                onWrite: {
+                    hasSeenLocalWelcome = true
+                    welcomeWantsWrite = true
+                    showsLocalWelcome = false
+                },
+                onSkip: {
+                    hasSeenLocalWelcome = true
+                    showsLocalWelcome = false
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+        .onAppear {
+            guard !hasSeenLocalWelcome, !isQADesignSession,
+                  !ProcessInfo.processInfo.arguments.contains("--skip-onboarding") else { return }
+            showsLocalWelcome = true
+        }
         .sheet(item: $coordinator.journalPresentation) { presentation in
             RiverJournalComposerView(date: presentation.date) {
                 coordinator.journalSaveRevision &+= 1
@@ -113,6 +141,58 @@ struct RootView: View {
     }
 
 
+}
+
+private struct LocalFirstWelcomeView: View {
+    @Environment(\.riverTheme) private var theme
+    let onWrite: () -> Void
+    let onSkip: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                Text("RIVER DIARY").font(.system(size: 11, weight: .semibold)).tracking(1.6).foregroundStyle(theme.secondaryInk)
+                Spacer()
+                Image(systemName: "water.waves").foregroundStyle(theme.accentText)
+            }
+            Text("先写下来，\n账号可以以后再说。")
+                .font(.system(.title, design: .rounded).weight(.bold))
+                .foregroundStyle(theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("河流日记是本地优先的。日记默认只在这台设备；自动记录、AI 和账号都是可选的增强。")
+                .font(theme.detailFont)
+                .foregroundStyle(theme.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 14) {
+                welcomeRow("iphone", title: "本机优先", detail: "不绑定账号也能写、能看、能搜索。")
+                welcomeRow("lock.shield", title: "账号可选", detail: "绑定后才使用官方 AI 额度、云副本与设备管理。")
+                welcomeRow("arrow.up.right.square", title: "随时带走", detail: "加密备份需要恢复码；请把它保存在本机之外。")
+            }
+            Spacer(minLength: 4)
+            Button("开始写第一句", action: onWrite)
+                .riverPrimary()
+            Button("先随便看看", action: onSkip)
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(theme.secondaryInk)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .padding(24)
+        .background(theme.canvas.ignoresSafeArea())
+    }
+
+    private func welcomeRow(_ symbol: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(theme.accentText)
+                .frame(width: 34, height: 34)
+                .background(theme.accentSoft, in: RoundedRectangle(cornerRadius: 11))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(theme.ink)
+                Text(detail).font(.footnote).foregroundStyle(theme.secondaryInk).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
 }
 
 private struct LocalLibraryUnavailableView: View {
