@@ -1,6 +1,7 @@
 {
   "date": "2026-10-22",
   "branch": "全局",
+  "code_commit": "45cbb12618a65125d198c2896508b65b87353bc0",
   "tests": {
     "web_node": {
       "passed": 41,
@@ -22,9 +23,16 @@
       "run_lines_including_subtests": 93,
       "command": "./scripts/test_server_isolated.sh"
     },
+    "mac_xctest": {
+      "executed": 491,
+      "failed": 0,
+      "env_skipped": 1,
+      "skip_reason": "DiskFullTests cannot attach a temporary disk image under sandbox"
+    },
     "mac_build": "Build complete! (3.64s)",
     "ios_app_build": "** BUILD SUCCEEDED **",
-    "ios_test_build": "** TEST BUILD SUCCEEDED **"
+    "ios_test_build": "** TEST BUILD SUCCEEDED **",
+    "gate": "GATE PASSED (D 阶段); 0 failures, 0 unverified, 1 exemption (iOS unit tests, T23)"
   },
   "server_sql_evidence": {
     "case": "TestMemoryMirrorTwoDevicesStoreOnlyCiphertext",
@@ -112,16 +120,20 @@
       "bytes": 19953
     },
     "scripts/release_gate.sh": {
-      "sha256": "519eb3d2adfb1b1542316928c2baae2e38b948bf36b9f42e39eadbfa70d54f13",
-      "bytes": 8984
+      "sha256": "8feabc24a8ac00e05a7394326c3a6af40de365801c881ae749dc02e7e3e0951e",
+      "bytes": 9676
+    },
+    "scripts/verify_release_privacy.sh": {
+      "sha256": "aee95541f02aea3959e7ecc9628f4efeb52a8fc3e3f665e80f03598e113db1af",
+      "bytes": 8598
     },
     "scripts/test_server_isolated.sh": {
       "sha256": "0eb6c6c26dbe02c005bd9dd4d8c751c68f32edc0ce1e23ca90661643b23f05e2",
       "bytes": 4687
     },
     "docs/validation/CLOUD_INTEROP_2026-10-22.md": {
-      "sha256": "510f4d79f56db974b5aa77a742248b9b5af82b821de01a4cf6c0babaf59d9261",
-      "bytes": 10121
+      "sha256": "e50d0dd33b1375d05f11dfd67684c59d4d67781982e2aadfe5bbd7da28b3356e",
+      "bytes": 11920
     }
   },
   "evidence": {
@@ -141,6 +153,14 @@
       "sha256": "f27f5ff437869225b90f10a5a5501b00c2b27c42dcecfbbecdc6aed3edf4045e",
       "bytes": 23154
     },
+    "docs/validation/evidence/2026-10-22/gate-report.json": {
+      "sha256": "c914536a7fd4e6ba86743eedf13963153737dc911ee16c27638f42e7613ba7f8",
+      "bytes": 1362
+    },
+    "docs/validation/evidence/2026-10-22/gate.log": {
+      "sha256": "11eb838a20ebbc19be89867ab3abec04ed988d98a35f5f62510e4c2e13eb8f03",
+      "bytes": 1070
+    },
     "docs/validation/evidence/2026-10-22/ios-app-build.log": {
       "sha256": "4ce88c59cf3c49f5b4b173ea25f16575093850a22d146c599ea06c59884ba706",
       "bytes": 39231
@@ -158,7 +178,7 @@
       "bytes": 1084
     }
   },
-  "note": "Local/isolated validation only; production deploy and real-account journey not performed at the time of this fingerprint.",
+  "note": "Local/isolated validation and D-phase gate only; production deploy and real-account journey not performed. Deployment/real account need PM.",
   "binaries": {
     "ios/.simbuild/Build/Products/Debug-iphonesimulator/RiverDiary.app/RiverDiary": {
       "sha256": "1ca6180ec4d791c4b61db256a8e34622d473c8e9e1f17a7499e52803937bacb6",

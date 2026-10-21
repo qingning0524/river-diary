@@ -1,6 +1,6 @@
 # 云空间原生互通验收 · 2026-10-22
 
-状态：**代码与本地/隔离环境验收通过；尚未部署到生产，尚未用真实账号完成 Mac/iPhone 生产旅程。** 本报告只把实际跑过的命令和输出算作证据；编译通过不等于 UI 旅程通过，服务端集成测试也不等于真机验收。上一轮 Web 云空间的部署与浏览器验收见 [USER_MEMORY_CLOUD_2026-10-20](USER_MEMORY_CLOUD_2026-10-20.md)。
+状态：**代码、隔离测试与 D 阶段门禁通过（提交 45cbb12）；尚未部署到生产，尚未用真实账号完成 Mac/iPhone 生产旅程。** 本报告只把实际跑过的命令和输出算作证据；编译通过不等于 UI 旅程通过，服务端集成测试也不等于真机验收。上一轮 Web 云空间的部署与浏览器验收见 [USER_MEMORY_CLOUD_2026-10-20](USER_MEMORY_CLOUD_2026-10-20.md)。
 
 本轮对应 v5.1 §2.3 / T45 新增范围：独立「云空间」页、macOS/iOS 最小入口（导出→加密→上传；下载→解密→只读预览）、健康数据单独同意、双设备密文往返与 DB 只见密文。
 
@@ -126,9 +126,33 @@ xcodebuild ... -scheme RiverDiaryTests ... build-for-testing
 
 ![移动端登录后云空间](evidence/2026-10-22/cloud-web-signedin-mobile.png)
 
+### 3.6 D 阶段发布门禁
+
+```sh
+./scripts/release_gate.sh --d-phase --report /tmp/river-gate-block2c-report.json
+```
+
+结果：**GATE PASSED (D 阶段)**，0 步失败、0 步未验证、1 步显式豁免（iOS 单测，打印“D 阶段豁免，T23 欠账”），其余步骤全部通过；报告绑定提交 `45cbb12618a65125d198c2896508b65b87353bc0`。
+
+| 步骤 | 结果 |
+|---|---|
+| privacy-scan | PASS（Clean checkout 内先于测试运行；iOS Release 构建使用隔离 HOME/包缓存） |
+| python-node | PASS，# pass 41 |
+| core-tests | PASS，98 tests / 9 suites |
+| mac-tests | PASS，491 项执行，0 failure |
+| server-tests | PASS，65 个顶层测试 |
+| mac-tests-cover | PASS，491 项执行；1 项环境跳过：`DiskFullTests` 沙箱无法挂载临时磁盘镜像 |
+| ios-test-build | PASS，iOS test target `build-for-testing` |
+| ios-tests | EXEMPT，D 阶段豁免，T23 欠账 |
+| build-privacy | PASS |
+
+门禁在本轮发现并修掉三个问题：设置分类测试未包含新增「云空间」；隐私扫描在测试写 `data/data.json` 之后运行会误报“拒绝覆盖”；隐私扫描的 iOS Release 构建没有隔离 SwiftPM 缓存。现在隐私扫描前置到任何测试/构建之前，iOS Release 构建复用与门禁相同的隔离环境；`DiskFullTests` 的沙箱跳过被单独列明，没有算作通过。完整输出：[gate.log](evidence/2026-10-22/gate.log)，JSON：[gate-report.json](evidence/2026-10-22/gate-report.json)。
+
+> 提交 `45cbb12` 是代码+门禁脚本提交；本报告与门禁证据随后以 docs 提交补入，树内容只多出证据文件，不改代码。门禁报告里的 `sourceRevision` 因此仍是 `45cbb12`。
+
 ## 4. 尚未验证 / 不能宣称
 
-1. **未部署**：本轮没有改生产 `/var/www/flowriver`、`/opt/flowriver` 或 `/etc/flowriver`；线上 `user.flowriver.xyz` 仍是 2026-10-20 版本。独立页、健康同意和 `includes_health` 只在本地/隔离环境通过。
+1. **未部署**：本轮没有改生产 `/var/www/flowriver`、`/opt/flowriver` 或 `/etc/flowriver`；线上 `user.flowriver.xyz` 仍是 2026-10-20 版本。独立页、健康同意和 `includes_health` 只在本地/隔离环境通过。**需要 PM**：部署窗口、回滚确认与真实测试账号。
 2. **未用真实账号**：没有在生产环境登录、上传、下载、删除或撤回健康同意；浏览器布局用合成状态。
 3. **未做真机 UI 旅程**：Mac app 与 iOS app 只证明编译通过；没有在真机/模拟器里实际点击「云空间 → 输入口令 → 上传 → 另一台下载」。iOS 的 HealthKit 读取路径也没有在真机上跑过。
 4. **未做 8 MiB / 16 MiB 边界压测**、PBKDF2 600,000 次在低端 iPhone 上的耗时、并发多设备真实写入、网络中断重试、浏览器配额、TOAST/备份恢复。
