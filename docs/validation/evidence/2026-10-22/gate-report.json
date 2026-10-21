@@ -1,7 +1,7 @@
 {
   "reportSchema": 1,
-  "generatedAtUTC": "2026-10-21T17:53:08.968467+00:00",
-  "sourceRevision": "45cbb12618a65125d198c2896508b65b87353bc0",
+  "generatedAtUTC": "2026-10-21T18:52:08.961980+00:00",
+  "sourceRevision": "ab2efadb3ba84627652833f1a42f6474e9268821",
   "failures": 0,
   "unverified": 0,
   "exemptions": 1,
@@ -21,22 +21,22 @@
     {
       "name": "core-tests",
       "status": "pass",
-      "note": "✔ Test run with 98 tests in 9 suites passed after 0.104 seconds."
+      "note": "✔ Test run with 110 tests in 11 suites passed after 0.103 seconds."
     },
     {
       "name": "mac-tests",
       "status": "pass",
-      "note": "  Executed 491 tests, with 1 test skipped and 0 failures (0 unexpected) in 39.651 (39.692) seconds"
+      "note": "  Executed 495 tests, with 1 test skipped and 0 failures (0 unexpected) in 38.801 (38.841) seconds"
     },
     {
       "name": "server-tests",
       "status": "pass",
-      "note": "Top-level tests passed: 65"
+      "note": "Top-level tests passed: 73"
     },
     {
       "name": "mac-tests-cover",
       "status": "pass",
-      "note": "491 项执行；1 项环境跳过：DiskFullTests 无法挂载临时磁盘镜像"
+      "note": "495 项执行；1 项环境跳过：DiskFullTests 无法挂载临时磁盘镜像"
     },
     {
       "name": "ios-test-build",
