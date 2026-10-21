@@ -106,7 +106,7 @@ rsync -av --delete website/user/ root@198.23.189.187:/var/www/flowriver/user/
 
 - 控制台是只读查看器，不提供网页端速记、编辑或自动同步；首页/空态不展示“写一句”入口。
 - 静态前端已于 2026-10-20 部署到 `user.flowriver.xyz`；旧版备份在服务器 `/var/backups/flowriver/`。
-- Mac/iPhone 的网页副本导出入口已加入源码；Mac app 构建通过，iOS 全部 Swift 源码通过 SwiftPM 编译（完整 Xcode app bundle 仍受本机 SwiftPM 清单缓存权限阻塞）。当前 mirror 的 entries 来自旧版日记 `DiaryData`，V2 记忆/合集/理解卡仍待 T12。
+- Mac/iPhone 的网页副本导出入口已加入源码；Mac app 与 iOS app/test target 均在隔离 Xcode 环境编译通过。当前 mirror 的 entries 来自旧版日记 `DiaryData`，V2 记忆/合集/理解卡仍待 T12。
 - 真实账号与生产接口未在本轮联调；密码/注销/权限依赖服务端配置。
 - 云空间跨设备传输已实现；Mac/iPhone 已有原生最小入口与健康单独同意；真实账号生产旅程、8/16 MB 边界压测、多 profile 隔离、真机辅助技术验收与口令恢复/轮换仍未完成。
 - Safari/WebKit、VoiceOver、最佳辅助字号与真实设备尚未验收。

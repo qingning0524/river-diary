@@ -1,0 +1,25 @@
+# Block 4 production deployment 2026-10-21T18:23:25Z
+backup=/var/backups/flowriver/site-block4-20261021T182141Z
+## local/remote sha256
+status.html                  local=1676e991e8d1eaa23e98063c67492235c85f53bce2c551995b212f5485c9455a remote=1676e991e8d1eaa23e98063c67492235c85f53bce2c551995b212f5485c9455a MATCH
+privacy.html                 local=dc56bb2df6eb13182cedebc89822506e991d7fda65c0846b465acbf53ae555d1 remote=dc56bb2df6eb13182cedebc89822506e991d7fda65c0846b465acbf53ae555d1 MATCH
+terms.html                   local=8dd83d9fd2861b7f0221b8cc09e7cd37b8eb675d80fb54eada576e07c37b74d1 remote=8dd83d9fd2861b7f0221b8cc09e7cd37b8eb675d80fb54eada576e07c37b74d1 MATCH
+index.html                   local=83fcdbfe60aebd2cf565f3a84b375c21de11ead5d6cdfc4405f831af61a438a9 remote=83fcdbfe60aebd2cf565f3a84b375c21de11ead5d6cdfc4405f831af61a438a9 MATCH
+assets/status.css            local=a15f48c53dedae4e027a7d28baaf6b491170b9aabfdb5dae7bb8f0371af2f599 remote=a15f48c53dedae4e027a7d28baaf6b491170b9aabfdb5dae7bb8f0371af2f599 MATCH
+assets/status.js             local=87708f6ee553fbd641800e4c2721f4088858bf07e6ebd84163b8b419eace4e65 remote=87708f6ee553fbd641800e4c2721f4088858bf07e6ebd84163b8b419eace4e65 MATCH
+.well-known/security.txt     local=11bcf5dc4c1c0752d80a7f7f1e912582d314a4a344dd91d559ab66d916d0a612 remote=11bcf5dc4c1c0752d80a7f7f1e912582d314a4a344dd91d559ab66d916d0a612 MATCH
+## caddy
+d4ee6d0b1361062910f233884b432cf610b3c773d7d68adea8b3167f7e5f6422  /etc/caddy/Caddyfile
+0525314aef20c83b7b3b41e7fcc497a38bbe178777196f04e4432a774d367f2d  /var/backups/flowriver/site-block4-20261021T182141Z/Caddyfile.before
+active
+## http
+/status: 301 -> https://flowriver.xyz/status.html
+/status.html: 200 text/html; charset=utf-8
+security.txt: 200 text/plain; charset=utf-8
+privacy: privacy-2 · 2026-10-22
+terms: terms-2 · 2026-10-22
+## rollback
+cp /var/backups/flowriver/site-block4-20261021T182141Z/Caddyfile.before /etc/caddy/Caddyfile && systemctl reload caddy
+tar -xzf /var/backups/flowriver/site-block4-20261021T182141Z/site.tar.gz -C /var/www/flowriver
+## headless Chrome (production)
+{"url":"https://flowriver.xyz/status.html","title":"服务状态 — 河流日记","account":"可响应","download":"当前没有已开放的下载","checked":"最近检查：2026/10/22 02:23:03","busy":"false"}

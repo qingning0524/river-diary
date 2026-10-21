@@ -1,0 +1,57 @@
+{
+  "reportSchema": 1,
+  "generatedAtUTC": "2026-10-21T18:21:33.252177+00:00",
+  "sourceRevision": "af504d2954c7c3133d325919905fda6c2c59e449",
+  "failures": 0,
+  "unverified": 0,
+  "exemptions": 1,
+  "dPhase": true,
+  "verdict": "pass",
+  "steps": [
+    {
+      "name": "privacy-scan",
+      "status": "pass",
+      "note": ""
+    },
+    {
+      "name": "python-node",
+      "status": "pass",
+      "note": "# pass 41"
+    },
+    {
+      "name": "core-tests",
+      "status": "pass",
+      "note": "✔ Test run with 110 tests in 11 suites passed after 0.108 seconds."
+    },
+    {
+      "name": "mac-tests",
+      "status": "pass",
+      "note": "  Executed 495 tests, with 1 test skipped and 0 failures (0 unexpected) in 39.126 (39.167) seconds"
+    },
+    {
+      "name": "server-tests",
+      "status": "pass",
+      "note": "Top-level tests passed: 65"
+    },
+    {
+      "name": "mac-tests-cover",
+      "status": "pass",
+      "note": "495 项执行；1 项环境跳过：DiskFullTests 无法挂载临时磁盘镜像"
+    },
+    {
+      "name": "ios-test-build",
+      "status": "pass",
+      "note": ""
+    },
+    {
+      "name": "ios-tests",
+      "status": "exempt",
+      "note": "D 阶段豁免，T23 欠账；iOS 仅编译 test target，不运行单测"
+    },
+    {
+      "name": "build-privacy",
+      "status": "pass",
+      "note": ""
+    }
+  ]
+}
