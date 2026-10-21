@@ -210,14 +210,65 @@ func (a *API) live(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+const (
+	readyMailFailureWindow = 5 * time.Minute
+	readyOutboxMaxAge      = 10 * time.Minute
+)
+
+type readinessResponse struct {
+	Status                        string    `json:"status"`
+	Database                      string    `json:"database"`
+	MailFailures5m                int64     `json:"mail_failures_5m"`
+	OutboxUnfinished              int64     `json:"outbox_unfinished"`
+	OutboxOldestUnfinishedSeconds int64     `json:"outbox_oldest_unfinished_seconds"`
+	DegradedReasons               []string  `json:"degraded_reasons"`
+	CheckedAt                     time.Time `json:"checked_at"`
+}
+
 func (a *API) ready(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 	if err := a.db.Ping(ctx); err != nil {
 		writeError(w, r, apiError{Status: 503, Code: "temporarily_unavailable"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ready"})
+	var failures, unfinished, oldest int64
+	err := a.db.QueryRow(ctx, `
+		SELECT
+		  (SELECT count(*) FROM outbox_jobs
+		    WHERE kind='email_otp' AND completed_at IS NOT NULL
+		      AND last_error_code IS NOT NULL
+		      AND completed_at > now()-make_interval(secs=>$1))::bigint,
+		  (SELECT count(*) FROM outbox_jobs
+		    WHERE completed_at IS NULL)::bigint,
+		  COALESCE((SELECT EXTRACT(EPOCH FROM now()-min(created_at))::bigint
+		    FROM outbox_jobs WHERE completed_at IS NULL), 0)::bigint`,
+		int(readyMailFailureWindow.Seconds())).Scan(&failures, &unfinished, &oldest)
+	if err != nil {
+		writeError(w, r, apiError{Status: 503, Code: "temporarily_unavailable"})
+		return
+	}
+	reasons := make([]string, 0, 2)
+	if failures > 0 {
+		reasons = append(reasons, "mail_failures_5m")
+	}
+	if unfinished > 0 && oldest > int64(readyOutboxMaxAge.Seconds()) {
+		reasons = append(reasons, "outbox_oldest_unfinished_seconds")
+	}
+	status := "ready"
+	if len(reasons) > 0 {
+		status = "degraded"
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, readinessResponse{
+		Status:                        status,
+		Database:                      "ok",
+		MailFailures5m:                failures,
+		OutboxUnfinished:              unfinished,
+		OutboxOldestUnfinishedSeconds: oldest,
+		DegradedReasons:               reasons,
+		CheckedAt:                     time.Now().UTC(),
+	})
 }
 
 func (a *API) authenticate(r *http.Request) (context.Context, Principal, error) {

@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f0eeeb">
 <script src="/assets/site.js?v=20261008-neumorphic"></script>
 <link rel="stylesheet" href="/assets/style.css?v=20261008-neumorphic">
-<link rel="stylesheet" href="/assets/status.css?v=20261022">
+<link rel="stylesheet" href="/assets/status.css?v=20261022b">
 </head>
 <body class="document-page">
 <a class="skip-link" href="#main-content">跳到主要内容</a>
@@ -19,11 +19,11 @@
 <main class="doc" id="main-content">
   <div class="backline"><a href="/">← 返回首页</a></div>
   <div class="doc-head">
-    <span class="doc-ver">STATUS · status-1 · 2026-10-22</span>
+    <span class="doc-ver">STATUS · status-2 · 2026-10-22</span>
     <h1>服务状态</h1>
   </div>
 
-  <p>本页只检查<strong>账号服务</strong>与<strong>下载分发</strong>是否响应。日记正文、位置、健康数据和 AI 对话默认只在本机，不在此页，也不由本页上传。云空间只保存你在本机加密后的密文。</p>
+  <p>本页只检查<strong>账号服务</strong>、<strong>下载分发</strong>与<strong>邮件队列</strong>是否响应。日记正文、位置、健康数据和 AI 对话默认只在本机，不在此页，也不由本页上传。云空间只保存你在本机加密后的密文。</p>
 
   <div class="status-list" aria-live="polite" aria-busy="true">
     <div class="status-card">
@@ -33,6 +33,10 @@
     <div class="status-card">
       <div class="status-line"><span class="status-dot" data-state="checking" id="download-dot"></span><strong>下载分发</strong><span class="status-value" id="download-status">正在检查…</span></div>
       <p>macOS 安装包是否已由管理员开放。iOS 当前暂不提供 TestFlight 或公开安装包，只在自有设备与模拟器验证。</p>
+    </div>
+    <div class="status-card">
+      <div class="status-line"><span class="status-dot" data-state="checking" id="ready-dot"></span><strong>邮件投递与任务队列</strong><span class="status-value" id="ready-status">正在检查…</span></div>
+      <p>最近 5 分钟邮件失败数，以及 outbox 最老未完成任务。异常时接口返回 <code>degraded</code>，仍为 HTTP 200；数据库不可用才返回 503。</p>
     </div>
   </div>
   <p class="muted" id="checked-at">最近检查：—</p>
@@ -67,6 +71,6 @@
   </div>
 </footer>
 
-<script src="/assets/status.js?v=20261022"></script>
+<script src="/assets/status.js?v=20261022b"></script>
 </body>
 </html>

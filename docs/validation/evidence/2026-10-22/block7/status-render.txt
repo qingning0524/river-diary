@@ -1,0 +1,4 @@
+Mock /v1/site-status: macOS unavailable; mock /health/ready: ready then degraded
+READY {"account":"可响应","download":"当前没有已开放的下载","ready":"邮件队列正常","readyState":"ok","checked":"最近检查：2026/10/22 11:00:00","busy":"false"}
+DEGRADED {"account":"可响应","download":"当前没有已开放的下载","ready":"已降级：5 分钟失败 2 次，最老未完成 12 分钟","readyState":"warn","checked":"最近检查：2026/10/22 11:00:00","busy":"false"}
+MOBILE {"account":"可响应","download":"当前没有已开放的下载","ready":"已降级：5 分钟失败 2 次，最老未完成 12 分钟","readyState":"warn","checked":"最近检查：2026/10/22 11:00:00","busy":"false"}

@@ -1,0 +1,223 @@
+=== RUN   TestParseInboundPrefersPlainBodyAndSkipsAttachments
+--- PASS: TestParseInboundPrefersPlainBodyAndSkipsAttachments (0.00s)
+=== RUN   TestParseInboundSafeUnicodeLimits
+--- PASS: TestParseInboundSafeUnicodeLimits (0.00s)
+=== RUN   TestHTMLMailFallbackExcludesScriptAndKeepsParagraphs
+--- PASS: TestHTMLMailFallbackExcludesScriptAndKeepsParagraphs (0.00s)
+PASS
+ok  	flowriver/server/cmd/api	0.014s
+=== RUN   TestUserSearchFiltersAndStablePagination
+=== RUN   TestUserSearchFiltersAndStablePagination/exact_email
+=== RUN   TestUserSearchFiltersAndStablePagination/exact_user_ID
+=== RUN   TestUserSearchFiltersAndStablePagination/missing_email
+=== RUN   TestUserSearchFiltersAndStablePagination/prefix
+=== RUN   TestUserSearchFiltersAndStablePagination/literal_underscore_prefix
+--- PASS: TestUserSearchFiltersAndStablePagination (0.17s)
+    --- PASS: TestUserSearchFiltersAndStablePagination/exact_email (0.00s)
+    --- PASS: TestUserSearchFiltersAndStablePagination/exact_user_ID (0.00s)
+    --- PASS: TestUserSearchFiltersAndStablePagination/missing_email (0.00s)
+    --- PASS: TestUserSearchFiltersAndStablePagination/prefix (0.00s)
+    --- PASS: TestUserSearchFiltersAndStablePagination/literal_underscore_prefix (0.00s)
+=== RUN   TestProtectedAPIPreservesSessionDuringDatabaseFailure
+--- PASS: TestProtectedAPIPreservesSessionDuringDatabaseFailure (0.17s)
+=== RUN   TestAnnouncementUnicodeLimitsAndLinkSafety
+--- PASS: TestAnnouncementUnicodeLimitsAndLinkSafety (0.00s)
+=== RUN   TestDownloadNoteRollsBackWhenAuditFails
+--- PASS: TestDownloadNoteRollsBackWhenAuditFails (0.19s)
+=== RUN   TestDownloadFailedUploadDoesNotBlockRetry
+--- PASS: TestDownloadFailedUploadDoesNotBlockRetry (0.17s)
+=== RUN   TestDownloadUploadOutlivesOrdinaryReadAndWriteTimeouts
+--- PASS: TestDownloadUploadOutlivesOrdinaryReadAndWriteTimeouts (0.56s)
+=== RUN   TestAdminLoginThrottlesByAccountAfterFiveFailures
+--- PASS: TestAdminLoginThrottlesByAccountAfterFiveFailures (0.20s)
+=== RUN   TestAdminLoginSuccessClearsFailures
+--- PASS: TestAdminLoginSuccessClearsFailures (0.23s)
+=== RUN   TestAdminMFAFailuresShareTheAccountLimit
+--- PASS: TestAdminMFAFailuresShareTheAccountLimit (0.16s)
+=== RUN   TestAdminLoginThrottleWindowExpires
+--- PASS: TestAdminLoginThrottleWindowExpires (0.20s)
+=== RUN   TestAdministrativeMailUnconfirmedSMTPIsNotAutomaticallyRetried
+--- PASS: TestAdministrativeMailUnconfirmedSMTPIsNotAutomaticallyRetried (0.14s)
+=== RUN   TestAdministrativeMailAuditsBeforeDelivery
+=== RUN   TestAdministrativeMailAuditsBeforeDelivery/manual
+=== RUN   TestAdministrativeMailAuditsBeforeDelivery/feedback
+=== RUN   TestAdministrativeMailAuditsBeforeDelivery/inbound
+--- PASS: TestAdministrativeMailAuditsBeforeDelivery (0.46s)
+    --- PASS: TestAdministrativeMailAuditsBeforeDelivery/manual (0.15s)
+    --- PASS: TestAdministrativeMailAuditsBeforeDelivery/feedback (0.16s)
+    --- PASS: TestAdministrativeMailAuditsBeforeDelivery/inbound (0.15s)
+=== RUN   TestAdministrativeMailRetryDoesNotSendTwice
+=== RUN   TestAdministrativeMailRetryDoesNotSendTwice/manual
+=== RUN   TestAdministrativeMailRetryDoesNotSendTwice/feedback
+=== RUN   TestAdministrativeMailRetryDoesNotSendTwice/inbound
+--- PASS: TestAdministrativeMailRetryDoesNotSendTwice (0.42s)
+    --- PASS: TestAdministrativeMailRetryDoesNotSendTwice/manual (0.14s)
+    --- PASS: TestAdministrativeMailRetryDoesNotSendTwice/feedback (0.14s)
+    --- PASS: TestAdministrativeMailRetryDoesNotSendTwice/inbound (0.14s)
+=== RUN   TestAdministrativeMailUncertainRecordingDoesNotResend
+--- PASS: TestAdministrativeMailUncertainRecordingDoesNotResend (0.14s)
+=== RUN   TestPreviewRequiresSessionAndCSRFButDoesNotRequireSendMFA
+--- PASS: TestPreviewRequiresSessionAndCSRFButDoesNotRequireSendMFA (0.18s)
+=== RUN   TestBrandedReplyPersistsExactContentAndThreadContext
+--- PASS: TestBrandedReplyPersistsExactContentAndThreadContext (0.18s)
+=== RUN   TestMailSearchAndOutboundPaginationIncludeFormattedReferences
+--- PASS: TestMailSearchAndOutboundPaginationIncludeFormattedReferences (0.17s)
+=== RUN   TestAdminSessionManagementUsesPublicIDs
+--- PASS: TestAdminSessionManagementUsesPublicIDs (0.14s)
+=== RUN   TestAdminSessionIDMigrationKeepsExistingLogin
+--- PASS: TestAdminSessionIDMigrationKeepsExistingLogin (0.14s)
+=== RUN   TestOperationsMarksOldBackupSuccessAsStale
+--- PASS: TestOperationsMarksOldBackupSuccessAsStale (0.15s)
+=== RUN   TestConfigDescribesAuthenticatedAccessForUniversalNetworks
+--- PASS: TestConfigDescribesAuthenticatedAccessForUniversalNetworks (0.21s)
+=== RUN   TestMailQueueDoesNotLabelSkippedOrUnconfirmedMessagesDelivered
+--- PASS: TestMailQueueDoesNotLabelSkippedOrUnconfirmedMessagesDelivered (0.15s)
+=== RUN   TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks
+=== RUN   TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/terminal_failure
+=== RUN   TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/delivery_uncertain
+=== RUN   TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/expired
+=== RUN   TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/leased
+=== RUN   TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/valid_pending_retry
+--- PASS: TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks (0.14s)
+    --- PASS: TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/terminal_failure (0.00s)
+    --- PASS: TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/delivery_uncertain (0.00s)
+    --- PASS: TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/expired (0.00s)
+    --- PASS: TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/leased (0.00s)
+    --- PASS: TestMailRetryPreservesTerminalHistoryAndOnlyRetriesValidPendingTasks/valid_pending_retry (0.00s)
+=== RUN   TestUserWorkspaceStatisticsAndCombinedFilters
+--- PASS: TestUserWorkspaceStatisticsAndCombinedFilters (0.14s)
+=== RUN   TestUserActivityIsScopedToTheRequestedAccount
+--- PASS: TestUserActivityIsScopedToTheRequestedAccount (0.14s)
+=== RUN   TestEmptyUserDetailUsesArraysInsteadOfNull
+--- PASS: TestEmptyUserDetailUsesArraysInsteadOfNull (0.14s)
+=== RUN   TestDeviceSearchCoversAllPagesAndDisabledAccounts
+--- PASS: TestDeviceSearchCoversAllPagesAndDisabledAccounts (0.14s)
+=== RUN   TestCurrentAdminCannotInvalidateOwnAuthenticator
+--- PASS: TestCurrentAdminCannotInvalidateOwnAuthenticator (0.14s)
+=== RUN   TestRateLimitLookupPreservesEmailLocalCaseAndFailsClosed
+=== RUN   TestRateLimitLookupPreservesEmailLocalCaseAndFailsClosed/canonical_address
+=== RUN   TestRateLimitLookupPreservesEmailLocalCaseAndFailsClosed/database_failure
+--- PASS: TestRateLimitLookupPreservesEmailLocalCaseAndFailsClosed (0.29s)
+    --- PASS: TestRateLimitLookupPreservesEmailLocalCaseAndFailsClosed/canonical_address (0.14s)
+    --- PASS: TestRateLimitLookupPreservesEmailLocalCaseAndFailsClosed/database_failure (0.15s)
+=== RUN   TestInboundMutationsRollBackWithoutAudit
+=== RUN   TestInboundMutationsRollBackWithoutAudit/read
+=== RUN   TestInboundMutationsRollBackWithoutAudit/delete
+--- PASS: TestInboundMutationsRollBackWithoutAudit (0.28s)
+    --- PASS: TestInboundMutationsRollBackWithoutAudit/read (0.14s)
+    --- PASS: TestInboundMutationsRollBackWithoutAudit/delete (0.14s)
+=== RUN   TestDownloadCannotPublishMissingOrWrongFile
+--- PASS: TestDownloadCannotPublishMissingOrWrongFile (0.14s)
+=== RUN   TestStatisticsUseShanghaiCalendarDays
+--- PASS: TestStatisticsUseShanghaiCalendarDays (0.14s)
+PASS
+ok  	flowriver/server/internal/adminapi	6.238s
+?   	flowriver/server/internal/adminui	[no test files]
+=== RUN   TestProductionRequiresAllAuthenticationAndJournalProviders
+=== RUN   TestProductionRequiresAllAuthenticationAndJournalProviders/missing_Apple_config_fails_closed
+=== RUN   TestProductionRequiresAllAuthenticationAndJournalProviders/local_same-host_database_is_accepted
+=== RUN   TestProductionRequiresAllAuthenticationAndJournalProviders/remote_database_is_rejected
+=== RUN   TestProductionRequiresAllAuthenticationAndJournalProviders/console_mail_is_rejected
+=== RUN   TestProductionRequiresAllAuthenticationAndJournalProviders/non-HTTPS_security_journal_is_rejected
+--- PASS: TestProductionRequiresAllAuthenticationAndJournalProviders (0.00s)
+    --- PASS: TestProductionRequiresAllAuthenticationAndJournalProviders/missing_Apple_config_fails_closed (0.00s)
+    --- PASS: TestProductionRequiresAllAuthenticationAndJournalProviders/local_same-host_database_is_accepted (0.00s)
+    --- PASS: TestProductionRequiresAllAuthenticationAndJournalProviders/remote_database_is_rejected (0.00s)
+    --- PASS: TestProductionRequiresAllAuthenticationAndJournalProviders/console_mail_is_rejected (0.00s)
+    --- PASS: TestProductionRequiresAllAuthenticationAndJournalProviders/non-HTTPS_security_journal_is_rejected (0.00s)
+=== RUN   TestOfficialAIConfigIsOptionalButValidated
+--- PASS: TestOfficialAIConfigIsOptionalButValidated (0.00s)
+PASS
+ok  	flowriver/server/internal/config	0.008s
+=== RUN   TestNativeAppleLoginSharesAccountAcrossGroupedAppIDs
+--- PASS: TestNativeAppleLoginSharesAccountAcrossGroupedAppIDs (0.20s)
+=== RUN   TestAppleIdentityTokenSignatureAndClaims
+--- PASS: TestAppleIdentityTokenSignatureAndClaims (0.07s)
+=== RUN   TestEmailSignupOutboxAndSessionRotation
+--- PASS: TestEmailSignupOutboxAndSessionRotation (0.07s)
+=== RUN   TestRateLimitPersistsAndDoesNotRevealAccountExistence
+--- PASS: TestRateLimitPersistsAndDoesNotRevealAccountExistence (0.06s)
+=== RUN   TestAccountDeletionWaitsForOffHostJournal
+--- PASS: TestAccountDeletionWaitsForOffHostJournal (0.07s)
+=== RUN   TestEmailIdentityLinkRequiresStepUpAndVerifiedCode
+--- PASS: TestEmailIdentityLinkRequiresStepUpAndVerifiedCode (0.07s)
+=== RUN   TestMemoryMirrorIsScopedAndPreconditioned
+--- PASS: TestMemoryMirrorIsScopedAndPreconditioned (0.08s)
+=== RUN   TestMemoryMirrorTwoDevicesStoreOnlyCiphertext
+    memory_mirror_test.go:388: SQL: SELECT count(*) ... WHERE ciphertext/summary LIKE plaintext = 0
+    memory_mirror_test.go:389: DB row: ciphertext_bytes=152 sha256=fcf9616d162c6b0f1e3ad8245cebc04717001508e10fe8f27c41b309d91999db summary={"days": 1, "last": "2026-10-22", "first": "2026-10-22", "places": 0, "entries": 1, "collections": 0, "understandings": 0, "includes_health": true}
+    memory_mirror_test.go:390: Device B decrypted 136 bytes with the passphrase; wrong passphrase rejected
+--- PASS: TestMemoryMirrorTwoDevicesStoreOnlyCiphertext (0.08s)
+=== RUN   TestOfficialAIQuotaAndProviderProxy
+--- PASS: TestOfficialAIQuotaAndProviderProxy (0.08s)
+=== RUN   TestUserPasswordSetLoginResetAndReplay
+--- PASS: TestUserPasswordSetLoginResetAndReplay (1.46s)
+=== RUN   TestPasswordResetUnknownExpiredAndAttemptLimits
+--- PASS: TestPasswordResetUnknownExpiredAndAttemptLimits (0.06s)
+=== RUN   TestPublicDownloadPublicationHeadRangeAndSuspension
+--- PASS: TestPublicDownloadPublicationHeadRangeAndSuspension (0.06s)
+=== RUN   TestPublicDownloadRejectsUnpublishedPathsAndEscapingSymlinks
+--- PASS: TestPublicDownloadRejectsUnpublishedPathsAndEscapingSymlinks (0.08s)
+=== RUN   TestPublicDownloadFailsClosedOnDatabaseFailure
+--- PASS: TestPublicDownloadFailsClosedOnDatabaseFailure (0.07s)
+=== RUN   TestPublicDownloadOutlivesOrdinaryWriteTimeout
+--- PASS: TestPublicDownloadOutlivesOrdinaryWriteTimeout (0.50s)
+=== RUN   TestOrdinaryResponseRetainsShortWriteTimeout
+--- PASS: TestOrdinaryResponseRetainsShortWriteTimeout (0.15s)
+=== RUN   TestReadinessReportsHealthyMailQueue
+--- PASS: TestReadinessReportsHealthyMailQueue (0.05s)
+=== RUN   TestReadinessDegradesOnRecentMailFailureWithoutHTTP500
+--- PASS: TestReadinessDegradesOnRecentMailFailureWithoutHTTP500 (0.06s)
+=== RUN   TestReadinessDegradesOnStaleOutboxTask
+--- PASS: TestReadinessDegradesOnStaleOutboxTask (0.06s)
+=== RUN   TestReadinessIgnoresMailFailuresOlderThanFiveMinutes
+--- PASS: TestReadinessIgnoresMailFailuresOlderThanFiveMinutes (0.05s)
+=== RUN   TestPublicFeedbackRetriesAreIdempotentAndUnicodeAgentsAreSafe
+--- PASS: TestPublicFeedbackRetriesAreIdempotentAndUnicodeAgentsAreSafe (0.06s)
+=== RUN   TestOTPTasksPreserveRealTerminalStatuses
+=== RUN   TestOTPTasksPreserveRealTerminalStatuses/expired
+=== RUN   TestOTPTasksPreserveRealTerminalStatuses/inactive
+=== RUN   TestOTPTasksPreserveRealTerminalStatuses/unconfirmed
+--- PASS: TestOTPTasksPreserveRealTerminalStatuses (0.17s)
+    --- PASS: TestOTPTasksPreserveRealTerminalStatuses/expired (0.06s)
+    --- PASS: TestOTPTasksPreserveRealTerminalStatuses/inactive (0.06s)
+    --- PASS: TestOTPTasksPreserveRealTerminalStatuses/unconfirmed (0.05s)
+=== RUN   TestOTPMetadataRetentionPreservesThirtyDayStatistics
+--- PASS: TestOTPMetadataRetentionPreservesThirtyDayStatistics (0.07s)
+=== RUN   TestPersonalConsoleOwnershipAndFeedbackReplay
+--- PASS: TestPersonalConsoleOwnershipAndFeedbackReplay (0.06s)
+PASS
+ok  	flowriver/server/internal/httpapi	3.772s
+=== RUN   TestParseEmailCanonicalization
+--- PASS: TestParseEmailCanonicalization (0.00s)
+=== RUN   TestParseEmailPreservesLocalPartPolicy
+--- PASS: TestParseEmailPreservesLocalPartPolicy (0.00s)
+=== RUN   TestParseEmailRejectsDisplayNamesAndSMTPUTF8LocalPart
+--- PASS: TestParseEmailRejectsDisplayNamesAndSMTPUTF8LocalPart (0.00s)
+PASS
+ok  	flowriver/server/internal/identity	0.008s
+?   	flowriver/server/internal/jobs	[no test files]
+=== RUN   TestBrandedContentEscapesMarkupAndPreservesPlainFallback
+--- PASS: TestBrandedContentEscapesMarkupAndPreservesPlainFallback (0.00s)
+=== RUN   TestSMTPAdministrativeMailHasUnicodeSubjectAndBothAlternatives
+--- PASS: TestSMTPAdministrativeMailHasUnicodeSubjectAndBothAlternatives (0.00s)
+=== RUN   TestSMTPAcceptanceDoesNotBecomeFailureWhenQuitDisconnects
+--- PASS: TestSMTPAcceptanceDoesNotBecomeFailureWhenQuitDisconnects (0.00s)
+=== RUN   TestSMTPMissingDataAcknowledgementIsExplicitlyUnconfirmed
+--- PASS: TestSMTPMissingDataAcknowledgementIsExplicitlyUnconfirmed (0.00s)
+=== RUN   TestBrandedMessageThreadHeadersAndVerification
+--- PASS: TestBrandedMessageThreadHeadersAndVerification (0.00s)
+PASS
+ok  	flowriver/server/internal/mailer	0.013s
+?   	flowriver/server/internal/migrate	[no test files]
+=== RUN   TestBoxSealsAndAuthenticatesAssociatedData
+--- PASS: TestBoxSealsAndAuthenticatesAssociatedData (0.00s)
+=== RUN   TestMACUsesFieldBoundaries
+--- PASS: TestMACUsesFieldBoundaries (0.00s)
+=== RUN   TestUserPasswordHashSaltAndVerification
+--- PASS: TestUserPasswordHashSaltAndVerification (0.57s)
+=== RUN   TestUserPasswordPolicyAcceptsPassphrasesAndUnicode
+--- PASS: TestUserPasswordPolicyAcceptsPassphrasesAndUnicode (0.45s)
+PASS
+ok  	flowriver/server/internal/secure	1.029s
+?   	flowriver/server/internal/securityjournal	[no test files]

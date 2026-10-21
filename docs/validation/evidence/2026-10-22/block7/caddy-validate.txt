@@ -1,0 +1,4 @@
+Remote staging file: /tmp/Caddyfile.block7
+Command: caddy validate --config /tmp/Caddyfile.block7 --adapter caddyfile
+Result: Valid configuration (EXIT:0)
+SHA-256: 5f4bbdf007774878864188fce79f4a251f9ee1d2c2d8b5909f476db44f973a6a

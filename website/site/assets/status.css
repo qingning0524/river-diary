@@ -35,6 +35,7 @@
 }
 .status-dot[data-state="ok"] { background: var(--ok); }
 .status-dot[data-state="error"] { background: var(--bad); }
+.status-dot[data-state="warn"] { background: var(--warn); }
 .status-dot[data-state="checking"] { background: var(--ink3); }
 .status-card p {
   margin: 8px 0 0;

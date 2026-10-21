@@ -30,6 +30,9 @@ flowriver.xyz {
 	handle /v1/site-status {
 		reverse_proxy 127.0.0.1:8080
 	}
+	handle /health/* {
+		reverse_proxy 127.0.0.1:8080
+	}
 	handle /v1/announcements/* {
 		reverse_proxy 127.0.0.1:8080
 	}
