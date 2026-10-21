@@ -23,7 +23,7 @@
 ## 回滚点
 
 - 首次整站备份：`/var/backups/flowriver/site-before-sponsor-20261021T155043Z`
-- 加截图前的赞助页备份：`/var/backups/flowriver/sponsor-before-image-20261021T155628Z.html`
+- 加截图前的赞助页备份：`/var/backups/flowriver/sponsor-before-image-20261021T155705Z.html`
 - 回滚命令示例：
   `rsync -a --delete /var/backups/flowriver/site-before-sponsor-20261021T155043Z/ /var/www/flowriver/site/`
   注意保留 `downloads/`（若线上存在）。
