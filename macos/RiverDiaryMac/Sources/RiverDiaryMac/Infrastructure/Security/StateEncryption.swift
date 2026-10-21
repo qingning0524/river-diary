@@ -29,6 +29,21 @@ enum StateEncryption {
     private static let keyCacheLock = NSLock()
     private static var keyCache: SymmetricKey?
 
+    #if DEBUG
+    /// 测试/恢复演练用：模拟另一台 Mac 的不同本机密钥，不写 Keychain。
+    static func installTestKeyForDrill(_ key: SymmetricKey) {
+        keyCacheLock.lock()
+        keyCache = key
+        keyCacheLock.unlock()
+    }
+
+    static func clearTestKeyForDrill() {
+        keyCacheLock.lock()
+        keyCache = nil
+        keyCacheLock.unlock()
+    }
+    #endif
+
     static func encrypt(_ plaintext: Data) throws -> Data {
         let key = try encryptionKey()
         let sealed = try AES.GCM.seal(plaintext, using: key)
