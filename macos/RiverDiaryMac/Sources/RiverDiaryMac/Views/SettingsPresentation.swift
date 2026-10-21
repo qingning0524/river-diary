@@ -5,6 +5,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
     case recording = "记录与采集"
     case ai = "AI 与模型"
     case privacy = "隐私与备份"
+    case cloud = "云空间"
     case appearance = "外观与应用"
 
     var id: String { rawValue }
@@ -15,6 +16,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
         case .recording: "waveform.path.ecg"
         case .ai: "sparkles"
         case .privacy: "lock.shield"
+        case .cloud: "cloud"
         case .appearance: "paintbrush"
         }
     }
@@ -26,6 +28,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
         case .recording: "自动记录、采集来源与实时足迹"
         case .ai: "模型连接是可选项，未连接也能使用全部本地记录"
         case .privacy: "信任状态、数据范围、加密备份与应用锁"
+        case .cloud: "手动、端到端加密的只读副本"
         case .appearance: "显示模式与内容密度"
         }
     }

@@ -111,6 +111,10 @@ fi
 
 export TEST_DATABASE_URL="postgres://flowriver@127.0.0.1:$port/flowriver_gate_test?sslmode=disable"
 export PATH="$(dirname "$go_bin"):$PATH"
+# 工作区沙箱/CI 里用户级 go-build 缓存可能不可写；把缓存放进一次性目录，
+# 保证门禁不会因为缓存权限而“没跑就失败”。
+export GOCACHE="$work_root/gocache"
+export GOTMPDIR="$work_root/tmp"
 
 print -r -- "Running go test ./... against TEST_DATABASE_URL=$TEST_DATABASE_URL"
 set +e
@@ -127,6 +131,10 @@ print -r -- "Top-level tests passed: $passes"
 print -r -- "Top-level tests skipped: $skips"
 print -r -- "Top-level tests failed:  $fails"
 print -r -- "(RUN lines include subtests: $runs)"
+if [[ -n "${RIVER_TEST_GREP:-}" ]]; then
+  print -r -- "--- selected test log lines ---"
+  grep -E "$RIVER_TEST_GREP" "$test_log" || true
+fi
 
 if [[ "$skips" -ne 0 ]]; then
   grep '^--- SKIP' "$test_log" | head -10 >&2

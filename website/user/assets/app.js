@@ -29,7 +29,7 @@ const ARCHIVE_KEY = 'river.console.archive.v1';
 const THEME_KEY = 'river.console.theme.v1';
 const FAVORITES_KEY = 'river.console.favorites.v1';
 const UNDERSTANDING_KEY = 'river.console.understanding.v1';
-const ROUTES = new Set(['home', 'river', 'collections', 'places', 'understanding', 'ask', 'account']);
+const ROUTES = new Set(['home', 'river', 'collections', 'places', 'understanding', 'ask', 'cloud', 'account']);
 const ACCOUNT_SECTIONS = ['overview', 'devices', 'entitlements', 'security', 'activity', 'feedback', 'preferences', 'cloud'];
 const THEMES = [
   { id: 'soft', name: '柔光', detail: '海雾蓝 · 柔光拟态', color: '#edf1f6' },
@@ -524,6 +524,10 @@ function renderCurrentRoute({ focus = false } = {}) {
     renderAccountRoute(state.route.sub, token, { focus });
     return;
   }
+  if (state.route.space === 'cloud') {
+    renderAccountRoute('cloud', token, { focus, standalone: true });
+    return;
+  }
   const html = renderSpace(state.route.space);
   setView(html);
   if (focus) focusHeading();
@@ -535,6 +539,10 @@ function refreshView() {
   const token = ++renderToken;
   if (state.route.space === 'account') {
     renderAccountRoute(state.route.sub, token, { focus: false });
+    return;
+  }
+  if (state.route.space === 'cloud') {
+    renderAccountRoute('cloud', token, { focus: false, standalone: true });
     return;
   }
   setView(renderSpace(state.route.space));
@@ -583,7 +591,7 @@ function updateNav() {
 function routeTitle(space) {
   return ({
     home: '记忆首页', river: '长河', collections: '合集与章节', places: '地点里的我',
-    understanding: 'River 的理解', ask: '问 River', account: '账号与设置',
+    understanding: 'River 的理解', ask: '问 River', cloud: '云空间', account: '账号与设置',
   })[space] || '记忆控制台';
 }
 
@@ -594,6 +602,7 @@ function renderSpace(space) {
     case 'places': return renderPlaces();
     case 'understanding': return renderUnderstanding();
     case 'ask': return renderAsk();
+    case 'cloud': return renderCloudSkeleton();
     case 'account': return renderAccountSkeleton('overview');
     default: return renderHome();
   }
@@ -1313,21 +1322,26 @@ function submitAsk(text) {
 
 /* ---------- account ---------- */
 
-async function renderAccountRoute(sub, token, { focus = false } = {}) {
+async function renderAccountRoute(sub, token, { focus = false, standalone = false } = {}) {
   const section = ACCOUNT_SECTIONS.includes(sub) ? sub : 'overview';
+  const cloudStandalone = standalone || (section === 'cloud' && !standalone);
+  if (section === 'cloud' && !standalone) {
+    await renderAccountRoute('cloud', token, { focus, standalone: true });
+    return;
+  }
   if (state.preview) {
-    setView(renderAccountPreview(section));
-    document.title = '账号与设置 · 河流日记';
+    setView(cloudStandalone ? renderCloudPreview() : renderAccountPreview(section));
+    document.title = cloudStandalone ? '云空间 · 河流日记' : '账号与设置 · 河流日记';
     if (focus) focusHeading();
     return;
   }
   if (!state.account.client) {
-    setView(renderAccountPreview(section));
+    setView(cloudStandalone ? renderCloudPreview() : renderAccountPreview(section));
     return;
   }
   if (!state.account.loadedCore) {
-    setView(renderAccountSkeleton(section));
-    document.title = '账号与设置 · 河流日记';
+    setView(cloudStandalone ? renderCloudSkeleton() : renderAccountSkeleton(section));
+    document.title = cloudStandalone ? '云空间 · 河流日记' : '账号与设置 · 河流日记';
     if (!state.account.coreLoading) {
       state.account.loadingCore = true;
       loadAccountCore().catch((error) => {
@@ -1346,7 +1360,7 @@ async function renderAccountRoute(sub, token, { focus = false } = {}) {
     if (token !== renderToken) return;
   }
   if (state.account.error && !state.account.loadedCore) {
-    setView(renderAccountError(section));
+    setView(cloudStandalone ? renderCloudError() : renderAccountError(section));
     return;
   }
   try {
@@ -1362,8 +1376,8 @@ async function renderAccountRoute(sub, token, { focus = false } = {}) {
       : (error.message || '账号记录没有读取完成。');
   }
   if (token !== renderToken) return;
-  setView(renderAccountView(section));
-  document.title = '账号与设置 · 河流日记';
+  setView(cloudStandalone ? renderCloudStandaloneView() : renderAccountView(section));
+  document.title = cloudStandalone ? '云空间 · 河流日记' : '账号与设置 · 河流日记';
   if (focus) focusHeading();
   if (focus) window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
 }
@@ -1478,7 +1492,7 @@ function accountProfile() {
 function renderAccountTabs(section) {
   const labels = [
     ['overview', '概览'], ['devices', '设备与会话'], ['entitlements', '权益与兑换'],
-    ['security', '登录安全'], ['activity', '安全活动'], ['feedback', '反馈与回复'], ['preferences', '资料与偏好'], ['cloud', '云空间'],
+    ['security', '登录安全'], ['activity', '安全活动'], ['feedback', '反馈与回复'], ['preferences', '资料与偏好'],
   ];
   return `<nav class="account-tabs panel" aria-label="账号子栏目">${labels.map(([key, label]) => `<a class="account-tab" href="#/account/${key}" ${key === section ? 'aria-current="page"' : ''}>${label}</a>`).join('')}</nav>`;
 }
@@ -1524,6 +1538,35 @@ function renderAccountError(section) {
   return `<div class="account"><div class="view-head"><div><p class="eyebrow">ACCOUNT & PRIVACY</p><h1>账号与设置</h1></div></div>${renderAccountTabs(section)}<div class="empty-state"><div class="empty-icon">${icon('cloud')}</div><h2>账号服务暂时没有回应</h2><p>${escapeHtml(state.account.error || '账号记录没有读取完成。')} 记忆副本仍可浏览；账号操作可以稍后重试。</p><div class="empty-actions"><button class="btn" type="button" data-action="refresh-account">重试</button><a class="btn ghost" href="#/home">回记忆首页</a><button class="btn ghost" type="button" data-action="logout">退出登录</button></div></div></div>`;
 }
 
+function renderCloudStandaloneView() {
+  const error = state.account.error ? `<div class="banner bad">${escapeHtml(state.account.error)}</div>` : '';
+  return `${renderPreviewBanner()}
+  <div class="account cloud-standalone">
+    <div class="view-head">
+      <div><p class="eyebrow">CLOUD SPACE · END-TO-END ENCRYPTED</p><h1>云空间</h1><p class="view-sub">一份手动更新的只读记忆副本。加密在本机完成，服务器只保存密文和摘要元数据；没有口令，任何人都打不开。</p></div>
+      <div class="view-head-actions"><a class="btn ghost small" href="#/account/preferences">${icon('account')} 账号与设置</a><a class="btn ghost small" href="#/home">${icon('back')} 回首页</a></div>
+    </div>
+    ${error}
+    <div id="cloud-content">${renderAccountCloud()}</div>
+  </div>`;
+}
+
+function renderCloudPreview() {
+  return `${renderPreviewBanner()}
+  <div class="account cloud-standalone">
+    <div class="view-head"><div><p class="eyebrow">CLOUD SPACE</p><h1>云空间</h1><p class="view-sub">端到端加密的只读副本，手动上传，不自动同步。</p></div><div class="view-head-actions"><a class="btn ghost small" href="#/home">${icon('back')} 回首页</a></div></div>
+    <div class="panel preview-account"><div class="empty-icon">${icon('cloud')}</div><h2>登录后打开云空间</h2><p>云空间属于你的账号，但服务器只保存密文。登录后可以上传本机副本，或在另一台设备下载并用同一口令解密。</p><div class="empty-actions"><a class="btn primary" href="${LOGIN_URL}">去登录</a><a class="btn ghost" href="#/home">回到记忆首页</a></div><div class="fine-print" style="margin-top:18px">演示模式不会发起账号请求，也不会把记忆副本传到任何地方。</div></div>
+  </div>`;
+}
+
+function renderCloudSkeleton() {
+  return `<div class="account cloud-standalone"><div class="view-head"><div><p class="eyebrow">CLOUD SPACE</p><h1>云空间</h1><p class="view-sub">端到端加密的只读副本，手动上传，不自动同步。</p></div></div><div class="panel panel-pad"><div class="loading-line"><span class="spinner"></span> 正在读取云空间状态…</div><div class="skeleton" style="height:84px;margin-top:12px"></div><div class="skeleton" style="height:120px;margin-top:12px"></div></div></div>`;
+}
+
+function renderCloudError() {
+  return `<div class="account cloud-standalone"><div class="view-head"><div><p class="eyebrow">CLOUD SPACE</p><h1>云空间</h1></div></div><div class="empty-state"><div class="empty-icon">${icon('cloud')}</div><h2>云空间暂时没有回应</h2><p>${escapeHtml(state.account.error || '账号记录没有读取完成。')} 本机记忆仍可浏览；可以稍后重试。</p><div class="empty-actions"><button class="btn" type="button" data-action="refresh-cloud">重试</button><a class="btn ghost" href="#/home">回记忆首页</a></div></div></div>`;
+}
+
 function renderProfileCard(profile) {
   return `<section class="panel profile-card">
     <span class="profile-avatar">${escapeHtml(profile.initial)}</span>
@@ -1551,7 +1594,7 @@ function renderAccountOverview(profile) {
     </div><div class="form-actions"><button class="btn small ghost" type="button" data-action="export-account">${icon('download')} 下载账号资料</button></div></article>
     <article class="panel account-panel"><h2>登录身份</h2><p class="panel-desc">已验证的邮箱用于验证码登录、找回密码和账号通知。</p><div class="facts">${(state.account.identities || []).map((identity) => `<div class="fact-row"><span class="fact-label">${identity.provider === 'email' ? '邮箱' : 'Apple'}</span><span class="fact-value">${escapeHtml(identity.email || 'Apple 登录身份')} <span class="tag ${identity.status === 'active' ? 'ok' : ''}">${identity.status === 'active' ? '已验证' : '已撤销'}</span></span></div>`).join('') || '<div class="fact-row"><span class="fact-label">登录身份</span><span class="fact-value">未发现</span></div>'}</div></article>
     <article class="panel account-panel"><h2>当前权益</h2><p class="panel-desc">换设备后使用同一账号登录即可核对。</p><div style="margin-top:10px">${renderEntitlementRows()}</div><div class="form-actions"><a class="btn small ghost" href="#/account/entitlements">兑换与记录 →</a></div></article>
-    <article class="panel account-panel"><h2>数据与记忆</h2><p class="panel-desc">默认只在本机；云空间是你可以自行开启的加密快照。</p><div class="facts"><div class="fact-row"><span class="fact-label">本机副本</span><span class="fact-value">${escapeHtml(memorySourceText())}</span></div><div class="fact-row"><span class="fact-label">日记正文</span><span class="fact-value">默认不上传</span></div><div class="fact-row"><span class="fact-label">云空间</span><span class="fact-value">${state.cloud.meta ? (state.cloud.meta.exists ? `加密副本 v${escapeHtml(String(state.cloud.meta.revision))}` : '未开启') : '可自行开启'} <a class="text-link" href="#/account/cloud">管理 →</a></span></div><div class="fact-row"><span class="fact-label">模型调用</span><span class="fact-value">0 次</span></div></div><div class="form-actions"><button class="btn small ghost" type="button" data-action="import">${icon('export')} 导入副本</button>${state.entries.length ? `<button class="btn small ghost" type="button" data-action="clear-memory">清除本机副本</button>` : ''}</div></article>
+    <article class="panel account-panel"><h2>数据与记忆</h2><p class="panel-desc">默认只在本机；云空间是你可以自行开启的加密快照。</p><div class="facts"><div class="fact-row"><span class="fact-label">本机副本</span><span class="fact-value">${escapeHtml(memorySourceText())}</span></div><div class="fact-row"><span class="fact-label">日记正文</span><span class="fact-value">默认不上传</span></div><div class="fact-row"><span class="fact-label">云空间</span><span class="fact-value">${state.cloud.meta ? (state.cloud.meta.exists ? `加密副本 v${escapeHtml(String(state.cloud.meta.revision))}` : '未开启') : '可自行开启'} <a class="text-link" href="#/cloud">管理 →</a></span></div><div class="fact-row"><span class="fact-label">模型调用</span><span class="fact-value">0 次</span></div></div><div class="form-actions"><button class="btn small ghost" type="button" data-action="import">${icon('export')} 导入副本</button>${state.entries.length ? `<button class="btn small ghost" type="button" data-action="clear-memory">清除本机副本</button>` : ''}</div></article>
   </div>
   <div class="banner" style="margin-top:16px">${icon('shield')} 默认情况下，日记正文、健康、位置与 AI 对话不会上传。只有你在「云空间」里主动开启并确认后，客户端才会在本机加密并上传密文；服务器无法解密，也不会保存口令。</div>`;
 }
@@ -1636,7 +1679,7 @@ function renderAccountPreferences() {
     <article class="panel account-panel"><h2>阅读外观</h2><p class="panel-desc">偏好保存在当前浏览器。</p><div class="pref-theme-grid">${THEMES.map((theme) => `<button class="pref-theme" type="button" data-theme-choice="${theme.id}" aria-pressed="${state.theme === theme.id}"><span class="theme-swatch ${theme.id}"></span><strong>${theme.name}</strong><small>${theme.detail}</small></button>`).join('')}</div></article>
     <article class="panel account-panel"><h2>账号资料副本</h2><p class="panel-desc">下载账号 ID、登录身份、设备记录与权益。文件不含登录令牌、密码、日记、位置或健康数据。</p><div class="form-actions"><button class="btn" type="button" data-action="export-account">${icon('download')} 下载账号资料 JSON</button></div></article>
     <article class="panel account-panel"><h2>记忆副本</h2><p class="panel-desc">${escapeHtml(memorySourceText())}。副本只读，不会反向覆盖原生资料。</p><div class="form-actions"><button class="btn small" type="button" data-action="import">${icon('export')} 导入副本</button>${state.entries.length ? `<button class="btn small ghost" type="button" data-action="clear-memory">清除本机副本</button>` : ''}</div><p class="fine-print" style="margin-top:10px">清除只影响这个标签页，不删除原生 App 或加密副本中的记忆。</p></article>
-    <article class="panel account-panel"><h2>云空间</h2><p class="panel-desc">端到端加密的可选快照。服务器只保存密文；需要时在其他设备输入同一口令。</p><div class="form-actions"><a class="btn small ghost" href="#/account/cloud">${state.cloud.meta?.exists ? '管理云副本' : '云空间'} →</a></div></article>
+    <article class="panel account-panel"><h2>云空间</h2><p class="panel-desc">端到端加密的可选快照。服务器只保存密文；需要时在其他设备输入同一口令。</p><div class="form-actions"><a class="btn small ghost" href="#/cloud">${state.cloud.meta?.exists ? '管理云副本' : '云空间'} →</a></div></article>
     <article class="panel account-panel"><h2>继续你的记录</h2><p class="panel-desc">生活记录在原生客户端中查看。网页控制台管理账号与只读副本。</p><div class="form-actions"><a class="btn small ghost" href="https://flowriver.xyz/#download">下载 / 更新客户端 ↗</a><a class="btn small ghost" href="https://flowriver.xyz/">回到官网</a><button class="btn small danger ghost" type="button" data-action="logout">退出登录</button></div></article>
   </div>`;
 }
@@ -1653,6 +1696,7 @@ function renderAccountCloud() {
     <div><span>副本版本</span><strong>v${escapeHtml(String(meta.revision))}</strong></div>
     <div><span>密文大小</span><strong>${formatBytes(meta.size_bytes)}</strong></div>
     <div><span>内容摘要</span><strong>${count(Number(summary.entries) || 0)} 段 · ${count(Number(summary.days) || 0)} 天</strong></div>
+    <div><span>健康数据</span><strong>${summary.includes_health ? '已包含（本次同意）' : '未包含'}</strong></div>
     <div><span>最近更新</span><strong>${escapeHtml(formatDateTime(meta.updated_at))}</strong></div>
   </div>` : '';
   const uploadCard = hasLocal ? `<article class="panel account-panel">
@@ -1662,6 +1706,7 @@ function renderAccountCloud() {
       <label class="field"><span>云端口令 · 至少 ${CLOUD_MIN_PASSPHRASE} 个字符</span><input id="cloud-upload-passphrase" type="password" minlength="12" maxlength="128" autocomplete="new-password" spellcheck="false" autocapitalize="off" placeholder="至少 12 个字符" required><small class="form-hint">不会上传、不会保存。请用只有你知道、但另一台设备也能输入的长短语。</small></label>
       <label class="field"><span>再次输入口令</span><input id="cloud-upload-confirm" type="password" minlength="12" maxlength="128" autocomplete="new-password" spellcheck="false" autocapitalize="off" required></label>
       <label class="checkbox-label"><input type="checkbox" id="cloud-upload-consent" required> 我理解：服务器只保存密文；口令丢失后，这份云副本无法恢复。</label>
+      <label class="checkbox-label"><input type="checkbox" id="cloud-upload-health"> 本次上传包含健康摘要（睡眠、步数、训练）。默认关闭；服务器仍只看到密文。</label>
       ${hasCloud ? '<p class="fine-print">覆盖会替换旧密文。如果换了口令，其他设备必须改用新口令。</p>' : ''}
       <div class="form-actions"><button class="btn primary" type="submit">${icon('key')} ${hasCloud ? '加密并更新' : '加密并上传'}</button></div>
       <p class="status-line" id="cloud-upload-status" role="status"></p>
@@ -1730,6 +1775,7 @@ function buildCommandItems() {
     ['places', '地点里的我', '地点与日子', 'map'],
     ['understanding', 'River 的理解', '待确认与已确认', 'understanding'],
     ['ask', '问 River', '本机检索', 'chat'],
+    ['cloud', '云空间', '端到端加密副本', 'cloud'],
     ['account', '账号与设置', '身份、设备与权益', 'account'],
   ];
   const actions = [
@@ -1822,7 +1868,7 @@ function activateCommand(index) {
   if (item.type === 'memory') { openMemory(item.key); return; }
   if (item.type === 'action') {
     if (item.key === 'import') openImport();
-    if (item.key === 'open-cloud') { navigate('account', 'cloud'); return; }
+    if (item.key === 'open-cloud') { navigate('cloud'); return; }
     if (item.key === 'cycle-theme') cycleTheme();
     if (item.key === 'privacy') openPrivacy();
   }
@@ -2354,6 +2400,7 @@ async function submitCloudUpload(form) {
   const passphrase = $('#cloud-upload-passphrase')?.value ?? '';
   const confirmation = $('#cloud-upload-confirm')?.value ?? '';
   const consent = Boolean($('#cloud-upload-consent')?.checked);
+  const includeHealth = Boolean($('#cloud-upload-health')?.checked);
   const button = form.querySelector('button[type="submit"]');
   const fail = (message) => setStatus('cloud-upload-status', message, true);
   if (!state.entries.length) return fail('还没有本机副本。请先导入或写下一段记忆。');
@@ -2363,6 +2410,15 @@ async function submitCloudUpload(form) {
   if (!consent) return fail('请先确认你理解口令丢失的后果。');
   const client = state.account.client;
   if (!client) return fail('需要先登录账号。');
+  if (includeHealth) {
+    const ok = await confirmAction({
+      title: '确认把健康摘要放进本次云副本？',
+      description: '睡眠、步数和训练摘要会先在本机加密再上传。服务器仍然只看到密文，但拿到口令的人可以看到这些健康摘要。关闭此项后再上传即可撤回。',
+      confirmLabel: '包含健康数据并继续',
+      danger: true,
+    });
+    if (!ok) return;
+  }
   await withBusy(button, async () => {
     const current = await loadCloudMeta(true);
     if (current?.exists) {
@@ -2378,7 +2434,7 @@ async function submitCloudUpload(form) {
     const envelope = await buildCloudEnvelope({
       ...state.archive,
       understandings: effectiveUnderstandings(),
-    }, passphrase);
+    }, passphrase, { includeHealth });
     setStatus('cloud-upload-status', '正在上传密文…');
     const headers = current?.exists ? { 'If-Match': `"${current.revision}"` } : { 'If-None-Match': '*' };
     const response = await client.api('PUT', '/me/memory-mirror', envelope, null, false, headers, 60000);

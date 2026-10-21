@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   CLOUD_CIPHER_NAME, CLOUD_FORMAT, CLOUD_ITERATIONS, CLOUD_KDF_NAME, CloudError,
   base64ToBytes, buildCloudEnvelope, bytesToBase64, cloudArchiveSummary,
@@ -64,7 +65,7 @@ test('passphrase policy and base64 helpers are strict', async () => {
   const bytes = new Uint8Array([0, 1, 2, 127, 128, 255]);
   assert.deepEqual([...base64ToBytes(bytesToBase64(bytes))], [...bytes]);
   assert.deepEqual(cloudArchiveSummary({ entries: [] }), {
-    entries: 0, days: 0, places: 0, collections: 0, understandings: 0, first: '', last: '',
+    entries: 0, days: 0, places: 0, collections: 0, understandings: 0, first: '', last: '', includes_health: false,
   });
   assert.equal(CLOUD_ITERATIONS, 600000);
 });
@@ -85,4 +86,52 @@ test('cloud payload carries mirror v2 contexts', async () => {
   assert.equal(decrypted.contexts.length, 1);
   assert.equal(decrypted.contexts[0].deviceName, 'Mac');
   assert.equal(decrypted.contexts[0].sections[0].items[0].title, '窗边');
+});
+
+
+test('health sections are excluded unless this upload explicitly opts in', async () => {
+  const withHealth = {
+    ...archive,
+    version: 2,
+    contexts: [
+      {
+        deviceID: 'device-iphone', deviceName: 'iPhone', day: '2026-10-21',
+        sections: [
+          { kind: 'notes', title: '备忘录', summary: '1 条', items: [{ title: '买水' }] },
+          { kind: 'health', title: '睡眠', summary: '7.2 小时' },
+          { kind: 'workout', title: '活动', summary: '8,412 步' },
+        ],
+      },
+      {
+        deviceID: 'device-iphone', deviceName: 'iPhone', day: '2026-10-22',
+        sections: [{ kind: 'stateOfMind', title: '心情', summary: '平静' }],
+      },
+    ],
+  };
+  const defaultEnvelope = await buildCloudEnvelope(withHealth, 'correct horse battery', fast);
+  assert.equal(defaultEnvelope.summary.includes_health, false);
+  assert.ok(!JSON.stringify(defaultEnvelope).includes('7.2 小时'));
+  const defaultPayload = await decryptCloudEnvelope(defaultEnvelope, 'correct horse battery');
+  assert.equal(defaultPayload.contexts.length, 1, 'health-only context should be dropped');
+  assert.deepEqual(defaultPayload.contexts[0].sections.map((section) => section.kind), ['notes']);
+
+  const consented = await buildCloudEnvelope(withHealth, 'correct horse battery', { ...fast, includeHealth: true });
+  assert.equal(consented.summary.includes_health, true);
+  const consentedPayload = await decryptCloudEnvelope(consented, 'correct horse battery');
+  assert.equal(consentedPayload.contexts.length, 2);
+  assert.deepEqual(consentedPayload.contexts[0].sections.map((section) => section.kind), ['notes', 'health', 'workout']);
+});
+
+
+test('decrypts an envelope produced by the native Swift core', async () => {
+  const fixture = JSON.parse(readFileSync(new URL(
+    '../../../Packages/RiverDiaryCore/Tests/RiverDiaryCoreTests/Fixtures/swift-cloud-envelope.json',
+    import.meta.url,
+  )));
+  const payload = await decryptCloudEnvelope(fixture, 'correct horse battery');
+  assert.equal(payload.format, 'river.memory-mirror');
+  assert.equal(payload.entries.length, 1);
+  assert.equal(payload.entries[0].title, 'Mac 上的句子');
+  assert.equal(payload.entries[0].body, '从 Swift 端加密的一句话。');
+  await assert.rejects(() => decryptCloudEnvelope(fixture, 'wrong horse battery'), { code: 'bad_passphrase' });
 });

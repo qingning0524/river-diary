@@ -93,11 +93,11 @@ test('the demo is clearly synthetic and never reads the repository snapshot', ()
   assert.match(demo, /合成|invented/);
 });
 
-test('the shell exposes the seven intended spaces and account subsections', () => {
-  for (const space of ['home', 'river', 'collections', 'places', 'understanding', 'ask', 'account']) {
+test('the shell exposes the eight intended spaces and account subsections', () => {
+  for (const space of ['home', 'river', 'collections', 'places', 'understanding', 'ask', 'cloud', 'account']) {
     assert.match(html, new RegExp(`data-space="${space}"`), `missing navigation for ${space}`);
   }
-  for (const label of ['记忆首页', '长河', '合集', '地点', '理解', '问 River', '账号与设置']) {
+  for (const label of ['记忆首页', '长河', '合集', '地点', '理解', '问 River', '云空间', '账号与设置']) {
     assert.match(html, new RegExp(label));
   }
   for (const section of ['overview', 'devices', 'entitlements', 'security', 'activity', 'feedback', 'preferences', 'cloud']) {
@@ -116,4 +116,19 @@ test('dialogs and form controls preserve keyboard and failure paths', () => {
   assert.match(app, /prefersReducedMotion/);
   assert.doesNotMatch(html, /composer-dialog/, 'the read-only console has no local note editor');
   assert.doesNotMatch(app, /data-action="compose"/);
+});
+
+test('cloud is a standalone space with health opt-in off by default', () => {
+  assert.match(app, /case 'cloud': return renderCloudSkeleton/);
+  assert.match(app, /function renderCloudStandaloneView/);
+  assert.match(app, /data-form="cloud-upload"/);
+  assert.match(app, /id="cloud-upload-health"/);
+  assert.doesNotMatch(
+    app,
+    /id="cloud-upload-health"[^>]*checked/,
+    'the health checkbox must start unchecked on every load',
+  );
+  assert.match(app, /includeHealth/);
+  assert.match(app, /includes_health/);
+  assert.match(app, /确认把健康摘要放进本次云副本/);
 });

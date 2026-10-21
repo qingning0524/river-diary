@@ -7,6 +7,48 @@ public enum RiverAccountPlatform: String {
     case macos
 }
 
+/// Metadata returned by the account service for an encrypted cloud mirror.
+/// The ciphertext is only present on the download endpoint.
+public struct RiverCloudMirrorMeta: Codable, Equatable, Sendable {
+    public var exists: Bool
+    public var revision: Int?
+    public var sizeBytes: Int?
+    public var summary: CloudMirrorSummary?
+    public var clientUpdatedAt: String?
+    public var createdAt: String?
+    public var updatedAt: String?
+    public var kdf: CloudMirrorEnvelope.KDF?
+    public var cipher: CloudMirrorEnvelope.Cipher?
+    public var ciphertext: String?
+
+    enum CodingKeys: String, CodingKey {
+        case exists, revision, summary, kdf, cipher, ciphertext
+        case sizeBytes = "size_bytes"
+        case clientUpdatedAt = "client_updated_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        exists: Bool, revision: Int? = nil, sizeBytes: Int? = nil,
+        summary: CloudMirrorSummary? = nil, clientUpdatedAt: String? = nil,
+        createdAt: String? = nil, updatedAt: String? = nil,
+        kdf: CloudMirrorEnvelope.KDF? = nil, cipher: CloudMirrorEnvelope.Cipher? = nil,
+        ciphertext: String? = nil
+    ) {
+        self.exists = exists
+        self.revision = revision
+        self.sizeBytes = sizeBytes
+        self.summary = summary
+        self.clientUpdatedAt = clientUpdatedAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.kdf = kdf
+        self.cipher = cipher
+        self.ciphertext = ciphertext
+    }
+}
+
 public struct RiverAccountSession: Codable, Equatable {
     public let email: String
     public let userID: String
@@ -404,6 +446,50 @@ public final class RiverAccountSessionStore: ObservableObject {
         try vault.write(try JSONEncoder().encode(pending), key: pendingRevocationsStoreKey)
     }
 
+    // MARK: - Encrypted cloud mirror
+
+    public func cloudMirrorMeta() async throws -> RiverCloudMirrorMeta {
+        try await authenticated(path: "/me/memory-mirror/meta", method: "GET", body: nil)
+    }
+
+    /// Uploads a locally encrypted snapshot. `revision` is the version the
+    /// caller is replacing; `nil` uses If-None-Match so a first upload can
+    /// never silently overwrite an existing cloud copy.
+    public func uploadCloudMirror(_ envelope: CloudMirrorEnvelope, replacing revision: Int?) async throws -> RiverCloudMirrorMeta {
+        let encoded = try JSONEncoder().encode(envelope)
+        let body = try JSONSerialization.jsonObject(with: encoded)
+        let headers = revision.map { ["If-Match": "\"\($0)\""] } ?? ["If-None-Match": "*"]
+        return try await authenticated(
+            path: "/me/memory-mirror", method: "PUT", body: body,
+            headers: headers
+        )
+    }
+
+    public func downloadCloudMirror() async throws -> CloudMirrorEnvelope {
+        let meta: RiverCloudMirrorMeta = try await authenticated(
+            path: "/me/memory-mirror", method: "GET", body: nil
+        )
+        guard let ciphertext = meta.ciphertext,
+              let kdf = meta.kdf,
+              let cipher = meta.cipher,
+              let clientUpdatedAt = meta.clientUpdatedAt
+        else {
+            throw RiverAccountAPIError(status: 500, code: "mirror_incomplete")
+        }
+        return CloudMirrorEnvelope(
+            kdf: kdf, cipher: cipher, ciphertext: ciphertext,
+            clientUpdatedAt: clientUpdatedAt,
+            summary: meta.summary ?? CloudMirrorSummary()
+        )
+    }
+
+    public func deleteCloudMirror(revision: Int) async throws {
+        let _: EmptyResponse = try await authenticated(
+            path: "/me/memory-mirror", method: "DELETE", body: nil,
+            headers: ["If-Match": "\"\(revision)\""], allowEmptyResponse: true
+        )
+    }
+
     /// The queue holds revoke-only capabilities, never access/refresh credentials.
     /// Retry at startup and after explicit logout; a failed delivery stays durable.
     public func retryPendingSignOuts() async {
@@ -431,7 +517,7 @@ public final class RiverAccountSessionStore: ObservableObject {
         }
     }
 
-    private func authenticated<T: Decodable>(path: String, method: String, body: Any?, idempotencyKey: String? = nil) async throws -> T {
+    private func authenticated<T: Decodable>(path: String, method: String, body: Any?, idempotencyKey: String? = nil, headers: [String: String] = [:], allowEmptyResponse: Bool = false) async throws -> T {
         let requestGeneration = generation
         guard var current = session else { throw RiverAccountAPIError(status: 401, code: "auth_required") }
         if current.accessExpiresAt < Date().addingTimeInterval(45) {
@@ -440,14 +526,14 @@ public final class RiverAccountSessionStore: ObservableObject {
             current = renewed
         }
         do {
-            let result: T = try await send(path: path, method: method, body: body, idempotencyKey: idempotencyKey, accessToken: current.accessToken)
+            let result: T = try await send(path: path, method: method, body: body, idempotencyKey: idempotencyKey, accessToken: current.accessToken, headers: headers, allowEmptyResponse: allowEmptyResponse)
             guard generation == requestGeneration, session != nil else { throw CancellationError() }
             return result
         } catch let error as RiverAccountAPIError where error.status == 401 {
             guard generation == requestGeneration, let active = session else { throw CancellationError() }
             if active.accessToken == current.accessToken { try await refreshSession() }
             guard generation == requestGeneration, let renewed = session else { throw CancellationError() }
-            let result: T = try await send(path: path, method: method, body: body, idempotencyKey: idempotencyKey, accessToken: renewed.accessToken)
+            let result: T = try await send(path: path, method: method, body: body, idempotencyKey: idempotencyKey, accessToken: renewed.accessToken, headers: headers, allowEmptyResponse: allowEmptyResponse)
             guard generation == requestGeneration, session != nil else { throw CancellationError() }
             return result
         }
@@ -519,15 +605,16 @@ public final class RiverAccountSessionStore: ObservableObject {
         } catch { lastError = "未接纳的会话撤销保存失败：\(error.localizedDescription)" }
     }
 
-    private func send<T: Decodable>(path: String, method: String, body: Any?, idempotencyKey: String?, accessToken: String?) async throws -> T {
+    private func send<T: Decodable>(path: String, method: String, body: Any?, idempotencyKey: String?, accessToken: String?, headers: [String: String] = [:], allowEmptyResponse: Bool = false) async throws -> T {
         let data = try body.map { try JSONSerialization.data(withJSONObject: $0) }
-        return try await sendRaw(path: path, method: method, data: data, idempotencyKey: idempotencyKey, accessToken: accessToken, allowEmptyResponse: false)
+        return try await sendRaw(path: path, method: method, data: data, idempotencyKey: idempotencyKey, accessToken: accessToken, allowEmptyResponse: allowEmptyResponse, headers: headers)
     }
 
-    private func sendRaw<T: Decodable>(path: String, method: String, data: Data?, idempotencyKey: String?, accessToken: String?, allowEmptyResponse: Bool) async throws -> T {
+    private func sendRaw<T: Decodable>(path: String, method: String, data: Data?, idempotencyKey: String?, accessToken: String?, allowEmptyResponse: Bool, headers: [String: String] = [:]) async throws -> T {
         var request = URLRequest(url: Self.apiBaseURL.appending(path: path))
         request.httpMethod = method
         request.timeoutInterval = 20
+        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let data {
             request.httpBody = data

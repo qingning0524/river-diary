@@ -16,6 +16,11 @@ export const CLOUD_MAX_CIPHERTEXT_BYTES = 8 * 1024 * 1024;
 export const CLOUD_MIN_PASSPHRASE = 12;
 export const CLOUD_MAX_PASSPHRASE = 128;
 
+/** Health-bearing context sections are excluded unless the user explicitly
+ * opts in for this upload. The account service never sees the plaintext, so
+ * this filter is the client-side privacy boundary. */
+export const HEALTH_SECTION_KINDS = new Set(['health', 'workout', 'stateOfMind']);
+
 const CONTEXT = new TextEncoder().encode('river.cloud-mirror:v1');
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -63,6 +68,9 @@ export function cloudArchiveSummary(archive) {
     if (place) places.add(place);
   }
   const dates = [...days].sort();
+  const contexts = Array.isArray(archive?.contexts) ? archive.contexts : [];
+  const includesHealth = contexts.some((context) =>
+    Array.isArray(context?.sections) && context.sections.some((section) => HEALTH_SECTION_KINDS.has(section?.kind)));
   return {
     entries: entries.length,
     days: days.size,
@@ -71,7 +79,22 @@ export function cloudArchiveSummary(archive) {
     understandings: Array.isArray(archive?.understandings) ? archive.understandings.length : 0,
     first: dates[0] || '',
     last: dates.at(-1) || '',
+    includes_health: includesHealth,
   };
+}
+
+/** Returns a copy with health sections removed. Empty contexts are dropped so
+ * the encrypted payload does not reveal "there was health data here". */
+export function withoutHealthSections(archive) {
+  const contexts = Array.isArray(archive?.contexts) ? archive.contexts : [];
+  const filtered = contexts
+    .map((context) => {
+      const sections = (Array.isArray(context?.sections) ? context.sections : [])
+        .filter((section) => !HEALTH_SECTION_KINDS.has(section?.kind));
+      return { ...context, sections };
+    })
+    .filter((context) => context.sections.length > 0);
+  return { ...archive, contexts: filtered };
 }
 
 function cloudPayload(archive, now) {
@@ -106,6 +129,8 @@ function requireSubtle(subtle) {
 export async function buildCloudEnvelope(archive, passphrase, options = {}) {
   const problem = validateCloudPassphrase(passphrase);
   if (problem) throw new CloudError('passphrase_policy', problem);
+  const includeHealth = options.includeHealth === true;
+  const uploadArchive = includeHealth ? archive : withoutHealthSections(archive);
   const subtle = requireSubtle(options.subtle ?? globalThis.crypto?.subtle);
   const cryptoRef = options.cryptoRef ?? globalThis.crypto;
   if (!cryptoRef?.getRandomValues) throw new CloudError('crypto_unavailable', '这个浏览器无法生成安全随机数。');
@@ -116,7 +141,7 @@ export async function buildCloudEnvelope(archive, passphrase, options = {}) {
   const now = options.now instanceof Date ? options.now : new Date(options.now ?? Date.now());
   const salt = cryptoRef.getRandomValues(new Uint8Array(16));
   const iv = cryptoRef.getRandomValues(new Uint8Array(12));
-  const plaintext = encoder.encode(JSON.stringify(cloudPayload(archive, now)));
+  const plaintext = encoder.encode(JSON.stringify(cloudPayload(uploadArchive, now)));
   const key = await deriveCloudKey(passphrase, salt, iterations, subtle);
   const encrypted = await subtle.encrypt({ name: 'AES-GCM', iv, additionalData: CONTEXT }, key, plaintext);
   const ciphertext = new Uint8Array(encrypted);
@@ -130,7 +155,7 @@ export async function buildCloudEnvelope(archive, passphrase, options = {}) {
     cipher: { name: CLOUD_CIPHER_NAME, iv: bytesToBase64(iv) },
     ciphertext: bytesToBase64(ciphertext),
     client_updated_at: now.toISOString(),
-    summary: cloudArchiveSummary(archive),
+    summary: cloudArchiveSummary(uploadArchive),
   };
 }
 

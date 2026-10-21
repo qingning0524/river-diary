@@ -12,6 +12,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "RiverDiaryCore"),
-        .testTarget(name: "RiverDiaryCoreTests", dependencies: ["RiverDiaryCore"])
+        .testTarget(name: "RiverDiaryCoreTests", dependencies: ["RiverDiaryCore"], exclude: ["Fixtures"])
     ]
 )

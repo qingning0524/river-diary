@@ -44,6 +44,17 @@ struct SettingsView: View {
     @State private var devicePendingRetirement: RiverDeviceID?
     @FocusState private var focusedSettingsField: SettingsInputField?
     @AppStorage("river.developerMode.enabled") private var developerModeEnabled = false
+    @State private var cloudMeta: RiverCloudMirrorMeta?
+    @State private var cloudPassphrase = ""
+    @State private var cloudConfirmation = ""
+    @State private var cloudIncludeHealth = false
+    @State private var cloudPreview: MemoryMirrorArchive?
+    @State private var cloudStatus = ""
+    @State private var cloudStatusIsError = false
+    @State private var cloudBusy = false
+    @State private var showsCloudDeleteConfirmation = false
+    @State private var showsCloudHealthConfirmation = false
+    @State private var hasLoadedCloud = false
 
     private var themeStoreIcon: String { themeStore.selectedThemeID.symbol }
     private var themeStoreName: String { themeStore.selectedThemeName }
@@ -245,6 +256,8 @@ struct SettingsView: View {
                     syncLink("云端档案与设备同步")
                     settingsDivider
                     dataLink("隐私、权限与备份", symbol: "checkmark.shield")
+                    settingsDivider
+                    NavigationLink { cloudPage } label: { settingRow("云空间", value: cloudMeta?.exists == true ? "加密副本 v\(cloudMeta?.revision ?? 1)" : "端到端加密副本", symbol: "cloud") }
                     settingsDivider
                     NavigationLink { dataSettings } label: { settingRow("导出我的记录", symbol: "square.and.arrow.up") }
                     settingsDivider
@@ -504,6 +517,239 @@ struct SettingsView: View {
 
         }
     }
+    private var cloudPage: some View {
+        settingsPage("云空间") {
+            if !account.isSignedIn {
+                Section("云空间") {
+                    Text("登录账号后可以上传端到端加密的只读副本。账号只用来识别副本属于谁；口令和明文都不离开这台设备。")
+                        .font(.footnote).foregroundStyle(theme.secondaryInk)
+                    NavigationLink("去登录") { settingsPage("账户与权益") { Section { AccountSettingsCard() } } }
+                }
+            } else {
+                Section("云端副本") {
+                    if let cloudMeta, cloudMeta.exists {
+                        LabeledContent("当前版本", value: "v\(cloudMeta.revision ?? 1)")
+                        LabeledContent("密文大小", value: cloudByteText(cloudMeta.sizeBytes))
+                        LabeledContent("内容摘要", value: "\(cloudMeta.summary?.entries ?? 0) 段 · \(cloudMeta.summary?.days ?? 0) 天")
+                        LabeledContent("健康数据", value: cloudMeta.summary?.includesHealth == true ? "已包含（上传端已同意）" : "未包含")
+                        LabeledContent("最近更新", value: cloudFormat(cloudMeta.updatedAt))
+                    } else {
+                        Text("云空间还没有副本。第一次上传会创建 v1；之后每次更新都会递增版本。")
+                            .font(.footnote).foregroundStyle(theme.secondaryInk)
+                    }
+                    Button("刷新状态") { Task { await refreshCloud() } }.disabled(cloudBusy)
+                    if cloudMeta?.exists == true {
+                        Button("删除云副本", role: .destructive) { showsCloudDeleteConfirmation = true }.disabled(cloudBusy)
+                    }
+                }
+                Section(cloudMeta?.exists == true ? "更新云副本" : "上传到云空间") {
+                    SecureField("云端口令 · 至少 12 个字符", text: $cloudPassphrase)
+                        .textContentType(.newPassword)
+                    SecureField("再次输入口令", text: $cloudConfirmation)
+                        .textContentType(.newPassword)
+                    Toggle("本次包含健康摘要（睡眠、步数、训练）", isOn: $cloudIncludeHealth)
+                    Text("默认关闭。开启后本次上传会包含最近一次睡眠与活动摘要；服务器仍然只看到密文。关闭时健康段落会在加密前被剔除。")
+                        .font(.footnote).foregroundStyle(theme.secondaryInk)
+                    Button(cloudMeta?.exists == true ? "加密并更新" : "加密并上传") { Task { await uploadCloud() } }
+                        .disabled(cloudBusy || cloudPassphrase.count < CloudMirrorCrypto.minPassphraseCharacters || cloudPassphrase != cloudConfirmation)
+                }
+                Section("从云空间恢复预览") {
+                    SecureField("云端口令", text: $cloudPassphrase)
+                        .textContentType(.password)
+                    Button("下载并解密") { Task { await downloadCloud() } }
+                        .disabled(cloudBusy || cloudMeta?.exists != true || cloudPassphrase.count < CloudMirrorCrypto.minPassphraseCharacters)
+                    if let cloudPreview {
+                        Text("只读预览 · \(cloudPreview.entries.count) 段日记 · \(cloudPreview.contexts.count) 个设备日上下文")
+                            .font(.footnote).foregroundStyle(theme.secondaryInk)
+                        ForEach(Array(cloudPreview.entries.suffix(3).reversed()), id: \.id) { entry in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(entry.title).font(.subheadline)
+                                Text("\(String(entry.occurredAt.prefix(10))) · \(entry.body.prefix(80))")
+                                    .font(.caption).foregroundStyle(theme.secondaryInk).lineLimit(2)
+                            }
+                        }
+                        Text("只读预览，不会覆盖本机日记。").font(.caption).foregroundStyle(theme.secondaryInk)
+                    }
+                }
+                if !cloudStatus.isEmpty {
+                    Section {
+                        Text(cloudStatus).font(.footnote).foregroundStyle(cloudStatusIsError ? theme.danger : theme.secondaryInk)
+                    }
+                }
+            }
+            Section("边界") {
+                Text("PBKDF2-SHA-256（600,000 次）派生密钥，AES-GCM-256 加密；盐和 IV 随密文保存，口令不离开本机。")
+                    .font(.footnote).foregroundStyle(theme.secondaryInk)
+                Text("云空间是手动快照，不会自动同步；删除云副本不会删除本机日记，注销账号会一并删除云副本。")
+                    .font(.footnote).foregroundStyle(theme.secondaryInk)
+            }
+        }
+        .task {
+            guard account.isSignedIn, !hasLoadedCloud else { return }
+            hasLoadedCloud = true
+            await refreshCloud()
+        }
+        .confirmationDialog("删除云空间里的加密副本？", isPresented: $showsCloudDeleteConfirmation, titleVisibility: .visible) {
+            Button("删除云副本", role: .destructive) { Task { await deleteCloud() } }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("只删除服务器上的密文与摘要，不影响本机日记。")
+        }
+        .confirmationDialog("确认把健康摘要放进本次云副本？", isPresented: $showsCloudHealthConfirmation, titleVisibility: .visible) {
+            Button("包含健康数据并上传", role: .destructive) { Task { await performCloudUpload() } }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("睡眠、步数和训练摘要会先在本机加密再上传。服务器仍然只看到密文，但拿到口令的人可以看到这些摘要；关闭开关后再上传即可撤回。")
+        }
+    }
+
+    private func refreshCloud() async {
+        guard account.isSignedIn else { return }
+        cloudBusy = true
+        defer { cloudBusy = false }
+        do {
+            cloudMeta = try await account.cloudMirrorMeta()
+            if cloudMeta?.exists != true { cloudPreview = nil }
+            setCloudStatus(cloudMeta?.exists == true ? "已读取云空间状态。" : "云空间还没有副本。", error: false)
+        } catch {
+            setCloudStatus(cloudMessage(error), error: true)
+        }
+    }
+
+    private func uploadCloud() async {
+        guard !cloudBusy, cloudPassphrase == cloudConfirmation else { return }
+        if cloudIncludeHealth {
+            showsCloudHealthConfirmation = true
+            return
+        }
+        await performCloudUpload()
+    }
+
+    private func performCloudUpload() async {
+        guard !cloudBusy else { return }
+        cloudBusy = true
+        defer { cloudBusy = false }
+        do {
+            var contexts = node.dayContextSnapshotsForWeb()
+            let alreadyHasHealth = contexts.contains { context in
+                context.sections.contains { MemoryMirrorArchive.healthSectionKinds.contains($0.kind) }
+            }
+            if cloudIncludeHealth, !alreadyHasHealth, let healthContext = cloudHealthContext() {
+                contexts.append(healthContext)
+            }
+            let data = try store.webMirrorData(contexts: contexts)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let archive = try decoder.decode(MemoryMirrorArchive.self, from: data)
+            let envelope = try CloudMirrorCrypto.buildEnvelope(
+                archive: archive, passphrase: cloudPassphrase, includeHealth: cloudIncludeHealth
+            )
+            let updated = try await account.uploadCloudMirror(
+                envelope, replacing: cloudMeta?.exists == true ? cloudMeta?.revision : nil
+            )
+            cloudMeta = updated
+            cloudPreview = nil
+            setCloudStatus("已加密上传 v\(updated.revision ?? 1)。另一台设备输入同一口令即可下载。", error: false)
+        } catch {
+            setCloudStatus(cloudMessage(error), error: true)
+        }
+    }
+
+    private func downloadCloud() async {
+        guard !cloudBusy else { return }
+        cloudBusy = true
+        defer { cloudBusy = false }
+        do {
+            let envelope = try await account.downloadCloudMirror()
+            cloudPreview = try CloudMirrorCrypto.decrypt(envelope, passphrase: cloudPassphrase)
+            setCloudStatus("已在本机解密。下面是只读预览，没有写回本地日记。", error: false)
+        } catch {
+            setCloudStatus(cloudMessage(error), error: true)
+        }
+    }
+
+    private func deleteCloud() async {
+        guard !cloudBusy, let revision = cloudMeta?.revision else { return }
+        cloudBusy = true
+        defer { cloudBusy = false }
+        do {
+            try await account.deleteCloudMirror(revision: revision)
+            cloudMeta = RiverCloudMirrorMeta(exists: false)
+            cloudPreview = nil
+            setCloudStatus("云副本已删除；本机日记没有改动。", error: false)
+        } catch {
+            setCloudStatus(cloudMessage(error), error: true)
+        }
+    }
+
+    private func cloudHealthContext() -> DayContextSnapshot? {
+        var sections: [DayContextSection] = []
+        if let night = health.latestNight {
+            sections.append(DayContextSection(
+                kind: "health", title: "睡眠",
+                summary: String(format: "%.1f 小时 · %@", night.totalHours,
+                                night.date.formatted(date: .abbreviated, time: .omitted))
+            ))
+        }
+        if let exercise = health.latestExerciseDay {
+            sections.append(DayContextSection(
+                kind: "workout", title: "活动",
+                summary: String(format: "%.0f 步 · %.1f 公里 · %@", exercise.steps,
+                                exercise.distanceKilometers,
+                                exercise.date.formatted(date: .abbreviated, time: .omitted))
+            ))
+        }
+        if let workout = health.workouts.first {
+            sections.append(DayContextSection(
+                kind: "workout", title: "体能训练",
+                summary: "\(workout.activityName) · \(Int(workout.end.timeIntervalSince(workout.start) / 60)) 分钟"
+            ))
+        }
+        if let mood = health.stateOfMind.first {
+            sections.append(DayContextSection(kind: "stateOfMind", title: "心情", summary: mood.kindLabel))
+        }
+        guard !sections.isEmpty else { return nil }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return DayContextSnapshot(
+            deviceID: node.deviceID, deviceName: UIDevice.current.name,
+            day: formatter.string(from: Date()), sections: sections
+        )
+    }
+
+    private func setCloudStatus(_ text: String, error: Bool) {
+        cloudStatus = text
+        cloudStatusIsError = error
+    }
+
+    private func cloudMessage(_ error: Error) -> String {
+        if let error = error as? CloudMirrorError { return error.errorDescription ?? "云副本处理失败。" }
+        if let error = error as? RiverAccountAPIError {
+            switch error.status {
+            case 404: return "云空间还没有副本。"
+            case 409: return "云空间已有副本，请刷新后再更新。"
+            case 412: return "云空间已被另一台设备更新，请刷新后再试。"
+            case 428: return "缺少版本前置条件，请刷新后再试。"
+            default: return error.localizedDescription
+            }
+        }
+        return error.localizedDescription
+    }
+
+    private func cloudByteText(_ value: Int?) -> String {
+        guard let value, value >= 0 else { return "—" }
+        return ByteCountFormatter.string(fromByteCount: Int64(value), countStyle: .file)
+    }
+
+    private func cloudFormat(_ value: String?) -> String {
+        guard let value, !value.isEmpty else { return "—" }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let date = formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
+        return date?.formatted(date: .abbreviated, time: .shortened) ?? value
+    }
+
     private var dataSettings: some View {
         settingsPage("资料与备份") {
                 Section("数据") {

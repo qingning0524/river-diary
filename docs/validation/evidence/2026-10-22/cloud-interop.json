@@ -1,0 +1,172 @@
+{
+  "date": "2026-10-22",
+  "branch": "全局",
+  "tests": {
+    "web_node": {
+      "passed": 41,
+      "failed": 0,
+      "skipped": 0,
+      "command": "cd website/user && node --test tests/*.test.mjs"
+    },
+    "swift_core": {
+      "passed": 98,
+      "failed": 0,
+      "skipped": 0,
+      "suites": 9,
+      "command": "swift test --disable-sandbox --package-path Packages/RiverDiaryCore"
+    },
+    "server_go": {
+      "top_level_passed": 65,
+      "skipped": 0,
+      "failed": 0,
+      "run_lines_including_subtests": 93,
+      "command": "./scripts/test_server_isolated.sh"
+    },
+    "mac_build": "Build complete! (3.64s)",
+    "ios_app_build": "** BUILD SUCCEEDED **",
+    "ios_test_build": "** TEST BUILD SUCCEEDED **"
+  },
+  "server_sql_evidence": {
+    "case": "TestMemoryMirrorTwoDevicesStoreOnlyCiphertext",
+    "plaintext_rows_found": 0,
+    "ciphertext_bytes": 152,
+    "ciphertext_sha256": "fcf9616d162c6b0f1e3ad8245cebc04717001508e10fe8f27c41b309d91999db",
+    "decrypted_bytes_by_device_b": 136,
+    "summary_includes_health": true
+  },
+  "files": {
+    "website/user/index.html": {
+      "sha256": "e6dee964a96936c874df14deb86af507309359ab426d81a048d3cf351a917fea",
+      "bytes": 58021
+    },
+    "website/user/assets/app.js": {
+      "sha256": "a96f2ea41ad106f19274577e093ff2ad037539eb4d72a3487f61e9bc6202419b",
+      "bytes": 156900
+    },
+    "website/user/assets/cloud-core.js": {
+      "sha256": "766f9053ce1adefaf6b8bef57e71a82b4f99207bdc71a595723e34591aa7de47",
+      "bytes": 8753
+    },
+    "website/user/assets/style.css": {
+      "sha256": "51a7b1e1ccdef0afc1c4a5ad3799026e65f35f100a48089994becd6acddb35f7",
+      "bytes": 74504
+    },
+    "website/user/tests/cloud-core.test.mjs": {
+      "sha256": "d9963f180164cd9eb91985c20c4e0de5eef29b3ab10531ed64d51f4bd0dbf7cf",
+      "bytes": 6845
+    },
+    "website/user/tests/structure.test.mjs": {
+      "sha256": "22f1cdc2e81991ee0ec4e38ad345c303a40c2bc7c4482dbff92776cff620408e",
+      "bytes": 6430
+    },
+    "Packages/RiverDiaryCore/Sources/RiverDiaryCore/CloudMirror.swift": {
+      "sha256": "5ac1e8ddafa70a6cfe5e0134703ae833b4eda5eee905f264ee4dee7946039b28",
+      "bytes": 14630
+    },
+    "Packages/RiverDiaryCore/Sources/RiverDiaryCore/AccountService.swift": {
+      "sha256": "c983ca041686c7e5cb9ce54270671e04d2efcfa15a43f46e0a45aeece2b05fef",
+      "bytes": 34847
+    },
+    "Packages/RiverDiaryCore/Sources/RiverDiaryCore/MemoryMirrorExport.swift": {
+      "sha256": "7dd1c142610aabb25032114a021367e1edc0db31115a68842882d6504fcac928",
+      "bytes": 13584
+    },
+    "Packages/RiverDiaryCore/Package.swift": {
+      "sha256": "07e4975adec7ca90c548033194bff11ef66cc678ea74a6f71828d69bff8bd703",
+      "bytes": 434
+    },
+    "Packages/RiverDiaryCore/Tests/RiverDiaryCoreTests/CloudMirrorTests.swift": {
+      "sha256": "9625bce3324bd85f041e959a27244f5a58d57c583838fbe2772cb2e02a88a1a9",
+      "bytes": 8958
+    },
+    "Packages/RiverDiaryCore/Tests/RiverDiaryCoreTests/Fixtures/web-cloud-envelope.json": {
+      "sha256": "b43d93b57a7298674ae890f1a16ab9671a88e00f7d8c1c4d3ad9ba34613020a3",
+      "bytes": 1421
+    },
+    "Packages/RiverDiaryCore/Tests/RiverDiaryCoreTests/Fixtures/swift-cloud-envelope.json": {
+      "sha256": "b2ee7e15b99d865674b49c652a4c24a4906b1e32a0200d698722f333cbb89542",
+      "bytes": 1143
+    },
+    "server/internal/httpapi/memory_mirror.go": {
+      "sha256": "be5cc784582a0700834b7ea8b6b6c95da44cb815bf656a75d291b251bd02206a",
+      "bytes": 15764
+    },
+    "server/internal/httpapi/memory_mirror_test.go": {
+      "sha256": "de7f9b71833db7d3f09325ca48e4148a801373b6d45941a14619a4726598cd61",
+      "bytes": 14179
+    },
+    "ios/RiverDiary/RiverDiary/Views/SettingsView.swift": {
+      "sha256": "b619a49718641d6bd94313aede7bc0f860a6be0f0469d2db51ba4cb2cc1e4688",
+      "bytes": 71889
+    },
+    "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/Settings/CloudMirrorSettingsView.swift": {
+      "sha256": "a76dccf0c77e3a54dad21ddfad06a76faa5f97c1d10b1e635e6739e0b619038f",
+      "bytes": 13486
+    },
+    "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/SettingsPresentation.swift": {
+      "sha256": "7032b5e3fe1b57a8993a8fda3bdebfff94b63fe776d13defefc462f18b0aa5c7",
+      "bytes": 1165
+    },
+    "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/SettingsRedesignView.swift": {
+      "sha256": "0c12d6bcdc54197af3795a3c0cc6dfb1bdc36f4fc99cbd2635e46824c74b5116",
+      "bytes": 19953
+    },
+    "scripts/release_gate.sh": {
+      "sha256": "519eb3d2adfb1b1542316928c2baae2e38b948bf36b9f42e39eadbfa70d54f13",
+      "bytes": 8984
+    },
+    "scripts/test_server_isolated.sh": {
+      "sha256": "0eb6c6c26dbe02c005bd9dd4d8c751c68f32edc0ce1e23ca90661643b23f05e2",
+      "bytes": 4687
+    },
+    "docs/validation/CLOUD_INTEROP_2026-10-22.md": {
+      "sha256": "510f4d79f56db974b5aa77a742248b9b5af82b821de01a4cf6c0babaf59d9261",
+      "bytes": 10121
+    }
+  },
+  "evidence": {
+    "docs/validation/evidence/2026-10-22/cloud-web-preview-desktop.png": {
+      "sha256": "7d9070fda51b5ad092301d086b9951b5af331597b248609b8f2251b66e7d1ef1",
+      "bytes": 296944
+    },
+    "docs/validation/evidence/2026-10-22/cloud-web-signedin-desktop.png": {
+      "sha256": "60f429260aa07ecdd90fc6b91345694b11575400fff4b72710f6362cc58739e3",
+      "bytes": 428654
+    },
+    "docs/validation/evidence/2026-10-22/cloud-web-signedin-mobile.png": {
+      "sha256": "fd3926ad5b45df1c1fe058a5520f7a61979fb998f6bf431e0569530fff95d2f3",
+      "bytes": 395213
+    },
+    "docs/validation/evidence/2026-10-22/core-tests.log": {
+      "sha256": "f27f5ff437869225b90f10a5a5501b00c2b27c42dcecfbbecdc6aed3edf4045e",
+      "bytes": 23154
+    },
+    "docs/validation/evidence/2026-10-22/ios-app-build.log": {
+      "sha256": "4ce88c59cf3c49f5b4b173ea25f16575093850a22d146c599ea06c59884ba706",
+      "bytes": 39231
+    },
+    "docs/validation/evidence/2026-10-22/ios-test-build.log": {
+      "sha256": "0d0693007e14af46cd8ad51d2a2f5290e585a47bfa6100e63486ae9a6f6479a7",
+      "bytes": 245519
+    },
+    "docs/validation/evidence/2026-10-22/mac-build.log": {
+      "sha256": "77b6166719e8100332b41f9ef9dae147d7f7828c150d23641695e11f0d23566b",
+      "bytes": 2649
+    },
+    "docs/validation/evidence/2026-10-22/server-tests.log": {
+      "sha256": "348656cb83ec2d1a431421b2b43ee3f8d0a642c9d6fc5d7fa5ce9f3eb951402e",
+      "bytes": 1084
+    }
+  },
+  "note": "Local/isolated validation only; production deploy and real-account journey not performed at the time of this fingerprint.",
+  "binaries": {
+    "ios/.simbuild/Build/Products/Debug-iphonesimulator/RiverDiary.app/RiverDiary": {
+      "sha256": "1ca6180ec4d791c4b61db256a8e34622d473c8e9e1f17a7499e52803937bacb6",
+      "bytes": 40216
+    },
+    "macos/RiverDiaryMac/.build/debug/RiverDiaryMac": {
+      "sha256": "f390c6a5b7ada2802b9953b595ef425854281df1ddafac2a887558754882e797",
+      "bytes": 37741968
+    }
+  }
+}

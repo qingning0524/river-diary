@@ -32,6 +32,7 @@ web-preview/css/style.css
 ios/.devicebuild/
 ios/.simrelease/
 ios/.simbuild/
+ios/.simbuild-tests/
 ios/.signedbuild/
 ios/.auditbuild/
 ios/.auditdevice/

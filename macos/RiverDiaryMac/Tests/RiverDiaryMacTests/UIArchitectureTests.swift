@@ -127,7 +127,7 @@ final class UIArchitectureTests: XCTestCase {
     }
 
     func testSettingsCategoriesHaveStableRoutes() {
-        XCTAssertEqual(SettingsCategory.allCases.map(\.rawValue), ["账号与权益", "记录与采集", "AI 与模型", "隐私与备份", "外观与应用"])
+        XCTAssertEqual(SettingsCategory.allCases.map(\.rawValue), ["账号与权益", "记录与采集", "AI 与模型", "隐私与备份", "云空间", "外观与应用"])
     }
 
     func testAIConnectionIsClearlyOptionalAndNeverBlocksStartup() {

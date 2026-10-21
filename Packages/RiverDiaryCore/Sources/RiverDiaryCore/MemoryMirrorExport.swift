@@ -4,8 +4,10 @@ import Foundation
 ///
 /// This is deliberately a small, stable envelope rather than the app's private
 /// backup format. It carries diary entries the user can already read on this
-/// device; it never includes encryption keys, raw machine observations, photo
-/// bytes, or health source data.
+/// device; it never includes encryption keys, raw machine observations, or
+/// photo bytes. Health-bearing context sections are excluded by default and
+/// are added only when the user explicitly consents for one cloud upload; the
+/// crypto layer filters them again unless that consent is present.
 public struct MemoryMirrorArchive: Codable, Equatable, Sendable {
     public static let currentFormat = "river.memory-mirror"
     public static let currentVersion = 2

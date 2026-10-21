@@ -258,6 +258,8 @@ struct SettingsRedesignView: View {
             AISettingsView(store: store, activity: activity, ai: ai, ingestion: ingestion)
         case .privacy:
             PrivacyBackupSettingsView(store: store, activity: activity, ai: ai, ingestion: ingestion)
+        case .cloud:
+            CloudMirrorSettingsView(store: store, ingestion: ingestion)
         case .appearance:
             AppearanceSettingsView(appearanceModeRaw: $appearanceModeRaw)
         case .recording:

@@ -1,0 +1,38 @@
+warning: /Users/fa1lingdown/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/fa1lingdown/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+warning: /Users/fa1lingdown/Library/Caches/org.swift.swiftpm is not accessible or not writable, disabling user-level cache features.
+warning: 'riverdiarymac': failed storing manifest for 'riverdiarymac' in cache: attempt to write a readonly database
+warning: 'sqlcipher.swift': /Users/fa1lingdown/Desktop/河流日记项目/macos/RiverDiaryMac/.build/checkouts/SQLCipher.swift/Package.swift:12:19: warning: 'v4' is deprecated: watchOS 9.0 is the oldest supported version [#DeprecatedDeclaration]
+10 |         .macOS(.v10_13),
+11 |         .macCatalyst(.v13),
+12 |         .watchOS(.v4),
+   |                   `- warning: 'v4' is deprecated: watchOS 9.0 is the oldest supported version [#DeprecatedDeclaration]
+13 |         .tvOS(.v12),
+14 |         .visionOS(.v1)
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>
+warning: 'sqlcipher.swift': failed storing manifest for 'sqlcipher.swift' in cache: attempt to write a readonly database
+warning: 'riverdiarycore': failed storing manifest for 'riverdiarycore' in cache: attempt to write a readonly database
+Building for debugging...
+[1 / 1]
+[2 / 8] RiverDiaryCore
+/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore/Sources/RiverDiaryCore/CloudMirror.swift:327:5: warning: 'public' modifier is redundant for static property declared in a public extension
+325 | 
+326 | public extension MemoryMirrorArchive {
+327 |     public static let healthSectionKinds: Set<String> = ["health", "workout", "stateOfMind"]
+    |     `- warning: 'public' modifier is redundant for static property declared in a public extension
+328 | 
+329 |     var containsHealthSections: Bool {
+[4 / 10] RiverDiaryCore
+/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore/Sources/RiverDiaryCore/CloudMirror.swift:327:5: warning: 'public' modifier is redundant for static property declared in a public extension
+325 | 
+326 | public extension MemoryMirrorArchive {
+327 |     public static let healthSectionKinds: Set<String> = ["health", "workout", "stateOfMind"]
+    |     `- warning: 'public' modifier is redundant for static property declared in a public extension
+328 | 
+329 |     var containsHealthSections: Bool {
+[10 / 15] RiverDiaryCore
+[15 / 18] RiverDiaryMac-product
+[18 / 20] RiverDiaryMac-product
+Build complete! (3.64秒)
+EXIT:0

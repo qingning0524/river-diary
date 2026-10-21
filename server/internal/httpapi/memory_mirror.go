@@ -140,6 +140,10 @@ type memoryMirrorSummary struct {
 	Understandings int    `json:"understandings"`
 	First          string `json:"first"`
 	Last           string `json:"last"`
+	// IncludesHealth is client-declared metadata for an explicitly consented
+	// snapshot. The server cannot verify it because it only sees ciphertext;
+	// consumers must treat false as "not declared" rather than as a guarantee.
+	IncludesHealth bool `json:"includes_health"`
 }
 
 func normalizeMirrorSummary(raw json.RawMessage) ([]byte, error) {

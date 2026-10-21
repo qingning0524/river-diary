@@ -1,0 +1,14 @@
+Isolated PostgreSQL cluster: /var/folders/w5/5bvvpt3n1ls11w7smc67s_bm0000gn/T/RiverDiary-pg-gate.iyUtdI/pgdata (port 61860)
+Running go test ./... against TEST_DATABASE_URL=postgres://flowriver@127.0.0.1:61860/flowriver_gate_test?sslmode=disable
+Top-level tests passed: 65
+Top-level tests skipped: 0
+Top-level tests failed:  0
+(RUN lines include subtests: 93)
+--- selected test log lines ---
+=== RUN   TestMemoryMirrorTwoDevicesStoreOnlyCiphertext
+    memory_mirror_test.go:388: SQL: SELECT count(*) ... WHERE ciphertext/summary LIKE plaintext = 0
+    memory_mirror_test.go:389: DB row: ciphertext_bytes=152 sha256=fcf9616d162c6b0f1e3ad8245cebc04717001508e10fe8f27c41b309d91999db summary={"days": 1, "last": "2026-10-22", "first": "2026-10-22", "places": 0, "entries": 1, "collections": 0, "understandings": 0, "includes_health": true}
+    memory_mirror_test.go:390: Device B decrypted 136 bytes with the passphrase; wrong passphrase rejected
+--- PASS: TestMemoryMirrorTwoDevicesStoreOnlyCiphertext (0.09s)
+PASS: all server tests ran against an isolated PostgreSQL (0 skipped).
+EXIT:0

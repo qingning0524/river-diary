@@ -100,9 +100,18 @@ print -r -- "Built Mac app: $mac_app"
 ios_app=""
 if [[ "$skip_ios" -eq 0 ]]; then
   ios_derived="$work_root/ios-derived"
-  if ! xcodebuild -project ios/RiverDiary/RiverDiary.xcodeproj -scheme RiverDiary \
+  ios_home="$work_root/xcode-home"
+  mkdir -p "$ios_home/Library/Caches" "$ios_home/Library/Developer"
+  HOME="$ios_home" CFFIXED_USER_HOME="$ios_home" defaults write com.apple.dt.Xcode IDEPackageSupportDisableManifestSandbox -bool YES >/dev/null 2>&1 || true
+  if ! env HOME="$ios_home" CFFIXED_USER_HOME="$ios_home" \
+      CLANG_MODULE_CACHE_PATH="$work_root/ios-clang" \
+      xcodebuild -project ios/RiverDiary/RiverDiary.xcodeproj -scheme RiverDiary \
       -configuration Release -destination "generic/platform=iOS Simulator" \
-      -derivedDataPath "$ios_derived" build > "$work_root/ios-build.log" 2>&1; then
+      -derivedDataPath "$ios_derived" \
+      -packageCachePath "$work_root/spm-cache" \
+      -clonedSourcePackagesDirPath "$work_root/SourcePackages" \
+      ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO \
+      OTHER_SWIFT_FLAGS="-disable-sandbox" build > "$work_root/ios-build.log" 2>&1; then
     tail -20 "$work_root/ios-build.log" >&2
     fail "iOS Release 构建失败（日志：$work_root/ios-build.log）" 70
   fi

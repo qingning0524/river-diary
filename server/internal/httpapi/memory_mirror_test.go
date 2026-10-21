@@ -3,12 +3,18 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"golang.org/x/crypto/pbkdf2"
 )
 
 func TestMemoryMirrorIsScopedAndPreconditioned(t *testing.T) {
@@ -206,4 +212,180 @@ func TestMemoryMirrorIsScopedAndPreconditioned(t *testing.T) {
 	if status, _ = call("PUT", "/me/memory-mirror", a.AccessToken, "", "*", invalidSummary); status != 400 {
 		t.Fatalf("summary smuggling accepted %d", status)
 	}
+}
+
+// TestMemoryMirrorTwoDevicesStoreOnlyCiphertext exercises the real HTTP
+// boundary with two sessions for the same account (Mac + iPhone). Device A
+// encrypts a mirror locally, the server stores only the envelope, and device B
+// downloads the exact ciphertext, decrypts it, and rejects a wrong passphrase.
+// It also inspects the database row to show there is no plaintext column.
+func TestMemoryMirrorTwoDevicesStoreOnlyCiphertext(t *testing.T) {
+	api, db, _ := testAPI(t)
+	ctx := context.Background()
+	srv := httptest.NewServer(api.Handler())
+	defer srv.Close()
+
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	var uid, iid string
+	if err = tx.QueryRow(ctx, `INSERT INTO users DEFAULT VALUES RETURNING id::text`).Scan(&uid); err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.QueryRow(ctx, `INSERT INTO identities(user_id,provider,subject,email_canonical,email_display,verified_at) VALUES($1,'email',$2,$2,$2,now()) RETURNING id::text`,
+		uid, "two-devices@example.org").Scan(&iid); err != nil {
+		t.Fatal(err)
+	}
+	deviceA, err := upsertDevice(ctx, tx, uid, "650e8400-e29b-41d4-a716-446655440611", "macos", "fixture Mac")
+	if err != nil {
+		t.Fatal(err)
+	}
+	deviceB, err := upsertDevice(ctx, tx, uid, "650e8400-e29b-41d4-a716-446655440612", "ios", "fixture iPhone")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessionA, err := api.createSession(ctx, tx, uid, iid, deviceA, "650e8400-e29b-41d4-a716-446655440611", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessionB, err := api.createSession(ctx, tx, uid, iid, deviceB, "650e8400-e29b-41d4-a716-446655440612", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	call := func(method, path, token, ifMatch, ifNone string, body any) (int, []byte) {
+		t.Helper()
+		var payload []byte
+		if body != nil {
+			payload, err = json.Marshal(body)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		req, err := http.NewRequest(method, srv.URL+"/v1"+path, bytes.NewReader(payload))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+		if ifMatch != "" {
+			req.Header.Set("If-Match", ifMatch)
+		}
+		if ifNone != "" {
+			req.Header.Set("If-None-Match", ifNone)
+		}
+		resp, err := srv.Client().Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		out, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return resp.StatusCode, out
+	}
+
+	passphrase := "correct horse battery staple"
+	salt := bytes.Repeat([]byte{0x11}, 16)
+	iv := bytes.Repeat([]byte{0x22}, 12)
+	iterations := 100000
+	plaintext := []byte(`{"format":"river.memory-mirror","version":2,"entries":[{"title":"只存在于本机的标题","body":"服务端不应看到这句话"}]}`)
+	key := pbkdf2.Key([]byte(passphrase), salt, iterations, 32, sha256.New)
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ciphertext := gcm.Seal(nil, iv, plaintext, []byte("river.cloud-mirror:v1"))
+	envelope := map[string]any{
+		"format":  "river.cloud-mirror",
+		"version": 1,
+		"kdf": map[string]any{
+			"name": "PBKDF2-SHA-256", "iterations": iterations,
+			"salt": base64.StdEncoding.EncodeToString(salt),
+		},
+		"cipher": map[string]any{
+			"name": "AES-GCM-256", "iv": base64.StdEncoding.EncodeToString(iv),
+		},
+		"ciphertext":        base64.StdEncoding.EncodeToString(ciphertext),
+		"client_updated_at": "2026-10-22T00:00:00Z",
+		"summary": map[string]any{
+			"entries": 1, "days": 1, "places": 0, "collections": 0,
+			"understandings": 0, "first": "2026-10-22", "last": "2026-10-22",
+			"includes_health": true,
+		},
+	}
+
+	status, body := call("PUT", "/me/memory-mirror", sessionA.AccessToken, "", "*", envelope)
+	if status != 201 {
+		t.Fatalf("device A upload %d %s", status, body)
+	}
+	status, body = call("GET", "/me/memory-mirror/meta", sessionA.AccessToken, "", "", nil)
+	if status != 200 || !strings.Contains(string(body), `"includes_health":true`) {
+		t.Fatalf("device A meta %d %s", status, body)
+	}
+	status, body = call("GET", "/me/memory-mirror", sessionB.AccessToken, "", "", nil)
+	if status != 200 {
+		t.Fatalf("device B download %d %s", status, body)
+	}
+	var downloaded memoryMirrorMeta
+	if err := json.Unmarshal(body, &downloaded); err != nil {
+		t.Fatal(err)
+	}
+	if downloaded.Ciphertext != envelope["ciphertext"] {
+		t.Fatal("device B did not receive the exact ciphertext")
+	}
+	downloadedBytes, err := base64.StdEncoding.DecodeString(downloaded.Ciphertext)
+	if err != nil {
+		t.Fatal(err)
+	}
+	opened, err := gcm.Open(nil, iv, downloadedBytes, []byte("river.cloud-mirror:v1"))
+	if err != nil || !bytes.Equal(opened, plaintext) {
+		t.Fatalf("device B decryption failed: %v", err)
+	}
+	wrongKey := pbkdf2.Key([]byte("wrong passphrase"), salt, iterations, 32, sha256.New)
+	wrongBlock, err := aes.NewCipher(wrongKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrongGCM, err := cipher.NewGCM(wrongBlock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = wrongGCM.Open(nil, iv, downloadedBytes, []byte("river.cloud-mirror:v1")); err == nil {
+		t.Fatal("wrong passphrase unexpectedly decrypted the mirror")
+	}
+
+	var stored []byte
+	var summary string
+	if err = db.QueryRow(ctx, `SELECT ciphertext, summary::text FROM user_memory_mirrors WHERE user_id=$1`, uid).Scan(&stored, &summary); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(stored, ciphertext) {
+		t.Fatal("database ciphertext differs from uploaded ciphertext")
+	}
+	if bytes.Contains(stored, []byte("只存在于本机")) || strings.Contains(summary, "只存在于本机") {
+		t.Fatal("plaintext leaked into the database row")
+	}
+	var leaked int
+	if err = db.QueryRow(ctx, `SELECT count(*) FROM user_memory_mirrors WHERE user_id=$1 AND (ciphertext::text LIKE '%只存在于本机%' OR summary::text LIKE '%只存在于本机%')`, uid).Scan(&leaked); err != nil {
+		t.Fatal(err)
+	}
+	if leaked != 0 {
+		t.Fatalf("SQL found %d rows containing plaintext", leaked)
+	}
+	t.Logf("SQL: SELECT count(*) ... WHERE ciphertext/summary LIKE plaintext = %d", leaked)
+	t.Logf("DB row: ciphertext_bytes=%d sha256=%x summary=%s", len(stored), sha256.Sum256(stored), summary)
+	t.Logf("Device B decrypted %d bytes with the passphrase; wrong passphrase rejected", len(opened))
 }
