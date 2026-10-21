@@ -16,6 +16,7 @@ for arch in amd64 arm64; do
   mkdir -p "$stage_dir/deploy"
   install -m 0644 "$root_dir/.env.example" "$stage_dir/env.example"
   install -m 0644 "$root_dir/deploy/Caddyfile" "$stage_dir/deploy/Caddyfile"
+  install -m 0755 "$root_dir/deploy/install-caddyfile.sh" "$stage_dir/deploy/install-caddyfile.sh"
   install -m 0644 "$root_dir/deploy/Caddyfile.admin-only" "$stage_dir/deploy/Caddyfile.admin-only"
   install -m 0755 "$root_dir/deploy/backup.sh" "$stage_dir/deploy/backup.sh"
   install -m 0644 "$root_dir/deploy/backup.env.example" "$stage_dir/deploy/backup.env.example"

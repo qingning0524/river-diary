@@ -416,14 +416,10 @@ sudo chmod 600 /etc/flowriver/server.env
 sudo systemctl disable --now flowriver-admin-only
 sudo systemctl enable --now flowriver-api
 
-# 多站点主机不要直接覆盖：deploy/Caddyfile 只有 api/admin 两个站点。
-# 如果这台主机还承载官网/登录/用户控制台，先备份，再把 api/admin 块合并进
-# 现有 /etc/caddy/Caddyfile（完整六站点见 website/deploy/Caddyfile），
-# 或直接使用 website/deploy/Caddyfile。直接覆盖会让官网/登录/控制台 404。
-sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.before-flowriver 2>/dev/null || true
-sudo install -m 0644 "$HOME/flowriver-upload/deploy/Caddyfile" /etc/caddy/Caddyfile
-sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-sudo systemctl reload caddy
+# 安装前检查：deploy/Caddyfile 只有 api/admin 两个站点。
+# 如果 /etc/caddy/Caddyfile 已包含官网/登录/控制台，脚本会拒绝覆盖并提示合并，
+# 避免把多站点主机的官网/登录/控制台打成 404。完整六站点用 website/deploy/Caddyfile。
+sudo "$HOME/flowriver-upload/deploy/install-caddyfile.sh" "$HOME/flowriver-upload/deploy/Caddyfile"
 sudo systemctl status flowriver-api --no-pager
 curl --fail --silent --show-error http://127.0.0.1:8080/health/live
 curl --fail --silent --show-error http://127.0.0.1:8080/health/ready
@@ -473,12 +469,9 @@ sudo systemctl start flowriver-api
 切换到完整 API 时按第 8 步安装正式 Caddyfile。已有其他网站时，把对应站点块合并进去，不覆盖其他站点。仅后台阶段使用 `deploy/Caddyfile.admin-only`，其中 API 域名固定返回 `503`。
 
 ```sh
-sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.before-flowriver
 # 同上：server/deploy/Caddyfile 只含 api/admin；已有官网/登录/控制台时
-# 必须合并站点块，或改用 website/deploy/Caddyfile。不要直接覆盖。
-sudo install -m 0644 "$HOME/flowriver-upload/deploy/Caddyfile" /etc/caddy/Caddyfile
-sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-if sudo systemctl is-active --quiet caddy; then sudo systemctl reload caddy; else sudo systemctl enable --now caddy; fi
+# 脚本会拒绝覆盖，必须合并站点块，或改用 website/deploy/Caddyfile。
+sudo "$HOME/flowriver-upload/deploy/install-caddyfile.sh" "$HOME/flowriver-upload/deploy/Caddyfile"
 sudo systemctl status caddy --no-pager
 ```
 
