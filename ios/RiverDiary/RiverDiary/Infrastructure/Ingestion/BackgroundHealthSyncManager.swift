@@ -33,11 +33,10 @@ final class BackgroundHealthSyncManager {
             }
         }
 
-        schedule()
     }
 
     func schedule() {
-        guard hasSignedInAccount else { cancel(); return }
+        guard hasLocalLibrary else { cancel(); return }
         let request = BGAppRefreshTaskRequest(identifier: Self.taskIdentifier)
         request.earliestBeginDate = Self.nextScheduledRun()
         try? BGTaskScheduler.shared.submit(request)
@@ -45,12 +44,13 @@ final class BackgroundHealthSyncManager {
 
     func cancel() { BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.taskIdentifier) }
 
-    private var hasSignedInAccount: Bool {
-        RiverAccountSessionStore(platform: .ios, deviceName: "Background health sync").isSignedIn
+    /// 本地优先后，后台健康同步只要求本机资料存在；账号不是前提。
+    private var hasLocalLibrary: Bool {
+        RiverLocalDatabase.databaseFileExists()
     }
 
     func sync() async {
-        guard hasSignedInAccount, HKHealthStore.isHealthDataAvailable() else { return }
+        guard hasLocalLibrary, HKHealthStore.isHealthDataAvailable() else { return }
 
         let healthStore = HealthKitStore(loadOnInit: false)
         guard healthStore.isAuthorized else { return }
@@ -65,10 +65,16 @@ final class BackgroundHealthSyncManager {
         }
 
         await withCheckedContinuation { continuation in
-            healthStore.onHealthSnapshotChanged = { nights, exerciseDays, intervals in
+            healthStore.onHealthSnapshotChanged = { nights, exerciseDays, intervals, workouts, stateOfMind in
                 Task {
-                    guard self.hasSignedInAccount else { continuation.resume(); return }
-                    nodeStore.recordHealthSnapshot(nights: nights, exerciseDays: exerciseDays, intervals: intervals)
+                    guard self.hasLocalLibrary else { continuation.resume(); return }
+                    nodeStore.recordHealthSnapshot(
+                        nights: nights,
+                        exerciseDays: exerciseDays,
+                        intervals: intervals,
+                        workouts: workouts,
+                        stateOfMind: stateOfMind
+                    )
                     nodeStore.synchronize(using: driveStore, localMoodScores: diaryStore.localMoodScoresByDate)
                     continuation.resume()
                 }
@@ -95,9 +101,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        Task { @MainActor in
-            BackgroundHealthSyncManager.shared.register()
-        }
+        // BGTaskScheduler 要求在 didFinishLaunching 返回前完成注册。
+        BackgroundHealthSyncManager.shared.register()
         return true
     }
 }

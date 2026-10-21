@@ -1,0 +1,23 @@
+{
+  "/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore/Sources/RiverDiaryCore/DayContextSnapshot.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/DayContextSnapshot.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/DayContextSnapshot.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/DayContextSnapshot.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/DayContextSnapshot.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/DayContextSnapshot.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore/Sources/RiverDiaryCore/HealthSourceStatus.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/HealthSourceStatus.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/HealthSourceStatus.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/HealthSourceStatus.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/HealthSourceStatus.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/HealthSourceStatus.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore/Sources/RiverDiaryCore/IdentityAndEvents.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/IdentityAndEvents.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/IdentityAndEvents.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/IdentityAndEvents.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/IdentityAndEvents.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/IdentityAndEvents.swiftdeps"
+  }
+}

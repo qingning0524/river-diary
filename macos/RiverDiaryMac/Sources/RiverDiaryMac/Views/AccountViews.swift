@@ -4,7 +4,10 @@ import SwiftUI
 struct MacAccountLoginView: View {
     /// 本机已有日记（正式库或旧版状态）时，登录页要如实说明，避免用户以为数据丢了。
     var showsLocalDataNotice = false
+    /// 从设置页以 sheet 打开时需要显式关闭；作为根登录页时不显示。
+    var allowsDismiss = false
 
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var account: RiverAccountSessionStore
     @State private var email = ""
     @State private var code = ""
@@ -16,6 +19,24 @@ struct MacAccountLoginView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if allowsDismiss {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.secondaryInk)
+                            .frame(width: 30, height: 30)
+                            .background(Color.editor, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("关闭账号绑定")
+                }
+                .padding(.top, 18)
+                .padding(.trailing, 22)
+            }
             Spacer()
             VStack(alignment: .leading, spacing: 18) {
                 Image(systemName: "water.waves")
@@ -25,7 +46,7 @@ struct MacAccountLoginView: View {
                     Text("欢迎来到 River Diary")
                         .font(AppTypography.pageTitle())
                         .foregroundStyle(Color.ink)
-                    Text("首次使用请用邮箱验证码创建账号或登录。你的日记仍保存在本机。")
+                    Text("账号用于官方 AI 额度、云副本与设备管理；不绑定也能继续写日记。绑定后这台设备上的本机资料会归当前账号。")
                         .font(AppTypography.secondary())
                         .foregroundStyle(Color.secondaryInk)
                     if showsLocalDataNotice {
@@ -148,6 +169,7 @@ struct MacAccountSettingsView: View {
     @State private var redeemRequestID = UUID().uuidString
     @State private var message: String?
     @State private var showsSignOutConfirmation = false
+    @State private var showsLogin = false
     @State private var errorMessage: String?
 
     var body: some View {
@@ -158,8 +180,12 @@ struct MacAccountSettingsView: View {
                         if let email = account.accountEmail {
                             RiverValueRow(title: "登录账号", value: email)
                         } else {
-                            Text("当前没有账号会话。")
+                            Text("当前是本机模式。绑定账号后可使用官方 AI 额度、云副本与设备管理；不绑定也能继续写日记。")
                                 .foregroundStyle(Color.secondaryInk)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button("绑定 River Diary 账号") { showsLogin = true }
+                                .buttonStyle(.borderedProminent)
+                                .accessibilityIdentifier("account.bind")
                         }
 
                         if account.hasPremiumEntitlement {
@@ -217,6 +243,11 @@ struct MacAccountSettingsView: View {
         .task {
             guard account.isSignedIn else { return }
             try? await account.refreshEntitlements()
+        }
+        .sheet(isPresented: $showsLogin) {
+            MacAccountLoginView(showsLocalDataNotice: true, allowsDismiss: true)
+                .environmentObject(account)
+                .frame(minWidth: 620, minHeight: 620)
         }
     }
 

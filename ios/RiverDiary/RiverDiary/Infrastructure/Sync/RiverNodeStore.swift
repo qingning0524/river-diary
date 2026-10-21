@@ -125,6 +125,18 @@ final class RiverNodeStore: ObservableObject {
     }
 
     var deviceID: String { database?.deviceID.rawValue ?? "不可用" }
+
+    /// 本机资料归属。绑定账号时写入；换机恢复后由数据库带回。
+    var localProfileOwner: String? {
+        try? database?.localProfileOwner()
+    }
+
+    func setLocalProfileOwner(_ userID: String) throws {
+        guard let database else {
+            throw RiverLocalDatabaseError.sql("本机资料库尚未打开，不能绑定账号")
+        }
+        try database.setLocalProfileOwner(userID)
+    }
     var eventCount: Int { database?.timelineEvents.count ?? 0 }
 
     func retryOpen() {
@@ -147,7 +159,9 @@ final class RiverNodeStore: ObservableObject {
     }
 
     func recordHealthSnapshot(nights: [SleepNight], exerciseDays: [ExerciseDay],
-                              intervals: [ExerciseInterval] = []) {
+                              intervals: [ExerciseInterval] = [],
+                              workouts: [WorkoutSummary] = [],
+                              stateOfMind: [StateOfMindSummary] = []) {
         guard let database else { return }
         let dayKey: (Date) -> String = { date in
             let formatter = DateFormatter()
@@ -233,15 +247,82 @@ final class RiverNodeStore: ObservableObject {
                     onInserted: { insertedHealthEvents.append($0) }
                 )
             }
+            for workout in workouts {
+                let durationMinutes = max(0, Int(workout.end.timeIntervalSince(workout.start) / 60))
+                let metrics = RiverEventMetrics(
+                    distanceKm: workout.distanceKm,
+                    activeEnergyKcal: workout.energyKcal,
+                    durationMinutes: durationMinutes
+                )
+                let payload = RiverEventPayload(
+                    text: workout.activityName,
+                    intervalEnd: workout.end,
+                    metrics: metrics
+                )
+                let payloadData = try JSONEncoder().encode(payload)
+                let hash = Self.sha256(payloadData)
+                let key = "\(workout.id)|\(workout.start.timeIntervalSince1970)"
+                _ = try database.append(
+                    id: RiverStableIdentifier.uuid(namespace: "health.workout.\(database.deviceID.rawValue)", key: key),
+                    source: "healthkit",
+                    kind: "health.workout",
+                    payload: payload,
+                    observedAt: workout.start,
+                    sourceHash: hash,
+                    refreshTimelineAfterAppend: false,
+                    notifyLocalStateChange: false,
+                    invalidateArtifactsAfterAppend: false,
+                    onInserted: { insertedHealthEvents.append($0) }
+                )
+            }
+            for entry in stateOfMind {
+                let metrics = RiverEventMetrics(valence: entry.valence)
+                let payload = RiverEventPayload(text: entry.kindLabel, metrics: metrics)
+                let payloadData = try JSONEncoder().encode(payload)
+                let hash = Self.sha256(payloadData)
+                let key = "\(entry.id)|\(entry.date.timeIntervalSince1970)"
+                _ = try database.append(
+                    id: RiverStableIdentifier.uuid(namespace: "health.stateOfMind.\(database.deviceID.rawValue)", key: key),
+                    source: "healthkit",
+                    kind: "health.stateOfMind",
+                    payload: payload,
+                    observedAt: entry.date,
+                    sourceHash: hash,
+                    refreshTimelineAfterAppend: false,
+                    notifyLocalStateChange: false,
+                    invalidateArtifactsAfterAppend: false,
+                    onInserted: { insertedHealthEvents.append($0) }
+                )
+            }
             if !insertedHealthEvents.isEmpty {
                 try database.invalidateArtifactsForBatch(insertedHealthEvents)
                 database.refreshTimeline()
                 NotificationCenter.default.post(name: .riverLocalNodeStateDidChange, object: database.deviceID.rawValue)
             }
             lastCaptureError = nil
+            IPhoneDayContextBuilder.publish(database: database)
         } catch {
             lastCaptureError = error.localizedDescription
         }
+    }
+
+    func refreshDayContext() {
+        guard let database else { return }
+        IPhoneDayContextBuilder.publish(database: database)
+    }
+
+    /// 网页镜像用：按设备+天取最新快照，最多 400 天。
+    func dayContextSnapshotsForWeb(limit: Int = 400) -> [DayContextSnapshot] {
+        guard let database, let events = try? database.allEvents() else { return [] }
+        let contexts = events.filter { $0.kind == "dayContextSnapshot" }.compactMap { event -> (Date, DayContextSnapshot)? in
+            guard let payload = try? JSONDecoder().decode(RiverEventPayload.self, from: event.payload),
+                  let json = payload.contextJSON,
+                  let snapshot = DayContextSnapshot.decodeJSON(json) else { return nil }
+            return (event.recordedAt, snapshot)
+        }
+        let latest = Dictionary(grouping: contexts) { "\($0.1.deviceID)|\($0.1.day)" }
+            .values.compactMap { group in group.max { $0.0 < $1.0 }?.1 }
+        return Array(latest.sorted { $0.day > $1.day }.prefix(limit))
     }
 
     func recordMoodCorrection(dayKey: String, score: Int, operationID: UUID = UUID()) {

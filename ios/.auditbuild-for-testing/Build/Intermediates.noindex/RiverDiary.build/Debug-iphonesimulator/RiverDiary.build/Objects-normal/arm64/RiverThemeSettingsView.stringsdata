@@ -1,0 +1,80 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RiverThemeSettingsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "阅读与外观",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 24
+        }
+      },
+      {
+        "comment": "",
+        "key": "外观偏好保存在这台设备。随时切换，日记与记忆都会保留。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 19
+        }
+      },
+      {
+        "comment": "",
+        "key": "让阅读舒服一点",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 11
+        }
+      },
+      {
+        "comment": "",
+        "key": "同一段生活，选择适合此刻的阅读方式。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 12
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@，%@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 59
+        }
+      },
+      {
+        "comment": "",
+        "key": "正在使用",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 37
+        }
+      },
+      {
+        "comment": "",
+        "key": "一个普通的星期日",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 45
+        }
+      },
+      {
+        "comment": "",
+        "key": "慢慢走，也在向前。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 46
+        }
+      },
+      {
+        "comment": "",
+        "key": "今天留下的文字，日后会带你回到此刻。\n不必急着总结，先好好生活。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 48
+        }
+      }
+    ]
+  },
+  "version": 1
+}

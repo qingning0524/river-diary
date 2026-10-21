@@ -15,23 +15,19 @@ struct RiverDiaryApp: App {
     private let syncTimer = Timer.publish(every: 120, on: .main, in: .common).autoconnect()
 
     init() {
-        let account = RiverAccountSessionStore(platform: .ios, deviceName: UIDevice.current.name)
+        let account = RiverAccountSessionStore(platform: .ios, deviceName: UIDevice.current.name, loadPersistedSession: false)
         _accountSession = StateObject(wrappedValue: account)
         RiverDiaryQAReset.resetLocalStoreIfRequested()
         let store = DiaryStore()
-        // 资料生命周期：首次未绑定账号时不创建正式库。已有库、已有登录会话或
-        // QA 隔离包才立即打开；否则等登录后由 openIfNeeded() 建库。
-        #if DEBUG
-        let isQABundle = Bundle.main.bundleIdentifier == "studio.riverdiary.ios.qa"
-        #else
-        let isQABundle = false
-        #endif
-        let shouldOpenLibrary = account.isSignedIn
-            || RiverLocalDatabase.databaseFileExists()
-            || isQABundle
-        let riverNode = RiverNodeStore(opensImmediately: shouldOpenLibrary)
-        riverNode.locationCollector?.setSessionActive(account.isSignedIn)
-        if !account.isSignedIn { riverNode.motionCollector?.stop() }
+        // v5.0 本地优先：首次启动就开本机资料，账号只是后续增强。
+        let riverNode = RiverNodeStore(opensImmediately: true)
+        account.localProfileOwnerProvider = { riverNode.localProfileOwner }
+        account.localProfileOwnerWriter = { try riverNode.setLocalProfileOwner($0) }
+        account.localProfileOwnerClearer = {
+            guard let database = riverNode.database else { return }
+            try database.clearLocalProfileOwner()
+        }
+        riverNode.locationCollector?.setSessionActive(true)
         store.onScoreChanged = { entry, score in
             riverNode.recordMoodCorrection(dayKey: entry.date, score: score)
         }
@@ -46,9 +42,15 @@ struct RiverDiaryApp: App {
         store.applySyncedMoodState(scores: moodState.scores, resetDays: moodState.resets)
         riverNode.migrateLegacyMoodScores(store.localMoodScoresByDate)
         let healthStore = HealthKitStore()
-        healthStore.onHealthSnapshotChanged = { nights, exerciseDays, intervals in
-            guard account.isSignedIn else { return }
-            riverNode.recordHealthSnapshot(nights: nights, exerciseDays: exerciseDays, intervals: intervals)
+        healthStore.onHealthSnapshotChanged = { nights, exerciseDays, intervals, workouts, stateOfMind in
+            guard riverNode.database != nil else { return }
+            riverNode.recordHealthSnapshot(
+                nights: nights,
+                exerciseDays: exerciseDays,
+                intervals: intervals,
+                workouts: workouts,
+                stateOfMind: stateOfMind
+            )
         }
         _store = StateObject(wrappedValue: store)
         _riverNode = StateObject(wrappedValue: riverNode)
@@ -65,22 +67,25 @@ struct RiverDiaryApp: App {
                 .environmentObject(accountSession)
                 .environmentObject(themeStore)
                 .preferredColorScheme(themeStore.preferredColorScheme)
-                .task { await accountSession.retryPendingSignOuts() }
+                .task {
+                    // 本地优先：先显示本机界面，再按需加载账号 Keychain。
+                    accountSession.loadPersistedSessionIfNeeded()
+                    accountSession.seedLocalProfileOwnerFromKeychain()
+                    await accountSession.retryPendingSignOuts()
+                    await accountSession.enforceLocalProfileOwner()
+                }
                 .onAppear {
-                    if accountSession.isSignedIn {
-                        riverNode.openIfNeeded()
-                        riverNode.restoreLANReplicationPreference(using: store.drive)
-                        riverNode.motionCollector?.start()
-                        riverNode.aiStore?.refreshAutomaticSchedule()
-                        Task { await riverNode.photoAnalyzer?.refreshRecentPhotos() }
-                    }
+                    riverNode.openIfNeeded()
+                    riverNode.restoreLANReplicationPreference(using: store.drive)
+                    riverNode.motionCollector?.start()
+                    riverNode.aiStore?.refreshAutomaticSchedule()
+                    Task { await riverNode.photoAnalyzer?.refreshRecentPhotos() }
                 }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
-                        guard accountSession.isSignedIn else { return }
                         Task {
                             await store.refreshFromICloud()
-                            guard accountSession.isSignedIn else { return }
+                            guard riverNode.database != nil else { return }
                             riverNode.synchronize(using: store.drive, localMoodScores: store.localMoodScoresByDate)
                             riverNode.restoreLANReplicationPreference(using: store.drive)
                             riverNode.motionCollector?.start()
@@ -90,36 +95,25 @@ struct RiverDiaryApp: App {
                         if health.isAuthorized { health.loadHealth() }
                     } else if phase == .background {
                         riverNode.stopLANReplication()
-                        if accountSession.isSignedIn { BackgroundHealthSyncManager.shared.schedule() }
+                        if riverNode.database != nil { BackgroundHealthSyncManager.shared.schedule() }
                     }
                 }
                 .onChange(of: accountSession.isSignedIn) { _, signedIn in
                     if signedIn {
-                        // 登录前被延迟的正式库在这里打开，随后才接上采集与同步。
+                        // 本地优先后库通常已打开；这里幂等确认，并让账号能力接上。
                         riverNode.openIfNeeded()
-                        riverNode.locationCollector?.setSessionActive(true)
-                        Task {
-                            await store.refreshFromICloud()
-                            guard accountSession.isSignedIn else { return }
-                            riverNode.synchronize(using: store.drive, localMoodScores: store.localMoodScoresByDate)
-                            riverNode.restoreLANReplicationPreference(using: store.drive)
-                            riverNode.motionCollector?.start()
-                            riverNode.aiStore?.refreshAutomaticSchedule()
-                            await riverNode.photoAnalyzer?.refreshRecentPhotos()
-                        }
+                        Task { await accountSession.enforceLocalProfileOwner() }
                     } else {
-                        riverNode.stopLANReplication()
-                        riverNode.motionCollector?.stop()
-                        riverNode.locationCollector?.setSessionActive(false)
-                        BackgroundHealthSyncManager.shared.cancel()
+                        // 退出登录只停账号能力；本机日记、采集、同步与备份继续。
+                        riverNode.openIfNeeded()
                     }
                 }
                 .onReceive(syncTimer) { _ in
-                    guard scenePhase == .active, accountSession.isSignedIn else { return }
+                    guard scenePhase == .active, riverNode.database != nil else { return }
                     riverNode.aiStore?.refreshAutomaticSchedule()
                     Task {
                         await store.refreshFromICloud()
-                        guard accountSession.isSignedIn else { return }
+                        guard riverNode.database != nil else { return }
                         riverNode.synchronize(using: store.drive, localMoodScores: store.localMoodScoresByDate)
                     }
                 }

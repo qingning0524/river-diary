@@ -22,7 +22,7 @@ test('the console is a complete accessible document without inline scripts', () 
   assert.equal((html.match(/<h1\b/g) || []).length, 0, 'page headings are rendered by the view controller');
   assert.match(html, /<nav class="mobile-tabs"/);
   assert.match(html, /aria-live="polite"/);
-  assert.match(html, /<script type="module" src="\/assets\/app\.js\?v=20261020-cloud"><\/script>/);
+  assert.match(html, /<script type="module" src="\/assets\/app\.js\?v=20261020-webexport"><\/script>/);
   const inlineScripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
     .filter((match) => match[1].trim().length > 0);
   assert.deepEqual(inlineScripts, []);
@@ -106,7 +106,7 @@ test('the shell exposes the seven intended spaces and account subsections', () =
 });
 
 test('dialogs and form controls preserve keyboard and failure paths', () => {
-  for (const id of ['command-dialog', 'memory-dialog', 'import-dialog', 'composer-dialog', 'action-dialog', 'privacy-dialog', 'correction-dialog']) {
+  for (const id of ['command-dialog', 'memory-dialog', 'import-dialog', 'action-dialog', 'privacy-dialog', 'correction-dialog']) {
     assert.match(html, new RegExp(`id="${id}"`), `missing dialog ${id}`);
   }
   assert.match(html, /aria-label="关闭记忆详情"/);
@@ -114,4 +114,6 @@ test('dialogs and form controls preserve keyboard and failure paths', () => {
   assert.match(app, /Idempotency-Key/);
   assert.match(app, /内容已保留/);
   assert.match(app, /prefersReducedMotion/);
+  assert.doesNotMatch(html, /composer-dialog/, 'the read-only console has no local note editor');
+  assert.doesNotMatch(app, /data-action="compose"/);
 });

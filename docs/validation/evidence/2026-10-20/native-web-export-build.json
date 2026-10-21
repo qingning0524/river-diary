@@ -1,0 +1,53 @@
+{
+  "kind": "native-web-export-build",
+  "date_shanghai": "2026-10-20",
+  "macos": {
+    "configuration": "debug",
+    "build_script": "macos/RiverDiaryMac/make_app.sh",
+    "result": "pass",
+    "app_path": "/tmp/RiverDiaryMirror.app",
+    "binary_sha256": "bd1e01244c1f223472102deca86fc6cef8b647f1838e8a884c931c89a399543e",
+    "distribution": false
+  },
+  "ios": {
+    "core_ios_simulator_build": "pass",
+    "core_tests": "pass",
+    "core_test_count": 67,
+    "mirror_tests": 4,
+    "swift_parse_all_sources": "pass",
+    "readable_document_typecheck": "pass",
+    "swiftpm_ios_source_compile": "pass",
+    "swiftpm_ios_source_compile_seconds": 10.46,
+    "swiftpm_ios_scope": "all Swift sources as an iOS simulator executable; no app bundle, Info.plist, entitlements, resources, signing or install",
+    "full_xcodebuild": "blocked",
+    "blocked_reason": "~/Library/Caches/org.swift.swiftpm/manifests/ManifestLoading/riverdiarycore.dia: Operation not permitted",
+    "distribution": false
+  },
+  "web_import": {
+    "sample": "synthetic DiaryData converted by MemoryMirrorArchive into river.memory-mirror v1",
+    "sample_fixture": "docs/validation/evidence/2026-10-20/native-mirror-sample.json",
+    "format": "river.memory-mirror",
+    "normalize_archive_ok": true,
+    "entries": 1,
+    "preserved": ["title", "overview+thoughts body", "did items as facts", "tags"],
+    "real_personal_data": false
+  },
+  "source_changes": [
+    "Packages/RiverDiaryCore/Sources/RiverDiaryCore/MemoryMirrorExport.swift",
+    "Packages/RiverDiaryCore/Tests/RiverDiaryCoreTests/MemoryMirrorExportTests.swift",
+    "macos/RiverDiaryMac/Sources/RiverDiaryMac/Features/Diary/DiaryStore.swift",
+    "macos/RiverDiaryMac/Sources/RiverDiaryMac/Views/Settings/PrivacyBackupSettingsView.swift",
+    "ios/RiverDiary/RiverDiary/Features/Diary/DiaryStore.swift",
+    "ios/RiverDiary/RiverDiary/Views/SettingsView.swift",
+    "website/user/assets/app.js",
+    "website/user/index.html",
+    "website/user/README.md"
+  ],
+  "not_tested": [
+    "real personal diary export and web import",
+    "iOS full build/install",
+    "V2 durable memories, quick captures, collections and understandings mapping (mirror collections/understandings are empty)",
+    "distribution code signing/notarization",
+    "end-to-end export -> web -> cloud -> another device"
+  ]
+}

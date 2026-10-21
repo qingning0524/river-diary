@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import Combine
+import CoreGraphics
 import Foundation
 import RiverDiaryCore
 
@@ -28,10 +29,15 @@ final class ActivityStore: ObservableObject {
     @Published private(set) var pauseStartMinutes = 22 * 60
     @Published private(set) var pauseEndMinutes = 7 * 60
     @Published private(set) var isCurrentlyPaused = false
+    /// 键盘/鼠标空闲超过阈值。空闲时关闭当前片段，恢复输入后开新片段；
+    /// 这样“屏幕时间”不会把挂着不用的窗口算成使用。
+    @Published private(set) var isIdle = false
 
     private var dayStatsCache: [String: CachedDayStats] = [:]
     private var observers: [NSObjectProtocol] = []
     private var pauseTimer: Timer?
+    private var idleTimer: Timer?
+    private static let idleThreshold: TimeInterval = 5 * 60
     /// 窗口标题的周期重采样。只在"开着标题采集 + 已授权"时才存在。
     private var titleTimer: Timer?
     /// 疑似换掉的标题。要连续两次采样都读到它才认账，见 `WindowTitleSampling`。
@@ -261,8 +267,9 @@ final class ActivityStore: ObservableObject {
             activeSession = newSession(for: app)
         }
 
-        storageSummary = "事件驱动记录已开启；片段会在应用切换或退出后保存。"
+        storageSummary = "事件驱动记录已开启；片段会在应用切换、空闲或退出后保存。"
         startPauseTimer()
+        startIdleTimer()
         startTitleSampling()
         refreshPauseState()
     }
@@ -276,6 +283,8 @@ final class ActivityStore: ObservableObject {
         if persistPreference { preferences.set(false, forKey: "activity.enabled") }
         pauseTimer?.invalidate()
         pauseTimer = nil
+        stopIdleTimer()
+        isIdle = false
         stopTitleSampling()
         isCurrentlyPaused = false
         storageSummary = "已停止 macOS 实时记录。"
@@ -285,6 +294,7 @@ final class ActivityStore: ObservableObject {
     /// 而不是只能去设置里翻权限。
     var trackingSummary: String {
         guard isTracking else { return "实时记录已暂停" }
+        if isIdle { return "当前空闲，片段已暂停；有输入后恢复" }
         if !capturesTitles { return "正在保存应用切换片段（未记录窗口标题）" }
         return accessibilityGranted
             ? "正在保存应用切换片段，标题每 25 秒刷新一次"
@@ -326,6 +336,40 @@ final class ActivityStore: ObservableObject {
         pauseTimer?.invalidate()
         pauseTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in self?.refreshPauseState() }
+        }
+    }
+
+    private func startIdleTimer() {
+        idleTimer?.invalidate()
+        let timer = Timer(timeInterval: 30, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.checkIdle() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        idleTimer = timer
+    }
+
+    private func stopIdleTimer() {
+        idleTimer?.invalidate()
+        idleTimer = nil
+    }
+
+    /// 用系统 HID 空闲时间判断“人还在不在”。不需要辅助功能或输入监控权限：
+    /// 只读“距上一次输入多少秒”，不读按了什么键。
+    private func checkIdle() {
+        guard isTracking else { return }
+        let idleSeconds = CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: .null)
+        guard idleSeconds.isFinite, idleSeconds >= 0 else { return }
+
+        let nowIdle = idleSeconds >= Self.idleThreshold
+        if nowIdle, !isIdle {
+            isIdle = true
+            // 片段结束在最后一次输入，而不是发现空闲的这一刻。
+            closeActiveSession(at: Date().addingTimeInterval(-idleSeconds))
+        } else if !nowIdle, isIdle {
+            isIdle = false
+            guard !isCurrentlyPaused, activeSession == nil,
+                  let app = NSWorkspace.shared.frontmostApplication else { return }
+            activeSession = newSession(for: app)
         }
     }
 
@@ -663,10 +707,13 @@ final class ActivityStore: ObservableObject {
             .sorted { $0.value > $1.value }
             .prefix(5)
             .map(\.key)
+        let focusBlocks = FocusCalculator.blocks(from: todaySessions)
 
         return ScreenTimeSnapshot(
             totalMinutes: Int(totalSeconds / 60),
-            topApps: Array(topApps)
+            topApps: Array(topApps),
+            focusMinutes: focusBlocks.reduce(0) { $0 + $1.minutes },
+            focusBlocks: focusBlocks.count
         )
     }
 
@@ -827,12 +874,14 @@ final class ActivityStore: ObservableObject {
 
     func startSessionAfterWake() {
         // 唤醒或解锁后，即使前台应用没有变化，也要开新片段，避免把睡眠时间并入同一段。
-        guard isTracking, !isCurrentlyPaused, activeSession == nil, let app = NSWorkspace.shared.frontmostApplication else { return }
+        guard isTracking, !isCurrentlyPaused, !isIdle, activeSession == nil,
+              let app = NSWorkspace.shared.frontmostApplication else { return }
         activeSession = newSession(for: app)
     }
 
     private func switchTo(_ app: NSRunningApplication) {
         guard !isCurrentlyPaused else { return }
+        if isIdle { isIdle = false }
         if let active = activeSession {
             if active.bundleID == app.bundleIdentifier {
                 return
@@ -968,8 +1017,12 @@ final class ActivityStore: ObservableObject {
     }
 
     private func closeActiveSession() {
+        closeActiveSession(at: Date())
+    }
+
+    private func closeActiveSession(at moment: Date) {
         guard var session = activeSession else { return }
-        session.end = Date()
+        session.end = max(moment, session.start)
         activeSession = nil
         titleSamplePending = nil
 

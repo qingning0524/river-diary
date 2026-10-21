@@ -1,0 +1,264 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/InsightsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "长期回顾",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "旧版记录与快照统计",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 66
+        }
+      },
+      {
+        "comment": "",
+        "key": "保存日记时可以选择给这一天评分；没有填写的日期保持未知。",
+        "location": {
+          "startingColumn": 131,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "还没有可回顾的评分",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "关闭回顾",
+        "location": {
+          "startingColumn": 77,
+          "startingLine": 81
+        }
+      },
+      {
+        "comment": "",
+        "key": "你填写的日记评分",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 98
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 个评分日 · 未评分的日期不计入统计",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 99
+        }
+      },
+      {
+        "comment": "",
+        "key": "只展示你实际填写的数值，不推断未记录的心情。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 111
+        }
+      },
+      {
+        "comment": "",
+        "key": "最近一次",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 101
+        }
+      },
+      {
+        "comment": "",
+        "key": "最近十二个评分日",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 109
+        }
+      },
+      {
+        "comment": "",
+        "key": "日期",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 106
+        }
+      },
+      {
+        "comment": "",
+        "key": "评分",
+        "location": {
+          "startingColumn": 92,
+          "startingLine": 106
+        }
+      },
+      {
+        "comment": "",
+        "key": "先补心情和日记概览；计划可以之后再补。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 147
+        }
+      },
+      {
+        "comment": "",
+        "key": "关键记录完整，继续保持这个节奏。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 151
+        }
+      },
+      {
+        "comment": "",
+        "key": "关键缺失 %lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 136
+        }
+      },
+      {
+        "comment": "",
+        "key": "健康",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 131
+        }
+      },
+      {
+        "comment": "",
+        "key": "可优化",
+        "location": {
+          "startingColumn": 96,
+          "startingLine": 131
+        }
+      },
+      {
+        "comment": "",
+        "key": "旧版快照",
+        "location": {
+          "startingColumn": 127,
+          "startingLine": 131
+        }
+      },
+      {
+        "comment": "",
+        "key": "需补录",
+        "location": {
+          "startingColumn": 144,
+          "startingLine": 131
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 165
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ %@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 283
+        }
+      },
+      {
+        "comment": "",
+        "key": "近期较此前提升 %@ 分",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 186
+        }
+      },
+      {
+        "comment": "",
+        "key": "近期较此前回落 %@ 分",
+        "location": {
+          "startingColumn": 103,
+          "startingLine": 186
+        }
+      },
+      {
+        "comment": "",
+        "key": "日期",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 194
+        }
+      },
+      {
+        "comment": "",
+        "key": "心情",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 195
+        }
+      },
+      {
+        "comment": "",
+        "key": "日期",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "心情",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 202
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 226
+        }
+      },
+      {
+        "comment": "",
+        "key": "心情较好时段平均 %@ 小时，较低时段 %@ 小时",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 244
+        }
+      },
+      {
+        "comment": "",
+        "key": "再积累几天匹配的睡眠与心情数据后，这里会显示对照。",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 250
+        }
+      },
+      {
+        "comment": "",
+        "key": "连接 Apple 健康后，可查看睡眠时长与情绪的对照。",
+        "location": {
+          "startingColumn": 128,
+          "startingLine": 250
+        }
+      },
+      {
+        "comment": "",
+        "key": "心情 %lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 263
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,40 @@
+{
+  "collections" : [
+
+  ],
+  "entries" : [
+    {
+      "body" : "烧水时没有急着打开电脑。\n\n上午把桌面清理出一块空白。",
+      "collection_ids" : [
+
+      ],
+      "facts" : [
+        "整理桌面",
+        "写完一页"
+      ],
+      "favorite" : false,
+      "id" : "2026-10-20",
+      "kind" : "journal",
+      "mood" : "平静",
+      "occurred_at" : "2026-10-20T12:00:00",
+      "source" : {
+        "label" : "原生日记",
+        "type" : "user"
+      },
+      "tags" : [
+        "早晨",
+        "工作"
+      ],
+      "title" : "窗边的十分钟"
+    }
+  ],
+  "exported_at" : "2026-10-20T14:22:28Z",
+  "format" : "river.memory-mirror",
+  "persona" : {
+    "name" : "林岸"
+  },
+  "understandings" : [
+
+  ],
+  "version" : 1
+}

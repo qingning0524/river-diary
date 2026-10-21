@@ -675,6 +675,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/MemoryMirrorMeta' }
         '401': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
   /me/memory-mirror:
     get:
       summary: Download the user's own encrypted cloud mirror
@@ -687,6 +688,7 @@ paths:
               schema: { $ref: '#/components/schemas/MemoryMirrorEnvelope' }
         '401': { $ref: '#/components/responses/Error' }
         '404': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
     put:
       summary: Create or replace the user's encrypted cloud mirror
       description: >-
@@ -720,6 +722,7 @@ paths:
         '412': { description: Revision changed on another device., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '413': { $ref: '#/components/responses/Error' }
         '428': { description: If-Match or If-None-Match is required., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '429': { $ref: '#/components/responses/Error' }
     delete:
       summary: Delete the user's encrypted cloud mirror
       security: [{ bearerAuth: [] }]
@@ -734,6 +737,7 @@ paths:
         '404': { $ref: '#/components/responses/Error' }
         '412': { $ref: '#/components/responses/Error' }
         '428': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
 components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer }
@@ -772,7 +776,7 @@ components:
         iv: { type: string, contentEncoding: base64, minLength: 16, maxLength: 16 }
     MemoryMirrorSummary:
       type: object
-      additionalProperties: true
+      additionalProperties: false
       properties:
         entries: { type: integer }
         days: { type: integer }

@@ -1,0 +1,152 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/JournalView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "搜索日期、正文、标题或标签",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 114
+        }
+      },
+      {
+        "comment": "",
+        "key": "日记档案",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 115
+        }
+      },
+      {
+        "comment": "",
+        "key": "重读这些日子",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 62
+        }
+      },
+      {
+        "comment": "",
+        "key": "按月份，慢慢翻回过去。",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "找到 %lld 篇日记",
+        "location": {
+          "startingColumn": 89,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 篇",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 76
+        }
+      },
+      {
+        "comment": "",
+        "key": "历史日记",
+        "location": {
+          "startingColumn": 75,
+          "startingLine": 101
+        }
+      },
+      {
+        "comment": "",
+        "key": "你写下的日记",
+        "location": {
+          "startingColumn": 92,
+          "startingLine": 101
+        }
+      },
+      {
+        "comment": "",
+        "key": "关闭",
+        "location": {
+          "startingColumn": 77,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "关闭日记",
+        "location": {
+          "startingColumn": 120,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "日记正文",
+        "location": {
+          "startingColumn": 78,
+          "startingLine": 158
+        }
+      },
+      {
+        "comment": "",
+        "key": "这篇日记暂不可用",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 156
+        }
+      },
+      {
+        "comment": "",
+        "key": "当时的心情 · %lld / 100",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 148
+        }
+      },
+      {
+        "comment": "",
+        "key": "最近保存 · %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 153
+        }
+      },
+      {
+        "comment": "",
+        "key": "这一天的手记",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 143
+        }
+      },
+      {
+        "comment": "",
+        "key": "你写下的日记",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 144
+        }
+      },
+      {
+        "comment": "",
+        "key": "回到当天",
+        "location": {
+          "startingColumn": 55,
+          "startingLine": 198
+        }
+      },
+      {
+        "comment": "",
+        "key": "继续编辑",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 200
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -9,7 +9,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#edf1f6" id="theme-color">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23edf1f6'/%3E%3Cpath d='M20 5C8 10 26 17 13 27' stroke='%232b3b52' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M24 5C12 10 30 17 17 27' stroke='%232f6cf5' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/assets/style.css?v=20261020-cloud">
+<link rel="stylesheet" href="/assets/style.css?v=20261020-webexport">
 </head>
 <body>
 <!-- river-glyphs:start -->
@@ -234,27 +234,6 @@
   </form>
 </dialog>
 
-<dialog id="composer-dialog" class="panel-dialog" aria-labelledby="composer-title">
-  <form method="dialog" class="dialog-shell" id="composer-form">
-    <header class="dialog-head">
-      <span class="dialog-mark" aria-hidden="true"><svg class="glyph"><use href="#i-quick-note"></use></svg></span>
-      <div><p class="eyebrow">LOCAL NOTE</p><h2 id="composer-title">先留在这里</h2></div>
-    </header>
-    <p class="dialog-copy">这是一张本机速记，只保存在当前标签页。它不会上传、不会自动同步，也不会出现在其他设备上。</p>
-    <label class="field"><span>正文</span><textarea id="composer-body" rows="5" maxlength="4000" placeholder="写下一句今天想留下的话…" required></textarea></label>
-    <div class="field-grid">
-      <label class="field"><span>标题（可选）</span><input id="composer-title-input" maxlength="80" placeholder="例如：窗边的十分钟"></label>
-      <label class="field"><span>地点（可选）</span><input id="composer-place" maxlength="80" placeholder="例如：杭州·拱宸桥"></label>
-    </div>
-    <label class="field"><span>标签（可选）</span><input id="composer-tags" maxlength="120" placeholder="用逗号分隔，例如：早晨, 日常"></label>
-    <p class="status-line" id="composer-status" role="status"></p>
-    <footer class="dialog-actions">
-      <button class="btn ghost" value="cancel" type="submit">取消</button>
-      <button class="btn primary" type="submit" id="composer-save">留在这里</button>
-    </footer>
-  </form>
-</dialog>
-
 <dialog id="action-dialog" class="panel-dialog" aria-labelledby="action-title">
   <form method="dialog" class="dialog-shell">
     <span class="dialog-mark" aria-hidden="true"><svg class="glyph"><use href="#i-warning"></use></svg></span>
@@ -300,6 +279,6 @@
   </form>
 </dialog>
 
-<script type="module" src="/assets/app.js?v=20261020-cloud"></script>
+<script type="module" src="/assets/app.js?v=20261020-webexport"></script>
 </body>
 </html>

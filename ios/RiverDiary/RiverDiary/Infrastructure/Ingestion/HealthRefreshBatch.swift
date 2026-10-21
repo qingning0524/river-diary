@@ -3,7 +3,7 @@ import Foundation
 /// One complete snapshot contains both queries. Duplicate or stale callbacks
 /// cannot finish another refresh or publish a partial health snapshot.
 struct HealthRefreshBatch {
-    enum Part: Hashable { case sleep, exercise }
+    enum Part: Hashable { case sleep, exercise, workouts, stateOfMind }
     private var generation: UUID?
     private var pending = Set<Part>()
 
@@ -13,7 +13,7 @@ struct HealthRefreshBatch {
         guard generation == nil else { return nil }
         let id = UUID()
         generation = id
-        pending = [.sleep, .exercise]
+        pending = [.sleep, .exercise, .workouts, .stateOfMind]
         return id
     }
 

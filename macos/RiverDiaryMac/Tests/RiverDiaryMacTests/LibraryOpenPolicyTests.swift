@@ -2,13 +2,13 @@ import XCTest
 import RiverDiaryCore
 @testable import RiverDiaryMac
 
-/// T02：首次未绑定账号时不创建正式库；已有库或旧安装救援资料必须仍可打开。
+/// v5.0 本地优先：首次启动就开本机库；已有库/旧安装仍可打开。
 @MainActor
 final class LibraryOpenPolicyTests: XCTestCase {
 
-    func testOnlyFreshUnboundInstallDefersOpening() {
-        // 新安装、未登录、没有旧资料：延迟开库。
-        XCTAssertFalse(LibraryOpenPolicy.shouldOpenLocalLibrary(
+    func testLocalFirstAlwaysOpensLocalLibrary() {
+        // 新安装、未登录、没有旧资料：本地优先，直接开库。
+        XCTAssertTrue(LibraryOpenPolicy.shouldOpenLocalLibrary(
             hasDatabaseFile: false,
             hasLegacyLocalState: false,
             isSignedIn: false
@@ -53,12 +53,34 @@ final class LibraryOpenPolicyTests: XCTestCase {
         XCTAssertTrue(store.openIfNeeded())
         XCTAssertEqual(store.databaseSchemaVersion, 2)
 
-        // 退出登录后关闭上下文，再次登录可重新打开。
+        // 显式关闭上下文后仍可重新打开（退出登录不再关库）。
         store.close()
         XCTAssertFalse(store.isOpen)
         XCTAssertTrue(store.openIfNeeded())
         XCTAssertEqual(store.databaseSchemaVersion, 2)
         store.close()
+    }
+
+    func testLocalProfileOwnerRoundTripsWithDatabase() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("river-owner-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent("river-v2.db")
+
+        let store = V2Store(databaseURL: url, opensImmediately: true)
+        XCTAssertTrue(store.isOpen)
+        XCTAssertNil(store.localProfileOwner)
+        XCTAssertTrue(store.setLocalProfileOwner("user-a"))
+        XCTAssertEqual(store.localProfileOwner, "user-a")
+        store.close()
+
+        let reopened = V2Store(databaseURL: url, opensImmediately: true)
+        XCTAssertEqual(reopened.localProfileOwner, "user-a",
+                       "owner must travel with the database, not only Keychain")
+        XCTAssertTrue(reopened.clearLocalProfileOwner())
+        XCTAssertNil(reopened.localProfileOwner)
+        reopened.close()
     }
 
     func testLegacyStateDetectionFindsEncryptedAndPlaintextFiles() throws {

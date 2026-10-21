@@ -181,3 +181,53 @@ test('import report states what was read without claiming a full library', () =>
   assert.match(report, /16 个地点/);
   assert.doesNotMatch(report, /全部|完整历史/);
 });
+
+test('normalizes a device context entry without losing its source', () => {
+  const result = normalizeArchive({
+    format: 'river.memory-mirror',
+    version: 1,
+    entries: [{
+      id: 'context-device-a-2026-10-21',
+      occurred_at: '2026-10-21T12:00:00',
+      kind: 'context',
+      title: 'Mac 的一天',
+      body: '浏览：3 次访问 · example.com\n\n备忘录：2 条',
+      facts: ['窗边 · 去河边走走。'],
+      tags: ['设备上下文', 'Mac'],
+      source: { type: 'context', label: 'Mac 上下文' },
+    }],
+  }, { now: NOW });
+  assert.equal(result.ok, true);
+  assert.equal(result.entries.length, 1);
+  assert.equal(result.entries[0].kind, 'context');
+  assert.equal(result.entries[0].source.type, 'context');
+  assert.equal(result.entries[0].source.label, 'Mac 上下文');
+  assert.match(result.entries[0].body, /example\.com/);
+});
+
+test('maps mirror v2 device contexts into read-only cards', () => {
+  const result = normalizeArchive({
+    format: 'river.memory-mirror',
+    version: 2,
+    entries: [{
+      id: 'diary-1', occurred_at: '2026-10-21T08:00:00', kind: 'journal',
+      title: '早上', body: '去河边走走。',
+    }],
+    contexts: [{
+      deviceID: 'device-a', deviceName: 'Mac', day: '2026-10-21',
+      sections: [{
+        kind: 'notes', title: '备忘录', summary: '2 条',
+        items: [{ title: '窗边', detail: '去河边走走。' }, { title: '清单' }],
+      }],
+    }],
+  }, { now: NOW });
+  assert.equal(result.ok, true);
+  assert.equal(result.version, 2);
+  assert.equal(result.entries.length, 2);
+  const context = result.entries.find((entry) => entry.kind === 'context');
+  assert.ok(context);
+  assert.equal(context.title, 'Mac 的一天');
+  assert.equal(context.source.label, 'Mac 上下文');
+  assert.match(context.body, /窗边/);
+  assert.match(context.body, /去河边走走/);
+});

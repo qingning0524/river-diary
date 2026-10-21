@@ -1,0 +1,218 @@
+[
+  {
+    "typeName": "RiverDiary.RecordVoiceMemoIntent",
+    "mangledTypeName": "10RiverDiary21RecordVoiceMemoIntentV",
+    "kind": "struct",
+    "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift",
+    "line": 7,
+    "conformances": [
+      "AppIntents.AppIntent",
+      "AppIntents.PersistentlyIdentifiable",
+      "AppIntents._SupportsAppDependencies",
+      "Swift.Sendable",
+      "Swift.SendableMetatype"
+    ],
+    "allConformances": [
+      {
+        "protocolName": "AppIntents.AppIntent",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "AppIntents.PersistentlyIdentifiable",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "AppIntents._SupportsAppDependencies",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "Swift.Sendable",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "Swift.SendableMetatype",
+        "conformanceDefiningModule": "RiverDiary"
+      }
+    ],
+    "associatedTypeAliases": [
+      {
+        "typeAliasName": "PerformResult",
+        "substitutedTypeName": "some AppIntents.IntentResult",
+        "substitutedMangledTypeName": "10RiverDiary21RecordVoiceMemoIntentV7performQryYaKFQOy_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.IntentResult"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      },
+      {
+        "typeAliasName": "SummaryContent",
+        "substitutedTypeName": "some AppIntents.ParameterSummary",
+        "substitutedMangledTypeName": "10AppIntents0A6IntentPAAE16parameterSummaryQrvpZQOy10RiverDiary015RecordVoiceMemoC0V_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.ParameterSummary"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      }
+    ],
+    "properties": [
+      {
+        "label": "_text",
+        "type": "AppIntents.IntentParameter<Swift.String>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "false",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift",
+        "line": 13,
+        "valueKind": "InitCall",
+        "value": {
+          "type": "AppIntents.IntentParameter<Swift.String>",
+          "arguments": [
+            {
+              "label": "title",
+              "type": "Foundation.LocalizedStringResource",
+              "valueKind": "RawLiteral",
+              "value": "转写文本"
+            },
+            {
+              "label": "description",
+              "type": "Swift.Optional<Foundation.LocalizedStringResource>",
+              "valueKind": "RawLiteral",
+              "value": "快捷指令“听写文本”的输出"
+            },
+            {
+              "label": "default",
+              "type": "Swift.Optional<Swift.String>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "inputOptions",
+              "type": "Swift.Optional<Swift.String.IntentInputOptions>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "requestValueDialog",
+              "type": "Swift.Optional<AppIntents.IntentDialog>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "inputConnectionBehavior",
+              "type": "AppIntents.InputConnectionBehavior",
+              "valueKind": "Runtime"
+            }
+          ]
+        }
+      },
+      {
+        "label": "title",
+        "type": "Foundation.LocalizedStringResource",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift",
+        "line": 8,
+        "valueKind": "RawLiteral",
+        "value": "记录语音速记"
+      },
+      {
+        "label": "description",
+        "type": "AppIntents.IntentDescription",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift",
+        "line": 9,
+        "valueKind": "RawLiteral",
+        "value": "把快捷指令听写出的文字保存到 River Diary 本机事件库。"
+      },
+      {
+        "label": "openAppWhenRun",
+        "type": "Swift.Bool",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift",
+        "line": 10,
+        "valueKind": "RawLiteral",
+        "value": "false"
+      },
+      {
+        "label": "text",
+        "type": "Swift.String",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift",
+        "line": 13,
+        "valueKind": "InitCall",
+        "value": {
+          "type": "AppIntents.IntentParameter<Swift.String>",
+          "arguments": [
+            {
+              "label": "title",
+              "type": "Foundation.LocalizedStringResource",
+              "valueKind": "RawLiteral",
+              "value": "转写文本"
+            },
+            {
+              "label": "description",
+              "type": "Swift.Optional<Foundation.LocalizedStringResource>",
+              "valueKind": "RawLiteral",
+              "value": "快捷指令“听写文本”的输出"
+            },
+            {
+              "label": "default",
+              "type": "Swift.Optional<Swift.String>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "inputOptions",
+              "type": "Swift.Optional<Swift.String.IntentInputOptions>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "requestValueDialog",
+              "type": "Swift.Optional<AppIntents.IntentDialog>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "inputConnectionBehavior",
+              "type": "AppIntents.InputConnectionBehavior",
+              "valueKind": "Runtime"
+            }
+          ]
+        },
+        "propertyWrappers": [
+          {
+            "type": "AppIntents.IntentParameter",
+            "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift",
+            "line": 12,
+            "arguments": [
+              {
+                "label": "title",
+                "type": "Foundation.LocalizedStringResource",
+                "valueKind": "RawLiteral",
+                "value": "转写文本"
+              },
+              {
+                "label": "description",
+                "type": "Swift.Optional<Foundation.LocalizedStringResource>",
+                "valueKind": "RawLiteral",
+                "value": "快捷指令“听写文本”的输出"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "$text",
+        "type": "AppIntents.IntentParameter<Swift.String>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift",
+        "line": 13,
+        "valueKind": "Runtime"
+      }
+    ]
+  }
+]

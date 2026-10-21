@@ -9,7 +9,7 @@
 | 共享核心 | `Packages/RiverDiaryCore` | Event/Operation/Artifact、身份、仲裁、分析指纹/任务、加密复制与账号会话 |
 | Mac应用 | `macos/RiverDiaryMac/Sources/RiverDiaryMac` | App、Design、Domain、Features、Infrastructure、Views；采集/加密存储/投影/AI/恢复/原生工作区 |
 | iOS应用 | `ios/RiverDiary/RiverDiary` | App、Design、Domain、Features、Infrastructure、Views；移动来源、文件保护数据库、按日阅读/编辑、复制与AI |
-| 账号与管理 | `server` / `website` | 身份、权益、设备会话、邮件/审计及分发入口；不接收原生日记/健康/位置正文和复制密钥 |
+| 账号与管理 | `server` / `website` | 身份、权益、设备会话、邮件/审计及分发入口；默认不接收原生日记/健康/位置正文和复制密钥；可选云空间只保存端到端加密密文 |
 | 验证 | Core/Mac的Tests、iOS单元/UI目标、Python tests | 分层验证纯规则、存储适配、原生旅程、管道；历史结果与当前执行分别记录 |
 
 原生Event保留观察，Operation保留用户决定，Artifact保留可失效派生。先持久化再发布投影，副作用可恢复；跨端通过不可变加密对象复制并核对前沿/摘要。用户决定优先于AI，不以同一模型反复解释生成新事实。

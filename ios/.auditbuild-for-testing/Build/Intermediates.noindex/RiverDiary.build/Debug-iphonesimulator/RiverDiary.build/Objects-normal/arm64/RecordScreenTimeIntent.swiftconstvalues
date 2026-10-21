@@ -1,0 +1,498 @@
+[
+  {
+    "typeName": "RiverDiary.RecordScreenTimeIntent",
+    "mangledTypeName": "10RiverDiary22RecordScreenTimeIntentV",
+    "kind": "struct",
+    "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+    "line": 7,
+    "conformances": [
+      "AppIntents.AppIntent",
+      "AppIntents.PersistentlyIdentifiable",
+      "AppIntents._SupportsAppDependencies",
+      "Swift.Sendable",
+      "Swift.SendableMetatype"
+    ],
+    "allConformances": [
+      {
+        "protocolName": "AppIntents.AppIntent",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "AppIntents.PersistentlyIdentifiable",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "AppIntents._SupportsAppDependencies",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "Swift.Sendable",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "Swift.SendableMetatype",
+        "conformanceDefiningModule": "RiverDiary"
+      }
+    ],
+    "associatedTypeAliases": [
+      {
+        "typeAliasName": "PerformResult",
+        "substitutedTypeName": "some AppIntents.IntentResult",
+        "substitutedMangledTypeName": "10RiverDiary22RecordScreenTimeIntentV7performQryYaKFQOy_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.IntentResult"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      },
+      {
+        "typeAliasName": "SummaryContent",
+        "substitutedTypeName": "some AppIntents.ParameterSummary",
+        "substitutedMangledTypeName": "10AppIntents0A6IntentPAAE16parameterSummaryQrvpZQOy10RiverDiary016RecordScreenTimeC0V_Qo_",
+        "opaqueTypeProtocolRequirements": [
+          "AppIntents.ParameterSummary"
+        ],
+        "opaqueTypeSameTypeRequirements": []
+      }
+    ],
+    "properties": [
+      {
+        "label": "_minutes",
+        "type": "AppIntents.IntentParameter<Swift.Int>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "false",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+        "line": 17,
+        "valueKind": "InitCall",
+        "value": {
+          "type": "AppIntents.IntentParameter<Swift.Int>",
+          "arguments": [
+            {
+              "label": "title",
+              "type": "Foundation.LocalizedStringResource",
+              "valueKind": "RawLiteral",
+              "value": "分钟数"
+            },
+            {
+              "label": "description",
+              "type": "Swift.Optional<Foundation.LocalizedStringResource>",
+              "valueKind": "RawLiteral",
+              "value": "例如 185。只填今天所有应用加起来的总时长。"
+            },
+            {
+              "label": "default",
+              "type": "Swift.Optional<Swift.Int>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "controlStyle",
+              "type": "AppIntents.IntentParameter<Swift.Int>.IntControlStyle",
+              "valueKind": "Runtime"
+            },
+            {
+              "label": "inclusiveRange",
+              "type": "Swift.Optional<(lowerBound: Swift.Int, upperBound: Swift.Int)>",
+              "valueKind": "Tuple",
+              "value": [
+                {
+                  "type": "Swift.Int",
+                  "valueKind": "RawLiteral",
+                  "value": "0"
+                },
+                {
+                  "type": "Swift.Int",
+                  "valueKind": "RawLiteral",
+                  "value": "1440"
+                }
+              ]
+            },
+            {
+              "label": "requestValueDialog",
+              "type": "Swift.Optional<AppIntents.IntentDialog>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "inputConnectionBehavior",
+              "type": "AppIntents.InputConnectionBehavior",
+              "valueKind": "Runtime"
+            }
+          ]
+        }
+      },
+      {
+        "label": "title",
+        "type": "Foundation.LocalizedStringResource",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+        "line": 8,
+        "valueKind": "RawLiteral",
+        "value": "记录屏幕使用时间"
+      },
+      {
+        "label": "description",
+        "type": "AppIntents.IntentDescription",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+        "line": 9,
+        "valueKind": "RawLiteral",
+        "value": "把今天在“屏幕使用时间”里看到的分钟数保存到 River Diary 本机事件库。"
+      },
+      {
+        "label": "openAppWhenRun",
+        "type": "Swift.Bool",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "false",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+        "line": 10,
+        "valueKind": "RawLiteral",
+        "value": "false"
+      },
+      {
+        "label": "minutes",
+        "type": "Swift.Int",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+        "line": 17,
+        "valueKind": "InitCall",
+        "value": {
+          "type": "AppIntents.IntentParameter<Swift.Int>",
+          "arguments": [
+            {
+              "label": "title",
+              "type": "Foundation.LocalizedStringResource",
+              "valueKind": "RawLiteral",
+              "value": "分钟数"
+            },
+            {
+              "label": "description",
+              "type": "Swift.Optional<Foundation.LocalizedStringResource>",
+              "valueKind": "RawLiteral",
+              "value": "例如 185。只填今天所有应用加起来的总时长。"
+            },
+            {
+              "label": "default",
+              "type": "Swift.Optional<Swift.Int>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "controlStyle",
+              "type": "AppIntents.IntentParameter<Swift.Int>.IntControlStyle",
+              "valueKind": "Runtime"
+            },
+            {
+              "label": "inclusiveRange",
+              "type": "Swift.Optional<(lowerBound: Swift.Int, upperBound: Swift.Int)>",
+              "valueKind": "Tuple",
+              "value": [
+                {
+                  "type": "Swift.Int",
+                  "valueKind": "RawLiteral",
+                  "value": "0"
+                },
+                {
+                  "type": "Swift.Int",
+                  "valueKind": "RawLiteral",
+                  "value": "1440"
+                }
+              ]
+            },
+            {
+              "label": "requestValueDialog",
+              "type": "Swift.Optional<AppIntents.IntentDialog>",
+              "valueKind": "NilLiteral"
+            },
+            {
+              "label": "inputConnectionBehavior",
+              "type": "AppIntents.InputConnectionBehavior",
+              "valueKind": "Runtime"
+            }
+          ]
+        },
+        "propertyWrappers": [
+          {
+            "type": "AppIntents.IntentParameter",
+            "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+            "line": 12,
+            "arguments": [
+              {
+                "label": "title",
+                "type": "Foundation.LocalizedStringResource",
+                "valueKind": "RawLiteral",
+                "value": "分钟数"
+              },
+              {
+                "label": "description",
+                "type": "Swift.Optional<Foundation.LocalizedStringResource>",
+                "valueKind": "RawLiteral",
+                "value": "例如 185。只填今天所有应用加起来的总时长。"
+              },
+              {
+                "label": "inclusiveRange",
+                "type": "Swift.Optional<(lowerBound: Swift.Int, upperBound: Swift.Int)>",
+                "valueKind": "Tuple",
+                "value": [
+                  {
+                    "type": "Swift.Int",
+                    "valueKind": "RawLiteral",
+                    "value": "0"
+                  },
+                  {
+                    "type": "Swift.Int",
+                    "valueKind": "RawLiteral",
+                    "value": "1440"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "$minutes",
+        "type": "AppIntents.IntentParameter<Swift.Int>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "false",
+        "isComputed": "true",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+        "line": 17,
+        "valueKind": "Runtime"
+      }
+    ]
+  },
+  {
+    "typeName": "RiverDiary.RiverDiaryAppShortcuts",
+    "mangledTypeName": "10RiverDiary0aB12AppShortcutsV",
+    "kind": "struct",
+    "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+    "line": 77,
+    "conformances": [
+      "AppIntents.AppShortcutsProvider",
+      "Swift.Sendable",
+      "Swift.SendableMetatype",
+      "Swift.BitwiseCopyable"
+    ],
+    "allConformances": [
+      {
+        "protocolName": "AppIntents.AppShortcutsProvider",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "Swift.Sendable",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "Swift.SendableMetatype",
+        "conformanceDefiningModule": "RiverDiary"
+      },
+      {
+        "protocolName": "Swift.BitwiseCopyable",
+        "conformanceDefiningModule": "RiverDiary"
+      }
+    ],
+    "associatedTypeAliases": [],
+    "properties": [
+      {
+        "label": "appShortcuts",
+        "type": "Swift.Array<AppIntents.AppShortcut>",
+        "mangledTypeName": "n/a - deprecated",
+        "isStatic": "true",
+        "isComputed": "true",
+        "file": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+        "line": 78,
+        "valueKind": "Builder",
+        "value": {
+          "type": "AppIntents.AppShortcutsBuilder",
+          "members": [
+            {
+              "kind": "buildExpression",
+              "element": {
+                "valueKind": "InitCall",
+                "value": {
+                  "type": "AppIntents.AppShortcut",
+                  "arguments": [
+                    {
+                      "label": "intent",
+                      "type": "RiverDiary.LogAppActivityIntent",
+                      "valueKind": "InitCall",
+                      "value": {
+                        "type": "RiverDiary.LogAppActivityIntent",
+                        "arguments": []
+                      }
+                    },
+                    {
+                      "label": "phrases",
+                      "type": "Swift.Array<AppIntents.AppShortcutPhrase<RiverDiary.LogAppActivityIntent>>",
+                      "valueKind": "Array",
+                      "value": [
+                        {
+                          "valueKind": "InterpolatedStringLiteral",
+                          "value": {
+                            "segments": [
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": "记录应用活动到 "
+                              },
+                              {
+                                "valueKind": "Enum",
+                                "value": {
+                                  "name": "applicationName"
+                                }
+                              },
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": ""
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "label": "shortTitle",
+                      "type": "Foundation.LocalizedStringResource",
+                      "valueKind": "RawLiteral",
+                      "value": "记录应用活动"
+                    },
+                    {
+                      "label": "systemImageName",
+                      "type": "Swift.String",
+                      "valueKind": "RawLiteral",
+                      "value": "app.badge"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "kind": "buildExpression",
+              "element": {
+                "valueKind": "InitCall",
+                "value": {
+                  "type": "AppIntents.AppShortcut",
+                  "arguments": [
+                    {
+                      "label": "intent",
+                      "type": "RiverDiary.RecordScreenTimeIntent",
+                      "valueKind": "InitCall",
+                      "value": {
+                        "type": "RiverDiary.RecordScreenTimeIntent",
+                        "arguments": []
+                      }
+                    },
+                    {
+                      "label": "phrases",
+                      "type": "Swift.Array<AppIntents.AppShortcutPhrase<RiverDiary.RecordScreenTimeIntent>>",
+                      "valueKind": "Array",
+                      "value": [
+                        {
+                          "valueKind": "InterpolatedStringLiteral",
+                          "value": {
+                            "segments": [
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": "记录屏幕使用时间到 "
+                              },
+                              {
+                                "valueKind": "Enum",
+                                "value": {
+                                  "name": "applicationName"
+                                }
+                              },
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": ""
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "label": "shortTitle",
+                      "type": "Foundation.LocalizedStringResource",
+                      "valueKind": "RawLiteral",
+                      "value": "记录屏幕使用时间"
+                    },
+                    {
+                      "label": "systemImageName",
+                      "type": "Swift.String",
+                      "valueKind": "RawLiteral",
+                      "value": "hourglass"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "kind": "buildExpression",
+              "element": {
+                "valueKind": "InitCall",
+                "value": {
+                  "type": "AppIntents.AppShortcut",
+                  "arguments": [
+                    {
+                      "label": "intent",
+                      "type": "RiverDiary.RecordVoiceMemoIntent",
+                      "valueKind": "InitCall",
+                      "value": {
+                        "type": "RiverDiary.RecordVoiceMemoIntent",
+                        "arguments": []
+                      }
+                    },
+                    {
+                      "label": "phrases",
+                      "type": "Swift.Array<AppIntents.AppShortcutPhrase<RiverDiary.RecordVoiceMemoIntent>>",
+                      "valueKind": "Array",
+                      "value": [
+                        {
+                          "valueKind": "InterpolatedStringLiteral",
+                          "value": {
+                            "segments": [
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": "记录语音速记到 "
+                              },
+                              {
+                                "valueKind": "Enum",
+                                "value": {
+                                  "name": "applicationName"
+                                }
+                              },
+                              {
+                                "valueKind": "RawLiteral",
+                                "value": ""
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "label": "shortTitle",
+                      "type": "Foundation.LocalizedStringResource",
+                      "valueKind": "RawLiteral",
+                      "value": "记录语音速记"
+                    },
+                    {
+                      "label": "systemImageName",
+                      "type": "Swift.String",
+                      "valueKind": "RawLiteral",
+                      "value": "mic"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

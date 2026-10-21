@@ -32,6 +32,9 @@ struct SettingsView: View {
     @State private var showsBackupImport = false
     @State private var diagnosticDocument: RiverDiagnosticsDocument?
     @State private var showsDiagnosticExport = false
+    @State private var readableDiaryDocument: ReadableDiaryDocument?
+    @State private var showsReadableDiaryExport = false
+    @State private var readableDiaryMessage: String?
     @State private var showsJournal = false
     @State private var pendingJournalEditDate: Date?
     @State private var journalPresentation: RiverJournalPresentation?
@@ -118,6 +121,17 @@ struct SettingsView: View {
                 switch result {
                 case .success(let url): node.setDiagnosticActionMessage("诊断报告已导出到 \(url.lastPathComponent)。")
                 case .failure(let error): node.setDiagnosticActionMessage("诊断报告导出失败：\(error.localizedDescription)")
+                }
+            }
+            .fileExporter(
+                isPresented: $showsReadableDiaryExport,
+                document: readableDiaryDocument,
+                contentType: .json,
+                defaultFilename: "RiverDiary-Web-\(Date.now.formatted(.iso8601.year().month().day())).json"
+            ) { result in
+                switch result {
+                case .success(let url): readableDiaryMessage = "网页副本已导出到 \(url.lastPathComponent)"
+                case .failure(let error): readableDiaryMessage = "网页副本导出失败：\(error.localizedDescription)"
                 }
             }
             .sheet(isPresented: $showsJournal, onDismiss: {
@@ -357,7 +371,8 @@ struct SettingsView: View {
 
                 Section("系统集成") {
                     healthRow
-                    screenTimeRowUnavailable
+                    screenTimeRow
+                    voiceMemoRow
                     iCloudDriveRow
                 }
 
@@ -516,6 +531,19 @@ struct SettingsView: View {
                 }
 
 
+                Section("网页控制台") {
+                    Text("导出 river.memory-mirror 只读 JSON，在 user.flowriver.xyz 导入后只读查看。包含当前设备可读的日记与双端“设备上下文”；不含密钥、健康原库或完整浏览器 URL。")
+                        .font(.footnote)
+                        .foregroundStyle(theme.secondaryInk)
+                    Button("导出网页可读 JSON") { exportReadableDiary() }
+                        .disabled(store.entries.isEmpty)
+                    if let message = readableDiaryMessage {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(message.hasPrefix("网页副本导出失败") ? theme.danger : theme.secondaryInk)
+                    }
+                }
+
                 Section("本地备份") {
                     Text("备份包含原始事件、用户决定和 Artifact，并使用同步密钥加密。重装后恢复需要保留或重新导入同一同步密钥。")
                         .font(.footnote)
@@ -554,6 +582,21 @@ struct SettingsView: View {
                         developerDiagnostics
                     }
                 }
+        }
+    }
+
+    private func exportReadableDiary() {
+        guard !store.entries.isEmpty else {
+            readableDiaryMessage = "当前本机没有可导出的日记 JSON。"
+            return
+        }
+        do {
+            let encoded = try store.webMirrorData(contexts: node.dayContextSnapshotsForWeb())
+            readableDiaryDocument = ReadableDiaryDocument(data: encoded)
+            showsReadableDiaryExport = true
+            readableDiaryMessage = nil
+        } catch {
+            readableDiaryMessage = "网页副本导出失败：\(error.localizedDescription)"
         }
     }
 
@@ -645,7 +688,7 @@ struct SettingsView: View {
             Label("Apple 健康", systemImage: "heart.text.square.fill")
             if health.isLoading { ProgressView("正在读取健康记录…") }
             else if health.isAuthorized {
-                Text("已读取 \(health.nights.count) 晚睡眠 · \(health.exerciseDays.count) 天运动").font(.footnote).foregroundStyle(theme.secondaryInk)
+                Text("已读取 \(health.nights.count) 晚睡眠 · \(health.exerciseDays.count) 天运动 · \(health.workouts.count) 次训练 · \(health.stateOfMind.count) 条心情").font(.footnote).foregroundStyle(theme.secondaryInk)
                 Button("刷新健康记录") { health.loadHealth() }.frame(minHeight: 44)
             } else {
                 Button("连接 Apple 健康") { health.requestAuthorization() }.frame(minHeight: 44)
@@ -653,12 +696,59 @@ struct SettingsView: View {
         }
     }
 
-    private var screenTimeRowUnavailable: some View {
-        HStack {
-            Label("屏幕使用时间", systemImage: "iphone.gen3.radiowaves.left.and.right")
-            Spacer()
-            Image(systemName: "lock.fill").foregroundStyle(theme.secondaryInk)
+    private var screenTimeRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label("屏幕使用时间", systemImage: "iphone.gen3.radiowaves.left.and.right")
+                Spacer()
+                if let minutes = todayScreenTimeMinutes {
+                    Text("\(minutes) 分钟").font(.footnote).foregroundStyle(theme.secondaryInk)
+                }
+            }
+            Text("iOS 不向第三方 App 开放屏幕使用时间的原始数据。用快捷指令在晚上记录你在“设置 → 屏幕使用时间”看到的总分钟数；事件只写本机。")
+                .font(.footnote)
+                .foregroundStyle(theme.secondaryInk)
+            if let minutes = todayScreenTimeMinutes {
+                Text("今天已记录 \(minutes / 60) 小时 \(minutes % 60) 分钟。重新运行会覆盖当天显示，不会相加。")
+                    .font(.footnote)
+                    .foregroundStyle(theme.secondaryInk)
+            }
+            Button("打开快捷指令") { openShortcutsApp() }
+                .frame(minHeight: 44)
+            DisclosureGroup("配置步骤") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("1. 打开“快捷指令” → “自动化” → “新建个人自动化” → “特定时间”，设为每天 22:00。")
+                    Text("2. 添加“要求输入”，类型选数字，提示“今天屏幕使用时间（分钟）”。")
+                    Text("3. 添加 River Diary 的“记录屏幕使用时间”操作，把输入作为分钟数。")
+                    Text("4. 关闭“运行前询问”，选择立即运行。")
+                    Text("也可以在“快捷指令”里手动运行，随时补记。")
+                }
+                .font(.footnote)
+                .foregroundStyle(theme.secondaryInk)
+                .padding(.vertical, 4)
+            }
         }
+    }
+
+    private var voiceMemoRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("语音速记", systemImage: "mic")
+            Text("用快捷指令的“听写文本”把口述转成文字，再调用 River Diary 的“记录语音速记”。只保存文字，不保存音频，也不需要麦克风权限。")
+                .font(.footnote)
+                .foregroundStyle(theme.secondaryInk)
+            Button("打开快捷指令") { openShortcutsApp() }
+                .frame(minHeight: 44)
+        }
+    }
+
+    private var todayScreenTimeMinutes: Int? {
+        guard let database = node.database else { return nil }
+        return RiverScreenTimeRecorder.latestMinutes(in: database)
+    }
+
+    private func openShortcutsApp() {
+        guard let url = URL(string: "shortcuts://") else { return }
+        UIApplication.shared.open(url)
     }
 
     private var iCloudDriveRow: some View {
@@ -863,5 +953,27 @@ private struct IPhoneMotionSettings: View {
             .font(.caption)
             .foregroundStyle(theme.secondaryInk)
         LabeledContent("状态", value: motion.status)
+    }
+}
+
+
+private struct ReadableDiaryDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+
+    var data: Data
+
+    init(data: Data) {
+        self.data = data
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        self.data = data
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
     }
 }

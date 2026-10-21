@@ -2,6 +2,9 @@ import RiverDiaryCore
 import SwiftUI
 
 struct AccountLoginView: View {
+    /// 从设置页以 sheet 打开时显示关闭按钮；作为根登录页时不显示。
+    var allowsDismiss = false
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.riverTheme) private var theme
     @EnvironmentObject private var account: RiverAccountSessionStore
     @EnvironmentObject private var themeStore: RiverThemeStore
@@ -72,6 +75,17 @@ struct AccountLoginView: View {
         HStack(spacing: 10) {
             RiverSystemSignature()
             Spacer()
+            if allowsDismiss {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(theme.secondaryInk)
+                        .frame(width: 44, height: 44)
+                        .background(theme.surface, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("关闭账号绑定")
+            }
             Menu {
                 ForEach(RiverThemeID.allCases) { id in
                     Button { themeStore.applyTheme(id) } label: {
@@ -328,6 +342,7 @@ struct AccountSettingsCard: View {
     @Environment(\.riverTheme) private var theme
     @EnvironmentObject private var account: RiverAccountSessionStore
     @State private var showsPasswordSetup = false
+    @State private var showsLogin = false
     @State private var configuredPassword: Bool?
     @State private var activationCode = ""
     @State private var redeemRequestID = UUID().uuidString
@@ -353,8 +368,12 @@ struct AccountSettingsCard: View {
             if let email = account.accountEmail {
                 LabeledContent("登录账号", value: email)
             } else {
-                Text(account.isSignedIn ? "账号资料暂未加载，可刷新权益状态。" : "当前没有账号会话。")
+                Text(account.isSignedIn ? "账号资料暂未加载，可刷新权益状态。" : "当前是本机模式。绑定账号后可使用官方 AI 额度、云副本与设备管理；不绑定也能继续写日记。")
                     .foregroundStyle(theme.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("绑定 River Diary 账号") { showsLogin = true }
+                    .riverPrimary()
+                    .accessibilityIdentifier("account.bind")
             }
 
             if account.isSignedIn {
@@ -409,6 +428,11 @@ struct AccountSettingsCard: View {
             try? await account.refreshEntitlements()
         }
         .sheet(isPresented: $showsPasswordSetup) { RiverPasswordRecoveryView(initialEmail: account.accountEmail ?? "", isSetup: true) }
+        .sheet(isPresented: $showsLogin) {
+            AccountLoginView(allowsDismiss: true)
+                .environmentObject(account)
+                .presentationDragIndicator(.visible)
+        }
         .task { if account.isSignedIn { configuredPassword = try? await account.passwordEnabled() } }
         .onChange(of: showsPasswordSetup) { _, shown in if !shown { Task { configuredPassword = try? await account.passwordEnabled() } } }
 

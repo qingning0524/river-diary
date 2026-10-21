@@ -887,7 +887,6 @@ dialog::backdrop { background: rgba(17, 25, 37, .34); -webkit-backdrop-filter: b
 .import-report .report-error { color: var(--danger); }
 .import-report ul { margin-top: 6px; padding-left: 16px; list-style: disc; color: var(--ink-3); }
 .import-report li { margin-top: 2px; }
-.composer-form .field-grid { margin-top: 0; }
 .privacy-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .privacy-list > div { display: flex; gap: 12px; }
 .privacy-list > div > span { flex: none; color: var(--accent-text); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; padding-top: 3px; }

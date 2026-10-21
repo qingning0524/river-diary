@@ -20,7 +20,16 @@ public enum SecureStoreError: Error, Equatable, LocalizedError {
 }
 
 public enum RiverSecureStore {
-    private static let service = keychainServiceName("local.riverdiary.node")
+    private static var service: String { keychainServiceName("local.riverdiary.node") }
+
+    /// QA/演示启动可以用独立 Keychain 命名空间，避免读到开发机已有的
+    /// 正式条目并触发 ACL 弹窗。正常启动不设置该环境变量。
+    public static var keychainNamespaceSuffix: String {
+        guard let raw = ProcessInfo.processInfo.environment["RIVER_DIARY_KEYCHAIN_NAMESPACE"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return "" }
+        let safe = raw.filter { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }
+        return safe.isEmpty ? "" : ".\(safe)"
+    }
 
     /// QA app bundles must never read or overwrite production Keychain items.
     /// iOS also gets bundle-scoped access groups; macOS uses this namespace
@@ -28,8 +37,8 @@ public enum RiverSecureStore {
     /// Keychain across app bundle identifiers.
     public static func keychainServiceName(_ baseName: String,
                                            bundleIdentifier: String? = Bundle.main.bundleIdentifier) -> String {
-        guard bundleIdentifier?.hasSuffix(".qa") == true else { return baseName }
-        return "\(baseName).qa"
+        let scoped = bundleIdentifier?.hasSuffix(".qa") == true ? "\(baseName).qa" : baseName
+        return scoped + keychainNamespaceSuffix
     }
 
     public static func loadOrCreateDeviceID(kind: String) throws -> RiverDeviceID {
@@ -38,9 +47,35 @@ public enum RiverSecureStore {
             return RiverDeviceID(rawValue: value)
         }
         let identity = RiverDeviceID(kind: kind)
-        try write(Data(identity.rawValue.utf8), account: "device-id")
+        do {
+            try write(Data(identity.rawValue.utf8), account: "device-id")
+            return identity
+        } catch {
+            #if targetEnvironment(simulator)
+            // 模拟器构建没有 provisioning profile 时 Keychain 会返回
+            // errSecMissingEntitlement。真机不受影响；这里只为本地优先的
+            // 模拟器验收提供可丢弃的设备身份，不能用于生产数据。
+            if case SecureStoreError.keychainStatus(let status) = error,
+               status == errSecMissingEntitlement,
+               let fallback = simulatorDeviceID(kind: kind) {
+                return fallback
+            }
+            #endif
+            throw error
+        }
+    }
+
+    #if targetEnvironment(simulator)
+    private static func simulatorDeviceID(kind: String) -> RiverDeviceID? {
+        let key = "river.simulator.device-id.\(kind)"
+        if let saved = UserDefaults.standard.string(forKey: key), !saved.isEmpty {
+            return RiverDeviceID(rawValue: saved)
+        }
+        let identity = RiverDeviceID(kind: kind)
+        UserDefaults.standard.set(identity.rawValue, forKey: key)
         return identity
     }
+    #endif
 
     public static func saveSyncKey(_ key: SyncEncryptionKey) throws {
         try write(key.rawRepresentation, account: "sync-encryption-key-v1")

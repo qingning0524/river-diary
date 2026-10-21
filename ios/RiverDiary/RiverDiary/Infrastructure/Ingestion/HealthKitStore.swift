@@ -40,6 +40,24 @@ struct ExerciseInterval: Identifiable, Hashable {
     var id: Date { start }
 }
 
+/// 一次体能训练。比步数更有语义：类型、时长、距离和能量都能直接对上“今天去游泳了”。
+struct WorkoutSummary: Identifiable, Hashable {
+    let id: String
+    let start: Date
+    let end: Date
+    let activityName: String
+    let energyKcal: Double?
+    let distanceKm: Double?
+}
+
+/// Apple 健康的 State of Mind（iOS 18+）。效价 -1…1，写入前夹紧。
+struct StateOfMindSummary: Identifiable, Hashable {
+    let id: String
+    let date: Date
+    let valence: Double
+    let kindLabel: String
+}
+
 @MainActor
 final class HealthKitStore: ObservableObject {
     @Published private(set) var isAuthorized = false
@@ -47,9 +65,11 @@ final class HealthKitStore: ObservableObject {
     @Published private(set) var nights: [SleepNight] = []
     @Published private(set) var exerciseDays: [ExerciseDay] = []
     @Published private(set) var exerciseIntervals: [ExerciseInterval] = []
+    @Published private(set) var workouts: [WorkoutSummary] = []
+    @Published private(set) var stateOfMind: [StateOfMindSummary] = []
     @Published private(set) var errorMessage: String?
 
-    var onHealthSnapshotChanged: (([SleepNight], [ExerciseDay], [ExerciseInterval]) async -> Void)?
+    var onHealthSnapshotChanged: (([SleepNight], [ExerciseDay], [ExerciseInterval], [WorkoutSummary], [StateOfMindSummary]) async -> Void)?
 
     private let healthStore = HKHealthStore()
     private let connectionKey = "has-connected-healthkit"
@@ -96,12 +116,16 @@ final class HealthKitStore: ObservableObject {
             return
         }
 
-        let readTypes: Set<HKObjectType> = [
+        var readTypes: Set<HKObjectType> = [
             HKCategoryType(.sleepAnalysis),
             HKQuantityType(.stepCount),
             HKQuantityType(.distanceWalkingRunning),
-            HKQuantityType(.activeEnergyBurned)
+            HKQuantityType(.activeEnergyBurned),
+            HKObjectType.workoutType()
         ]
+        if #available(iOS 18.0, *) {
+            readTypes.insert(HKObjectType.stateOfMindType())
+        }
 
         isLoading = true
         errorMessage = nil
@@ -125,6 +149,121 @@ final class HealthKitStore: ObservableObject {
         errorMessage = nil
         loadSleep(generation: generation)
         loadExercise(generation: generation)
+        loadWorkouts(generation: generation)
+        loadStateOfMind(generation: generation)
+    }
+
+    private func loadStateOfMind(generation: UUID) {
+        guard #available(iOS 18.0, *) else {
+            Task { await notifySnapshotChanged(part: .stateOfMind, generation: generation) }
+            return
+        }
+        let start = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: nil, options: .strictStartDate)
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(
+            sampleType: HKObjectType.stateOfMindType(),
+            predicate: predicate,
+            limit: 100,
+            sortDescriptors: [sort]
+        ) { [weak self] _, samples, error in
+            let mapped = (samples as? [HKStateOfMind] ?? []).map { sample in
+                StateOfMindSummary(
+                    id: sample.uuid.uuidString,
+                    date: sample.startDate,
+                    valence: StateOfMindReading.normalizedValence(sample.valence),
+                    kindLabel: Self.stateOfMindKindLabel(sample.kind)
+                )
+            }
+            Task { @MainActor [weak self] in
+                guard let self, self.refreshBatch.accepts(generation) else { return }
+                self.stateOfMind = mapped
+                if let error {
+                    self.errorMessage = error.localizedDescription
+                }
+                await self.notifySnapshotChanged(part: .stateOfMind, generation: generation)
+            }
+        }
+        healthStore.execute(query)
+    }
+
+    @available(iOS 18.0, *)
+    private nonisolated static func stateOfMindKindLabel(_ kind: HKStateOfMind.Kind) -> String {
+        switch kind {
+        case .momentaryEmotion: "此刻情绪"
+        case .dailyMood: "今日心情"
+        @unknown default: "心情记录"
+        }
+    }
+
+    private func loadWorkouts(generation: UUID) {
+        let start = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: nil, options: .strictStartDate)
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(
+            sampleType: HKObjectType.workoutType(),
+            predicate: predicate,
+            limit: 100,
+            sortDescriptors: [sort]
+        ) { [weak self] _, samples, error in
+            let workouts = (samples as? [HKWorkout] ?? []).map(Self.summary(for:))
+            Task { @MainActor [weak self] in
+                guard let self, self.refreshBatch.accepts(generation) else { return }
+                self.workouts = workouts
+                if let error {
+                    self.errorMessage = error.localizedDescription
+                }
+                await self.notifySnapshotChanged(part: .workouts, generation: generation)
+            }
+        }
+        healthStore.execute(query)
+    }
+
+    private nonisolated static func summary(for workout: HKWorkout) -> WorkoutSummary {
+        WorkoutSummary(
+            id: workout.uuid.uuidString,
+            start: workout.startDate,
+            end: workout.endDate,
+            activityName: workoutName(workout.workoutActivityType),
+            energyKcal: workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()),
+            distanceKm: workout.totalDistance?.doubleValue(for: .meterUnit(with: .kilo))
+        )
+    }
+
+    nonisolated static func workoutName(_ type: HKWorkoutActivityType) -> String {
+        switch type {
+        case .running: "跑步"
+        case .walking: "步行"
+        case .cycling: "骑行"
+        case .swimming: "游泳"
+        case .hiking: "徒步"
+        case .yoga: "瑜伽"
+        case .pilates: "普拉提"
+        case .cardioDance, .socialDance: "舞蹈"
+        case .rowing: "划船"
+        case .elliptical: "椭圆机"
+        case .stairClimbing: "爬楼梯"
+        case .jumpRope: "跳绳"
+        case .highIntensityIntervalTraining: "高强度间歇"
+        case .functionalStrengthTraining, .traditionalStrengthTraining: "力量训练"
+        case .crossTraining: "交叉训练"
+        case .mixedCardio: "混合有氧"
+        case .climbing: "攀岩"
+        case .boxing: "拳击"
+        case .martialArts: "武术"
+        case .tennis: "网球"
+        case .badminton: "羽毛球"
+        case .tableTennis: "乒乓球"
+        case .squash, .racquetball: "壁球"
+        case .soccer: "足球"
+        case .basketball: "篮球"
+        case .volleyball: "排球"
+        case .baseball: "棒球"
+        case .golf: "高尔夫"
+        case .skatingSports: "滑冰"
+        case .surfingSports: "冲浪"
+        default: "其他运动"
+        }
     }
 
     private func loadSleep(generation: UUID) {
@@ -201,7 +340,7 @@ final class HealthKitStore: ObservableObject {
     private func notifySnapshotChanged(part: HealthRefreshBatch.Part, generation: UUID) async {
         guard refreshBatch.finish(part, generation: generation) else { return }
         isLoading = false
-        await onHealthSnapshotChanged?(nights, exerciseDays, exerciseIntervals)
+        await onHealthSnapshotChanged?(nights, exerciseDays, exerciseIntervals, workouts, stateOfMind)
     }
 
     private nonisolated static func quantityTotals(

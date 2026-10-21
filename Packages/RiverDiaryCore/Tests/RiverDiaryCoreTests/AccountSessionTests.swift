@@ -238,6 +238,125 @@ final class AccountSessionTests: XCTestCase {
         XCTAssertEqual(String(decoding: binding, as: UTF8.self), "user-a")
     }
 
+    func testLocalProfileOwnerMismatchRejectsLogin() async throws {
+        let server = AccountTestServer()
+        let store = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated owner", vault: AccountTestVault(),
+            transport: { try await server.send($0) }
+        )
+        store.localProfileOwnerProvider = { "user-b" }
+        do {
+            try await store.loginWithPassword(
+                email: "test@example.invalid",
+                password: "test-only-password",
+                idempotencyKey: UUID().uuidString
+            )
+            XCTFail("a library owned by user-b must reject user-a")
+        } catch {
+            XCTAssertEqual(error as? RiverAccountAPIError, RiverAccountAPIError(status: 403, code: "local_profile_account_mismatch"))
+        }
+        XCTAssertFalse(store.isSignedIn)
+    }
+
+    func testFirstLoginClaimsLocalProfileOwner() async throws {
+        let server = AccountTestServer()
+        let box = OwnerBox()
+        let store = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated owner", vault: AccountTestVault(),
+            transport: { try await server.send($0) }
+        )
+        store.localProfileOwnerProvider = { box.value }
+        store.localProfileOwnerWriter = { box.value = $0 }
+        store.localProfileOwnerClearer = { box.value = nil }
+        try await store.loginWithPassword(
+            email: "test@example.invalid",
+            password: "test-only-password",
+            idempotencyKey: UUID().uuidString
+        )
+        XCTAssertEqual(box.value, "user-a")
+        XCTAssertTrue(store.isSignedIn)
+    }
+
+    func testOwnerWriteFailureRevokesLogin() async throws {
+        let server = AccountTestServer()
+        let store = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated owner", vault: AccountTestVault(),
+            transport: { try await server.send($0) }
+        )
+        store.localProfileOwnerProvider = { nil }
+        store.localProfileOwnerWriter = { _ in throw URLError(.cannotWriteToFile) }
+        do {
+            try await store.loginWithPassword(
+                email: "test@example.invalid",
+                password: "test-only-password",
+                idempotencyKey: UUID().uuidString
+            )
+            XCTFail("login must fail when the local owner cannot be written")
+        } catch {
+            // expected
+        }
+        XCTAssertFalse(store.isSignedIn)
+    }
+
+    func testFailedSessionWriteClearsClaimedOwner() async throws {
+        let server = AccountTestServer()
+        let vault = AccountTestVault()
+        vault.failSessionWrite = true
+        let box = OwnerBox()
+        let store = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated owner", vault: vault,
+            transport: { try await server.send($0) }
+        )
+        store.localProfileOwnerProvider = { box.value }
+        store.localProfileOwnerWriter = { box.value = $0 }
+        store.localProfileOwnerClearer = { box.value = nil }
+        do {
+            try await store.loginWithPassword(
+                email: "test@example.invalid",
+                password: "test-only-password",
+                idempotencyKey: UUID().uuidString
+            )
+            XCTFail("login must fail when the session cannot be persisted")
+        } catch {
+            // expected
+        }
+        XCTAssertNil(box.value, "a failed login must roll back the claimed owner")
+        XCTAssertFalse(store.isSignedIn)
+    }
+
+    func testEnforceLocalProfileOwnerSignsOutMismatchedSession() async throws {
+        let server = AccountTestServer()
+        let store = try makeStore(server: server)
+        store.localProfileOwnerProvider = { "user-b" }
+        await store.enforceLocalProfileOwner()
+        XCTAssertFalse(store.isSignedIn)
+        XCTAssertEqual(store.lastError?.contains("本机资料"), true)
+    }
+
+    func testSeedOwnerFromKeychainOnlyWhenDatabaseOwnerIsEmpty() throws {
+        let store = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated owner", vault: AccountTestVault(),
+            transport: { _ in throw URLError(.unsupportedURL) }
+        )
+        let box = OwnerBox()
+        store.localProfileOwnerProvider = { box.value }
+        store.localProfileOwnerWriter = { box.value = $0 }
+        store.seedLocalProfileOwnerFromKeychain()
+        XCTAssertNil(box.value, "no keychain binding means nothing to migrate")
+
+        let vault = AccountTestVault()
+        vault.values["account-profile-binding-v1"] = Data("user-a".utf8)
+        let withBinding = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated owner", vault: vault,
+            transport: { _ in throw URLError(.unsupportedURL) }
+        )
+        let boundBox = OwnerBox()
+        withBinding.localProfileOwnerProvider = { boundBox.value }
+        withBinding.localProfileOwnerWriter = { boundBox.value = $0 }
+        withBinding.seedLocalProfileOwnerFromKeychain()
+        XCTAssertEqual(boundBox.value, "user-a")
+    }
+
     func testOldUnauthorizedRefreshCannotClearANewerLogin() async throws {
         let server = AccountTestServer()
         let store = try makeStore(server: server)
@@ -250,6 +369,10 @@ final class AccountSessionTests: XCTestCase {
         XCTAssertTrue(store.isSignedIn)
         XCTAssertEqual(store.session?.accessToken, "login-access")
     }
+}
+
+private final class OwnerBox {
+    var value: String?
 }
 
 private final class AccountTestVault: RiverAccountVaultStorage {

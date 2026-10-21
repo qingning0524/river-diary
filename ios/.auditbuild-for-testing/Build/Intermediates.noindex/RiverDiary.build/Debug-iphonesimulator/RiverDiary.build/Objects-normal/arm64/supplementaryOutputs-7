@@ -1,0 +1,37 @@
+{
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/IPhonePhotoAnalyzer.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/IPhonePhotoAnalyzer.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/IPhonePhotoAnalyzer.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/IPhonePhotoAnalyzer.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/IPhonePhotoAnalyzer.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/IPhonePhotoAnalyzer.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/LogAppActivityIntent.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/LogAppActivityIntent.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/LogAppActivityIntent.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/LogAppActivityIntent.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/LogAppActivityIntent.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/LogAppActivityIntent.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordScreenTimeIntent.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordScreenTimeIntent.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordScreenTimeIntent.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordScreenTimeIntent.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordScreenTimeIntent.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordVoiceMemoIntent.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordVoiceMemoIntent.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordVoiceMemoIntent.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordVoiceMemoIntent.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RecordVoiceMemoIntent.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/ScreenTimeStore.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ScreenTimeStore.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ScreenTimeStore.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ScreenTimeStore.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ScreenTimeStore.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ScreenTimeStore.swiftdeps"
+  }
+}

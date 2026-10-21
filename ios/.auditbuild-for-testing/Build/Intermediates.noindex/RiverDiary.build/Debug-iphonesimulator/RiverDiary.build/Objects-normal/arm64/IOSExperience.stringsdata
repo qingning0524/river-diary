@@ -1,0 +1,24 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/IOSExperience.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "本机记录暂时无法打开",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 172
+        }
+      },
+      {
+        "comment": "",
+        "key": "重试",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 178
+        }
+      }
+    ]
+  },
+  "version": 1
+}

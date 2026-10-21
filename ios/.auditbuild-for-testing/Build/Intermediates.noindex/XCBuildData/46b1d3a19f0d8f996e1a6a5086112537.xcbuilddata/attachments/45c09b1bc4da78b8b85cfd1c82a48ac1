@@ -1,0 +1,4 @@
+module RiverDiaryCore {
+header "RiverDiaryCore-Swift.h"
+export *
+}

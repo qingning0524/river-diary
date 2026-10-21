@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>13</integer>
+	<key>logs</key>
+	<dict>
+		<key>A0AA391E-4F5F-45EB-BD2E-F95ED1533433</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>A0AA391E-4F5F-45EB-BD2E-F95ED1533433.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>2</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>RiverDiary project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>RiverDiaryTests</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project RiverDiary for testing with scheme RiverDiaryTests</string>
+			<key>timeStartedRecording</key>
+			<real>814278838.51384795</real>
+			<key>timeStoppedRecording</key>
+			<real>814278841.16744196</real>
+			<key>title</key>
+			<string>Building project RiverDiary for testing with scheme RiverDiaryTests</string>
+			<key>uniqueIdentifier</key>
+			<string>A0AA391E-4F5F-45EB-BD2E-F95ED1533433</string>
+		</dict>
+		<key>AE67852A-614E-4555-9361-AA0C46428A5C</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>AE67852A-614E-4555-9361-AA0C46428A5C.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>11</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>RiverDiary project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>RiverDiaryTests</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project RiverDiary for testing with scheme RiverDiaryTests</string>
+			<key>timeStartedRecording</key>
+			<real>814278722.49134099</real>
+			<key>timeStoppedRecording</key>
+			<real>814278730.77151</real>
+			<key>title</key>
+			<string>Building project RiverDiary for testing with scheme RiverDiaryTests</string>
+			<key>uniqueIdentifier</key>
+			<string>AE67852A-614E-4555-9361-AA0C46428A5C</string>
+		</dict>
+		<key>F211C2BA-517F-4244-B3A1-63F4E4F07902</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>F211C2BA-517F-4244-B3A1-63F4E4F07902.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>11</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>RiverDiary project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>RiverDiaryTests</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project RiverDiary for testing with scheme RiverDiaryTests</string>
+			<key>timeStartedRecording</key>
+			<real>814278955.03754699</real>
+			<key>timeStoppedRecording</key>
+			<real>814278962.96138406</real>
+			<key>title</key>
+			<string>Building project RiverDiary for testing with scheme RiverDiaryTests</string>
+			<key>uniqueIdentifier</key>
+			<string>F211C2BA-517F-4244-B3A1-63F4E4F07902</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

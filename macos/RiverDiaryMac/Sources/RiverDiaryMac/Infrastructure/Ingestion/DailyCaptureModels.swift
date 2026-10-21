@@ -8,6 +8,8 @@ struct ChromeVisit: Codable, Hashable {
     var visitedAt: Date
     var visitCount: Int
     var domain: String
+    /// Chrome / Safari / Arc / Edge / Brave；旧记录没有这个字段。
+    var browser: String? = nil
 
     /// Stable local reference for AI citations; the raw URL is never embedded in
     /// the citation itself and titles are only sent when the user opts in.
@@ -24,6 +26,11 @@ struct ChromeVisit: Codable, Hashable {
 
 struct DailyNoteEntry: Codable, Hashable {
     var title: String
+    /// 今日修改笔记的正文（已去标题、统一换行并截断）。旧记录没有这个字段，
+    /// 解码时必须保持向后兼容。
+    var body: String? = nil
+    /// “备忘录”或“Markdown”；旧记录没有来源。
+    var source: String? = nil
     var modifiedAt: Date
 }
 
@@ -55,6 +62,14 @@ struct DailyCaptureRecord: Codable {
     // Screen time (from ActivityStore)
     var screenTimeMinutes: Int?
     var screenTopApps: [String]
+    var focusMinutes: Int? = nil
+    var focusBlocks: Int? = nil
+
+    /// 日级天气上下文（Open-Meteo）；没有位置时保持 nil。
+    var weatherSummary: String? = nil
+    /// 本地 Git 仓库今天的提交数与仓库名；不保存 commit message。
+    var gitCommitCount: Int? = nil
+    var gitRepositories: [String]? = nil
 
     // Generated mixed overview
     var mixedOverview: String
@@ -74,6 +89,16 @@ struct DailyCaptureRecord: Codable {
         if let screen = screenTimeMinutes, screen > 0 {
             parts.append("屏幕 \(String(format: "%.1f", Double(screen) / 60))h")
         }
+        if let focus = focusMinutes, focus > 0 {
+            parts.append("专注 \(String(format: "%.1f", Double(focus) / 60))h")
+        }
+        if let weather = weatherSummary, !weather.isEmpty {
+            parts.append(weather)
+        }
+        if let commits = gitCommitCount, commits > 0 {
+            let repos = gitRepositories?.isEmpty == false ? "（\(gitRepositories!.count) 个仓库）" : ""
+            parts.append("提交 \(commits) 次\(repos)")
+        }
         return parts.joined(separator: " · ")
     }
 }
@@ -83,6 +108,8 @@ struct DailyCaptureRecord: Codable {
 struct ScreenTimeSnapshot: Codable {
     var totalMinutes: Int
     var topApps: [String]
+    var focusMinutes: Int = 0
+    var focusBlocks: Int = 0
 }
 
 extension DailyCaptureRecord {

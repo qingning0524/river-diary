@@ -40,6 +40,8 @@
 	<string>在你开启出行识别后读取系统活动类型，用于区分步行、骑行和车辆移动片段。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>在你选择开启照片线索后读取最近照片，在本机识别食物、景点等内容并关联到生活片段。</string>
+	<key>RiverDesignBaseline</key>
+	<string>ios-neumorphic-five-page-2026-10-15</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -53,6 +55,7 @@
 	<array>
 		<string>location</string>
 		<string>processing</string>
+		<string>fetch</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
@@ -67,7 +70,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>RiverDesignBaseline</key>
-	<string>ios-neumorphic-five-page-2026-10-15</string>
 </dict>
 </plist>

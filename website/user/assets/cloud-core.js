@@ -77,10 +77,11 @@ export function cloudArchiveSummary(archive) {
 function cloudPayload(archive, now) {
   return {
     format: 'river.memory-mirror',
-    version: 1,
+    version: 2,
     exported_at: now.toISOString(),
     persona: archive?.persona ?? null,
     entries: Array.isArray(archive?.entries) ? archive.entries : [],
+    contexts: Array.isArray(archive?.contexts) ? archive.contexts : [],
     collections: Array.isArray(archive?.collections) ? archive.collections : [],
     understandings: Array.isArray(archive?.understandings) ? archive.understandings : [],
   };
@@ -162,7 +163,7 @@ export async function decryptCloudEnvelope(envelope, passphrase, options = {}) {
     const key = await deriveCloudKey(passphrase, salt, iterations, subtle);
     const decrypted = await subtle.decrypt({ name: 'AES-GCM', iv, additionalData: CONTEXT }, key, ciphertext);
     const payload = JSON.parse(decoder.decode(decrypted));
-    if (payload?.format !== 'river.memory-mirror' || payload.version !== 1) {
+    if (payload?.format !== 'river.memory-mirror' || ![1, 2].includes(payload.version)) {
       throw new CloudError('bad_payload', '云副本的内容格式无法识别。');
     }
     return payload;

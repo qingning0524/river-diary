@@ -80,15 +80,42 @@ public final class RiverAccountSessionStore: ObservableObject {
         entitlements.contains { $0.product_code == "riverdiary_premium" && $0.active }
     }
 
+    /// 本机资料 owner 的读写钩子。由平台层注入，指向本机数据库/受保护文件；
+    /// 不能用 Keychain 的 ThisDeviceOnly 绑定代替它，否则换机恢复后 owner 会丢失。
+    public var localProfileOwnerProvider: (() -> String?)?
+    public var localProfileOwnerWriter: ((String) throws -> Void)?
+    public var localProfileOwnerClearer: (() throws -> Void)?
+
+    /// Keychain 里的旧绑定，只用于迁移和兼容，不作为唯一事实来源。
+    public var boundProfileUserID: String? {
+        guard let data = vault.read(profileBindingStoreKey) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    /// 把旧安装的 Keychain 绑定迁移到本机资料 owner；只在 owner 为空时写入。
+    public func seedLocalProfileOwnerFromKeychain() {
+        guard localProfileOwnerProvider?() == nil, let bound = boundProfileUserID else { return }
+        try? localProfileOwnerWriter?(bound)
+    }
+
+    /// 本机资料已有 owner 且与当前会话不一致时，退出当前会话。
+    /// owner 在本机库里，换机恢复后仍然可靠；会话只是凭据。
+    public func enforceLocalProfileOwner() async {
+        guard let owner = localProfileOwnerProvider?(), let current = session, current.userID != owner else { return }
+        await signOut()
+        lastError = "本机资料已绑定另一个账号，已退出当前登录。请使用原账号，或导出/认领本机资料后再切换。"
+    }
+
     private let platform: RiverAccountPlatform
     private let deviceName: String
     private let vault: RiverAccountVaultStorage
     private let transport: (URLRequest) async throws -> (Data, URLResponse)
-    private let clientInstanceID: String
+    private var clientInstanceID: String
     private let sessionStoreKey = "account-session-v1"
     private let instanceStoreKey = "account-client-instance-v1"
     private let profileBindingStoreKey = "account-profile-binding-v1"
     private let pendingRevocationsStoreKey = "account-pending-revocations-v1"
+    private var hasLoadedPersistedSession = false
     private var isDrainingRevocations = false
     // Every login/logout invalidates responses issued by an older context.
     private var generation = UUID()
@@ -105,19 +132,32 @@ public final class RiverAccountSessionStore: ObservableObject {
         self.transport = transport
         self.platform = platform
         self.deviceName = String(deviceName.prefix(80))
-        if !loadPersistedSession {
-            clientInstanceID = UUID().uuidString.lowercased()
-            return
-        }
-        if let savedInstance = vault.read(instanceStoreKey),
-           let value = String(data: savedInstance, encoding: .utf8), UUID(uuidString: value) != nil {
-            clientInstanceID = value
-        } else if let value = UserDefaults.standard.string(forKey: instanceStoreKey), UUID(uuidString: value) != nil {
+        // 本地优先：client instance 不是秘密，先用 UserDefaults，避免启动时
+        // 为了一个非敏感 ID 去碰 Keychain。真正的会话按需加载。
+        if let value = UserDefaults.standard.string(forKey: instanceStoreKey), UUID(uuidString: value) != nil {
             clientInstanceID = value
         } else {
             let value = UUID().uuidString.lowercased()
             clientInstanceID = value
-            try? vault.write(Data(value.utf8), key: instanceStoreKey)
+            UserDefaults.standard.set(value, forKey: instanceStoreKey)
+        }
+        if loadPersistedSession {
+            restorePersistedSession()
+        }
+    }
+
+    /// 本地优先后，启动时不再无条件读取账号 Keychain；需要账号能力时再加载。
+    /// 这避免只有本机日记、从未绑定账号的用户在启动时被钥匙串 ACL 挡住。
+    public func loadPersistedSessionIfNeeded() {
+        restorePersistedSession()
+    }
+
+    private func restorePersistedSession() {
+        guard !hasLoadedPersistedSession else { return }
+        hasLoadedPersistedSession = true
+        if let savedInstance = vault.read(instanceStoreKey),
+           let value = String(data: savedInstance, encoding: .utf8), UUID(uuidString: value) != nil {
+            clientInstanceID = value
             UserDefaults.standard.set(value, forKey: instanceStoreKey)
         }
         if let saved = vault.read(sessionStoreKey), let decoded = try? JSONDecoder().decode(RiverAccountSession.self, from: saved) {
@@ -226,10 +266,29 @@ public final class RiverAccountSessionStore: ObservableObject {
             await revokeUnstored(response)
             throw RiverAccountAPIError(status: 403, code: "local_profile_account_mismatch")
         }
+        // 本机资料 owner 是比 Keychain 绑定更可靠的事实来源：
+        // 它能随数据库/受保护文件恢复，换机后不会被另一个账号静默认领。
+        let previousOwner = localProfileOwnerProvider?()
+        var wroteOwner = false
+        if let owner = previousOwner {
+            if owner != response.user.id {
+                await revokeUnstored(response)
+                throw RiverAccountAPIError(status: 403, code: "local_profile_account_mismatch")
+            }
+        } else if let writer = localProfileOwnerWriter {
+            do {
+                try writer(response.user.id)
+                wroteOwner = true
+            } catch {
+                await revokeUnstored(response)
+                throw error
+            }
+        }
         let previousBinding = vault.read(profileBindingStoreKey)
         do {
             try vault.write(Data(response.user.id.utf8), key: profileBindingStoreKey)
         } catch {
+            if wroteOwner { try? localProfileOwnerClearer?() }
             await revokeUnstored(response)
             throw error
         }
@@ -239,6 +298,7 @@ public final class RiverAccountSessionStore: ObservableObject {
             // 会话没保存成功就不能把设备永久绑到这个账号上，否则下一次登录
             // 另一个账号会被 local_profile_account_mismatch 挡住。
             restoreProfileBinding(previousBinding)
+            if wroteOwner { try? localProfileOwnerClearer?() }
             await revokeUnstored(response)
             throw error
         }

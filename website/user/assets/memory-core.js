@@ -6,10 +6,10 @@
  */
 
 export const MIRROR_FORMAT = 'river.memory-mirror';
-export const MIRROR_VERSION = 1;
+export const MIRROR_VERSION = 2;
 export const MAX_IMPORT_BYTES = 25 * 1024 * 1024;
 
-const KINDS = new Set(['journal', 'auto', 'note', 'photo', 'place', 'milestone']);
+const KINDS = new Set(['journal', 'auto', 'note', 'photo', 'place', 'milestone', 'context']);
 const SOURCE_LABELS = {
   user: '手写',
   auto: '自动日记',
@@ -17,6 +17,7 @@ const SOURCE_LABELS = {
   photo: '照片',
   system: '系统整理',
   import: '导入副本',
+  context: '设备上下文',
 };
 const TONES = ['sea', 'moss', 'clay', 'dusk', 'rose', 'sand'];
 
@@ -290,12 +291,58 @@ function normalizeUnderstanding(raw, index = 0) {
   };
 }
 
+function contextSnapshotToEntry(raw, index = 0) {
+  if (!raw || typeof raw !== 'object') return null;
+  const day = dateKey(raw.day ?? raw.day_key ?? raw.generated_at ?? raw.generatedAt);
+  if (!day) return null;
+  const deviceName = String(raw.deviceName ?? raw.device_name ?? '设备').trim().slice(0, 40) || '设备';
+  const deviceID = String(raw.deviceID ?? raw.device_id ?? `device-${index}`).trim();
+  const safeID = deviceID.replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 80) || `device-${index}`;
+  const sections = asArray(raw.sections).map((section) => {
+    if (!section || typeof section !== 'object') return null;
+    const title = String(section.title ?? '').trim().slice(0, 40);
+    const summary = String(section.summary ?? '').trim().slice(0, 240);
+    if (!title && !summary) return null;
+    return { title: title || '来源', summary, items: asArray(section.items) };
+  }).filter(Boolean);
+  if (!sections.length) return null;
+  const body = sections.map((section) => {
+    const lines = [`${section.title}：${section.summary}`];
+    for (const item of section.items.slice(0, 20)) {
+      if (!item || typeof item !== 'object') continue;
+      const title = String(item.title ?? '').trim();
+      const detail = String(item.detail ?? '').trim();
+      const count = item.count == null ? '' : String(item.count);
+      const line = [title, detail, count].filter(Boolean).join(' · ');
+      if (line) lines.push(`· ${line}`);
+    }
+    return lines.join('\n');
+  }).join('\n\n');
+  const facts = sections.flatMap((section) => section.items.slice(0, 20).map((item) => {
+    if (!item || typeof item !== 'object') return '';
+    return [String(item.title ?? '').trim(), String(item.detail ?? '').trim()].filter(Boolean).join(' · ');
+  })).filter(Boolean);
+  return {
+    id: `context-${safeID}-${day}`,
+    occurred_at: `${day}T12:00:00`,
+    kind: 'context',
+    title: `${deviceName} 的一天`,
+    body,
+    facts,
+    tags: ['设备上下文', deviceName],
+    source: { type: 'context', label: `${deviceName} 上下文` },
+    tone: 'dusk',
+  };
+}
+
 export function normalizeArchive(payload, options = {}) {
   const { now = new Date(), sourceLabel = '本地记忆副本' } = options;
   const root = payload && typeof payload === 'object' && payload.data && typeof payload.data === 'object'
     ? payload.data
     : payload;
-  const rawEntries = Array.isArray(root) ? root : asArray(root?.entries);
+  const baseEntries = Array.isArray(root) ? root : asArray(root?.entries);
+  const rawContexts = Array.isArray(root) ? [] : asArray(root?.contexts);
+  const rawEntries = [...baseEntries, ...rawContexts.map(contextSnapshotToEntry).filter(Boolean)];
   if (!rawEntries.length) {
     return {
       ok: false,
@@ -304,12 +351,15 @@ export function normalizeArchive(payload, options = {}) {
     };
   }
   const entries = [];
+  const seenIDs = new Set();
   let skipped = 0;
   const warnings = [];
   rawEntries.forEach((raw, index) => {
     const entry = normalizeEntry(raw, index);
-    if (entry) entries.push(entry);
-    else skipped += 1;
+    if (!entry) { skipped += 1; return; }
+    if (seenIDs.has(entry.id)) { skipped += 1; return; }
+    seenIDs.add(entry.id);
+    entries.push(entry);
   });
   if (!entries.length) {
     return {

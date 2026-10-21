@@ -1,0 +1,64 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordScreenTimeIntent.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "记录屏幕使用时间",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 8
+        }
+      },
+      {
+        "comment": "",
+        "key": "把今天在“屏幕使用时间”里看到的分钟数保存到 River Diary 本机事件库。",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 9
+        }
+      },
+      {
+        "comment": "",
+        "key": "分钟数",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 13
+        }
+      },
+      {
+        "comment": "",
+        "key": "例如 185。只填今天所有应用加起来的总时长。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 14
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录应用活动",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录屏幕使用时间",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 88
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录语音速记",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 94
+        }
+      }
+    ]
+  },
+  "version": 1
+}

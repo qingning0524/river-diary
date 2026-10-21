@@ -10,7 +10,7 @@ import {
   MAX_IMPORT_BYTES, MIRROR_FORMAT, MIRROR_VERSION, answerFromMemory, buildStats,
   collectionEntries, dateFromKey, escapeHtml, filterEntries,
   formatDateCN, forgottenEntry, groupByMonth, highlightHtml,
-  normalizeArchive, normalizeEntry, onThisDay, placeSummary, queryTerms,
+  normalizeArchive, onThisDay, placeSummary, queryTerms,
   relatedEntries, relativeDayCN, searchEntries, sortEntries, tagSummary, todayKey, truncate,
   weekdayCN,
 } from './memory-core.js?v=20261020-cloud';
@@ -37,10 +37,10 @@ const THEMES = [
   { id: 'night', name: '夜色', detail: '深色蓝 · 夜间使用', color: '#202935' },
 ];
 const KIND_LABELS = {
-  journal: '文字', auto: '自动日记', note: '速记', photo: '照片', place: '地点', milestone: '节点',
+  journal: '文字', auto: '自动日记', note: '速记', photo: '照片', place: '地点', milestone: '节点', context: '设备上下文',
 };
 const KIND_ICONS = {
-  journal: 'journal', auto: 'sync', note: 'quick-note', photo: 'photo', place: 'location', milestone: 'success',
+  journal: 'journal', auto: 'sync', note: 'quick-note', photo: 'photo', place: 'location', milestone: 'success', context: 'sync',
 };
 const FEEDBACK_STATUS = { new: '已收到', read: '处理中', replied: '已回复', archived: '已归档' };
 
@@ -88,7 +88,7 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const prefersReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 function emptyArchive() {
-  return { format: MIRROR_FORMAT, version: MIRROR_VERSION, entries: [], collections: [], understandings: [], persona: null };
+  return { format: MIRROR_FORMAT, version: MIRROR_VERSION, entries: [], contexts: [], collections: [], understandings: [], persona: null };
 }
 
 function icon(name, className = '') {
@@ -145,11 +145,6 @@ function initials(name) {
 function sourceChip(entry) {
   const iconName = KIND_ICONS[entry.kind] || 'journal';
   return `<span class="source-chip">${icon(iconName)} ${escapeHtml(entry.source?.label || KIND_LABELS[entry.kind] || '记录')}</span>`;
-}
-
-function clockNow() {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
 
 /* ---------- boot ---------- */
@@ -490,7 +485,6 @@ function bindShell() {
       if (file) inspectImportFile(file);
     });
   }
-  $('#composer-form')?.addEventListener('submit', submitComposer);
   $('#correction-form')?.addEventListener('submit', submitCorrection);
   document.addEventListener('click', handleGlobalClick);
   document.addEventListener('submit', handleGlobalSubmit);
@@ -632,9 +626,9 @@ function renderHome() {
         <button class="btn small ghost" type="button" data-open="${escapeAttr(todayEntries.at(-1).id)}">读一读</button>
       </div>`
     : `<div class="today-strip panel">
-        <span class="today-mark">${icon('quick-note')}</span>
-        <div class="today-copy"><strong>今天还没有留下文字</strong><p>不用补一份完整的日记。一句话，也够今天停一会儿。</p></div>
-        <button class="btn small" type="button" data-action="compose">写一句</button>
+        <span class="today-mark">${icon('journal')}</span>
+        <div class="today-copy"><strong>今天还没有可读的记录</strong><p>控制台只读。今天的新内容仍由原生 App 记录，网页不会代写。</p></div>
+        <a class="btn small ghost" href="#/river">翻翻长河</a>
       </div>`;
   const pendingSection = pending.length ? `
     <section class="section">
@@ -655,7 +649,7 @@ function renderHome() {
           <span>${icon('shield')} ${state.memorySource === 'cloud' ? '已加密上云' : '未上传'}</span>
         </div>
         <div class="hero-actions">
-          <button class="btn primary" type="button" data-action="compose">${icon('edit')} 写一句</button>
+          <a class="btn primary" href="#/river">${icon('timeline')} 翻翻长河</a>
           <button class="btn ghost" type="button" data-action="import">${icon('export')} 导入副本</button>
           <a class="btn ghost" href="#/ask">${icon('chat')} 问问 River</a>
         </div>
@@ -708,12 +702,12 @@ function renderHomeEmpty() {
       <div>
         <p class="eyebrow">MEMORY HOME · 还没有副本</p>
         <h1>你好，<em>${escapeHtml(personaName())}</em>。<br>先把过去带到这里。</h1>
-        <p class="hero-lede">账号服务默认不保存日记正文。要在这个控制台里重读记忆，需要从原生 App 导出一份只读副本，再在浏览器里打开；你也可以在登录后主动开启端到端加密云空间。</p>
+        <p class="hero-lede">网页控制台是只读窗口。要看日记，请先在 Mac 的「设置 → 隐私与备份 → 网页控制台副本」或 iPhone 的「设置 → 导出我的记录 → 网页控制台」导出 JSON，再在这里导入；也可以从另一台设备已上传的加密云空间恢复。当前导出的是本机可读日记，完整记忆镜像仍在接入（T12）。</p>
         <div class="hero-meta"><span>${icon('shield')} 默认只在当前标签页</span><span>${icon('lock')} 不调用模型</span><span>${icon('database')} 可随时清除</span></div>
         <div class="hero-actions">
           <button class="btn primary" type="button" data-action="import">${icon('export')} 导入记忆副本</button>
+          ${state.preview ? '' : `<button class="btn ghost" type="button" data-action="open-cloud">${icon('cloud')} 从云空间恢复</button>`}
           <button class="btn ghost" type="button" data-action="demo">看看示例</button>
-          <button class="btn ghost" type="button" data-action="compose">${icon('edit')} 先写一句</button>
         </div>
       </div>
       <div class="hero-art" aria-hidden="true">${renderHeroArt()}</div>
@@ -728,8 +722,8 @@ function renderHomeEmpty() {
     </article>
     <article class="panel panel-pad">
       <p class="eyebrow">FROM THE APPS</p>
-      <h2 class="serif" style="font-size:24px;margin-top:4px">从哪里导出？</h2>
-      <p class="muted small" style="margin-top:7px">在 Mac 或 iPhone 的「设置 · 资料与导出」里生成本地记忆副本。网页控制台读取的是只读快照，不会反向覆盖原生资料。</p>
+      <h2 class="serif" style="font-size:24px;margin-top:4px">副本从哪里来？</h2>
+      <p class="muted small" style="margin-top:7px">Mac 在「设置 → 隐私与备份 → 网页控制台副本」，iPhone 在「设置 → 导出我的记录 → 网页控制台」导出 JSON；若当前安装版本没有该入口，请更新到包含网页副本导出的构建。也可以导入符合 <code>river.memory-mirror</code> 的 JSON，或从另一台设备已上传的云空间恢复。</p>
       <div class="empty-actions" style="justify-content:flex-start;margin-top:14px"><a class="btn small ghost" href="https://flowriver.xyz/#download">下载客户端 ↗</a><a class="btn small ghost" href="https://flowriver.xyz/privacy.html">隐私说明 ↗</a></div>
     </article>
   </div>
@@ -884,7 +878,7 @@ function renderForgotten(entry) {
 }
 
 function renderMemoryStatus() {
-  const source = state.memorySource === 'demo' ? '示例副本' : state.memorySource === 'import' ? '导入副本' : state.memorySource === 'local' ? '本机速记' : '还没有';
+  const source = state.memorySource === 'demo' ? '示例副本' : state.memorySource === 'import' ? '导入副本' : state.memorySource === 'local' ? '本机副本' : '还没有';
   const account = state.preview
     ? '演示模式未连接'
     : state.account.offline
@@ -922,7 +916,7 @@ function renderRiver() {
   return `${renderPreviewBanner()}
   <div class="view-head">
     <div><p class="eyebrow">THE LONG RIVER</p><h1>长河</h1><p class="view-sub">从原话、日期和地点里找回过去。这里不替你总结，只把入口放好。</p></div>
-    <div class="view-head-actions"><button class="btn ghost small" type="button" data-action="open-import">${icon('export')} 导入副本</button><button class="btn primary small" type="button" data-action="compose">${icon('edit')} 写一句</button></div>
+    <div class="view-head-actions"><button class="btn ghost small" type="button" data-action="open-import">${icon('export')} 导入副本</button></div>
   </div>
   <div class="filter-bar panel">
     <label class="filter-search">${icon('search')}<input id="river-search" type="search" value="${escapeAttr(state.filters.query)}" placeholder="搜索一句话、一个人、一个地方…" autocomplete="off" aria-label="搜索记忆"></label>
@@ -1565,7 +1559,7 @@ function renderAccountOverview(profile) {
 function memorySourceText() {
   if (state.memorySource === 'demo') return '示例副本';
   if (state.memorySource === 'import') return state.importMeta?.name ? `导入 · ${state.importMeta.name}` : '导入副本';
-  if (state.memorySource === 'local') return '本机速记';
+  if (state.memorySource === 'local') return '本机副本';
   if (state.memorySource === 'cloud') return '加密云副本';
   return '还没有';
 }
@@ -1674,8 +1668,8 @@ function renderAccountCloud() {
     </form>
   </article>` : `<article class="panel account-panel">
     <div class="panel-head"><h2>先把副本带到这里</h2><span class="tag">还没有本机副本</span></div>
-    <p class="panel-desc">上传的是当前标签页里的只读副本。请先从原生 App 导入一份，或先写一句本机速记。</p>
-    <div class="form-actions"><button class="btn" type="button" data-action="import">${icon('export')} 导入记忆副本</button><button class="btn ghost" type="button" data-action="compose">${icon('edit')} 写一句</button></div>
+    <p class="panel-desc">上传的是当前标签页里的只读副本。请先导入一份 JSON 副本；Mac/iPhone 的网页控制台副本入口已加入源码，若当前安装版本没有，请更新到包含该入口的构建。</p>
+    <div class="form-actions"><button class="btn" type="button" data-action="import">${icon('export')} 导入记忆副本</button></div>
   </article>`;
   const downloadCard = hasCloud ? `<article class="panel account-panel">
     <div class="panel-head"><h2>在另一台设备查看</h2><span class="tag accent">需要同一口令</span></div>
@@ -1710,7 +1704,7 @@ function renderAccountPreview(section) {
   return `<div class="account"><div class="view-head"><div><p class="eyebrow">ACCOUNT & PRIVACY</p><h1>账号与设置</h1><p class="view-sub">账号服务管理身份、设备、权益与反馈；登录后还可以主动开启端到端加密云空间。</p></div></div>${renderAccountTabs(section)}<div class="panel preview-account"><div class="empty-icon">${icon('account')}</div><h2>登录后管理账号</h2><p>当前是演示模式。登录后可以查看设备与会话、兑换权益、修改密码、核对安全活动、提交反馈，并自行开启端到端加密云空间。</p><div class="empty-actions"><a class="btn primary" href="${escapeAttr(LOGIN_URL)}">去登录</a><a class="btn ghost" href="#/home">回到记忆首页</a></div><div class="fine-print" style="margin-top:18px">演示模式不会发起账号请求。记忆副本仍只在这个标签页里。</div></div></div>`;
 }
 
-/* ---------- dialogs: command / detail / import / composer / correction ---------- */
+/* ---------- dialogs: command / detail / import / correction ---------- */
 
 function openCommand() {
   const existing = $('#command-dialog');
@@ -1739,11 +1733,11 @@ function buildCommandItems() {
     ['account', '账号与设置', '身份、设备与权益', 'account'],
   ];
   const actions = [
-    ['compose', '写一句', '本机速记，不上传', 'edit'],
     ['import', '导入记忆副本', '选择本地 JSON 文件', 'export'],
     ['cycle-theme', '切换外观', `当前：${THEMES.find((theme) => theme.id === state.theme)?.name}`, 'appearance'],
     ['privacy', '数据边界', '记忆与账号各归各处', 'shield'],
   ];
+  if (!state.preview) actions.push(['open-cloud', '云空间', '从加密云副本恢复', 'cloud']);
   const match = (text) => !query || text.includes(query);
   for (const [key, title, sub, iconName] of actions) {
     if (match(title) || match(sub)) items.push({ type: 'action', key, title, sub, iconName });
@@ -1827,8 +1821,8 @@ function activateCommand(index) {
   if (item.type === 'route') { navigate(item.key); return; }
   if (item.type === 'memory') { openMemory(item.key); return; }
   if (item.type === 'action') {
-    if (item.key === 'compose') openComposer();
     if (item.key === 'import') openImport();
+    if (item.key === 'open-cloud') { navigate('account', 'cloud'); return; }
     if (item.key === 'cycle-theme') cycleTheme();
     if (item.key === 'privacy') openPrivacy();
   }
@@ -1852,7 +1846,7 @@ function openMemory(id) {
     ${entry.tags.length ? `<div class="detail-tags chip-row">${entry.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
     <div class="detail-actions"><button class="btn small" type="button" data-detail-action="favorite">${icon('bookmark')} ${entry.favorite ? '取消收藏' : '收藏'}</button><button class="btn small ghost" type="button" data-detail-action="copy">${icon('copy')} 复制原话</button><button class="btn small ghost" type="button" data-detail-action="day">${icon('calendar')} 回到那天</button></div>
     ${related.length ? `<div class="detail-related"><h2>相关的日子</h2><div class="related-list">${related.map((item) => `<button class="related-item" type="button" data-open="${escapeAttr(item.id)}"><time>${formatDateCN(item.date, { withYear: false })}</time><span>${escapeHtml(item.title)}</span></button>`).join('')}</div></div>` : ''}
-    <p class="detail-note">${state.memorySource === 'demo' ? '这是合成的演示记忆。' : state.memorySource === 'cloud' ? '这是从加密云副本解密出的只读副本；服务器只保存密文。修改请在原生 App 中完成。' : '这是只读副本。修改请在原生 App 中完成；默认不会上传。'} ${state.memorySource === 'local' ? '本机速记只在这个标签页里。' : ''}</p>
+    <p class="detail-note">${state.memorySource === 'demo' ? '这是合成的演示记忆。' : state.memorySource === 'cloud' ? '这是从加密云副本解密出的只读副本；服务器只保存密文。修改请在原生 App 中完成。' : '这是只读副本。修改请在原生 App 中完成；默认不会上传。'} ${state.memorySource === 'local' ? '本机副本只在这个标签页里。' : ''}</p>
   </article>`;
   const dialog = $('#memory-dialog');
   if (dialog && !dialog.open) dialog.showModal();
@@ -1930,58 +1924,6 @@ function confirmImport() {
   $('#import-dialog')?.close();
   toast(`已载入 ${count(archive.entries.length)} 段记忆。只在这个标签页里。`, 'ok');
   navigate('home');
-}
-
-function openComposer() {
-  const dialog = $('#composer-dialog');
-  if (dialog?.open) { $('#composer-body')?.focus(); return; }
-  const form = $('#composer-form');
-  form?.reset();
-  $('#composer-status').textContent = '';
-  $('#composer-dialog')?.showModal();
-  requestAnimationFrame(() => $('#composer-body')?.focus());
-}
-
-function submitComposer(event) {
-  event.preventDefault();
-  if (event.submitter?.value === 'cancel') { $('#composer-dialog')?.close(); return; }
-  const body = $('#composer-body')?.value.trim() || '';
-  const title = $('#composer-title-input')?.value.trim() || '';
-  const place = $('#composer-place')?.value.trim() || '';
-  const tags = ($('#composer-tags')?.value || '').split(/[，,]/).map((tag) => tag.trim()).filter(Boolean);
-  if (!body) {
-    $('#composer-status').textContent = '写下一句话再保存。';
-    $('#composer-status').classList.add('bad');
-    return;
-  }
-  const entry = normalizeEntry({
-    id: `local_${Date.now().toString(36)}`,
-    occurred_at: `${todayKey()}T${clockNow()}:00+08:00`,
-    kind: 'note',
-    title: title || truncate(body, 28),
-    body,
-    place,
-    tags,
-    source: { type: 'user', label: '本机速记' },
-    favorite: false,
-  }, state.entries.length);
-  if (!entry) {
-    $('#composer-status').textContent = '这句速记没有保存成功，请再试一次。';
-    return;
-  }
-  if (!state.entries.length) {
-    state.archive = { ...emptyArchive(), entries: [], collections: [], understandings: [] };
-    state.memorySource = 'local';
-  }
-  state.entries.push(entry);
-  state.archive.entries = state.entries;
-  state.stats = buildStats(state.entries);
-  state.memorySource = state.memorySource === 'empty' ? 'local' : state.memorySource;
-  rememberArchiveSource();
-  $('#composer-dialog')?.close();
-  toast('已留在本机。关闭标签页后不再保留。', 'ok');
-  if (state.route.space === 'home') refreshView();
-  else navigate('home');
 }
 
 function openCorrection(id) {
@@ -2138,7 +2080,7 @@ async function handleAction(element, event) {
     return;
   }
   if (action === 'import' || action === 'open-import') { openImport(); return; }
-  if (action === 'compose') { openComposer(); return; }
+  if (action === 'open-cloud') { navigate('account', 'cloud'); return; }
   if (action === 'privacy') { openPrivacy(); return; }
   if (action === 'exit-preview') { location.assign(LOGIN_URL); return; }
   if (action === 'demo') {
@@ -2294,7 +2236,6 @@ function handleGlobalSubmit(event) {
     submitAsk($('#ask-input')?.value || '');
     return;
   }
-  if (form.id === 'composer-form') return; // bound directly
   if (form.id === 'correction-form') return;
   const kind = form.dataset.form;
   if (!kind) return;
@@ -2460,6 +2401,14 @@ async function submitCloudDownload(form) {
   if (policy) { setStatus('cloud-download-status', policy, true); return; }
   const client = state.account.client;
   if (!client) { setStatus('cloud-download-status', '需要先登录账号。', true); return; }
+  if (state.entries.length) {
+    const ok = await confirmAction({
+      title: '载入云副本并替换本机？',
+      description: '解密后的云副本会替换当前标签页里的只读副本；当前未上传的本机副本不会自动合并。',
+      confirmLabel: '载入云副本',
+    });
+    if (!ok) return;
+  }
   await withBusy(button, async () => {
     setStatus('cloud-download-status', '正在下载密文…');
     const envelope = await client.get('/me/memory-mirror', 60000);

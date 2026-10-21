@@ -37,7 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
         menu.addItem(Self.menuItem("打开河流日记", command: "reopenMain"))
-        if AccountMenuPresence.isSignedIn {
+        if AccountMenuPresence.isLibraryReady {
             menu.addItem(Self.menuItem("写一句…", command: "writeNote"))
             menu.addItem(Self.menuItem("立即采集一次", command: "captureNow"))
         }
@@ -52,11 +52,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// 菜单与 Dock 共用的登录态快照：AppKit 的 Dock 菜单拿不到 SwiftUI 环境，
-/// 用同一份状态保证“没登录就不出现写入/采集入口”。
+/// 菜单与 Dock 共用的“本机资料已就绪”快照。本地优先后，写入/采集
+/// 不再要求账号登录；只要本机库已打开，Dock 与菜单栏就应该有入口。
 @MainActor
 enum AccountMenuPresence {
-    static var isSignedIn = false
+    static var isLibraryReady = false
 }
 
 /// Dock 菜单的 action 落点：统一走 riverCommand 总线，由 shell 执行。
@@ -89,6 +89,8 @@ struct RiverDiaryMacApp: App {
     /// 才会走到用户看得见的地方。
     @StateObject private var feedback = FeedbackCenter()
     @State private var pendingDailyRebuild: Task<Void, Never>?
+    @State private var libraryOpenRevision = 0
+    private let accountKeychainDisabled: Bool
     /// 全进程共享一条 V2 事实库连接：否则每个 store 各开一次 SQLCipher
     /// 并在主线程重复建表 DDL；恢复快照时也只需重开这一条连接。
     private let v2Store: V2Store
@@ -106,11 +108,20 @@ struct RiverDiaryMacApp: App {
             preconditionFailure(isolationError)
         }
 
-        let account = RiverAccountSessionStore(platform: .macos, deviceName: ProcessInfo.processInfo.hostName, loadPersistedSession: !MacSoftVisualSession.isActive)
+        // QA/演示启动可以显式跳过账号 Keychain：本地优先的截图与离线演示
+        // 不应被开发机已有的钥匙串 ACL 弹窗挡住。
+        let disableAccountKeychain = ProcessInfo.processInfo.environment["RIVER_DIARY_DISABLE_ACCOUNT_KEYCHAIN"] == "1"
+        accountKeychainDisabled = disableAccountKeychain
+        let account = RiverAccountSessionStore(
+            platform: .macos,
+            deviceName: ProcessInfo.processInfo.hostName,
+            loadPersistedSession: false
+        )
         _accountSession = StateObject(wrappedValue: account)
 
         // 资料生命周期：首次未绑定账号时不创建正式库。已有库、旧安装的救援资料
         // 或已登录时才打开；否则等登录（或显式认领）后由 openIfNeeded() 建库。
+        // v5.0 本地优先：首次启动就开本机资料，账号只是后续增强。
         let shouldOpenLibrary = LibraryOpenPolicy.shouldOpenLocalLibrary(
             hasDatabaseFile: LocalLibraryPresence.databaseFileExists(),
             hasLegacyLocalState: LocalLibraryPresence.legacyStateExists(),
@@ -126,8 +137,21 @@ struct RiverDiaryMacApp: App {
         v2Store = sharedV2
         _restoreRecovery = StateObject(wrappedValue: RestoreRecoveryBootstrap())
         _ingestion = StateObject(wrappedValue: DataIngestionStore(v2Store: sharedV2))
+        // 本地优先：owner 读写钩子指向本机库；Keychain 旧绑定只做迁移。
+        account.localProfileOwnerProvider = { sharedV2.localProfileOwner }
+        account.localProfileOwnerWriter = { userID in
+            guard sharedV2.setLocalProfileOwner(userID) else {
+                throw NSError(domain: "RiverDiaryMac", code: 51, userInfo: [NSLocalizedDescriptionKey: "本机资料归属写入失败。"])
+            }
+        }
+        account.localProfileOwnerClearer = {
+            guard sharedV2.clearLocalProfileOwner() else {
+                throw NSError(domain: "RiverDiaryMac", code: 52, userInfo: [NSLocalizedDescriptionKey: "本机资料归属回滚失败。"])
+            }
+        }
+        AccountMenuPresence.isLibraryReady = sharedV2.isOpen
         let diaryStore = DiaryStore()
-        let activityStore = ActivityStore(v2Store: sharedV2, startsAutomatically: account.isSignedIn)
+        let activityStore = ActivityStore(v2Store: sharedV2, startsAutomatically: true)
         #if DEBUG
         if MacSoftVisualSession.isActive {
             let previewTimeline = ActivityTimelineEngine.build(for: MacSoftVisualSession.date, sessions: MacSoftVisualSession.sessions)
@@ -215,12 +239,18 @@ struct RiverDiaryMacApp: App {
 
     /// 登录完成后才打开此前被延迟的正式库，并让已存在的 store 重新读一次共享状态。
     /// 已有库的用户在启动时就已经打开，这里只是幂等确认。
-    private func activateSignedInLibrary() {
-        AccountMenuPresence.isSignedIn = true
+    /// 本地优先的启动路径：不要求账号，打开本机库并接通采集/AI/备份。
+    private func activateLocalLibrary() {
+        AccountMenuPresence.isLibraryReady = true
         ai.setAccountActive(true)
         v2Store.openIfNeeded()
         store.reloadSharedTimelineAnnotations()
         store.applySharedDiaryRecords(v2Store.sharedUserRecords())
+        activity.setAccountServicesActive(true)
+    }
+
+    private func activateSignedInLibrary() {
+        activateLocalLibrary()
         startSignedInServices()
     }
 
@@ -241,7 +271,7 @@ struct RiverDiaryMacApp: App {
                     RestoreRecoveryGateView(message: message) {
                         restoreRecovery.retry()
                     }
-                } else if accountSession.isSignedIn || MacSoftVisualSession.isActive {
+                } else if v2Store.isOpen || MacSoftVisualSession.isActive {
                     RiverShellView(
                         store: store,
                         activity: activity,
@@ -254,14 +284,16 @@ struct RiverDiaryMacApp: App {
                     .environmentObject(feedback)
                     .ignoresSafeArea(.container, edges: .top)
                 } else {
-                    MacAccountLoginView(
-                        showsLocalDataNotice: LocalLibraryPresence.databaseFileExists()
-                            || LocalLibraryPresence.legacyStateExists()
-                    )
+                    LocalLibraryUnavailableView(
+                        message: v2Store.lastError ?? "本机资料库暂时无法打开。"
+                    ) {
+                        _ = v2Store.openIfNeeded()
+                        libraryOpenRevision &+= 1
+                    }
+                    .id(libraryOpenRevision)
                 }
             }
             .environmentObject(accountSession)
-            .task { await accountSession.retryPendingSignOuts() }
             .frame(minWidth: 960, minHeight: 640)
             .onAppear {
                 #if DEBUG
@@ -270,22 +302,27 @@ struct RiverDiaryMacApp: App {
                     dateContext.setSelectedDate(MacSoftVisualSession.date)
                 }
                 #endif
-                if accountSession.isSignedIn { activateSignedInLibrary() }
+                activateLocalLibrary()
+                if accountSession.isSignedIn { startSignedInServices() }
+            }
+            .task {
+                // 本地优先：先把本机界面交给用户，再按需读取账号 Keychain。
+                guard !accountKeychainDisabled else { return }
+                accountSession.loadPersistedSessionIfNeeded()
+                // 本机资料 owner 是权威；Keychain 旧绑定只用于迁移。
+                accountSession.seedLocalProfileOwnerFromKeychain()
+                await accountSession.retryPendingSignOuts()
+                await accountSession.enforceLocalProfileOwner()
             }
             .onChange(of: accountSession.isSignedIn) { _, signedIn in
                 if signedIn { activateSignedInLibrary() }
                 else {
-                    AccountMenuPresence.isSignedIn = false
-                    ai.setAccountActive(false)
+                    // 本地优先：退出登录只停账号能力，不关库、不停采集、不删资料。
+                    AccountMenuPresence.isLibraryReady = true
+                    ai.setAccountActive(true)
+                    activity.setAccountServicesActive(true)
                     pendingDailyRebuild?.cancel()
                     pendingDailyRebuild = nil
-                    activity.setAccountServicesActive(false)
-                    ingestion.stop()
-                    location.disconnect()
-                    // 主动退出后关闭数据库上下文：登录页面上不再有可用的本机事实库。
-                    v2Store.close()
-                    // 已排定的晚间提醒在退出后不再弹给一个未登录的应用。
-                    EveningReminderStore().cancelScheduled()
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .riverCanonicalSyncDidChange)) { notification in
@@ -360,7 +397,7 @@ struct RiverDiaryMacApp: App {
         // 改由 `SettingsWindowController` 自建无边框窗口，标题栏高度为 0。
 
         MenuBarExtra("River 快记", systemImage: "leaf.fill") {
-            if restoreRecovery.error == nil && accountSession.isSignedIn {
+            if restoreRecovery.error == nil && v2Store.isOpen {
                 // 关窗=常驻的设计下，弹层必须有一条回到主窗口的路，
                 // 否则用户只能靠点 Dock 图标找回界面。
                 Button("打开河流日记") {
@@ -374,7 +411,7 @@ struct RiverDiaryMacApp: App {
                     Button("打开河流日记") {
                         NotificationCenter.default.post(name: .riverReopenMain, object: nil)
                     }
-                    Text("请先在 River Diary 主窗口登录账号。")
+                    Text("本机资料正在打开；若持续失败，请在主窗口重试。")
                         .font(AppTypography.secondary())
                 }
                 .padding()
@@ -388,6 +425,39 @@ struct RiverDiaryMacApp: App {
             }
         }
         .menuBarExtraStyle(.window)
+    }
+}
+
+/// 本地优先启动时，库打不开的兜底页；不把用户推回登录页。
+private struct LocalLibraryUnavailableView: View {
+    let message: String
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Image(systemName: "externaldrive.badge.exclamationmark")
+                .font(.system(size: 30, weight: .medium))
+                .foregroundStyle(AppTheme.warning)
+            Text("本机资料暂时打不开")
+                .font(AppTypography.pageTitle())
+                .foregroundStyle(Color.ink)
+            Text("你的日记仍在本机。请先重试；如果持续失败，不要新建空库覆盖，先导出/救援。")
+                .font(AppTypography.secondary())
+                .foregroundStyle(Color.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(message)
+                .font(AppTypography.mono())
+                .textSelection(.enabled)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.editor, in: RoundedRectangle(cornerRadius: 12))
+            Button("重试打开本机资料", action: retry)
+                .buttonStyle(.borderedProminent)
+        }
+        .padding(40)
+        .frame(maxWidth: 620, maxHeight: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.workspace)
     }
 }
 

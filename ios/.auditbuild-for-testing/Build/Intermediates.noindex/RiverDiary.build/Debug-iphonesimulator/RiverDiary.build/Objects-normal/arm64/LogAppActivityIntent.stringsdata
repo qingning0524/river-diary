@@ -1,0 +1,88 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/LogAppActivityIntent.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "应用活动",
+        "location": {
+          "startingColumn": 76,
+          "startingLine": 9
+        }
+      },
+      {
+        "comment": "",
+        "key": "打开",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 11
+        }
+      },
+      {
+        "comment": "",
+        "key": "离开",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 12
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录应用活动",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 17
+        }
+      },
+      {
+        "comment": "",
+        "key": "把用户设置的应用打开或离开事件保存到 River Diary 本机事件库。",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 18
+        }
+      },
+      {
+        "comment": "",
+        "key": "应用名称",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 21
+        }
+      },
+      {
+        "comment": "",
+        "key": "例如：微信、Safari 或 ChatGPT",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 21
+        }
+      },
+      {
+        "comment": "",
+        "key": "应用标识",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 24
+        }
+      },
+      {
+        "comment": "",
+        "key": "应用的 Bundle Identifier",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 24
+        }
+      },
+      {
+        "comment": "",
+        "key": "活动",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 27
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -251,13 +251,167 @@ struct RecordingSettingsView: View {
                 }
 
                 RiverPanelRow(title: "采集来源", detail: "开关即时保存，并从下一次采集起生效") {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: AppSpacing.md)], alignment: .leading, spacing: AppSpacing.sm) {
-                        Toggle("健康与快记", isOn: sourceBinding(.health)).toggleStyle(.switch).tint(AppTheme.accent).font(AppTypography.label())
-                        Toggle("Chrome 浏览", isOn: sourceBinding(.chrome)).toggleStyle(.switch).tint(AppTheme.accent).font(AppTypography.label())
-                        Toggle("备忘录", isOn: sourceBinding(.notes)).toggleStyle(.switch).tint(AppTheme.accent).font(AppTypography.label())
-                        Toggle("实时足迹汇总", isOn: sourceBinding(.screenTime)).toggleStyle(.switch).tint(AppTheme.accent).font(AppTypography.label())
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: AppSpacing.md)], alignment: .leading, spacing: AppSpacing.sm) {
+                            Toggle("健康与快记", isOn: sourceBinding(.health)).toggleStyle(.switch).tint(AppTheme.accent).font(AppTypography.label())
+                            Toggle("浏览器历史", isOn: sourceBinding(.chrome)).toggleStyle(.switch).tint(AppTheme.accent).font(AppTypography.label())
+                            Toggle("备忘录", isOn: sourceBinding(.notes)).toggleStyle(.switch).tint(AppTheme.accent).font(AppTypography.label())
+                            Toggle("实时足迹汇总", isOn: sourceBinding(.screenTime)).toggleStyle(.switch).tint(AppTheme.accent).font(AppTypography.label())
+                        }
+                        Toggle("浏览器 URL 同步到其他设备", isOn: Binding(
+                            get: { ingestion.sharesBrowserURLs },
+                            set: { ingestion.setShareBrowserURLs($0) }
+                        ))
+                        .toggleStyle(.switch)
+                        .tint(AppTheme.accent)
+                        .font(AppTypography.label())
+
+                        Toggle("备忘录正文同步到其他设备", isOn: Binding(
+                            get: { ingestion.sharesNoteBodies },
+                            set: { ingestion.setShareNoteBodies($0) }
+                        ))
+                        .toggleStyle(.switch)
+                        .tint(AppTheme.accent)
+                        .font(AppTypography.label())
+
+                        SettingsFootnote(text: "浏览器历史读取 Safari、Chrome、Arc、Edge、Brave 的今日访问；备忘录读取今日修改笔记的正文（单条最多 20,000 字）。两者都需要完全磁盘访问。默认只同步摘要、标题和短摘录；打开上面的开关才会把 URL/正文放进跨端上下文。\(ingestion.browserStatus)")
                     }
                     .frame(width: 340, alignment: .leading)
+                }
+
+                RiverPanelRow(title: "日历与提醒事项", detail: ingestion.calendarStatus) {
+                    HStack(spacing: AppSpacing.sm) {
+                        Toggle("读取今天的日程与完成提醒", isOn: Binding(
+                            get: { ingestion.collectsCalendar },
+                            set: { ingestion.setCalendarEnabled($0) }
+                        ))
+                        .toggleStyle(.switch)
+                        .tint(AppTheme.accent)
+                        .font(AppTypography.label())
+
+                        Button("授权") {
+                            Task { await ingestion.requestCalendarAccess() }
+                        }
+                        .buttonStyle(.plain)
+                        .smallAction()
+                    }
+                }
+
+                RiverPanelRow(title: "天气", detail: ingestion.weatherStatus) {
+                    Toggle("记录每日天气", isOn: Binding(
+                        get: { ingestion.collectsWeather },
+                        set: { ingestion.setWeatherEnabled($0) }
+                    ))
+                    .toggleStyle(.switch)
+                    .tint(AppTheme.accent)
+                    .font(AppTypography.label())
+                    .help("用最近 24 小时内的位置查询 Open-Meteo 的日级天气；没有位置时不采。")
+                }
+
+                RiverPanelRow(
+                    title: "Markdown 文件夹",
+                    detail: ingestion.markdownFolderURL?.path ?? "未选择文件夹（Obsidian / Logseq / Bear 导出）"
+                ) {
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        HStack(spacing: AppSpacing.sm) {
+                            Toggle("读取今天修改的 Markdown", isOn: Binding(
+                                get: { ingestion.collectsMarkdown },
+                                set: { ingestion.setMarkdownEnabled($0) }
+                            ))
+                            .toggleStyle(.switch)
+                            .tint(AppTheme.accent)
+                            .font(AppTypography.label())
+
+                            Button("选择文件夹") { chooseMarkdownFolder() }
+                                .buttonStyle(.plain)
+                                .smallAction(dark: true)
+
+                            if ingestion.markdownFolderURL != nil {
+                                Button("清除") { ingestion.clearMarkdownFolder() }
+                                    .buttonStyle(.plain)
+                                    .smallAction()
+                            }
+                        }
+                        Toggle("同步 Markdown 正文全文", isOn: Binding(
+                            get: { ingestion.sharesMarkdownBodies },
+                            set: { ingestion.setShareMarkdownBodies($0) }
+                        ))
+                        .toggleStyle(.switch)
+                        .tint(AppTheme.accent)
+                        .font(AppTypography.label())
+
+                        Text(ingestion.markdownStatus)
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.secondaryInk)
+                    }
+                }
+
+                RiverPanelRow(
+                    title: "Kindle 划线",
+                    detail: ingestion.kindleFileURL?.path ?? "未选择 My Clippings.txt"
+                ) {
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        HStack(spacing: AppSpacing.sm) {
+                            Toggle("读取今天添加的 Kindle 划线", isOn: Binding(
+                                get: { ingestion.collectsKindle },
+                                set: { ingestion.setKindleEnabled($0) }
+                            ))
+                            .toggleStyle(.switch)
+                            .tint(AppTheme.accent)
+                            .font(AppTypography.label())
+
+                            Button("选择文件") { chooseKindleFile() }
+                                .buttonStyle(.plain)
+                                .smallAction(dark: true)
+
+                            if ingestion.kindleFileURL != nil {
+                                Button("清除") { ingestion.clearKindleFile() }
+                                    .buttonStyle(.plain)
+                                    .smallAction()
+                            }
+                        }
+                        Toggle("同步 Kindle 划线全文", isOn: Binding(
+                            get: { ingestion.sharesKindleBodies },
+                            set: { ingestion.setShareKindleBodies($0) }
+                        ))
+                        .toggleStyle(.switch)
+                        .tint(AppTheme.accent)
+                        .font(AppTypography.label())
+
+                        Text(ingestion.kindleStatus)
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.secondaryInk)
+                    }
+                }
+
+                RiverPanelRow(
+                    title: "本地 Git 提交",
+                    detail: ingestion.gitRootURL?.path ?? "未选择代码目录"
+                ) {
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        HStack(spacing: AppSpacing.sm) {
+                            Toggle("读取今天的本地提交", isOn: Binding(
+                                get: { ingestion.collectsGit },
+                                set: { ingestion.setGitEnabled($0) }
+                            ))
+                            .toggleStyle(.switch)
+                            .tint(AppTheme.accent)
+                            .font(AppTypography.label())
+
+                            Button("选择目录") { chooseGitRoot() }
+                                .buttonStyle(.plain)
+                                .smallAction(dark: true)
+
+                            if ingestion.gitRootURL != nil {
+                                Button("清除") { ingestion.clearGitRoot() }
+                                    .buttonStyle(.plain)
+                                    .smallAction()
+                            }
+                        }
+                        Text(ingestion.gitStatus)
+                            .font(AppTypography.metadata())
+                            .foregroundStyle(Color.secondaryInk)
+                    }
                 }
 
                 RiverPanelRow(title: "保留期限", detail: "只清理每日混合采集兼容库；V2 原始事实不受此期限控制。") {
@@ -458,6 +612,40 @@ struct RecordingSettingsView: View {
         panel.message = "选择 iOS 导出的 river-diary-user-data.json"
         if panel.runModal() == .OK, let url = panel.url {
             ingestion.connectSource(to: url)
+        }
+    }
+
+    private func chooseMarkdownFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "选择 Markdown 文件夹（只读取今天修改的 .md / .markdown / .txt）"
+        if panel.runModal() == .OK, let url = panel.url {
+            ingestion.connectMarkdownFolder(url)
+        }
+    }
+
+    private func chooseGitRoot() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.message = "选择包含 Git 仓库的开发目录（最多向下 3 层）"
+        if panel.runModal() == .OK, let url = panel.url {
+            ingestion.connectGitRoot(url)
+        }
+    }
+
+    private func chooseKindleFile() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.plainText]
+        panel.message = "选择 Kindle 的 My Clippings.txt"
+        if panel.runModal() == .OK, let url = panel.url {
+            ingestion.connectKindleFile(url)
         }
     }
 

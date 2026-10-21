@@ -1,0 +1,27 @@
+{
+  "object" : {
+    "artifacts" : [
+
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "riverdiarycore",
+          "kind" : "fileSystem",
+          "location" : "/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore",
+          "name" : "RiverDiaryCore"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore"
+        },
+        "subpath" : "riverdiarycore"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}

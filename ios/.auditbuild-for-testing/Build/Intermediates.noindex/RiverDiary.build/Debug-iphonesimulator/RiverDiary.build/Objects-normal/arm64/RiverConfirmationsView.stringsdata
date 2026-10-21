@@ -1,0 +1,472 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RiverConfirmationsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "返回 River",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "确认类别",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 83
+        }
+      },
+      {
+        "comment": "",
+        "key": "显示稍后处理的 %lld 条",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 89
+        }
+      },
+      {
+        "comment": "",
+        "key": "River",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "历史确认与习惯 · 可重新修改",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 113
+        }
+      },
+      {
+        "comment": "",
+        "key": "确认习惯",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 142
+        }
+      },
+      {
+        "comment": "",
+        "key": "确认地点",
+        "location": {
+          "startingColumn": 142,
+          "startingLine": 142
+        }
+      },
+      {
+        "comment": "",
+        "key": "确认事实",
+        "location": {
+          "startingColumn": 159,
+          "startingLine": 142
+        }
+      },
+      {
+        "comment": "",
+        "key": "关闭",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 144
+        }
+      },
+      {
+        "comment": "",
+        "key": "实际到访的地点",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "告诉 River 你当时在做什么…",
+        "location": {
+          "startingColumn": 67,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "把这次补充记为长期习惯",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 205
+        }
+      },
+      {
+        "comment": "",
+        "key": "习惯线索",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点待确认",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI 暂定理解",
+        "location": {
+          "startingColumn": 83,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "其他地点 · 自定义填写",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 196
+        }
+      },
+      {
+        "comment": "",
+        "key": "补充或纠正这条理解",
+        "location": {
+          "startingColumn": 73,
+          "startingLine": 196
+        }
+      },
+      {
+        "comment": "",
+        "key": "跳过",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 212
+        }
+      },
+      {
+        "comment": "",
+        "key": "稍后",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 227
+        }
+      },
+      {
+        "comment": "",
+        "key": "原始依据与更多选项",
+        "location": {
+          "startingColumn": 69,
+          "startingLine": 225
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看并回答",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 278
+        }
+      },
+      {
+        "comment": "",
+        "key": "这一刻，都整理好了",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 302
+        }
+      },
+      {
+        "comment": "",
+        "key": "这里暂时没有待确认的线索",
+        "location": {
+          "startingColumn": 72,
+          "startingLine": 302
+        }
+      },
+      {
+        "comment": "",
+        "key": "日常记录会继续自动保存。遇到不能确定的理解，River 再来问你。",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 304
+        }
+      },
+      {
+        "comment": "",
+        "key": "可以切换分类，或显示稍后处理的线索。",
+        "location": {
+          "startingColumn": 132,
+          "startingLine": 304
+        }
+      },
+      {
+        "comment": "",
+        "key": "位置范围示意，不代表实际到访商户。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 346
+        }
+      },
+      {
+        "comment": "",
+        "key": "候选地点不代表实际到访；具体活动仍需其他记录支持。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 366
+        }
+      },
+      {
+        "comment": "",
+        "key": "问题 · 尚未确认",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 321
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看原始依据",
+        "location": {
+          "startingColumn": 68,
+          "startingLine": 339
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 的暂定理解",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 328
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看原始依据",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 335
+        }
+      },
+      {
+        "comment": "",
+        "key": "位置范围",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 344
+        }
+      },
+      {
+        "comment": "",
+        "key": "距定位点约 %lld 米",
+        "location": {
+          "startingColumn": 147,
+          "startingLine": 358
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 个活动例子 · 重复发生不一定是习惯",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 378
+        }
+      },
+      {
+        "comment": "",
+        "key": "你可以确认长期习惯，也可以只确认这几次活动。原始记录会保留。",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 380
+        }
+      },
+      {
+        "comment": "",
+        "key": "问题 · 尚未确认的习惯",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 374
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看活动依据",
+        "location": {
+          "startingColumn": 76,
+          "startingLine": 379
+        }
+      },
+      {
+        "comment": "",
+        "key": "你的判断",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 385
+        }
+      },
+      {
+        "comment": "",
+        "key": "只确认例子",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 391
+        }
+      },
+      {
+        "comment": "",
+        "key": "跳过",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 393
+        }
+      },
+      {
+        "comment": "",
+        "key": "稍后处理",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 395
+        }
+      },
+      {
+        "comment": "",
+        "key": "都不是",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 404
+        }
+      },
+      {
+        "comment": "",
+        "key": "只是经过",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 406
+        }
+      },
+      {
+        "comment": "",
+        "key": "稍后处理",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 408
+        }
+      },
+      {
+        "comment": "",
+        "key": "跳过这条",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 415
+        }
+      },
+      {
+        "comment": "",
+        "key": "稍后处理",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 417
+        }
+      },
+      {
+        "comment": "",
+        "key": "丢弃未提交回答？",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 573
+        }
+      },
+      {
+        "comment": "",
+        "key": "按你的真实经历，补充或更正。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 529
+        }
+      },
+      {
+        "comment": "",
+        "key": "勾选后，这句话才会用于理解以后的经历。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 536
+        }
+      },
+      {
+        "comment": "",
+        "key": "把这句话保存为以后适用的习惯",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 534
+        }
+      },
+      {
+        "comment": "",
+        "key": "自定义回答",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 547
+        }
+      },
+      {
+        "comment": "",
+        "key": "丢弃未提交回答",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 549
+        }
+      },
+      {
+        "comment": "",
+        "key": "关闭",
+        "location": {
+          "startingColumn": 70,
+          "startingLine": 560
+        }
+      },
+      {
+        "comment": "",
+        "key": "提交回答",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 562
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 567
+        }
+      },
+      {
+        "comment": "",
+        "key": "丢弃回答",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 574
+        }
+      },
+      {
+        "comment": "",
+        "key": "继续编辑",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 578
+        }
+      },
+      {
+        "comment": "",
+        "key": "关闭窗口会保留草稿；只有明确丢弃后才会清空。",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 580
+        }
+      }
+    ]
+  },
+  "version": 1
+}

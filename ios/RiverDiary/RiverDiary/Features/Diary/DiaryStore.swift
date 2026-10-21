@@ -92,6 +92,17 @@ final class DiaryStore: ObservableObject {
         await loadFromICloudDrive()
     }
 
+    func webMirrorData(contexts: [DayContextSnapshot] = []) throws -> Data {
+        guard let data, !data.entries.isEmpty else {
+            guard !contexts.isEmpty else { throw MemoryMirrorExportError.emptyDiary }
+            return try MemoryMirrorArchive.empty().appendingContexts(contexts).encoded()
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let diaryJSON = try encoder.encode(data)
+        return try MemoryMirrorArchive.legacy(fromDiaryJSON: diaryJSON).appendingContexts(contexts).encoded()
+    }
+
     func applySyncedMoodState(scores: [String: Int], resetDays: Set<String>) {
         syncedMoodScores = scores
         syncedMoodResets = resetDays

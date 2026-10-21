@@ -1,0 +1,82 @@
+{
+  "kind": "user-cloud-mirror-deployment",
+  "deployed_at_shanghai": "2026-10-20T12:33:00+08:00",
+  "redeployed_at_shanghai": "2026-10-20T12:45:00+08:00",
+  "frontend_final_deploy_at_shanghai": "2026-10-20T22:08:00+08:00",
+  "deployed_at_utc": "2026-10-20T04:33:00Z",
+  "feature": "T45 opt-in end-to-end encrypted cloud memory mirror",
+  "api": {
+    "binary_sha256": "4a742806f4da4041ab9aa29065f4ab31430c64ae6a541c8402eae2efe5be70c0",
+    "previous_binary_backup": "/var/backups/flowriver/flowriver-api-before-cloud-20261020T043346Z",
+    "rate_limit_backup": "/var/backups/flowriver/flowriver-api-before-cloud-rate-20261020T044535Z",
+    "service": "flowriver-api",
+    "service_active": true,
+    "health_live": 200,
+    "health_ready": 200
+  },
+  "database": {
+    "engine": "PostgreSQL 16.15",
+    "migration": "0012_user_memory_mirrors",
+    "table": "public.user_memory_mirrors",
+    "backup": "/var/backups/flowriver/db-before-cloud-20261020T043346Z.sql.gz",
+    "backup_sha256": "f50faec66ab6ed306a6b3834c17e01b8f624b81fc005629d5210194d0cb42088"
+  },
+  "frontend": {
+    "artifact": "river-console-webexport-20261020.tar.gz",
+    "artifact_sha256": "2c9c6dfc1d93e340c7fbc86e1e17498216ceffcbd3f6be5ecda1e026a928d825",
+    "backup": "/var/backups/flowriver/user-console-before-cloud-20261020T043611Z",
+    "final_backup": "/var/backups/flowriver/user-console-before-webexport-20261020T140758Z",
+    "index_sha256": "f5047ff658884f214f4b392d747d6e4ab183846ad2abe889daef255b32ae198d",
+    "app_sha256": "806cab913c181301d9951f2561152b8ebeb0750398487b1b69993c5fab699c9b",
+    "cloud_core_sha256": "02b6f9eff775e6e5697c59e8a5608eba2e908d1691a81804d83bdc41ba030fe6"
+  },
+  "privacy": {
+    "page": "https://flowriver.xyz/privacy.html",
+    "backup": "/var/backups/flowriver/site-privacy-before-cloud-20261020T043739Z.html",
+    "site_index_backup": "/var/backups/flowriver/site-index-before-cloud-20261020T043850Z.html",
+    "terms_backup": "/var/backups/flowriver/site-terms-before-cloud-20261020T051422Z.html"
+  },
+  "caddy": {
+    "config_path": "/etc/caddy/Caddyfile",
+    "sha256": "289ef804cc35deba2070a65cefc36710bfa7f2c94b1eab3b6b4bef7eef839e57",
+    "changed": false
+  },
+  "api_contract": {
+    "meta": "GET /v1/me/memory-mirror/meta",
+    "download": "GET /v1/me/memory-mirror",
+    "upload": "PUT /v1/me/memory-mirror",
+    "delete": "DELETE /v1/me/memory-mirror",
+    "create_precondition": "If-None-Match: *",
+    "replace_precondition": "If-Match: \"<revision>\"",
+    "anonymous_status": 401,
+    "ciphertext_limit_bytes": 16777216,
+    "client_ciphertext_limit_bytes": 8388608,
+    "summary_whitelist": ["entries", "days", "places", "collections", "understandings", "first", "last"]
+  },
+  "crypto": {
+    "kdf": "PBKDF2-SHA-256",
+    "iterations": 600000,
+    "salt_bytes": 16,
+    "cipher": "AES-GCM-256",
+    "iv_bytes": 12,
+    "additional_data": "river.cloud-mirror:v1"
+  },
+  "evidence": {
+    "node_tests": 35,
+    "go_tests": "all packages pass",
+    "browser_two_device": true,
+    "wrong_passphrase_rejected": true,
+    "plaintext_in_upload_body": false,
+    "production_csp_mock_upload": true,
+    "mobile_widths": [390, 320]
+  },
+  "not_tested": [
+    "real signed-in account against production API",
+    "native app export/restore integration",
+    "Safari/WebKit",
+    "VoiceOver and largest accessibility text",
+    "physical iPhone/Mac",
+    "8 MB client boundary and 16 MB server boundary",
+    "database TOAST and restore drill for ciphertext"
+  ]
+}

@@ -68,3 +68,21 @@ test('passphrase policy and base64 helpers are strict', async () => {
   });
   assert.equal(CLOUD_ITERATIONS, 600000);
 });
+
+test('cloud payload carries mirror v2 contexts', async () => {
+  const withContext = {
+    ...archive,
+    version: 2,
+    contexts: [{
+      deviceID: 'device-a', deviceName: 'Mac', day: '2026-10-20',
+      sections: [{ kind: 'notes', title: '备忘录', summary: '1 条',
+        items: [{ title: '窗边', detail: '去河边走走。' }] }],
+    }],
+  };
+  const envelope = await buildCloudEnvelope(withContext, 'correct horse battery', fast);
+  const decrypted = await decryptCloudEnvelope(envelope, 'correct horse battery');
+  assert.equal(decrypted.version, 2);
+  assert.equal(decrypted.contexts.length, 1);
+  assert.equal(decrypted.contexts[0].deviceName, 'Mac');
+  assert.equal(decrypted.contexts[0].sections[0].items[0].title, '窗边');
+});

@@ -1,0 +1,80 @@
+{
+  "source" : "\/Users\/fa1lingdown\/Desktop\/河流日记项目\/ios\/RiverDiary\/RiverDiary\/Infrastructure\/Ingestion\/RecordScreenTimeIntent.swift",
+  "tables" : {
+    "AppShortcuts" : [
+      {
+        "appShortcutMetadata" : [
+          {
+            "actionIdentifier" : "LogAppActivityIntent",
+            "index" : 0,
+            "parameterDisplayRepresentations" : {
+              "RiverAppActivityTransition" : [
+                "打开",
+                "离开"
+              ]
+            },
+            "parameterTypes" : {
+              "transition" : "RiverAppActivityTransition"
+            },
+            "title" : "记录应用活动"
+          }
+        ],
+        "key" : "记录应用活动到 ${applicationName}",
+        "location" : {
+          "startingColumn" : 0,
+          "startingLine" : 78
+        },
+        "values" : [
+          "记录应用活动到 ${applicationName}"
+        ]
+      },
+      {
+        "appShortcutMetadata" : [
+          {
+            "actionIdentifier" : "RecordScreenTimeIntent",
+            "index" : 1,
+            "parameterDisplayRepresentations" : {
+
+            },
+            "parameterTypes" : {
+
+            },
+            "title" : "记录屏幕使用时间"
+          }
+        ],
+        "key" : "记录屏幕使用时间到 ${applicationName}",
+        "location" : {
+          "startingColumn" : 0,
+          "startingLine" : 78
+        },
+        "values" : [
+          "记录屏幕使用时间到 ${applicationName}"
+        ]
+      },
+      {
+        "appShortcutMetadata" : [
+          {
+            "actionIdentifier" : "RecordVoiceMemoIntent",
+            "index" : 2,
+            "parameterDisplayRepresentations" : {
+
+            },
+            "parameterTypes" : {
+
+            },
+            "title" : "记录语音速记"
+          }
+        ],
+        "key" : "记录语音速记到 ${applicationName}",
+        "location" : {
+          "startingColumn" : 0,
+          "startingLine" : 78
+        },
+        "values" : [
+          "记录语音速记到 ${applicationName}"
+        ]
+      }
+    ]
+  },
+  "version" : 2
+}

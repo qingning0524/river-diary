@@ -1,0 +1,496 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RiverActivityDetailView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "活动详情",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 97
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录可能来自另一个日期或已被更新。你可以返回 Timeline 重新打开。",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 88
+        }
+      },
+      {
+        "comment": "",
+        "key": "正在打开记录…",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "找不到这条记录",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "重新读取",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 77
+        }
+      },
+      {
+        "comment": "",
+        "key": "时间",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 115
+        }
+      },
+      {
+        "comment": "",
+        "key": "应用",
+        "location": {
+          "startingColumn": 68,
+          "startingLine": 116
+        }
+      },
+      {
+        "comment": "",
+        "key": "窗口标题",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "观察到的记录",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 109
+        }
+      },
+      {
+        "comment": "",
+        "key": "事实",
+        "location": {
+          "startingColumn": 84,
+          "startingLine": 111
+        }
+      },
+      {
+        "comment": "",
+        "key": "来源记录",
+        "location": {
+          "startingColumn": 95,
+          "startingLine": 111
+        }
+      },
+      {
+        "comment": "",
+        "key": "活动时间范围",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 137
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ – %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 138
+        }
+      },
+      {
+        "comment": "",
+        "key": "同时段内，另一台设备也有重叠活动记录：",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 146
+        }
+      },
+      {
+        "comment": "",
+        "key": "包含 %lld 条应用事件依据。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 156
+        }
+      },
+      {
+        "comment": "",
+        "key": "开始与结束时间均有应用事件依据。",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 141
+        }
+      },
+      {
+        "comment": "",
+        "key": "结束时间没有直接记录，当前显示的是暂定时间范围。",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 142
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@ · %@–%@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 150
+        }
+      },
+      {
+        "comment": "",
+        "key": "这是一条暂定理解，依据可在下方展开；如有相关待确认项，可在待确认页面纠正。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 173
+        }
+      },
+      {
+        "comment": "",
+        "key": "在足迹中查看",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 192
+        }
+      },
+      {
+        "comment": "",
+        "key": "来源与状态",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 206
+        }
+      },
+      {
+        "comment": "",
+        "key": "来源",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 207
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录状态",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 208
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看全部 %lld 条来源记录",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 210
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看技术依据",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 226
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 214
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 216
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录类型：%@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 228
+        }
+      },
+      {
+        "comment": "",
+        "key": "事件编号：%@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 229
+        }
+      },
+      {
+        "comment": "",
+        "key": "设备：%@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 230
+        }
+      },
+      {
+        "comment": "",
+        "key": "设备序号：%llu",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 231
+        }
+      },
+      {
+        "comment": "",
+        "key": "步数 %@",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 255
+        }
+      },
+      {
+        "comment": "",
+        "key": "活动能量 %lld 千卡",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 257
+        }
+      },
+      {
+        "comment": "",
+        "key": "屏幕活动 %lld 分钟",
+        "location": {
+          "startingColumn": 60,
+          "startingLine": 258
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点故事",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 357
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点可能已合并或被更新。返回足迹查看当前地点。",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 349
+        }
+      },
+      {
+        "comment": "",
+        "key": "找不到这个地点",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 348
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点故事",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 322
+        }
+      },
+      {
+        "comment": "",
+        "key": "到访次数",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 323
+        }
+      },
+      {
+        "comment": "",
+        "key": "首次记录",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 324
+        }
+      },
+      {
+        "comment": "",
+        "key": "最近记录",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 325
+        }
+      },
+      {
+        "comment": "",
+        "key": "累计停留",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 326
+        }
+      },
+      {
+        "comment": "",
+        "key": "这个地点名称来自你的确认。",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 327
+        }
+      },
+      {
+        "comment": "",
+        "key": "地图名称是候选理解，可以按你的实际称呼修改。",
+        "location": {
+          "startingColumn": 102,
+          "startingLine": 327
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点名称与类型",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 334
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点名称",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 335
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点名称",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 337
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点类型，例如学校或图书馆",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 338
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点类型",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 340
+        }
+      },
+      {
+        "comment": "",
+        "key": "保存地点更正",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 341
+        }
+      },
+      {
+        "comment": "",
+        "key": "回答依据",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 521
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 的候选理解：%@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 423
+        }
+      },
+      {
+        "comment": "",
+        "key": "为什么会问你",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 431
+        }
+      },
+      {
+        "comment": "",
+        "key": "这条问题引用了 %lld 条来源中的一条。",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 433
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 435
+        }
+      },
+      {
+        "comment": "",
+        "key": "当前设备没有这条问题引用的活动详情。问题内容与回答仍保存在共享记录中。",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 448
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看对应时间线",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 438
+        }
+      },
+      {
+        "comment": "",
+        "key": "在足迹中查看地点",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 445
+        }
+      },
+      {
+        "comment": "",
+        "key": "应用记录：%@",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 463
+        }
+      },
+      {
+        "comment": "",
+        "key": "问题依据",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 473
+        }
+      },
+      {
+        "comment": "",
+        "key": "原始记录",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 498
+        }
+      }
+    ]
+  },
+  "version": 1
+}

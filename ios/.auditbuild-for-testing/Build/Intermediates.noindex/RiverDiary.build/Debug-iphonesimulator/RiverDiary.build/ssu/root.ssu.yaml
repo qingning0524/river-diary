@@ -1,0 +1,49 @@
+apiVersion: ssu/v1
+nlu:
+  shortcuts:
+    bundleIdentifier: local.riverdiary.app
+    intents:
+    - metadata:
+        name: LogAppActivityIntent_0
+        title: 记录应用活动
+      corpuses:
+        training:
+        - locale: zh-Hans
+          utterances:
+          - 记录应用活动到 ${+applicationName}
+    - metadata:
+        name: RecordScreenTimeIntent_1
+        title: 记录屏幕使用时间
+      corpuses:
+        training:
+        - locale: zh-Hans
+          utterances:
+          - 记录屏幕使用时间到 ${+applicationName}
+    - metadata:
+        name: RecordVoiceMemoIntent_2
+        title: 记录语音速记
+      corpuses:
+        training:
+        - locale: zh-Hans
+          utterances:
+          - 记录语音速记到 ${+applicationName}
+    - metadata:
+        name: +negative
+      corpuses:
+        training:
+        - locale: zh-Hans
+          utterances: []
+variables:
+- name: +applicationName
+  type: ssu/expansion
+  definitions:
+  - locale: zh-Hans
+    synomyms:
+    - RiverDiary
+- name: RiverAppActivityTransition
+  type: ssu/parameter
+  definitions:
+  - locale: zh-Hans
+    synomyms:
+    - 打开
+    - 离开

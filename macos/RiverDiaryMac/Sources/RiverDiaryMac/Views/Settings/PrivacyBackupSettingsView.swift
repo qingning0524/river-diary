@@ -380,15 +380,19 @@ struct PrivacyBackupSettingsView: View {
                     }
                 }
 
+                RiverPanelRow(title: "网页控制台副本", detail: "导出 river.memory-mirror 只读 JSON；在 user.flowriver.xyz 导入后只读查看。包含当前设备可读的日记与双端“设备上下文”，不含密钥、健康原库或完整浏览器 URL。") {
+                    Button { exportReadableJSON(filenamePrefix: "RiverDiary-Web") } label: {
+                        Label("导出 JSON", systemImage: "doc.text")
+                    }
+                    .buttonStyle(.plain)
+                    .smallAction()
+                    .accessibilityIdentifier("settings.webExport")
+                }
+
                 RiverPanelRow(title: "恢复备份", detail: "备份不含密钥；从仍有密钥的设备复制转移码，在此设备导入后恢复") {
                     HStack(spacing: AppSpacing.sm) {
                         Button { importBackup() } label: {
                             Label("恢复", systemImage: "square.and.arrow.down")
-                        }
-                        .buttonStyle(.plain)
-                        .smallAction()
-                        Button { exportData() } label: {
-                            Label("可读 JSON", systemImage: "doc.text")
                         }
                         .buttonStyle(.plain)
                         .smallAction()
@@ -542,17 +546,17 @@ struct PrivacyBackupSettingsView: View {
         return ready >= 8 ? "状态良好" : ready >= 5 ? "基本可用" : "需要设置"
     }
 
-    private func exportData() {
+    private func exportReadableJSON(filenamePrefix: String = "RiverDiary") {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = "RiverDiary-\(DiaryEntry.dateFormatter.string(from: Date())).json"
+        panel.nameFieldStringValue = "\(filenamePrefix)-\(DiaryEntry.dateFormatter.string(from: Date())).json"
         panel.canCreateDirectories = true
 
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
-            try store.exportCurrentData(to: url)
-            report("已导出到 \(url.lastPathComponent)", kind: .success)
+            try store.webMirrorData(contexts: ingestion.dayContextSnapshotsForWeb()).write(to: url, options: .atomic)
+            report("已导出网页副本：\(url.lastPathComponent)", kind: .success)
         } catch {
             report("导出失败：\(UserFacingError.message(for: error))", kind: .error)
         }

@@ -57,6 +57,8 @@ public struct RiverEventPayload: Codable, Hashable, Sendable {
     public var windowTitle: String?
     public var url: String?
     public var text: String?
+    /// 笔记/页面标题；与正文分开。
+    public var title: String?
     public var latitude: Double?
     public var longitude: Double?
     public var horizontalAccuracy: Double?
@@ -79,10 +81,18 @@ public struct RiverEventPayload: Codable, Hashable, Sendable {
     public var mealCaloriesLowerBound: Int?
     public var mealCaloriesUpperBound: Int?
     public var mealEstimateNote: String?
+    /// 日历/提醒事项的容器名称（日历名或提醒列表名），不包含备注。
+    public var calendarName: String?
+    public var isAllDay: Bool?
+    public var attendeeCount: Int?
+    /// 本地 Git 仓库当天的提交数；不保存 commit message。
+    public var commitCount: Int?
+    /// `DayContextSnapshot` 的 JSON；用于跨端/网页展示设备日上下文。
+    public var contextJSON: String?
     public var metrics: RiverEventMetrics?
 
     public init(appName: String? = nil, bundleID: String? = nil, windowTitle: String? = nil,
-                url: String? = nil, text: String? = nil, latitude: Double? = nil,
+                url: String? = nil, text: String? = nil, title: String? = nil, latitude: Double? = nil,
                 longitude: Double? = nil, horizontalAccuracy: Double? = nil, sessionEnd: Date? = nil,
                 locationName: String? = nil, mapAddress: String? = nil,
                 poiCategory: String? = nil, mapProvider: String? = nil,
@@ -93,12 +103,16 @@ public struct RiverEventPayload: Codable, Hashable, Sendable {
                 mediaAnalysisFingerprint: String? = nil,
                 photoCount: Int? = nil, mealCaloriesLowerBound: Int? = nil,
                 mealCaloriesUpperBound: Int? = nil, mealEstimateNote: String? = nil,
+                calendarName: String? = nil, isAllDay: Bool? = nil, attendeeCount: Int? = nil,
+                commitCount: Int? = nil,
+                contextJSON: String? = nil,
                 metrics: RiverEventMetrics? = nil) {
         self.appName = appName
         self.bundleID = bundleID
         self.windowTitle = windowTitle
         self.url = url
         self.text = text
+        self.title = title
         self.latitude = latitude
         self.longitude = longitude
         self.horizontalAccuracy = horizontalAccuracy
@@ -121,6 +135,11 @@ public struct RiverEventPayload: Codable, Hashable, Sendable {
         self.mealCaloriesLowerBound = mealCaloriesLowerBound
         self.mealCaloriesUpperBound = mealCaloriesUpperBound
         self.mealEstimateNote = mealEstimateNote
+        self.calendarName = calendarName
+        self.isAllDay = isAllDay
+        self.attendeeCount = attendeeCount
+        self.commitCount = commitCount
+        self.contextJSON = contextJSON
         self.metrics = metrics
     }
 }
@@ -177,10 +196,14 @@ public struct RiverEventMetrics: Codable, Hashable, Sendable {
     public var remSleepMinutes: Int?
     public var awakeMinutes: Int?
     public var screenMinutes: Int?
+    public var durationMinutes: Int?
+    /// Apple 健康的 State of Mind 效价，-1…1；只有 iOS 18+ 设备会产生。
+    public var valence: Double?
 
     public init(steps: Int? = nil, distanceKm: Double? = nil, activeEnergyKcal: Double? = nil,
                 sleepHours: Double? = nil, coreSleepMinutes: Int? = nil, deepSleepMinutes: Int? = nil,
-                remSleepMinutes: Int? = nil, awakeMinutes: Int? = nil, screenMinutes: Int? = nil) {
+                remSleepMinutes: Int? = nil, awakeMinutes: Int? = nil, screenMinutes: Int? = nil,
+                durationMinutes: Int? = nil, valence: Double? = nil) {
         self.steps = steps
         self.distanceKm = distanceKm
         self.activeEnergyKcal = activeEnergyKcal
@@ -190,6 +213,8 @@ public struct RiverEventMetrics: Codable, Hashable, Sendable {
         self.remSleepMinutes = remSleepMinutes
         self.awakeMinutes = awakeMinutes
         self.screenMinutes = screenMinutes
+        self.durationMinutes = durationMinutes
+        self.valence = valence
     }
 }
 

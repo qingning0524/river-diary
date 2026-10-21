@@ -60,6 +60,10 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSLocationUsageDescription</key><string>河流日记只在你主动连接地点来源后读取位置，用于生成可纠正的个人足迹。</string>
+  <key>NSCalendarsUsageDescription</key><string>在你打开日历采集后，只读今天的日程标题、时间和参与人数，用于对照计划与实际。</string>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>在你打开日历采集后，只读今天的日程标题、时间和参与人数，用于对照计划与实际。</string>
+  <key>NSRemindersUsageDescription</key><string>在你打开日历采集后，只读今天完成的提醒事项，用于对照计划与实际。</string>
+  <key>NSRemindersFullAccessUsageDescription</key><string>在你打开日历采集后，只读今天完成的提醒事项，用于对照计划与实际。</string>
   <key>NSLocalNetworkUsageDescription</key><string>启用附近设备快速复制后，River Diary 会通过本地网络交换已加密的同步对象。</string>
   <key>NSBonjourServices</key>
   <array><string>_riverdiary-sync._tcp</string></array>

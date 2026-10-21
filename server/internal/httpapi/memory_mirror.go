@@ -96,6 +96,34 @@ func mirrorPrecondition(r *http.Request, requireMatch bool) (ifNone bool, expect
 	return none == "*", expected, nil
 }
 
+func (a *API) mirrorRateLimit(ctx context.Context, userID, action string, limit int, period time.Duration) error {
+	tx, err := a.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	count, err := a.hitRateLimit(ctx, tx, "memory-mirror-"+action+":"+userID, limit, period)
+	if err != nil {
+		return err
+	}
+	if count > limit {
+		if err = tx.Commit(ctx); err != nil {
+			return err
+		}
+		return apiError{Status: 429, Code: "rate_limited"}
+	}
+	return tx.Commit(ctx)
+}
+
+func (a *API) mirrorRateFailure(w http.ResponseWriter, r *http.Request, err error, operation string) {
+	var problem apiError
+	if errors.As(err, &problem) {
+		writeError(w, r, problem)
+		return
+	}
+	a.databaseFailure(w, r, operation)
+}
+
 func decodeMirrorBytes(value string, size int) ([]byte, error) {
 	decoded, err := base64.StdEncoding.DecodeString(value)
 	if err != nil || len(decoded) != size {
@@ -193,6 +221,10 @@ func (a *API) memoryMirrorMeta(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
+	if err = a.mirrorRateLimit(ctx, p.UserID, "meta", 240, time.Hour); err != nil {
+		a.mirrorRateFailure(w, r, err, "memory_mirror_meta_rate")
+		return
+	}
 	meta, err := a.readMemoryMirrorMeta(ctx, a.db, p.UserID, false)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeJSON(w, http.StatusOK, memoryMirrorMeta{Exists: false})
@@ -209,6 +241,10 @@ func (a *API) memoryMirrorDownload(w http.ResponseWriter, r *http.Request) {
 	ctx, p, err := a.authenticate(r)
 	if err != nil {
 		writeError(w, r, err)
+		return
+	}
+	if err = a.mirrorRateLimit(ctx, p.UserID, "download", 120, time.Hour); err != nil {
+		a.mirrorRateFailure(w, r, err, "memory_mirror_download_rate")
 		return
 	}
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
@@ -244,6 +280,10 @@ func (a *API) memoryMirrorUpload(w http.ResponseWriter, r *http.Request) {
 	ctx, p, err := a.authenticate(r)
 	if err != nil {
 		writeError(w, r, err)
+		return
+	}
+	if err = a.mirrorRateLimit(ctx, p.UserID, "upload", 20, time.Hour); err != nil {
+		a.mirrorRateFailure(w, r, err, "memory_mirror_upload_rate")
 		return
 	}
 	ifNone, expected, err := mirrorPrecondition(r, false)
@@ -343,6 +383,10 @@ func (a *API) memoryMirrorDelete(w http.ResponseWriter, r *http.Request) {
 	ctx, p, err := a.authenticate(r)
 	if err != nil {
 		writeError(w, r, err)
+		return
+	}
+	if err = a.mirrorRateLimit(ctx, p.UserID, "delete", 30, time.Hour); err != nil {
+		a.mirrorRateFailure(w, r, err, "memory_mirror_delete_rate")
 		return
 	}
 	_, expected, err := mirrorPrecondition(r, true)

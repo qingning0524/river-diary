@@ -1,6 +1,6 @@
 # 用户记忆控制台 · MemoryOS Console
 
-状态：**前端重写完成并已静态部署，原生导出与真实账号/副本联调待验（T44）**。本文记录当前实现与边界，不是发布验收。产品取舍与任务状态以 [主规划](../../主规划.md) 为准，视觉规则以 [DESIGN](../../DESIGN.md) §8 为准。
+状态：**前端重写完成并已静态部署；云空间 Web 端与服务端完成；原生导出与真实账号/副本联调待验（T44/T45）**。本文记录当前实现与边界，不是发布验收。产品取舍与任务状态以 [主规划](../../主规划.md) 为准，视觉规则以 [DESIGN](../../DESIGN.md) §8 为准。
 
 ## 1. 定位
 
@@ -8,8 +8,8 @@
 
 它不是第二个编辑器，也不是第二个日记事实库：
 
-- 账号服务继续只处理身份、设备、会话、权益、反馈与安全活动。
-- 记忆正文、地点、标签、健康与 AI 对话不从网页上传。
+- 账号服务默认只处理身份、设备、会话、权益、反馈与安全活动；用户显式开启云空间后，另存端到端加密密文。
+- 记忆正文、地点、标签、健康与 AI 对话默认不从网页上传；只有云空间会提交不可读密文。
 - 控制台不写回原生数据库；修改、补写与同步仍在 Mac / iPhone。
 - “问 River”在本轮是本机检索，不调用模型，不伪造生成式回答。
 
@@ -23,7 +23,7 @@
 | 地点 | 在同一个地方遇见几次自己 | 地点名、首末日期、地点记忆 |
 | 理解 | 核对 River 的暂定解释 | 理解卡、依据、范围、确认/纠正/撤销 |
 | 问 River | 用自然语言找回原话 | 本机检索结果、引用、范围 |
-| 账号与设置 | 管理身份与服务 | 概览、设备、会话、权益、密码、安全活动、反馈、偏好 |
+| 账号与设置 | 管理身份与服务 | 概览、设备、会话、权益、密码、安全活动、反馈、偏好、云空间 |
 
 桌面是浮动顶栏 + 左侧空间栏 + 阅读区；移动端固定底栏五个入口，合集与地点从首页/长河进入。七空间没有“故事/成长/实验/分享”等新顶级社交入口。
 
@@ -31,7 +31,7 @@
 
 ```text
 Mac / iPhone
-  └─ T12 导出（待接入原生入口）
+  └─ T12 网页副本导出（Mac/iPhone 均已构建；镜像 entries 来自 DiaryData + 双端 DayContext）
        └─ river.memory-mirror v1 或旧 entries 快照（JSON）
             └─ <input type=file> / 拖放
                  └─ File.text() → JSON.parse → normalizeArchive()
@@ -43,20 +43,37 @@ Mac / iPhone
   └─ fr_session Cookie（Domain=.flowriver.xyz）
        └─ AccountClient.ensureSession()
             └─ /v1/me、/v1/me/devices、/v1/me/sessions、/v1/me/entitlements…
+
+云空间（唯一显式跨链路分支，默认关闭）
+  └─ 用户口令 + PBKDF2/AES-GCM（cloud-core.js，本机）
+       └─ PUT /v1/me/memory-mirror（只发密文/公开参数）
+            └─ 另一设备 GET → 本机 decrypt → normalizeArchive → applyArchive
 ```
 
-两条链路不交叉。记忆链路没有任何 `fetch`；账号链路在 `assets/account-core.js` 内集中处理。
+默认不交叉：本机记忆链路没有 `fetch`；账号链路集中在 `assets/account-core.js`；云空间只在用户明确设置口令并勾选同意后，通过 `cloud-core.js` 产生密文，再由账号客户端发送。
 
 ## 4. 记忆副本契约
 
-### 4.1 `river.memory-mirror` v1
+### 4.1 `river.memory-mirror` v2
 
 ```json
 {
   "format": "river.memory-mirror",
-  "version": 1,
+  "version": 2,
   "exported_at": "2026-10-20T02:00:00+08:00",
   "persona": { "name": "林岸", "line": "一句可选的自述" },
+  "contexts": [
+    {
+      "deviceID": "mac-…",
+      "deviceName": "Mac",
+      "day": "2026-10-20",
+      "generatedAt": "2026-10-20T22:30:00Z",
+      "sections": [
+        { "kind": "notes", "title": "备忘录", "summary": "2 条",
+          "items": [{ "title": "窗边", "detail": "去河边走走。" }] }
+      ]
+    }
+  ],
   "entries": [
     {
       "id": "d01",
@@ -101,11 +118,29 @@ Mac / iPhone
 
 - `entries[].id` 使用 `[A-Za-z0-9_-]`；`collections[].entryIds`、`understandings[].evidenceIds` 必须引用这些 ID。控制台会保留安全显式 ID；没有安全 ID 时按日期/标题/正文生成稳定哈希。
 - `date` 或 `occurred_at` 必填；没有可识别日期的条目会被跳过，并在导入报告里说明数量。
-- `kind` 可放宽；未知值按 `journal` 读取。当前展示类型为 `journal / auto / note / photo / place / milestone`。
+- `kind` 可放宽；未知值按 `journal` 读取。当前展示类型为 `journal / auto / note / photo / place / milestone / context`。
+- v2 顶层 `contexts` 由原生 App 追加，网页会映射成 `kind=context` 的只读卡片；v1 的 entries 仍兼容。
+- `context` 是原生 App 导出的设备日上下文（Mac/iPhone 的浏览、笔记、日历、健康等摘要）；只读、可搜索、可筛选，不代表逐条原始证据。
 - `body` 是阅读正文；`facts` 是“当天还留下”的可选列表。不要把 AI 摘要写成用户原话。
 - 建议原生导出只包含用户主动选择的范围，并在文件内写明导出时间与范围；控制台不假设这是完整历史。
 
-### 4.2 旧 `data.json` 兼容
+### 4.2 云空间信封
+
+```json
+{
+  "format": "river.cloud-mirror",
+  "version": 1,
+  "kdf": { "name": "PBKDF2-SHA-256", "iterations": 600000, "salt": "base64-16B" },
+  "cipher": { "name": "AES-GCM-256", "iv": "base64-12B" },
+  "ciphertext": "base64(AES-GCM(plaintext, AAD=river.cloud-mirror:v1))",
+  "client_updated_at": "2026-10-20T13:00:00+08:00",
+  "summary": { "entries": 49, "days": 49, "places": 16, "collections": 8, "understandings": 4, "first": "2021-03-01", "last": "2026-10-20" }
+}
+```
+
+明文是 `river.memory-mirror` v2 的 persona/entries/contexts/collections/understandings；服务端白名单摘要仍只统计 entries/合集/理解卡，不额外暴露设备上下文元数据。服务端只存信封与白名单摘要；不存口令，不能解密。加密 payload 的 `contexts` 会随 entries 一起加解密，服务端摘要不统计它。`If-None-Match: *` 创建、`If-Match` 替换；客户端上限 8 MB，服务端上限 16 MB，请求上限 24 MB。详见 [云空间验收](../validation/USER_MEMORY_CLOUD_2026-10-20.md)。
+
+### 4.3 旧 `data.json` 兼容
 
 导入器也接受 `{ entries: [...] }` 的旧快照，并映射：
 
@@ -158,7 +193,7 @@ Mac / iPhone
 - 刷新与写操作带 `Idempotency-Key`；刷新请求键持久化在会话 cookie 中。
 - 401 最终失败清除 cookie；账号切换刷新页面。
 - 密码、令牌不写入页面正文、`localStorage` 或日志。
-- 账号接口：`/v1/me`、`/v1/me/entitlements`、`/v1/me/devices`、`/v1/me/sessions`、`/v1/me/password`、`/v1/me/activity`、`/v1/me/feedback`、`/v1/me/redemptions`、`/v1/me/reauth/*`、`/v1/me/deletion`、`/v1/me/activation-codes/redeem`、`/v1/auth/*`。
+- 账号接口：`/v1/me`、`/v1/me/entitlements`、`/v1/me/devices`、`/v1/me/sessions`、`/v1/me/password`、`/v1/me/activity`、`/v1/me/feedback`、`/v1/me/redemptions`、`/v1/me/memory-mirror*`、`/v1/me/reauth/*`、`/v1/me/deletion`、`/v1/me/activation-codes/redeem`、`/v1/auth/*`。
 
 失败处理：
 
@@ -180,17 +215,17 @@ Mac / iPhone
 
 本轮验证见 [控制台验收](../validation/USER_MEMORY_CONSOLE_2026-10-20.md)：
 
-- 32 项 Node 测试通过（记忆核心 16、账号传输 8、结构/隐私 8）。
-- Chromium 桌面/移动七空间检查、导入/搜索/回答/收藏/理解卡/账号七栏目与 mock API 流程通过。
-- 已部署静态前端到 `https://user.flowriver.xyz/`，现有 Caddy CSP/缓存头与预览页通过检查；未接真实账号、未接真实原生副本、未做真机 VoiceOver/Safari/WebKit。
+- 38 项 Node 测试通过（记忆核心 18、账号传输 8、结构/隐私 8、云空间加密 4）。
+- Chromium 桌面/移动七空间检查、导入/搜索/回答/收藏/理解卡/账号八栏目、mock API 与双设备云空间流程通过。
+- 已部署静态前端与云空间服务端到 `https://user.flowriver.xyz/`；现有 Caddy CSP/缓存头、匿名 401、生产预览与 mock 云空间上传通过；未接真实账号、未接真实原生副本、未做真机 VoiceOver/Safari/WebKit。
 
 仍待：
 
-1. 原生 App 导出入口、字段契约冻结与真实副本联调（T12/T44）。
+1. 原生网页副本导出已加入 Mac/iOS 源码（Mac app 构建通过；iOS 全部 Swift 源码通过 SwiftPM 编译，完整 Xcode bundle 受 SwiftPM 清单缓存权限阻塞），仍需真实旧数据导入、完整 V2 字段与分发验证（T12/T44）；云空间原生恢复接入（T45）。
 2. 真实账号/生产接口联调；确认 401、刷新键、密码、注销与 fail-closed 行为（T20/T44）。
 3. 真实登录后的生产账号旅程与静态资源缓存失效策略；现有 CSP、Referrer-Policy、缓存头已验证，禁止把副本放进站点目录。
 4. 真实设备、最佳辅助字号、VoiceOver、Safari/WebKit 与三外观视觉验收。
-5. 大副本加密/大小边界/会话存储降级；多 profile 隔离。
+5. 云空间 8/16 MB 边界、并发冲突、TOAST/备份恢复与口令丢失路径；大副本会话存储降级；多 profile 隔离。
 6. 可选：把本轮 Playwright 手工流程固化为仓库内可重复的 UI 测试，并接入发布前置。
 
 ## 10. 相关文件
@@ -198,6 +233,8 @@ Mac / iPhone
 - 页面：`website/user/index.html`
 - 样式：`website/user/assets/style.css`
 - 控制器：`website/user/assets/app.js`
+- 云空间加密：`website/user/assets/cloud-core.js`
+- 云空间服务端：`server/internal/httpapi/memory_mirror.go`
 - 记忆核心：`website/user/assets/memory-core.js`
 - 账号传输：`website/user/assets/account-core.js`
 - 示例记忆：`website/user/assets/demo-data.js`

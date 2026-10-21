@@ -1,0 +1,37 @@
+{
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Notifications/RiverReminderStore.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverReminderStore.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverReminderStore.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverReminderStore.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverReminderStore.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverReminderStore.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Preferences/RiverThemeStore.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverThemeStore.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverThemeStore.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverThemeStore.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverThemeStore.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverThemeStore.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/QA/RiverModernQAFixtures.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverModernQAFixtures.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverModernQAFixtures.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverModernQAFixtures.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverModernQAFixtures.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverModernQAFixtures.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Sync/ICloudDriveStore.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ICloudDriveStore.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ICloudDriveStore.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ICloudDriveStore.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ICloudDriveStore.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/ICloudDriveStore.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Sync/RiverNodeStore.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverNodeStore.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverNodeStore.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverNodeStore.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverNodeStore.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiary.build/Objects-normal/arm64/RiverNodeStore.swiftdeps"
+  }
+}

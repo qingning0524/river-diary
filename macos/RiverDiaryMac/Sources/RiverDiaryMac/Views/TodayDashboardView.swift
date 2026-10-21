@@ -1,3 +1,4 @@
+import RiverDiaryCore
 import SwiftUI
 
 /// Phase 1 home: orient first, then open the evidence behind the day.
@@ -39,6 +40,8 @@ struct TodayDashboardView: View {
     @State private var correctionItemID = ""
     @State private var correctionDraft = ""
     @State private var correctionSaved = false
+    @State private var contextDetail: DayContextSnapshot?
+    @State private var contextRevision = 0
 
     private var entry: DiaryEntry { store.entry(for: selectedDate) }
     private var isSelectedDateToday: Bool { Calendar.current.isDateInToday(selectedDate) }
@@ -245,6 +248,7 @@ struct TodayDashboardView: View {
             if showsEmbeddedReviewQueue && habitReviewPendingCount > 0 { habitReviewEntry }
             modernBrief(s)
             modernMetrics(s)
+            deviceContextPanel
             modernMoments(s)
             DisclosureGroup("更多当天信息", isExpanded: $showsDayDetails) {
                 VStack(spacing: AppSpacing.panelGap) {
@@ -277,8 +281,58 @@ struct TodayDashboardView: View {
             isBriefExpanded = false
             correctionSaved = false
         }
+        .onReceive(NotificationCenter.default.publisher(for: .riverLocalCanonicalStateDidChange)) { _ in
+            contextRevision &+= 1
+        }
         .sheet(isPresented: $showsCorrectionSheet) {
             correctionSheet(s)
+        }
+        .sheet(item: $contextDetail) { snapshot in
+            DeviceContextDetailMacView(snapshot: snapshot)
+        }
+    }
+
+    private var deviceContextPanel: some View {
+        let _ = contextRevision
+        let contexts = ingestion.dayContextSnapshots(for: selectedDate)
+        return Group {
+            if !contexts.isEmpty {
+                RiverPanel(title: "其他设备的一天", systemImage: "iphone", accent: AppTheme.accent) {
+                    VStack(alignment: .leading, spacing: density.spacing(AppSpacing.sm)) {
+                        ForEach(contexts) { context in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(context.deviceName)
+                                    .font(AppTypography.secondary().weight(.medium))
+                                    .foregroundStyle(Color.ink)
+                                ForEach(context.sections) { section in
+                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                        Text(section.title)
+                                            .font(AppTypography.metadata())
+                                            .foregroundStyle(Color.secondaryInk)
+                                            .frame(width: 64, alignment: .leading)
+                                        Text(section.summary)
+                                            .font(AppTypography.metadata())
+                                            .foregroundStyle(Color.ink)
+                                            .lineLimit(2)
+                                    }
+                                    ForEach(Array(section.items.prefix(2).enumerated()), id: \.offset) { _, item in
+                                        Text([item.title, item.detail].compactMap { $0 }.joined(separator: " · "))
+                                            .font(AppTypography.metadata())
+                                            .foregroundStyle(Color.tertiaryInk)
+                                            .lineLimit(1)
+                                            .padding(.leading, 72)
+                                    }
+                                }
+                                Button("查看全部") { contextDetail = context }
+                                    .buttonStyle(.plain)
+                                    .linkAction()
+                                    .font(AppTypography.metadata())
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1180,5 +1234,71 @@ private struct TodayReviewRow: View {
         .focused(focus, equals: focusID)
         .onHover { isHovered = $0 }
         .animation(reduceMotion ? nil : .easeOut(duration: AppMotion.quick), value: isHovered)
+    }
+}
+
+private struct DeviceContextDetailMacView: View {
+    @Environment(\.dismiss) private var dismiss
+    let snapshot: DayContextSnapshot
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.md) {
+            header
+            content
+        }
+        .padding(AppSpacing.lg)
+        .frame(minWidth: 520, minHeight: 460)
+    }
+
+    private var header: some View {
+        HStack {
+            Text("\(snapshot.deviceName) 的一天").font(AppTypography.sheetTitle())
+            Spacer()
+            Button("完成") { dismiss() }
+        }
+    }
+
+    private var content: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppSpacing.md) {
+                ForEach(snapshot.sections) { section in
+                    sectionView(section)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func sectionView(_ section: DayContextSection) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(section.title).font(AppTypography.secondary().weight(.medium))
+                Spacer(minLength: 4)
+                Text(section.summary).font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+            }
+            ForEach(Array(section.items.enumerated()), id: \.offset) { _, item in
+                itemView(item)
+            }
+        }
+    }
+
+    private func itemView(_ item: DayContextItem) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(countText(item.count))
+                .font(AppTypography.mono())
+                .foregroundStyle(Color.tertiaryInk)
+                .frame(width: 24, alignment: .trailing)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title).font(AppTypography.metadata()).foregroundStyle(Color.ink)
+                if let detail = item.detail, !detail.isEmpty {
+                    Text(detail).font(AppTypography.metadata()).foregroundStyle(Color.secondaryInk)
+                }
+            }
+        }
+    }
+
+    private func countText(_ count: Int?) -> String {
+        guard let count else { return "·" }
+        return String(count)
     }
 }

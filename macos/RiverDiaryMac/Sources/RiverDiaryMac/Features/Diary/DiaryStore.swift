@@ -1529,6 +1529,19 @@ final class DiaryStore: ObservableObject {
         }
     }
 
+    func webMirrorData(contexts: [DayContextSnapshot] = []) throws -> Data {
+        guard let data, !data.entries.isEmpty else {
+            guard !contexts.isEmpty else {
+                throw NSError(domain: "RiverDiaryMac", code: 2, userInfo: [NSLocalizedDescriptionKey: "没有可导出的日记"])
+            }
+            return try MemoryMirrorArchive.empty().appendingContexts(contexts).encoded()
+        }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let diaryJSON = try encoder.encode(data)
+        return try MemoryMirrorArchive.legacy(fromDiaryJSON: diaryJSON).appendingContexts(contexts).encoded()
+    }
+
     func exportCurrentData(to url: URL) throws {
         guard let data else {
             throw NSError(domain: "RiverDiaryMac", code: 2, userInfo: [NSLocalizedDescriptionKey: "没有可导出的数据"])

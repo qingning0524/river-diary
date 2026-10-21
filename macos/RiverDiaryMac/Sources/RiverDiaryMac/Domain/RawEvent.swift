@@ -10,6 +10,13 @@ enum RawEventSource: String, Codable, Hashable, CaseIterable, Sendable {
     case ingestion
     case manual
     case location
+    case calendar
+    case reminders
+    case weather
+    case git
+    case dayContext
+    case markdown
+    case kindle
 
     var displayName: String {
         switch self {
@@ -20,6 +27,13 @@ enum RawEventSource: String, Codable, Hashable, CaseIterable, Sendable {
         case .ingestion: "数据管道"
         case .manual: "手动记录"
         case .location: "地点服务"
+        case .calendar: "日历"
+        case .reminders: "提醒事项"
+        case .weather: "天气"
+        case .git: "代码提交"
+        case .dayContext: "设备上下文"
+        case .markdown: "Markdown"
+        case .kindle: "Kindle"
         }
     }
 }
@@ -36,6 +50,11 @@ enum RawEventKind: String, Codable, Hashable, CaseIterable, Sendable {
     case quickCapture
     case ingestionSnapshot
     case locationUpdate
+    case calendarEvent
+    case reminderCompleted
+    case weatherDaily
+    case gitCommitDaily
+    case dayContextSnapshot
 
     var displayName: String {
         switch self {
@@ -48,6 +67,11 @@ enum RawEventKind: String, Codable, Hashable, CaseIterable, Sendable {
         case .quickCapture: "快记"
         case .ingestionSnapshot: "采集快照"
         case .locationUpdate: "位置更新"
+        case .calendarEvent: "日程"
+        case .reminderCompleted: "完成提醒"
+        case .weatherDaily: "每日天气"
+        case .gitCommitDaily: "每日提交"
+        case .dayContextSnapshot: "设备日上下文"
         }
     }
 }
@@ -60,6 +84,7 @@ struct RawEventPayload: Codable, Hashable, Sendable {
     var windowTitle: String?
     var url: String?
     var text: String?
+    var title: String?
     var latitude: Double? = nil
     var longitude: Double? = nil
     var horizontalAccuracy: Double? = nil
@@ -69,6 +94,11 @@ struct RawEventPayload: Codable, Hashable, Sendable {
     var poiCategory: String? = nil
     var mapProvider: String? = nil
     var mapResultIdentifier: String? = nil
+    var calendarName: String? = nil
+    var isAllDay: Bool? = nil
+    var attendeeCount: Int? = nil
+    var commitCount: Int? = nil
+    var contextJSON: String? = nil
     var metrics: RawEventMetrics?
 }
 
@@ -82,6 +112,8 @@ struct RawEventMetrics: Codable, Hashable, Sendable {
     var remSleepMinutes: Int?
     var awakeMinutes: Int?
     var screenMinutes: Int?
+    var durationMinutes: Int?
+    var valence: Double?
 }
 
 /// Immutable evidence. Created only by collectors; appended only.

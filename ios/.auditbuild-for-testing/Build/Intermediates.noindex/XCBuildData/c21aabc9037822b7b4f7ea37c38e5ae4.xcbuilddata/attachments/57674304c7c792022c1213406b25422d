@@ -1,0 +1,89 @@
+{
+  "" : {
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryTests-primary.dia",
+    "emit-module-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryTests-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryTests-primary-emit-module.dia",
+    "pch" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryTests-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryTests-primary.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiaryTests/IPhoneDayContextBuilderTests.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/IPhoneDayContextBuilderTests.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/IPhoneDayContextBuilderTests.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/IPhoneDayContextBuilderTests.dia",
+    "index-unit-output-path" : "/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/IPhoneDayContextBuilderTests.o",
+    "llvm-bc" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/IPhoneDayContextBuilderTests.bc",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/IPhoneDayContextBuilderTests.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/IPhoneDayContextBuilderTests.swiftdeps",
+    "swiftmodule" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/IPhoneDayContextBuilderTests~partial.swiftmodule"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiaryTests/RiverDayAnalysisTests.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDayAnalysisTests.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDayAnalysisTests.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDayAnalysisTests.dia",
+    "index-unit-output-path" : "/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDayAnalysisTests.o",
+    "llvm-bc" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDayAnalysisTests.bc",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDayAnalysisTests.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDayAnalysisTests.swiftdeps",
+    "swiftmodule" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDayAnalysisTests~partial.swiftmodule"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiaryTests/RiverDiaryStartupTests.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryStartupTests.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryStartupTests.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryStartupTests.dia",
+    "index-unit-output-path" : "/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryStartupTests.o",
+    "llvm-bc" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryStartupTests.bc",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryStartupTests.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryStartupTests.swiftdeps",
+    "swiftmodule" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverDiaryStartupTests~partial.swiftmodule"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiaryTests/RiverFootprintPresentationTests.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverFootprintPresentationTests.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverFootprintPresentationTests.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverFootprintPresentationTests.dia",
+    "index-unit-output-path" : "/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverFootprintPresentationTests.o",
+    "llvm-bc" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverFootprintPresentationTests.bc",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverFootprintPresentationTests.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverFootprintPresentationTests.swiftdeps",
+    "swiftmodule" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverFootprintPresentationTests~partial.swiftmodule"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiaryTests/RiverLocalDatabaseSessionProjectionTests.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDatabaseSessionProjectionTests.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDatabaseSessionProjectionTests.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDatabaseSessionProjectionTests.dia",
+    "index-unit-output-path" : "/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDatabaseSessionProjectionTests.o",
+    "llvm-bc" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDatabaseSessionProjectionTests.bc",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDatabaseSessionProjectionTests.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDatabaseSessionProjectionTests.swiftdeps",
+    "swiftmodule" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDatabaseSessionProjectionTests~partial.swiftmodule"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiaryTests/RiverLocalDraftStoreTests.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDraftStoreTests.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDraftStoreTests.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDraftStoreTests.dia",
+    "index-unit-output-path" : "/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDraftStoreTests.o",
+    "llvm-bc" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDraftStoreTests.bc",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDraftStoreTests.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDraftStoreTests.swiftdeps",
+    "swiftmodule" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocalDraftStoreTests~partial.swiftmodule"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiaryTests/RiverLocationLifecycleTests.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocationLifecycleTests.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocationLifecycleTests.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocationLifecycleTests.dia",
+    "index-unit-output-path" : "/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocationLifecycleTests.o",
+    "llvm-bc" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocationLifecycleTests.bc",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocationLifecycleTests.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocationLifecycleTests.swiftdeps",
+    "swiftmodule" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverLocationLifecycleTests~partial.swiftmodule"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiaryTests/RiverThemeStoreTests.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverThemeStoreTests.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverThemeStoreTests.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverThemeStoreTests.dia",
+    "index-unit-output-path" : "/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverThemeStoreTests.o",
+    "llvm-bc" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverThemeStoreTests.bc",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverThemeStoreTests.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverThemeStoreTests.swiftdeps",
+    "swiftmodule" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiary.build/Debug-iphonesimulator/RiverDiaryTests.build/Objects-normal/arm64/RiverThemeStoreTests~partial.swiftmodule"
+  }
+}

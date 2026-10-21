@@ -372,6 +372,63 @@ enum RiverIOSProjection {
             ))
         }
 
+        let latestContexts = Dictionary(grouping: dayEvents.filter { $0.event.kind == "dayContextSnapshot" }, by: { item in
+            item.payload.contextJSON.flatMap(DayContextSnapshot.decodeJSON)?.deviceID ?? item.event.originDeviceID.rawValue
+        }).values.compactMap { items in
+            items.max { $0.event.recordedAt < $1.event.recordedAt }
+        }
+        for item in latestContexts {
+            guard let json = item.payload.contextJSON,
+                  let snapshot = DayContextSnapshot.decodeJSON(json),
+                  !snapshot.isEmpty,
+                  snapshot.deviceID != database.deviceID.rawValue else { continue }
+            rows.append(IOSActivityRow(
+                id: "day-context:\(snapshot.deviceID)",
+                date: snapshot.generatedAt,
+                title: "\(snapshot.deviceName) 的一天",
+                detail: snapshot.searchText,
+                sourceLabel: "\(snapshot.deviceName) · 设备上下文",
+                kind: .other,
+                eventIDs: [item.id],
+                placeID: nil,
+                duration: nil,
+                isInferred: false
+            ))
+        }
+
+        let rawSourceLabels = ["chrome": "浏览器", "notes": "备忘录", "markdown": "Markdown", "kindle": "Kindle"]
+        let rawGroups = Dictionary(grouping: dayEvents.filter { rawSourceLabels[$0.event.source] != nil }) { $0.event.source }
+        for (source, items) in rawGroups {
+            let sorted = items.sorted { $0.event.observedAt < $1.event.observedAt }
+            let label = rawSourceLabels[source] ?? source
+            let snippets = sorted.prefix(6).compactMap { item -> String? in
+                let title = item.payload.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let text = item.payload.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let piece: String
+                if title.isEmpty {
+                    piece = String(text.prefix(120))
+                } else if title == text || text.isEmpty {
+                    piece = String(title.prefix(120))
+                } else {
+                    piece = "\(title)：\(String(text.prefix(80)))"
+                }
+                return piece.isEmpty ? nil : piece
+            }
+            let more = sorted.count > snippets.count ? " 等 \(sorted.count) 条" : ""
+            rows.append(IOSActivityRow(
+                id: "raw-source:\(source):\(dayKey(dayStart))",
+                date: sorted.first?.event.observedAt ?? dayStart,
+                title: "Mac \(label)（\(sorted.count)）",
+                detail: snippets.joined(separator: " · ") + more,
+                sourceLabel: "Mac · \(label)原始记录",
+                kind: .other,
+                eventIDs: sorted.map(\.id),
+                placeID: nil,
+                duration: nil,
+                isInferred: false
+            ))
+        }
+
         for item in dayEvents where !consumedIDs.contains(item.id) {
             let payload = item.payload
             let kind: IOSActivityRow.Kind
@@ -391,6 +448,13 @@ enum RiverIOSProjection {
                 continue
             } else if item.event.kind == "health.sleep.snapshot" || item.event.kind == "health.exercise.snapshot" {
                 // These are rolling daily totals, not events that happened at midnight.
+                continue
+            } else if item.event.kind == "dayContextSnapshot" {
+                continue
+            } else if ["chrome", "notes", "markdown", "kindle"].contains(item.event.source) {
+                // Raw detail events are evidence for search/export; the phone
+                // reads the coalesced DayContext card instead of flooding the
+                // timeline with hundreds of browser rows.
                 continue
             } else if item.event.kind.hasPrefix("health.") || payload.metrics != nil {
                 kind = .health

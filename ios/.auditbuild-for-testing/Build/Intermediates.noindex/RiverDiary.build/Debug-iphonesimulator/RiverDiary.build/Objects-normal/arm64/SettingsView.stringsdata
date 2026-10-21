@@ -1,0 +1,1464 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/SettingsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "还原本地评分",
+        "location": {
+          "startingColumn": 17,
+          "startingLine": 53
+        }
+      },
+      {
+        "comment": "",
+        "key": "设置",
+        "location": {
+          "startingColumn": 78,
+          "startingLine": 261
+        }
+      },
+      {
+        "comment": "",
+        "key": "还原全部评分",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 57
+        }
+      },
+      {
+        "comment": "",
+        "key": "所有修改过的评分都会恢复为导入时的数值。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 61
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成设置",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 183
+        }
+      },
+      {
+        "comment": "",
+        "key": "设置",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 176
+        }
+      },
+      {
+        "comment": "",
+        "key": "本机档案暂不可用",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 208
+        }
+      },
+      {
+        "comment": "",
+        "key": "这台 iPhone · %lld 天的记录",
+        "location": {
+          "startingColumn": 87,
+          "startingLine": 208
+        }
+      },
+      {
+        "comment": "",
+        "key": "生活归你，记忆也归你。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 253
+        }
+      },
+      {
+        "comment": "",
+        "key": "账户服务与个人档案分开管理。记录先保存在本机；连接共享文件夹后，按当前同步状态核对加密档案。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 255
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 78,
+          "startingLine": 262
+        }
+      },
+      {
+        "comment": "",
+        "key": "自动整理照片",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 311
+        }
+      },
+      {
+        "comment": "",
+        "key": "暂不可用",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 314
+        }
+      },
+      {
+        "comment": "",
+        "key": "自动整理照片",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 313
+        }
+      },
+      {
+        "comment": "",
+        "key": "自动收集足迹",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 320
+        }
+      },
+      {
+        "comment": "",
+        "key": "暂不可用",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 323
+        }
+      },
+      {
+        "comment": "",
+        "key": "自动收集足迹",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 322
+        }
+      },
+      {
+        "comment": "",
+        "key": "晚间记录提醒",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 334
+        }
+      },
+      {
+        "comment": "",
+        "key": "晚间记录提醒",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 330
+        }
+      },
+      {
+        "comment": "",
+        "key": "开始记录",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 339
+        }
+      },
+      {
+        "comment": "",
+        "key": "确认与连接",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 340
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 341
+        }
+      },
+      {
+        "comment": "",
+        "key": "在今天页写日记；在记录页查看已有的活动、时间与来源。记忆页按日记、个人记忆和地点归档。",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 339
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 里的待确认线索可看依据、纠正与稍后处理。AI 地址、模型和密钥在 AI 连接中配置。",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 340
+        }
+      },
+      {
+        "comment": "",
+        "key": "日记与过往记录",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 341
+        }
+      },
+      {
+        "comment": "",
+        "key": "情绪与长期回顾",
+        "location": {
+          "startingColumn": 97,
+          "startingLine": 341
+        }
+      },
+      {
+        "comment": "",
+        "key": "River Diary",
+        "location": {
+          "startingColumn": 86,
+          "startingLine": 344
+        }
+      },
+      {
+        "comment": "",
+        "key": "生活归你，记录也归你。",
+        "location": {
+          "startingColumn": 129,
+          "startingLine": 344
+        }
+      },
+      {
+        "comment": "",
+        "key": "版本 %@",
+        "location": {
+          "startingColumn": 172,
+          "startingLine": 344
+        }
+      },
+      {
+        "comment": "",
+        "key": "日记与过往记录",
+        "location": {
+          "startingColumn": 283,
+          "startingLine": 344
+        }
+      },
+      {
+        "comment": "",
+        "key": "情绪与长期回顾",
+        "location": {
+          "startingColumn": 340,
+          "startingLine": 344
+        }
+      },
+      {
+        "comment": "",
+        "key": "照片与运动线索",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 363
+        }
+      },
+      {
+        "comment": "",
+        "key": "系统集成",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 372
+        }
+      },
+      {
+        "comment": "",
+        "key": "应用活动",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 379
+        }
+      },
+      {
+        "comment": "",
+        "key": "位置记录",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 399
+        }
+      },
+      {
+        "comment": "",
+        "key": "在快捷指令中为微信、Safari 或 ChatGPT 分别创建“打开 App”和“关闭 App”个人自动化，动作为“记录应用活动”。事件会先写入本机。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 380
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看配置步骤和应用标识",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 383
+        }
+      },
+      {
+        "comment": "",
+        "key": "事件存储",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 396
+        }
+      },
+      {
+        "comment": "",
+        "key": "1. 打开“快捷指令”→“自动化”→“新建个人自动化”→“App”，选择一个应用。",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 385
+        }
+      },
+      {
+        "comment": "",
+        "key": "2. 分别为“已打开”和“已关闭”各建一条自动化，并选择“立即运行”。",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 386
+        }
+      },
+      {
+        "comment": "",
+        "key": "3. 添加 River Diary 的“记录应用活动”操作，填写显示名称、应用标识和事件类型 opened / closed。",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 387
+        }
+      },
+      {
+        "comment": "",
+        "key": "微信 · com.tencent.xin",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 388
+        }
+      },
+      {
+        "comment": "",
+        "key": "Safari · com.apple.mobilesafari",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 389
+        }
+      },
+      {
+        "comment": "",
+        "key": "ChatGPT · com.openai.chat",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 390
+        }
+      },
+      {
+        "comment": "",
+        "key": "本机记录库暂不可用，请重试打开。",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 414
+        }
+      },
+      {
+        "comment": "",
+        "key": "加密同步",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 419
+        }
+      },
+      {
+        "comment": "",
+        "key": "仅在你启用时与附近的 River Diary 设备交换已加密复制对象；同一密钥和文件夹仍用于最终核对。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 438
+        }
+      },
+      {
+        "comment": "",
+        "key": "两台设备选择同一个 iCloud Drive 文件夹，并导入同一密钥。密钥只保存在本机钥匙串；同步文件不包含明文密钥。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 471
+        }
+      },
+      {
+        "comment": "",
+        "key": "有 %lld 项并发修改；当前显示较新的用户决定，历史修改均保留。",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 492
+        }
+      },
+      {
+        "comment": "",
+        "key": "状态",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 420
+        }
+      },
+      {
+        "comment": "",
+        "key": "最近核对",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 423
+        }
+      },
+      {
+        "comment": "",
+        "key": "正在同步…",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 425
+        }
+      },
+      {
+        "comment": "",
+        "key": "立即同步并核对",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 425
+        }
+      },
+      {
+        "comment": "",
+        "key": "附近设备快速复制",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 431
+        }
+      },
+      {
+        "comment": "",
+        "key": "局域网状态",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 437
+        }
+      },
+      {
+        "comment": "",
+        "key": "隐藏密钥",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 442
+        }
+      },
+      {
+        "comment": "",
+        "key": "显示或创建同步密钥",
+        "location": {
+          "startingColumn": 60,
+          "startingLine": 442
+        }
+      },
+      {
+        "comment": "",
+        "key": "复制同步密钥",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 454
+        }
+      },
+      {
+        "comment": "",
+        "key": "粘贴另一设备的同步密钥",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 459
+        }
+      },
+      {
+        "comment": "",
+        "key": "导入同步密钥",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 465
+        }
+      },
+      {
+        "comment": "",
+        "key": "退役",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 485
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 479
+        }
+      },
+      {
+        "comment": "",
+        "key": "数据",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 503
+        }
+      },
+      {
+        "comment": "",
+        "key": "网页控制台",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 534
+        }
+      },
+      {
+        "comment": "",
+        "key": "本地备份",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 547
+        }
+      },
+      {
+        "comment": "",
+        "key": "开发者模式",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 579
+        }
+      },
+      {
+        "comment": "",
+        "key": "本机设备 ID",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 504
+        }
+      },
+      {
+        "comment": "",
+        "key": "今天本机事件",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 505
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录天数",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 512
+        }
+      },
+      {
+        "comment": "",
+        "key": "数据生成时间",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 513
+        }
+      },
+      {
+        "comment": "",
+        "key": "远端数据时间",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 514
+        }
+      },
+      {
+        "comment": "",
+        "key": "iCloud 文件夹",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 515
+        }
+      },
+      {
+        "comment": "",
+        "key": "同步状态",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 516
+        }
+      },
+      {
+        "comment": "",
+        "key": "读取旧版共享快照",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 517
+        }
+      },
+      {
+        "comment": "",
+        "key": "评分存储",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 523
+        }
+      },
+      {
+        "comment": "",
+        "key": "还原本地评分",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 527
+        }
+      },
+      {
+        "comment": "",
+        "key": "导出 river.memory-mirror 只读 JSON，在 user.flowriver.xyz 导入后只读查看。包含当前设备可读的日记与双端“设备上下文”；不含密钥、健康原库或完整浏览器 URL。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 535
+        }
+      },
+      {
+        "comment": "",
+        "key": "导出网页可读 JSON",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 538
+        }
+      },
+      {
+        "comment": "",
+        "key": "备份包含原始事件、用户决定和 Artifact，并使用同步密钥加密。重装后恢复需要保留或重新导入同一同步密钥。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 548
+        }
+      },
+      {
+        "comment": "",
+        "key": "导出加密本地备份",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 551
+        }
+      },
+      {
+        "comment": "",
+        "key": "合并本地备份",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 563
+        }
+      },
+      {
+        "comment": "",
+        "key": "HealthKit 只把已授权的睡眠和运动日汇总保存在本机；启用加密同步后才会复制到你的共享文件夹。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 572
+        }
+      },
+      {
+        "comment": "",
+        "key": "隐私原则",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 576
+        }
+      },
+      {
+        "comment": "",
+        "key": "显示 Developer Diagnostics",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 580
+        }
+      },
+      {
+        "comment": "",
+        "key": "Device ID",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 622
+        }
+      },
+      {
+        "comment": "",
+        "key": "Database version",
+        "location": {
+          "startingColumn": 17,
+          "startingLine": 624
+        }
+      },
+      {
+        "comment": "",
+        "key": "Event / Session / Place",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 627
+        }
+      },
+      {
+        "comment": "",
+        "key": "State Operations",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 628
+        }
+      },
+      {
+        "comment": "",
+        "key": "Artifact / Canonical / Stale",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 629
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pending confirmations",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 630
+        }
+      },
+      {
+        "comment": "",
+        "key": "Imported objects",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 631
+        }
+      },
+      {
+        "comment": "",
+        "key": "最近导出 / 导入",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 632
+        }
+      },
+      {
+        "comment": "",
+        "key": "Event / Operation frontier",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 633
+        }
+      },
+      {
+        "comment": "",
+        "key": "iCloud directory",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 634
+        }
+      },
+      {
+        "comment": "",
+        "key": "Bookmark",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 635
+        }
+      },
+      {
+        "comment": "",
+        "key": "LAN transport",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 636
+        }
+      },
+      {
+        "comment": "",
+        "key": "最近导出 / 导入",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 637
+        }
+      },
+      {
+        "comment": "",
+        "key": "最近 reconciliation / verified",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 638
+        }
+      },
+      {
+        "comment": "",
+        "key": "Canonical digest",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 639
+        }
+      },
+      {
+        "comment": "",
+        "key": "Missing sequences",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 642
+        }
+      },
+      {
+        "comment": "",
+        "key": "Integrity failures",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 647
+        }
+      },
+      {
+        "comment": "",
+        "key": "Location authorization",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 648
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last location event",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 649
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last geocode",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 650
+        }
+      },
+      {
+        "comment": "",
+        "key": "Map candidate records",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 651
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last App Activity Intent",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 652
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI job",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 653
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generate Test Event",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 655
+        }
+      },
+      {
+        "comment": "",
+        "key": "Request Location Sample",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 656
+        }
+      },
+      {
+        "comment": "",
+        "key": "Flush Event Batch",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 658
+        }
+      },
+      {
+        "comment": "",
+        "key": "Flush State Operations",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 659
+        }
+      },
+      {
+        "comment": "",
+        "key": "Scan / Import / Reconcile / Verify",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 660
+        }
+      },
+      {
+        "comment": "",
+        "key": "Rebuild Sessions / Places / Timeline",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 661
+        }
+      },
+      {
+        "comment": "",
+        "key": "Invalidate AI Artifacts",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 662
+        }
+      },
+      {
+        "comment": "",
+        "key": "Export Diagnostics Report",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 663
+        }
+      },
+      {
+        "comment": "",
+        "key": "已读取 %lld 晚睡眠 · %lld 天运动 · %lld 次训练 · %lld 条心情",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 691
+        }
+      },
+      {
+        "comment": "",
+        "key": "Apple 健康",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 688
+        }
+      },
+      {
+        "comment": "",
+        "key": "正在读取健康记录…",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 689
+        }
+      },
+      {
+        "comment": "",
+        "key": "刷新健康记录",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 692
+        }
+      },
+      {
+        "comment": "",
+        "key": "连接 Apple 健康",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 694
+        }
+      },
+      {
+        "comment": "",
+        "key": "iOS 不向第三方 App 开放屏幕使用时间的原始数据。用快捷指令在晚上记录你在“设置 → 屏幕使用时间”看到的总分钟数；事件只写本机。",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 708
+        }
+      },
+      {
+        "comment": "",
+        "key": "今天已记录 %lld 小时 %lld 分钟。重新运行会覆盖当天显示，不会相加。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 712
+        }
+      },
+      {
+        "comment": "",
+        "key": "打开快捷指令",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 716
+        }
+      },
+      {
+        "comment": "",
+        "key": "配置步骤",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 718
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 分钟",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 705
+        }
+      },
+      {
+        "comment": "",
+        "key": "屏幕使用时间",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 702
+        }
+      },
+      {
+        "comment": "",
+        "key": "1. 打开“快捷指令” → “自动化” → “新建个人自动化” → “特定时间”，设为每天 22:00。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 720
+        }
+      },
+      {
+        "comment": "",
+        "key": "2. 添加“要求输入”，类型选数字，提示“今天屏幕使用时间（分钟）”。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 721
+        }
+      },
+      {
+        "comment": "",
+        "key": "3. 添加 River Diary 的“记录屏幕使用时间”操作，把输入作为分钟数。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 722
+        }
+      },
+      {
+        "comment": "",
+        "key": "4. 关闭“运行前询问”，选择立即运行。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 723
+        }
+      },
+      {
+        "comment": "",
+        "key": "也可以在“快捷指令”里手动运行，随时补记。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 724
+        }
+      },
+      {
+        "comment": "",
+        "key": "用快捷指令的“听写文本”把口述转成文字，再调用 River Diary 的“记录语音速记”。只保存文字，不保存音频，也不需要麦克风权限。",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 736
+        }
+      },
+      {
+        "comment": "",
+        "key": "语音速记",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 735
+        }
+      },
+      {
+        "comment": "",
+        "key": "打开快捷指令",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 739
+        }
+      },
+      {
+        "comment": "",
+        "key": "已连接 %@。新事件、用户决定和分析结果以加密对象同步；旧版共享快照只用于兼容读取。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 772
+        }
+      },
+      {
+        "comment": "",
+        "key": "首次使用需选择 iCloud Drive 文件夹。未连接期间会先保存在本机，连接后再同步。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 775
+        }
+      },
+      {
+        "comment": "",
+        "key": "选择 iCloud Drive 文件夹",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 767
+        }
+      },
+      {
+        "comment": "",
+        "key": "iCloud Drive 同步",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 757
+        }
+      },
+      {
+        "comment": "",
+        "key": "开启后使用 Core Location 的到访和低功耗显著位置变化；不会持续使用高精度 GPS。位置会先保存在本机。",
+        "location": {
+          "startingColumn": 14,
+          "startingLine": 833
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录到访和显著移动",
+        "location": {
+          "startingColumn": 13,
+          "startingLine": 827
+        }
+      },
+      {
+        "comment": "",
+        "key": "系统授权",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 836
+        }
+      },
+      {
+        "comment": "",
+        "key": "后台到访",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 837
+        }
+      },
+      {
+        "comment": "",
+        "key": "正在获取高精度位置…",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 839
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录一次当前位置",
+        "location": {
+          "startingColumn": 94,
+          "startingLine": 839
+        }
+      },
+      {
+        "comment": "",
+        "key": "位置误差范围约 ±%lld 米",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 849
+        }
+      },
+      {
+        "comment": "",
+        "key": "照片分析",
+        "location": {
+          "startingColumn": 17,
+          "startingLine": 910
+        }
+      },
+      {
+        "comment": "",
+        "key": "API Key 已保存在本机",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 871
+        }
+      },
+      {
+        "comment": "",
+        "key": "本机模型 · 不需要网络密钥",
+        "location": {
+          "startingColumn": 91,
+          "startingLine": 871
+        }
+      },
+      {
+        "comment": "",
+        "key": "尚未绑定 API Key",
+        "location": {
+          "startingColumn": 133,
+          "startingLine": 871
+        }
+      },
+      {
+        "comment": "",
+        "key": "更新并保存 API Key",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 892
+        }
+      },
+      {
+        "comment": "",
+        "key": "保存 API Key",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 892
+        }
+      },
+      {
+        "comment": "",
+        "key": "检查配置",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 895
+        }
+      },
+      {
+        "comment": "",
+        "key": "移除 API Key",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 898
+        }
+      },
+      {
+        "comment": "",
+        "key": "服务地址",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 877
+        }
+      },
+      {
+        "comment": "",
+        "key": "API 基础地址或完整接口地址",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 878
+        }
+      },
+      {
+        "comment": "",
+        "key": "模型名称",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 883
+        }
+      },
+      {
+        "comment": "",
+        "key": "模型名称",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 884
+        }
+      },
+      {
+        "comment": "",
+        "key": "API Key",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 888
+        }
+      },
+      {
+        "comment": "",
+        "key": "API Key",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 889
+        }
+      },
+      {
+        "comment": "",
+        "key": "服务与模型",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 899
+        }
+      },
+      {
+        "comment": "",
+        "key": "兼容 OpenAI 接口的服务均可填写。地址和模型在本机保存；密钥存入本机钥匙串。",
+        "location": {
+          "startingColumn": 62,
+          "startingLine": 899
+        }
+      },
+      {
+        "comment": "",
+        "key": "同意向网络 AI 发送所选资料",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 901
+        }
+      },
+      {
+        "comment": "",
+        "key": "联网授权",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 902
+        }
+      },
+      {
+        "comment": "",
+        "key": "默认关闭。开启后，所选记录才会发送到你绑定的服务。本机模型使用本机地址。",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 902
+        }
+      },
+      {
+        "comment": "",
+        "key": "包含手写日记和手动文本",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 904
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 对话包含共享记忆与回答",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 905
+        }
+      },
+      {
+        "comment": "",
+        "key": "包含地点名称",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 906
+        }
+      },
+      {
+        "comment": "",
+        "key": "包含健康日汇总",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 907
+        }
+      },
+      {
+        "comment": "",
+        "key": "包含本机识别的照片标签",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 908
+        }
+      },
+      {
+        "comment": "",
+        "key": "可使用的记录",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 909
+        }
+      },
+      {
+        "comment": "",
+        "key": "关闭某一项后，它不会进入网络 AI 的分析和回答。原始记录仍保留在本机。",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 909
+        }
+      },
+      {
+        "comment": "",
+        "key": "允许当前 AI 看最近照片并估算餐食",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 911
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看发送范围与自动分析规则",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 912
+        }
+      },
+      {
+        "comment": "",
+        "key": "需要先开启本机照片识别并同意网络 AI 分析；日终分析最多发送 4 张照片给当前模型，估算会标出不确定性。照片不会发送到账号服务器。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 913
+        }
+      },
+      {
+        "comment": "",
+        "key": "授权并配置后，新记录在安静 45 秒后自动更新今日理解，最短间隔 5 分钟。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 914
+        }
+      },
+      {
+        "comment": "",
+        "key": "只读取你在系统照片权限中允许的照片，最近 7 天内最多整理 160 张。Vision 在设备上识别场景标签；照片原图不会写入 River Diary 数据库。",
+        "location": {
+          "startingColumn": 14,
+          "startingLine": 932
+        }
+      },
+      {
+        "comment": "",
+        "key": "在本机整理最近照片线索",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 928
+        }
+      },
+      {
+        "comment": "",
+        "key": "状态",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 935
+        }
+      },
+      {
+        "comment": "",
+        "key": "正在本机整理照片线索…",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 939
+        }
+      },
+      {
+        "comment": "",
+        "key": "系统运动识别用于标注步行、骑行或车辆移动。它不能判断是不是网约车或共享单车；信息不足时会显示“乘车”或“骑行”。",
+        "location": {
+          "startingColumn": 14,
+          "startingLine": 952
+        }
+      },
+      {
+        "comment": "",
+        "key": "识别步行、骑行和乘车",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 948
+        }
+      },
+      {
+        "comment": "",
+        "key": "状态",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 955
+        }
+      }
+    ]
+  },
+  "version": 1
+}

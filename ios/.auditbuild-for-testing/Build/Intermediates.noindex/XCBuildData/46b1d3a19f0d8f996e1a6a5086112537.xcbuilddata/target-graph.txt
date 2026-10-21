@@ -1,0 +1,9 @@
+Target dependency graph (4 targets)
+Target 'RiverDiaryTests' in project 'RiverDiary'
+➜ Explicit dependency on target 'RiverDiary' in project 'RiverDiary'
+➜ Explicit dependency on target 'RiverDiaryCore-product' in project 'RiverDiaryCore'
+Target 'RiverDiary' in project 'RiverDiary'
+➜ Explicit dependency on target 'RiverDiaryCore-product' in project 'RiverDiaryCore'
+Target 'RiverDiaryCore-product' in project 'RiverDiaryCore'
+➜ Explicit dependency on target 'RiverDiaryCore' in project 'RiverDiaryCore'
+Target 'RiverDiaryCore' in project 'RiverDiaryCore' (no dependencies)

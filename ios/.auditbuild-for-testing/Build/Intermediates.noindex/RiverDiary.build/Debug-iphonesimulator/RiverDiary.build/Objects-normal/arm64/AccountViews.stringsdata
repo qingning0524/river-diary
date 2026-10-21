@@ -1,0 +1,536 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/AccountViews.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "密码登录",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 46
+        }
+      },
+      {
+        "comment": "",
+        "key": "用邮箱开始",
+        "location": {
+          "startingColumn": 102,
+          "startingLine": 46
+        }
+      },
+      {
+        "comment": "",
+        "key": "输入验证码",
+        "location": {
+          "startingColumn": 122,
+          "startingLine": 46
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 75,
+          "startingLine": 60
+        }
+      },
+      {
+        "comment": "",
+        "key": "选择登录页外观",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "河流日记 / RIVER DIARY",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "RIVER ID",
+        "location": {
+          "startingColumn": 70,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "回到你的\n记忆空间。",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 93
+        }
+      },
+      {
+        "comment": "",
+        "key": "每一天，\n汇成你的记忆。",
+        "location": {
+          "startingColumn": 100,
+          "startingLine": 93
+        }
+      },
+      {
+        "comment": "",
+        "key": "确认你的邮箱",
+        "location": {
+          "startingColumn": 140,
+          "startingLine": 93
+        }
+      },
+      {
+        "comment": "",
+        "key": "你的日常、足迹与理解，在同一个个人记忆系统里延续。",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 97
+        }
+      },
+      {
+        "comment": "",
+        "key": "输入邮件中的 8 位验证码，进入你的 River。",
+        "location": {
+          "startingColumn": 119,
+          "startingLine": 97
+        }
+      },
+      {
+        "comment": "",
+        "key": "输入验证码",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 124
+        }
+      },
+      {
+        "comment": "",
+        "key": "验证码登录，无需密码。首次验证会创建账号。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 131
+        }
+      },
+      {
+        "comment": "",
+        "key": "密码登录",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 187
+        }
+      },
+      {
+        "comment": "",
+        "key": "发送邮箱验证码",
+        "location": {
+          "startingColumn": 102,
+          "startingLine": 187
+        }
+      },
+      {
+        "comment": "",
+        "key": "注册 / 登录",
+        "location": {
+          "startingColumn": 128,
+          "startingLine": 187
+        }
+      },
+      {
+        "comment": "",
+        "key": "使用已设置密码的邮箱账号",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 129
+        }
+      },
+      {
+        "comment": "",
+        "key": "忘记密码？",
+        "location": {
+          "startingColumn": 177,
+          "startingLine": 129
+        }
+      },
+      {
+        "comment": "",
+        "key": "更换",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 141
+        }
+      },
+      {
+        "comment": "",
+        "key": "收件邮箱",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 137
+        }
+      },
+      {
+        "comment": "",
+        "key": "8 位验证码",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 144
+        }
+      },
+      {
+        "comment": "",
+        "key": "请输入验证码",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 145
+        }
+      },
+      {
+        "comment": "",
+        "key": "邮件中的 8 位验证码",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 151
+        }
+      },
+      {
+        "comment": "",
+        "key": "10 分钟内有效",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 157
+        }
+      },
+      {
+        "comment": "",
+        "key": "%llds 后重新获取",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "重新获取验证码",
+        "location": {
+          "startingColumn": 86,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "正在处理…",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "登录 River",
+        "location": {
+          "startingColumn": 111,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "获取验证码",
+        "location": {
+          "startingColumn": 128,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "进入我的 River",
+        "location": {
+          "startingColumn": 148,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "登录密码",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 211
+        }
+      },
+      {
+        "comment": "",
+        "key": "隐藏密码",
+        "location": {
+          "startingColumn": 267,
+          "startingLine": 220
+        }
+      },
+      {
+        "comment": "",
+        "key": "显示密码",
+        "location": {
+          "startingColumn": 284,
+          "startingLine": 220
+        }
+      },
+      {
+        "comment": "",
+        "key": "输入登录密码",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 215
+        }
+      },
+      {
+        "comment": "",
+        "key": "输入登录密码",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 216
+        }
+      },
+      {
+        "comment": "",
+        "key": "邮箱地址",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 232
+        }
+      },
+      {
+        "comment": "",
+        "key": "你的常用邮箱",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 235
+        }
+      },
+      {
+        "comment": "",
+        "key": "邮箱地址",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 239
+        }
+      },
+      {
+        "comment": "",
+        "key": "我已阅读并同意账号服务与隐私说明",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 253
+        }
+      },
+      {
+        "comment": "",
+        "key": "已同意",
+        "location": {
+          "startingColumn": 119,
+          "startingLine": 253
+        }
+      },
+      {
+        "comment": "",
+        "key": "未同意",
+        "location": {
+          "startingColumn": 133,
+          "startingLine": 253
+        }
+      },
+      {
+        "comment": "",
+        "key": "我已阅读并同意",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 256
+        }
+      },
+      {
+        "comment": "",
+        "key": "账号服务与隐私说明",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 268
+        }
+      },
+      {
+        "comment": "",
+        "key": "我已阅读并同意",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 260
+        }
+      },
+      {
+        "comment": "",
+        "key": "River ID 连接你的身份。记忆先保存在本机，跨设备连接由你在设置中开启。",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 275
+        }
+      },
+      {
+        "comment": "",
+        "key": "账号服务与隐私说明",
+        "location": {
+          "startingColumn": 56,
+          "startingLine": 286
+        }
+      },
+      {
+        "comment": "",
+        "key": "关闭",
+        "location": {
+          "startingColumn": 81,
+          "startingLine": 287
+        }
+      },
+      {
+        "comment": "",
+        "key": "登录账号",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 354
+        }
+      },
+      {
+        "comment": "",
+        "key": "账号资料暂未加载，可刷新权益状态。",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 356
+        }
+      },
+      {
+        "comment": "",
+        "key": "当前没有账号会话。",
+        "location": {
+          "startingColumn": 99,
+          "startingLine": 356
+        }
+      },
+      {
+        "comment": "",
+        "key": "高级权益",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 364
+        }
+      },
+      {
+        "comment": "",
+        "key": "高级权益",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 367
+        }
+      },
+      {
+        "comment": "",
+        "key": "输入激活 / 兑换码",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 370
+        }
+      },
+      {
+        "comment": "",
+        "key": "刷新权益状态",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 390
+        }
+      },
+      {
+        "comment": "",
+        "key": "退出账号",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 402
+        }
+      },
+      {
+        "comment": "",
+        "key": "RIVER ID",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 345
+        }
+      },
+      {
+        "comment": "",
+        "key": "你的个人记忆身份",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 346
+        }
+      },
+      {
+        "comment": "",
+        "key": "连接你的 River",
+        "location": {
+          "startingColumn": 76,
+          "startingLine": 346
+        }
+      },
+      {
+        "comment": "",
+        "key": "账号已登录",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 348
+        }
+      },
+      {
+        "comment": "",
+        "key": "当前没有账号会话",
+        "location": {
+          "startingColumn": 67,
+          "startingLine": 348
+        }
+      },
+      {
+        "comment": "",
+        "key": "修改登录密码",
+        "location": {
+          "startingColumn": 103,
+          "startingLine": 361
+        }
+      },
+      {
+        "comment": "",
+        "key": "设置登录密码",
+        "location": {
+          "startingColumn": 126,
+          "startingLine": 361
+        }
+      },
+      {
+        "comment": "",
+        "key": "已设置",
+        "location": {
+          "startingColumn": 214,
+          "startingLine": 361
+        }
+      },
+      {
+        "comment": "",
+        "key": "邮箱验证",
+        "location": {
+          "startingColumn": 228,
+          "startingLine": 361
+        }
+      },
+      {
+        "comment": "",
+        "key": "兑换激活码",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 381
+        }
+      }
+    ]
+  },
+  "version": 1
+}

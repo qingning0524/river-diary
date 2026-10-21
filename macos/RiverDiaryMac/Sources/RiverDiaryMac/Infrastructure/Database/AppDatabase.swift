@@ -210,6 +210,7 @@ final class AppDatabase {
                 url TEXT NOT NULL,
                 title TEXT DEFAULT '',
                 domain TEXT DEFAULT '',
+                browser TEXT,
                 visited_at TEXT,
                 visit_count INTEGER DEFAULT 1
             )
@@ -219,6 +220,8 @@ final class AppDatabase {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 date TEXT NOT NULL,
                 title TEXT NOT NULL,
+                body TEXT,
+                source TEXT,
                 modified_at TEXT
             )
             """,
@@ -294,6 +297,9 @@ final class AppDatabase {
     private func migrateTables() {
         _ = transaction { database in
             guard addColumnIfMissing("visited_at", "TEXT", to: "chrome_visits", database: database) else { return false }
+            guard addColumnIfMissing("browser", "TEXT", to: "chrome_visits", database: database) else { return false }
+            guard addColumnIfMissing("body", "TEXT", to: "daily_notes", database: database) else { return false }
+            guard addColumnIfMissing("source", "TEXT", to: "daily_notes", database: database) else { return false }
             guard addColumnIfMissing("bundle_id", "TEXT DEFAULT ''", to: "activity_sessions", database: database) else { return false }
             guard addColumnIfMissing("source_summary", "TEXT DEFAULT ''", to: "ai_results", database: database) else { return false }
             guard addColumnIfMissing("is_local", "INTEGER DEFAULT 0", to: "ai_results", database: database) else { return false }
@@ -431,14 +437,19 @@ final class AppDatabase {
             if collectedChrome {
                 guard execute("DELETE FROM chrome_visits WHERE date = ?", bindings: bindText(record.date), database: database) else { return false }
                 for visit in record.chromeVisits {
-                    let sql = "INSERT INTO chrome_visits (date, url, title, domain, visited_at, visit_count) VALUES (?,?,?,?,?,?)"
+                    let sql = "INSERT INTO chrome_visits (date, url, title, domain, browser, visited_at, visit_count) VALUES (?,?,?,?,?,?,?)"
                     guard execute(sql, bindings: { statement in
                         sqlite3_bind_text(statement, 1, record.date, -1, Self.transientDestructor)
                         sqlite3_bind_text(statement, 2, visit.url, -1, Self.transientDestructor)
                         sqlite3_bind_text(statement, 3, visit.title, -1, Self.transientDestructor)
                         sqlite3_bind_text(statement, 4, visit.domain, -1, Self.transientDestructor)
-                        sqlite3_bind_text(statement, 5, DatabaseTime.isoFormatter.string(from: visit.visitedAt), -1, Self.transientDestructor)
-                        sqlite3_bind_int(statement, 6, Int32(visit.visitCount))
+                        if let browser = visit.browser, !browser.isEmpty {
+                            sqlite3_bind_text(statement, 5, browser, -1, Self.transientDestructor)
+                        } else {
+                            sqlite3_bind_null(statement, 5)
+                        }
+                        sqlite3_bind_text(statement, 6, DatabaseTime.isoFormatter.string(from: visit.visitedAt), -1, Self.transientDestructor)
+                        sqlite3_bind_int(statement, 7, Int32(visit.visitCount))
                     }, database: database) else { return false }
                 }
             }
@@ -446,11 +457,21 @@ final class AppDatabase {
             if collectedNotes {
                 guard execute("DELETE FROM daily_notes WHERE date = ?", bindings: bindText(record.date), database: database) else { return false }
                 for note in record.notesModified {
-                    let sql = "INSERT INTO daily_notes (date, title, modified_at) VALUES (?,?,?)"
+                    let sql = "INSERT INTO daily_notes (date, title, body, source, modified_at) VALUES (?,?,?,?,?)"
                     guard execute(sql, bindings: { statement in
                         sqlite3_bind_text(statement, 1, record.date, -1, Self.transientDestructor)
                         sqlite3_bind_text(statement, 2, note.title, -1, Self.transientDestructor)
-                        sqlite3_bind_text(statement, 3, DatabaseTime.isoFormatter.string(from: note.modifiedAt), -1, Self.transientDestructor)
+                        if let body = note.body, !body.isEmpty {
+                            sqlite3_bind_text(statement, 3, body, -1, Self.transientDestructor)
+                        } else {
+                            sqlite3_bind_null(statement, 3)
+                        }
+                        if let source = note.source, !source.isEmpty {
+                            sqlite3_bind_text(statement, 4, source, -1, Self.transientDestructor)
+                        } else {
+                            sqlite3_bind_null(statement, 4)
+                        }
+                        sqlite3_bind_text(statement, 5, DatabaseTime.isoFormatter.string(from: note.modifiedAt), -1, Self.transientDestructor)
                     }, database: database) else { return false }
                 }
             }
@@ -593,7 +614,7 @@ final class AppDatabase {
     /// separately whether this more sensitive context may be sent to an AI model.
     func chromeVisits(for dayKey: String) -> [ChromeVisit] {
         query(
-            "SELECT url, title, visited_at, visit_count, domain FROM chrome_visits WHERE date = ? ORDER BY visited_at",
+            "SELECT url, title, visited_at, visit_count, domain, browser FROM chrome_visits WHERE date = ? ORDER BY visited_at",
             bindings: bindText(dayKey)
         ) { statement in
             ChromeVisit(
@@ -601,19 +622,22 @@ final class AppDatabase {
                 title: text(statement, 1),
                 visitedAt: DatabaseTime.isoFormatter.date(from: text(statement, 2)) ?? Date(timeIntervalSince1970: 0),
                 visitCount: Int(sqlite3_column_int(statement, 3)),
-                domain: text(statement, 4)
+                domain: text(statement, 4),
+                browser: sqlite3_column_type(statement, 5) == SQLITE_NULL ? nil : text(statement, 5)
             )
         }
     }
 
     func dailyNotes(for dayKey: String) -> [DailyNoteEntry] {
         query(
-            "SELECT title, modified_at FROM daily_notes WHERE date = ? ORDER BY modified_at",
+            "SELECT title, body, modified_at, source FROM daily_notes WHERE date = ? ORDER BY modified_at",
             bindings: bindText(dayKey)
         ) { statement in
             DailyNoteEntry(
                 title: text(statement, 0),
-                modifiedAt: DatabaseTime.isoFormatter.date(from: text(statement, 1)) ?? Date(timeIntervalSince1970: 0)
+                body: sqlite3_column_type(statement, 1) == SQLITE_NULL ? nil : text(statement, 1),
+                source: sqlite3_column_type(statement, 3) == SQLITE_NULL ? nil : text(statement, 3),
+                modifiedAt: DatabaseTime.isoFormatter.date(from: text(statement, 2)) ?? Date(timeIntervalSince1970: 0)
             )
         }
     }

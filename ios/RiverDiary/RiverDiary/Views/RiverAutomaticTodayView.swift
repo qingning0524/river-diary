@@ -17,6 +17,8 @@ struct RiverAutomaticTodayView: View {
     @State private var revision = 0
     @State private var settings = false
     @State private var reading = false
+    @State private var contextDetail: DayContextSnapshot?
+    @State private var showsRawEvidence = false
     private var date: Date { coordinator.selectedDate }
     private var rows: [IOSActivityRow] { let _ = revision; guard let db = node.database else { return [] }; return RiverIOSProjection.timelineRows(database: db, date: date) }
     private var facts: [IOSActivityRow] { rows.filter { $0.kind != .riverInsight } }
@@ -86,6 +88,7 @@ struct RiverAutomaticTodayView: View {
                 if node.database == nil { RiverIOSDatabaseUnavailablePanel(message: node.initializationError) { node.retryOpen() } }
                 else {
                     summary
+                    deviceContextCard
                     if textSize.isAccessibilitySize {
                         recordTile; timeTile; healthTile; insightTile
                     } else {
@@ -109,6 +112,12 @@ struct RiverAutomaticTodayView: View {
             }.riverPageEntrance().padding(.horizontal, 22).padding(.top, 5).padding(.bottom, 22)
         }.background(theme.canvas).toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $settings, onDismiss: { revision &+= 1 }) { SettingsView() }
+            .sheet(item: $contextDetail) { snapshot in
+                DeviceContextDetailView(snapshot: snapshot)
+            }
+            .sheet(isPresented: $showsRawEvidence) {
+                RawEvidenceDetailView(groups: rawEvidenceGroups)
+            }
             .sheet(isPresented: $reading) {
                 NavigationStack { ScrollView { Text(analysis.fullReview ?? "这一天还没有 AI 自动小结。 ").font(.body).lineSpacing(5).padding(22).textSelection(.enabled) }.background(theme.canvas).navigationTitle("这一天的自动日记").navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { reading = false } } } }
             }
@@ -117,6 +126,84 @@ struct RiverAutomaticTodayView: View {
             .onChange(of: node.stateRevision) { _, _ in revision &+= 1 }
             .onReceive(pipelineUpdates) { _ in Task { @MainActor in await Task.yield(); revision &+= 1 } }
     }
+    private var deviceContexts: [DayContextSnapshot] {
+        guard let database = node.database else { return [] }
+        let contexts = capturedEvents
+            .filter { $0.kind == "dayContextSnapshot" }
+            .compactMap { event -> (Date, DayContextSnapshot)? in
+                guard let payload = try? JSONDecoder().decode(RiverEventPayload.self, from: event.payload),
+                      let json = payload.contextJSON,
+                      let snapshot = DayContextSnapshot.decodeJSON(json),
+                      !snapshot.isEmpty,
+                      snapshot.deviceID != database.deviceID.rawValue else { return nil }
+                return (event.recordedAt, snapshot)
+            }
+        return Dictionary(grouping: contexts) { "\($0.1.deviceID)|\($0.1.day)" }
+            .values.compactMap { group in group.max { $0.0 < $1.0 }?.1 }
+            .sorted { $0.deviceName < $1.deviceName }
+    }
+
+    private var rawEvidenceGroups: [RawEvidenceGroup] {
+        let labels = ["chrome": "浏览器", "notes": "备忘录", "markdown": "Markdown", "kindle": "Kindle"]
+        let grouped = Dictionary(grouping: capturedEvents.filter { labels[$0.source] != nil }, by: { $0.source })
+        return grouped.compactMap { source, events in
+            guard let label = labels[source], !events.isEmpty else { return nil }
+            return RawEvidenceGroup(
+                id: source,
+                label: label,
+                items: events.sorted { $0.observedAt < $1.observedAt }.prefix(200).map { $0 }
+            )
+        }.sorted { $0.label < $1.label }
+    }
+
+    private var deviceContextCard: some View {
+        let contexts = deviceContexts
+        return Group {
+            if !contexts.isEmpty {
+                RiverIOSPanel(padding: 18) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "iphone").font(.system(size: 17, weight: .medium)).foregroundStyle(theme.accentText)
+                            Text("其他设备的一天").font(.headline)
+                            Spacer(minLength: 2)
+                            Text("设备上下文").font(.caption2).foregroundStyle(theme.secondaryInk)
+                        }
+                        ForEach(contexts) { context in
+                            VStack(alignment: .leading, spacing: 7) {
+                                Text(context.deviceName).font(.caption.weight(.medium)).foregroundStyle(theme.ink)
+                                ForEach(context.sections) { section in
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        HStack(alignment: .firstTextBaseline) {
+                                            Text(section.title).font(.caption).foregroundStyle(theme.secondaryInk)
+                                            Spacer(minLength: 2)
+                                            Text(section.summary).font(.caption2).foregroundStyle(theme.ink).multilineTextAlignment(.trailing)
+                                        }
+                                        ForEach(Array(section.items.prefix(2).enumerated()), id: \.offset) { _, item in
+                                            Text([item.title, item.detail].compactMap { $0 }.joined(separator: " · "))
+                                                .font(.caption2)
+                                                .foregroundStyle(theme.secondaryInk)
+                                                .lineLimit(2)
+                                        }
+                                    }
+                                }
+                                Button("查看 \(context.deviceName) 的全部上下文") { contextDetail = context }
+                                    .font(.caption)
+                                    .foregroundStyle(theme.accentText)
+                            }
+                            .padding(.vertical, 3)
+                        }
+                        if !rawEvidenceGroups.isEmpty {
+                            Button("查看 Mac 原始明细") { showsRawEvidence = true }
+                                .font(.caption)
+                                .foregroundStyle(theme.accentText)
+                                .frame(minHeight: 44)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private var summary: some View {
         RiverIOSPanel(padding: 18) {
             VStack(alignment: .leading, spacing: 15) {
@@ -185,4 +272,127 @@ struct RiverAutomaticTodayView: View {
     }
     private func badge(_ text: String, _ color: Color) -> some View { Text(text).font(.caption2.weight(.medium)).foregroundStyle(color).padding(.horizontal, 9).padding(.vertical, 5).riverNeumorphic(radius: 15) }
     private func number(_ title: String, _ value: String) -> some View { HStack { Text(title).foregroundStyle(theme.secondaryInk); Spacer(minLength: 2); Text(value).fontWeight(.semibold) }.font(.caption).monospacedDigit() }
+}
+
+private struct DeviceContextDetailView: View {
+    @Environment(\.riverTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    let snapshot: DayContextSnapshot
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(snapshot.sections) { section in
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(alignment: .firstTextBaseline) {
+                                Text(section.title).font(.subheadline.weight(.semibold)).foregroundStyle(theme.ink)
+                                Spacer(minLength: 4)
+                                Text(section.summary).font(.caption2).foregroundStyle(theme.secondaryInk)
+                            }
+                            ForEach(Array(section.items.enumerated()), id: \.offset) { _, item in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Text(item.count.map { String($0) } ?? "·")
+                                        .font(.caption2.monospacedDigit())
+                                        .foregroundStyle(theme.secondaryInk.opacity(0.7))
+                                        .frame(width: 22, alignment: .trailing)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item.title).font(.caption).foregroundStyle(theme.ink)
+                                        if let detail = item.detail, !detail.isEmpty {
+                                            Text(detail).font(.caption2).foregroundStyle(theme.secondaryInk)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.bottom, 4)
+                    }
+                }
+                .padding(22)
+            }
+            .background(theme.canvas)
+            .navigationTitle("\(snapshot.deviceName) 的一天")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+private struct RawEvidenceGroup: Identifiable {
+    let id: String
+    let label: String
+    let items: [RiverEvent]
+}
+
+private struct RawEvidenceDetailView: View {
+    @Environment(\.riverTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    let groups: [RawEvidenceGroup]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(groups) { group in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Mac \(group.label)（\(group.items.count)）")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(theme.ink)
+                            ForEach(group.items) { event in
+                                RawEvidenceRow(event: event)
+                            }
+                        }
+                        .padding(.bottom, 4)
+                    }
+                }
+                .padding(22)
+            }
+            .background(theme.canvas)
+            .navigationTitle("Mac 原始明细")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+private struct RawEvidenceRow: View {
+    @Environment(\.riverTheme) private var theme
+    let event: RiverEvent
+
+    private var payload: RiverEventPayload? {
+        try? JSONDecoder().decode(RiverEventPayload.self, from: event.payload)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(payload?.title ?? payload?.url ?? "一条原始记录")
+                .font(.caption)
+                .foregroundStyle(theme.ink)
+                .lineLimit(2)
+            if let text = payload?.text, !text.isEmpty, text != payload?.title {
+                Text(String(text.prefix(500)))
+                    .font(.caption2)
+                    .foregroundStyle(theme.secondaryInk)
+                    .lineLimit(4)
+            }
+            if let url = payload?.url, url != payload?.title {
+                Text(url)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(theme.secondaryInk)
+                    .lineLimit(2)
+            }
+            Text(event.observedAt, style: .time)
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(theme.secondaryInk)
+        }
+        .padding(.vertical, 3)
+    }
 }

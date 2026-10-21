@@ -1,0 +1,136 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RiverFootprintTimelineView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "时间线",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "共 %lld 段生活片段",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 30
+        }
+      },
+      {
+        "comment": "",
+        "key": "按时间倒序",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "按时间正序",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "✦",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 条 AI 理解待确认",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 39
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看全部 ›",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 41
+        }
+      },
+      {
+        "comment": "",
+        "key": "生活片段会自动留在这里",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 49
+        }
+      },
+      {
+        "comment": "",
+        "key": "没有找到相关片段",
+        "location": {
+          "startingColumn": 86,
+          "startingLine": 49
+        }
+      },
+      {
+        "comment": "",
+        "key": "开启记录来源后，River 会按时间整理走过的路与生活片段。",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 50
+        }
+      },
+      {
+        "comment": "",
+        "key": "换一个词或日期试试。",
+        "location": {
+          "startingColumn": 131,
+          "startingLine": 50
+        }
+      },
+      {
+        "comment": "",
+        "key": "当日手记与健康 · %lld 项",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 71
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看完整片段和原始依据",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 94
+        }
+      },
+      {
+        "comment": "",
+        "key": "核对理解 ›",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 115
+        }
+      },
+      {
+        "comment": "",
+        "key": "地点",
+        "location": {
+          "startingColumn": 69,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "与这段生活记录关联的本机照片",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 153
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,56 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RiverNeumorphicSurface.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "RIVER DIARY",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 59
+        }
+      },
+      {
+        "comment": "",
+        "key": "选择全局日期，%@",
+        "location": {
+          "startingColumn": 90,
+          "startingLine": 63
+        }
+      },
+      {
+        "comment": "",
+        "key": "全局日期",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 54
+        }
+      },
+      {
+        "comment": "",
+        "key": "选择全局日期",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 50
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 89,
+          "startingLine": 55
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 项",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 80
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -65,7 +65,7 @@ TEST_DATABASE_URL='postgres://flowriver:local-only-change-this@127.0.0.1:5432/fl
 make build-linux GOARCH=amd64  # 若服务器是 ARM，设 GOARCH=arm64
 ```
 
-集成测试会在数据库中创建并删除 `test_*` schema；测试只接受 loopback 主机和数据库名含 `test` 的 `TEST_DATABASE_URL`，不要把线上账号库用作测试库。
+集成测试会在数据库中创建并删除 `test_*` schema；测试只接受 loopback 主机和数据库名含 `test` 的 `TEST_DATABASE_URL`，不要把线上账号库用作测试库。测试库必须使用 UTF8 编码；SQL_ASCII 会让中文 `User-Agent` 的字符长度检查误报。
 
 ## 首期接口
 
@@ -90,7 +90,7 @@ make build-linux GOARCH=amd64  # 若服务器是 ARM，设 GOARCH=arm64
 - `PUT /v1/me/memory-mirror`：创建用 `If-None-Match: *`；替换用 `If-Match: "<当前修订号>"`。请求体上限 24 MB，密文上限 16 MB（Web 客户端 8 MB），摘要只接受 `entries/days/places/collections/understandings/first/last` 白名单字段。
 - `DELETE /v1/me/memory-mirror`：必须带 `If-Match`；删云副本不删除本机或原生 App。
 
-所有接口按登录用户隔离；下载、上传、删除写入 `audit_events`（只记事件类型，不记密文）。账号删除由 `ON DELETE CASCADE` 级联清理云副本。没有默认开启、自动上传或自动合并：多端是手动快照，版本变化用前置条件阻止静默覆盖。
+所有接口按登录用户隔离；下载、上传、删除写入 `audit_events`（只记事件类型，不记密文）。用户级限流为上传 20/小时、下载 120/小时、删除 30/小时、meta 240/小时；429 附带 `Retry-After`。账号删除由 `ON DELETE CASCADE` 级联清理云副本。没有默认开启、自动上传或自动合并：多端是手动快照，版本变化用前置条件阻止静默覆盖。
 
 ## 当前交付边界
 

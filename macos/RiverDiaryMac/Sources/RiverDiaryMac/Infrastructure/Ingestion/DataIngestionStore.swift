@@ -59,6 +59,24 @@ final class DataIngestionStore: ObservableObject {
         didSet { UserDefaults.standard.set(collectsChrome, forKey: "ingestion.collectsChrome") }
     }
 
+    @Published private(set) var browserStatus: String = "未采集"
+
+    @Published private(set) var sharesBrowserURLs: Bool {
+        didSet { UserDefaults.standard.set(sharesBrowserURLs, forKey: "ingestion.sharesBrowserURLs") }
+    }
+
+    @Published private(set) var sharesNoteBodies: Bool {
+        didSet { UserDefaults.standard.set(sharesNoteBodies, forKey: "ingestion.sharesNoteBodies") }
+    }
+
+    @Published private(set) var sharesMarkdownBodies: Bool {
+        didSet { UserDefaults.standard.set(sharesMarkdownBodies, forKey: "ingestion.sharesMarkdownBodies") }
+    }
+
+    @Published private(set) var sharesKindleBodies: Bool {
+        didSet { UserDefaults.standard.set(sharesKindleBodies, forKey: "ingestion.sharesKindleBodies") }
+    }
+
     @Published private(set) var collectsNotes: Bool {
         didSet { UserDefaults.standard.set(collectsNotes, forKey: "ingestion.collectsNotes") }
     }
@@ -66,6 +84,67 @@ final class DataIngestionStore: ObservableObject {
     @Published private(set) var collectsScreenTime: Bool {
         didSet { UserDefaults.standard.set(collectsScreenTime, forKey: "ingestion.collectsScreenTime") }
     }
+
+    @Published private(set) var collectsCalendar: Bool {
+        didSet { UserDefaults.standard.set(collectsCalendar, forKey: "ingestion.collectsCalendar") }
+    }
+
+    /// 日历/提醒事项的授权与读取状态。读取失败要能显示，不能只留下一个空列表。
+    @Published private(set) var calendarStatus: String = "未连接"
+
+    @Published private(set) var collectsWeather: Bool {
+        didSet { UserDefaults.standard.set(collectsWeather, forKey: "ingestion.collectsWeather") }
+    }
+
+    @Published private(set) var weatherStatus: String = "未开启"
+
+    @Published private(set) var collectsMarkdown: Bool {
+        didSet { UserDefaults.standard.set(collectsMarkdown, forKey: "ingestion.collectsMarkdown") }
+    }
+
+    @Published private(set) var markdownFolderURL: URL? {
+        didSet {
+            if let path = markdownFolderURL?.path {
+                UserDefaults.standard.set(path, forKey: "ingestion.markdownFolderPath")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "ingestion.markdownFolderPath")
+            }
+        }
+    }
+
+    @Published private(set) var markdownStatus: String = "未选择文件夹"
+
+    @Published private(set) var collectsKindle: Bool {
+        didSet { UserDefaults.standard.set(collectsKindle, forKey: "ingestion.collectsKindle") }
+    }
+
+    @Published private(set) var kindleFileURL: URL? {
+        didSet {
+            if let path = kindleFileURL?.path {
+                UserDefaults.standard.set(path, forKey: "ingestion.kindleFilePath")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "ingestion.kindleFilePath")
+            }
+        }
+    }
+
+    @Published private(set) var kindleStatus: String = "未选择 My Clippings.txt"
+
+    @Published private(set) var collectsGit: Bool {
+        didSet { UserDefaults.standard.set(collectsGit, forKey: "ingestion.collectsGit") }
+    }
+
+    @Published private(set) var gitRootURL: URL? {
+        didSet {
+            if let path = gitRootURL?.path {
+                UserDefaults.standard.set(path, forKey: "ingestion.gitRootPath")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "ingestion.gitRootPath")
+            }
+        }
+    }
+
+    @Published private(set) var gitStatus: String = "未选择代码目录"
 
     @Published private(set) var retentionDays: Int {
         didSet { UserDefaults.standard.set(retentionDays, forKey: "ingestion.retentionDays") }
@@ -138,7 +217,28 @@ final class DataIngestionStore: ObservableObject {
         collectsHealth = UserDefaults.standard.object(forKey: "ingestion.collectsHealth") as? Bool ?? true
         collectsChrome = UserDefaults.standard.object(forKey: "ingestion.collectsChrome") as? Bool ?? true
         collectsNotes = UserDefaults.standard.object(forKey: "ingestion.collectsNotes") as? Bool ?? true
+        sharesBrowserURLs = UserDefaults.standard.object(forKey: "ingestion.sharesBrowserURLs") as? Bool ?? false
+        sharesNoteBodies = UserDefaults.standard.object(forKey: "ingestion.sharesNoteBodies") as? Bool ?? false
+        sharesMarkdownBodies = UserDefaults.standard.object(forKey: "ingestion.sharesMarkdownBodies") as? Bool ?? false
+        sharesKindleBodies = UserDefaults.standard.object(forKey: "ingestion.sharesKindleBodies") as? Bool ?? false
         collectsScreenTime = UserDefaults.standard.object(forKey: "ingestion.collectsScreenTime") as? Bool ?? true
+        collectsCalendar = UserDefaults.standard.object(forKey: "ingestion.collectsCalendar") as? Bool ?? false
+        collectsWeather = UserDefaults.standard.object(forKey: "ingestion.collectsWeather") as? Bool ?? false
+        collectsMarkdown = UserDefaults.standard.object(forKey: "ingestion.collectsMarkdown") as? Bool ?? false
+        if let path = UserDefaults.standard.string(forKey: "ingestion.markdownFolderPath"),
+           FileManager.default.fileExists(atPath: path) {
+            markdownFolderURL = URL(fileURLWithPath: path)
+        }
+        collectsKindle = UserDefaults.standard.object(forKey: "ingestion.collectsKindle") as? Bool ?? false
+        if let path = UserDefaults.standard.string(forKey: "ingestion.kindleFilePath"),
+           FileManager.default.fileExists(atPath: path) {
+            kindleFileURL = URL(fileURLWithPath: path)
+        }
+        collectsGit = UserDefaults.standard.object(forKey: "ingestion.collectsGit") as? Bool ?? false
+        if let path = UserDefaults.standard.string(forKey: "ingestion.gitRootPath"),
+           FileManager.default.fileExists(atPath: path) {
+            gitRootURL = URL(fileURLWithPath: path)
+        }
         retentionDays = UserDefaults.standard.object(forKey: "ingestion.retentionDays") as? Int ?? 0
 
         if let saved = UserDefaults.standard.string(forKey: "ingestion.sourcePath"),
@@ -199,6 +299,125 @@ final class DataIngestionStore: ObservableObject {
         collectsNotes = notes
         collectsScreenTime = screenTime
         lastStatus = "数据源设置已更新。"
+    }
+
+    func setCalendarEnabled(_ enabled: Bool) {
+        collectsCalendar = enabled
+        if enabled {
+            lastStatus = "日历与提醒事项已加入采集；首次需要授权。"
+            Task { await requestCalendarAccess() }
+        } else {
+            calendarStatus = "已关闭"
+        }
+    }
+
+    func requestCalendarAccess() async {
+        let issue = await CalendarContextReader.requestAccess()
+        calendarStatus = issue ?? "已授权，下一次采集读取今天的日程与完成提醒。"
+    }
+
+    func setWeatherEnabled(_ enabled: Bool) {
+        collectsWeather = enabled
+        weatherStatus = enabled ? "下一次采集读取日级天气（需要最近 24 小时内的位置）" : "已关闭"
+    }
+
+    func setMarkdownEnabled(_ enabled: Bool) {
+        collectsMarkdown = enabled
+        if enabled {
+            markdownStatus = markdownFolderURL == nil ? "请选择一个 Markdown 文件夹" : "下一次采集读取今天修改的 Markdown"
+        } else {
+            markdownStatus = "已关闭"
+        }
+    }
+
+    func connectMarkdownFolder(_ url: URL) {
+        markdownFolderURL = url
+        markdownStatus = "已选择 \(url.lastPathComponent)"
+    }
+
+    func clearMarkdownFolder() {
+        markdownFolderURL = nil
+        markdownStatus = "未选择文件夹"
+    }
+
+    func setShareBrowserURLs(_ enabled: Bool) { sharesBrowserURLs = enabled }
+    func setShareNoteBodies(_ enabled: Bool) { sharesNoteBodies = enabled }
+    func setShareMarkdownBodies(_ enabled: Bool) { sharesMarkdownBodies = enabled }
+    func setShareKindleBodies(_ enabled: Bool) { sharesKindleBodies = enabled }
+
+    func setKindleEnabled(_ enabled: Bool) {
+        collectsKindle = enabled
+        if enabled {
+            kindleStatus = kindleFileURL == nil ? "请选择 My Clippings.txt" : "下一次采集读取今天添加的划线"
+        } else {
+            kindleStatus = "已关闭"
+        }
+    }
+
+    func connectKindleFile(_ url: URL) {
+        kindleFileURL = url
+        kindleStatus = "已选择 \(url.lastPathComponent)"
+    }
+
+    func clearKindleFile() {
+        kindleFileURL = nil
+        kindleStatus = "未选择 My Clippings.txt"
+    }
+
+    func setGitEnabled(_ enabled: Bool) {
+        collectsGit = enabled
+        if enabled {
+            gitStatus = gitRootURL == nil ? "请选择开发目录" : "下一次采集读取今天的本地提交"
+        } else {
+            gitStatus = "已关闭"
+        }
+    }
+
+    func connectGitRoot(_ url: URL) {
+        gitRootURL = url
+        gitStatus = "已选择 \(url.lastPathComponent)"
+    }
+
+    func clearGitRoot() {
+        gitRootURL = nil
+        gitStatus = "未选择代码目录"
+    }
+
+    /// 网页镜像用：按设备+天取最新快照，最多 400 天。
+    func dayContextSnapshotsForWeb(limit: Int = 400) -> [DayContextSnapshot] {
+        let contexts = v2Store.allRawEvents()
+            .filter { $0.kind == .dayContextSnapshot }
+            .compactMap { event -> (Date, DayContextSnapshot)? in
+                guard let json = event.payload.contextJSON,
+                      let snapshot = DayContextSnapshot.decodeJSON(json) else { return nil }
+                return (event.timestamp, snapshot)
+            }
+        let latest = Dictionary(grouping: contexts) { "\($0.1.deviceID)|\($0.1.day)" }
+            .values.compactMap { group in group.max { $0.0 < $1.0 }?.1 }
+        return Array(latest.sorted { $0.day > $1.day }.prefix(limit))
+    }
+
+    /// 展示其他设备（目前是 iPhone）的日上下文；同设备同天取最新快照。
+    private func insertRawEvents(_ events: [RawEvent]) {
+        for event in events where !v2Store.insertRawEvent(event) {
+            lastError = v2Store.lastError
+        }
+    }
+
+    func dayContextSnapshots(for date: Date) -> [DayContextSnapshot] {
+        let start = Calendar.current.startOfDay(for: date)
+        guard let end = Calendar.current.date(byAdding: .day, value: 1, to: start) else { return [] }
+        let localDeviceID = v2Store.localDeviceIdentifier()?.rawValue
+        let events = v2Store.rawEvents(between: start, end: end)
+            .filter { $0.kind == .dayContextSnapshot }
+        let grouped = Dictionary(grouping: events) { event in
+            event.payload.contextJSON.flatMap(DayContextSnapshot.decodeJSON)?.deviceID ?? event.source.rawValue
+        }
+        return grouped.values.compactMap { group in
+            group.max { $0.timestamp < $1.timestamp }?.payload.contextJSON.flatMap(DayContextSnapshot.decodeJSON)
+        }
+        .filter { $0.deviceID != localDeviceID }
+        .sorted { $0.deviceName < $1.deviceName }
     }
 
     func setRetention(days: Int) {
@@ -263,7 +482,7 @@ final class DataIngestionStore: ObservableObject {
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             try encoder.encode(record).write(to: url, options: .atomic)
             // 导出的是明文 JSON（含浏览器记录、快记正文），必须让用户知道这一点。
-            exportMessage = "已导出明文 JSON（含浏览记录与快记正文，请妥善保管）· \(url.lastPathComponent)"
+            exportMessage = "已导出明文 JSON（含浏览记录、备忘录与快记正文，请妥善保管）· \(url.lastPathComponent)"
         } catch {
             exportMessage = "导出失败：\(error.localizedDescription)"
         }
@@ -398,32 +617,138 @@ final class DataIngestionStore: ObservableObject {
             }.value
             try Task.checkCancellation()
 
-            // 4. Read Chrome history (background)
-            let chromeVisits = collectsChrome
+            // 4. Read browser history (background): Safari + Chromium profiles.
+            let browserResult = collectsChrome
                 ? await Task.detached(priority: .utility) {
-                    ChromeHistoryReader.readTodaysVisits()
+                    BrowserHistoryReader.readTodaysVisits()
                 }.value
-                : []
+                : BrowserHistoryReadResult(visits: [], issue: nil)
+            let chromeVisits = browserResult.visits
+            browserStatus = browserResult.issue ?? "今天 \(chromeVisits.count) 条浏览记录"
             try Task.checkCancellation()
 
-            // 5. Read Apple Notes (background)
-            let notes = collectsNotes
+            // 5. Read Apple Notes (background). 失败要保留原因，不能把“读不到”
+            // 伪装成“今天没有笔记”。
+            let notesResult = collectsNotes
                 ? await Task.detached(priority: .utility) {
                     AppleNotesReader.readTodaysNotes()
                 }.value
-                : []
+                : AppleNotesReadResult(entries: [], issue: nil)
+            let notes = notesResult.entries
             try Task.checkCancellation()
+
+            // 5b. Markdown folder (Obsidian/Logseq/Bear exports). Only files
+            // modified today; no background watching.
+            let markdownResult: MarkdownReadResult
+            if collectsMarkdown, let folder = markdownFolderURL {
+                markdownResult = await Task.detached(priority: .utility) {
+                    MarkdownNoteReader.readToday(folder: folder)
+                }.value
+                markdownStatus = markdownResult.issue ?? "今天 \(markdownResult.entries.count) 个 Markdown"
+            } else {
+                markdownResult = MarkdownReadResult(entries: [], issue: nil)
+                if collectsMarkdown {
+                    markdownStatus = "请选择一个 Markdown 文件夹"
+                }
+            }
+            // 5c. Kindle clippings: only entries added today.
+            let kindleResult: KindleReadResult
+            if collectsKindle, let fileURL = kindleFileURL {
+                kindleResult = await Task.detached(priority: .utility) {
+                    KindleClippingsReader.readToday(fileURL: fileURL)
+                }.value
+                kindleStatus = kindleResult.issue ?? "今天 \(kindleResult.entries.count) 条 Kindle 划线"
+            } else {
+                kindleResult = KindleReadResult(entries: [], issue: nil)
+                if collectsKindle {
+                    kindleStatus = "请选择 My Clippings.txt"
+                }
+            }
+            let allNotes = notes + markdownResult.entries + kindleResult.entries
+            try Task.checkCancellation()
+
+            // 5d. Local Git commits. Only repository names and counts.
+            var gitResult: GitActivityReadResult?
+            if collectsGit, let root = gitRootURL {
+                let result = await Task.detached(priority: .utility) {
+                    GitActivityReader.readToday(root: root)
+                }.value
+                gitResult = result
+                gitStatus = result.issue ?? "今天 \(result.totalCommits) 次提交 · \(result.repos.count) 个仓库"
+                for repo in result.repos {
+                    let event = RawEvent(
+                        id: RiverStableIdentifier.uuid(
+                            namespace: "mac.git.commit",
+                            key: "\(today)|\(repo.path)|\(repo.commits)"
+                        ),
+                        timestamp: Date(),
+                        source: .git,
+                        kind: .gitCommitDaily,
+                        payload: RawEventPayload(text: repo.name, commitCount: repo.commits),
+                        sourceHash: "\(today)|\(repo.name)|\(repo.commits)"
+                    )
+                    if !v2Store.insertRawEvent(event) {
+                        lastError = v2Store.lastError
+                    }
+                }
+            } else if collectsGit {
+                gitStatus = "请选择开发目录"
+            }
 
             // 6. Screen time from ActivityStore
             let screenSnapshot = collectsScreenTime ? targetActivity?.screenTimeSnapshot() : nil
+
+            // 6b. Calendar and reminders (EventKit, read-only). The events go to
+            // the V2 fact layer; the legacy daily record stays focused on the
+            // original pipeline.
+            var calendarSnapshot: CalendarContextSnapshot?
+            if collectsCalendar {
+                let snapshot = await CalendarContextReader.readToday()
+                calendarSnapshot = snapshot
+                for event in CalendarContextEvents.makeEvents(from: snapshot) {
+                    if !v2Store.insertRawEvent(event) {
+                        lastError = v2Store.lastError
+                    }
+                }
+            }
+
+            // 6c. Daily weather, only when there is a recent coordinate. It is
+            // ambient context, not an observation of the user.
+            var weatherContext: WeatherContext?
+            if collectsWeather {
+                if let coordinate = WeatherContextClient.latestCoordinate(from: v2Store.allRawEvents()),
+                   let context = await WeatherContextClient.fetchIfNeeded(
+                       dayKey: today,
+                       latitude: coordinate.latitude,
+                       longitude: coordinate.longitude
+                   ) {
+                    weatherContext = context
+                    weatherStatus = context.summary
+                    let event = RawEvent(
+                        timestamp: Date(),
+                        source: .weather,
+                        kind: .weatherDaily,
+                        payload: RawEventPayload(text: context.summary),
+                        sourceHash: "\(today)|\(context.summary)"
+                    )
+                    if !v2Store.insertRawEvent(event) {
+                        lastError = v2Store.lastError
+                    }
+                } else {
+                    weatherStatus = "没有可用位置；先连接地点或同步 iPhone 位置。"
+                }
+            }
+            try Task.checkCancellation()
 
             // 7. Build daily record
             var record = Self.buildDailyRecord(
                 date: today,
                 ios: iosData,
                 chrome: chromeVisits,
-                notes: notes,
-                screen: screenSnapshot
+                notes: allNotes,
+                screen: screenSnapshot,
+                weather: weatherContext,
+                git: gitResult
             )
 
             if !collectsHealth {
@@ -459,6 +784,70 @@ final class DataIngestionStore: ObservableObject {
             // persistV2Snapshot 失败时已写 lastStatus；成功状态不得覆盖它。
             if !lastStatus.contains("V2 事实库写入失败") {
                 lastStatus = "采集完成 · \(record.summary)"
+                if let notesIssue = notesResult.issue {
+                    lastStatus += "；\(notesIssue)"
+                }
+                if let markdownIssue = markdownResult.issue {
+                    lastStatus += "；\(markdownIssue)"
+                }
+                if let kindleIssue = kindleResult.issue {
+                    lastStatus += "；\(kindleIssue)"
+                }
+                if let gitIssue = gitResult?.issue {
+                    lastStatus += "；\(gitIssue)"
+                }
+            }
+            if let calendarSnapshot {
+                calendarStatus = calendarSnapshot.issue
+                    ?? "今天 \(calendarSnapshot.events.count) 个日程 · \(calendarSnapshot.reminders.count) 个完成提醒"
+            }
+
+            // 9b. Publish a cross-device day context. This is what the phone
+            // and the web console read; raw URLs/bodies stay in the local DB.
+            if let context = MacDayContextBuilder.build(
+                day: today,
+                deviceID: v2Store.localDeviceIdentifier()?.rawValue ?? "mac",
+                deviceName: Host.current().localizedName ?? "Mac",
+                browser: browserResult,
+                notes: notes,
+                markdown: markdownResult.entries,
+                kindle: kindleResult.entries,
+                calendar: calendarSnapshot,
+                weather: weatherContext,
+                git: gitResult,
+                screen: screenSnapshot,
+                shareBrowserURLs: sharesBrowserURLs,
+                shareNoteBodies: sharesNoteBodies,
+                shareMarkdownBodies: sharesMarkdownBodies,
+                shareKindleBodies: sharesKindleBodies
+            ), let json = try? context.encodedJSON() {
+                let hash = SHA256Hex.hash(Data(json.utf8))
+                let event = RawEvent(
+                    id: RiverStableIdentifier.uuid(namespace: "mac.dayContext", key: "\(today)|\(hash)"),
+                    timestamp: Date(),
+                    source: .dayContext,
+                    kind: .dayContextSnapshot,
+                    payload: RawEventPayload(text: context.searchText, contextJSON: json),
+                    sourceHash: hash
+                )
+                if !v2Store.insertRawEvent(event) {
+                    lastError = v2Store.lastError
+                }
+            }
+
+            // 9c. Raw evidence events, only when the user opted into full
+            // source sync. DayContext remains the read surface on the phone.
+            if sharesNoteBodies {
+                insertRawEvents(MacRawEventBuilder.noteEvents(notes, source: .notes, namespace: "mac.notes"))
+            }
+            if sharesMarkdownBodies {
+                insertRawEvents(MacRawEventBuilder.noteEvents(markdownResult.entries, source: .markdown, namespace: "mac.markdown"))
+            }
+            if sharesKindleBodies {
+                insertRawEvents(MacRawEventBuilder.noteEvents(kindleResult.entries, source: .kindle, namespace: "mac.kindle"))
+            }
+            if sharesBrowserURLs {
+                insertRawEvents(MacRawEventBuilder.browserEvents(browserResult.visits))
             }
 
             // 10. Export if configured
@@ -819,7 +1208,9 @@ final class DataIngestionStore: ObservableObject {
         ios: IngestedUserData,
         chrome: [ChromeVisit],
         notes: [DailyNoteEntry],
-        screen: ScreenTimeSnapshot?
+        screen: ScreenTimeSnapshot?,
+        weather: WeatherContext?,
+        git: GitActivityReadResult?
     ) -> DailyCaptureRecord {
         let today = DiaryEntry.dateFormatter.string(from: Date())
         let todayMood = ios.moodScores[today]
@@ -850,10 +1241,15 @@ final class DataIngestionStore: ObservableObject {
             quickNotes: todayQuickNotes,
             chromeVisits: chrome,
             chromeTotalVisits: chrome.reduce(0) { $0 + $1.visitCount },
-            chromeTopDomains: ChromeHistoryReader.topDomains(from: chrome),
+            chromeTopDomains: BrowserHistoryReader.topDomains(from: chrome),
             notesModified: notes,
             screenTimeMinutes: screen?.totalMinutes,
             screenTopApps: screen?.topApps ?? [],
+            focusMinutes: screen?.focusMinutes,
+            focusBlocks: screen?.focusBlocks,
+            weatherSummary: weather?.summary,
+            gitCommitCount: git?.totalCommits,
+            gitRepositories: git?.repos.map(\.name),
             mixedOverview: overview
         )
     }
@@ -874,7 +1270,7 @@ final class DataIngestionStore: ObservableObject {
 
         if !chromeVisits.isEmpty {
             let totalVisits = chromeVisits.reduce(0) { $0 + $1.visitCount }
-            let domains = ChromeHistoryReader.topDomains(from: chromeVisits, limit: 3).joined(separator: "、")
+            let domains = BrowserHistoryReader.topDomains(from: chromeVisits, limit: 3).joined(separator: "、")
             parts.append("浏览 \(totalVisits) 个页面（\(domains)）")
         }
 

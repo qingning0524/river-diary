@@ -1,0 +1,628 @@
+Xcode version: 27.0 (27A5252f)
+20:26:37.557 xcodebuild[61039:877944] Beginning test session RiverDiaryTests-DB9D0A69-BE58-4181-A0F1-EB874D37040D at 2026-10-21 20:26:37.557 on target <DVTiPhoneSimulator: 0x78093c8200> {
+		SimDevice: River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutdown)
+} (27.0 (24A5423a))
+20:26:37.557 xcodebuild[61039:877944] 	/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer/usr/bin/xcodebuild
+-project
+ios/RiverDiary/RiverDiary.xcodeproj
+-scheme
+RiverDiaryTests
+-configuration
+Debug
+-destination
+platform=iOS Simulator,id=F5DF30D3-B218-4E95-91DB-CB96E99E3C23
+-derivedDataPath
+ios/.auditbuild-for-testing
+-parallel-testing-enabled
+NO
+-only-testing:RiverDiaryTests/IPhoneDayContextBuilderTests
+test-without-building
+20:26:37.558 xcodebuild[61039:877944] Test standard output and standard error is at /Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Logs/Test/Test-RiverDiaryTests-2026.10.21_20-26-37-+0800.xcresult/Staging/1_Test/Diagnostics/RiverDiaryTests-70C10EFD-ECD8-4292-B001-72FD75BC3E55-Configuration-Test Scheme Action-Iteration-1/RiverDiaryTests-75D40FBE-5326-4D3D-AAB2-A3FDF19A7938/StandardOutputAndStandardError.txt
+20:26:37.752 xcodebuild[61039:877944] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Received sim device notification: {
+    notification = "availableDevices_changed";
+}
+20:26:37.752 xcodebuild[61039:877944] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Received sim device notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.752 xcodebuild[61039:877946] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.768 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.769 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.769 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.769 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:37.769 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booting)";
+    "last_used_at" = "2026-10-21 12:26:37 +0000";
+    "new_state" = 2;
+    notification = "device_state";
+    "prev_state" = 1;
+}
+20:26:38.002 xcodebuild[61039:877944] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Received sim device notification: {
+    notification = "availableDevices_changed";
+}
+20:26:38.002 xcodebuild[61039:877944] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Received sim device notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.002 xcodebuild[61039:877981] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.003 xcodebuild[61039:877975] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> claim LaunchSessionClaim_0x780bcd2880 on simulator was issued, 2 claims exist.
+20:26:38.016 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.016 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.016 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.016 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.016 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.017 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Booted)";
+    "new_state" = 3;
+    notification = "device_state";
+    "prev_state" = 2;
+}
+20:26:38.019 xcodebuild[61039:877944] Setting up test runner session
+20:26:38.019 xcodebuild[61039:877981] Sim River System Unit QA: Unregistering for sim device notification with token 5
+20:26:38.019 xcodebuild[61039:877981] Calling -[SimDevice getenv:error:] for TESTMANAGERD_SIM_SOCK
+20:26:38.019 xcodebuild[61039:877944] Registering/updating daemon-based crash report observer for process names (
+    xctest,
+    debugserver,
+    FrontBoard,
+    assertiond,
+    runningboardd,
+    SpringBoard,
+    testmanagerd,
+    backboardd,
+    DTServiceHub,
+    RiverDiary
+)
+20:26:38.120 xcodebuild[61039:877981] Sim River System Unit QA has testmanagerd socket at /private/var/tmp/com.apple.launchd.HBPWWi05W7/com.apple.testmanagerd.unix-domain.socket
+20:26:38.120 xcodebuild[61039:877981] Validating test connection socket path (/private/var/tmp/com.apple.launchd.HBPWWi05W7/com.apple.testmanagerd.unix-domain.socket)
+20:26:38.120 xcodebuild[61039:877981] Constructing transport for test connection socket
+20:26:38.120 xcodebuild[61039:877981] Connected socket 28 to testmanagerd for Sim River System Unit QA
+20:26:38.121 xcodebuild[61039:877981] Received connection for test runner session
+20:26:38.121 xcodebuild[61039:877981] Listening for proxy connection request from the test bundle
+20:26:38.131 xcodebuild[61039:877981] Initiating session with identifier: DB9D0A69-BE58-4181-A0F1-EB874D37040D
+20:26:38.135 xcodebuild[61039:877944] Test runner session acquired connection.
+20:26:41.166 xcodebuild[61039:877974] Got reply to session initiation request with identifier DB9D0A69-BE58-4181-A0F1-EB874D37040D (error: (null))
+20:26:41.189 xcodebuild[61039:877944] Finished requesting crash reports. Continuing with testing.
+20:26:43.328 xcodebuild[61039:877944] Launch session started.
+20:26:44.217 xcodebuild[61039:877974] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> claim LaunchSessionClaim_0x780bcd2880 on simulator was issued, 2 claims exist.
+20:26:45.538 xcodebuild[61039:877978] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> claim LaunchSessionClaim_0x780bcd2880 on simulator was issued, 2 claims exist.
+20:26:45.538 xcodebuild[61039:877978] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Registered for sim device notification, got token 8
+20:26:45.539 xcodebuild[61039:877947] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Unregistering for sim device notification with token 8
+20:26:45.542 xcodebuild[61039:877978] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Installing app at path: /Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator/RiverDiary.app and options: {
+    SkipWatchAppInstall = 1;
+}
+20:27:03.631 xcodebuild[61039:877978] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Installed app at path: /Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator/RiverDiary.app and options: {
+    SkipWatchAppInstall = 1;
+}
+20:27:06.911 xcodebuild[61039:877978] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Launching app with identifier: local.riverdiary.app and options: {
+    "activate_suspended" = 0;
+    arguments =     (
+    );
+    environment =     {
+        "APP_DISTRIBUTOR_ID_OVERRIDE" = "com.apple.AppStore";
+        "CA_ASSERT_MAIN_THREAD_TRANSACTIONS" = 0;
+        "CA_DEBUG_TRANSACTIONS" = 0;
+        "DYLD_FRAMEWORK_PATH" = "/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator/PackageFrameworks:/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator/PackageFrameworks:/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks";
+        "DYLD_INSERT_LIBRARIES" = "/usr/lib/libRPAC.dylib:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator/RiverDiary.app/Frameworks/libXCTestBundleInject.dylib:/Library/Developer/CoreSimulator/Volumes/iOS_24A5423a/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/usr/lib/libMainThreadChecker.dylib:/usr/lib/libRPAC.dylib:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator/RiverDiary.app/Frameworks/libXCTestBundleInject.dylib:/Library/Developer/CoreSimulator/Volumes/iOS_24A5423a/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/usr/lib/libMainThreadChecker.dylib:/usr/lib/libRPAC.dylib";
+        "DYLD_LIBRARY_PATH" = "/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator:/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator:/Users/fa1lingdown/Downloads/Xcode-beta.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib";
+        "IDE_CHOSEN_LOGGING_METHOD" = 1;
+        "LLVM_PROFILE_FILE" = "/dev/null";
+        NSUnbufferedIO = YES;
+        "OS_ACTIVITY_DT_MODE" = YES;
+        "PERFC_ENABLE_EXTENDED_DIAGNOSTIC_FORMAT" = 1;
+        "PERFC_ENABLE_PROFILE_MODE" = 1;
+        "PERFC_RESET_INSERT_LIBRARIES" = 1;
+        "PERFC_SUPPRESS_SYSTEM_REPORTS" = 1;
+        "RUN_DESTINATION_DEVICE_NAME" = "River System Unit QA";
+        "RUN_DESTINATION_DEVICE_PLATFORM_IDENTIFIER" = "com.apple.platform.iphonesimulator";
+        "RUN_DESTINATION_DEVICE_UDID" = "F5DF30D3-B218-4E95-91DB-CB96E99E3C23";
+        "SQLITE_ENABLE_THREAD_ASSERTIONS" = 1;
+        "SWIFT_BACKTRACE" = "enable=no";
+        TERM = dumb;
+        XCInjectBundleInto = unused;
+        "XCODE_SCHEME_NAME" = RiverDiaryTests;
+        XCTestBundleInjectPath = "/usr/lib/libRPAC.dylib:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator/RiverDiary.app/Frameworks/libXCTestBundleInject.dylib:/Library/Developer/CoreSimulator/Volumes/iOS_24A5423a/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/usr/lib/libMainThreadChecker.dylib:/usr/lib/libRPAC.dylib:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator/RiverDiary.app/Frameworks/libXCTestBundleInject.dylib:/Library/Developer/CoreSimulator/Volumes/iOS_24A5423a/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/usr/lib/libMainThreadChecker.dylib:/usr/lib/libRPAC.dylib";
+        XCTestBundlePath = "PlugIns/RiverDiaryTests.xctest";
+        XCTestConfigurationFilePath = "";
+        XCTestSessionIdentifier = "DB9D0A69-BE58-4181-A0F1-EB874D37040D";
+        "__XCODE_BUILT_PRODUCTS_DIR_PATHS" = "/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator";
+        "__XPC_DYLD_FRAMEWORK_PATH" = "/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator";
+        "__XPC_DYLD_LIBRARY_PATH" = "/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator:/Users/fa1lingdown/Desktop/\U6cb3\U6d41\U65e5\U8bb0\U9879\U76ee/ios/.auditbuild-for-testing/Build/Products/Debug-iphonesimulator";
+        "__XPC_LLVM_PROFILE_FILE" = "/dev/null";
+    };
+    stderr = "/dev/ttys000";
+    stdout = "/dev/ttys000";
+    "terminate_running_process" = 1;
+    "wait_for_debugger" = 1;
+}
+20:27:07.193 xcodebuild[61039:877982] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Launched app with identifier: local.riverdiary.app (pid = 61288)
+20:27:07.199 xcodebuild[61039:877982] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> tracking pid 61288
+20:27:07.200 xcodebuild[61039:877982] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> checking to see if pid 61288 is valid: kill(pid, 0) = 0 (YES, it's still running)
+20:27:07.213 xcodebuild[61039:877982] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Registered for sim device notification, got token 10
+20:27:07.216 xcodebuild[61039:881125] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Unregistering for sim device notification with token 10
+20:27:08.391 xcodebuild[61039:877982] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> unable to connect to "com.apple.instruments.deviceservice.lockdown" (Error Domain=DVTiPhoneSimulatorErrorDomain Code=-1 "DTServiceHubClient failed to bless service hub for simulator River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23)" UserInfo={NSLocalizedDescription=DTServiceHubClient failed to bless service hub for simulator River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23), NSUnderlyingError=0x7808c22d00 {Error Domain=DTServiceHubClient Code=1 "'localDeviceConnectionWithError:' failed but didn't provide an error." UserInfo={NSLocalizedDescription='localDeviceConnectionWithError:' failed but didn't provide an error.}}})
+20:27:08.401 xcodebuild[61039:880867] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Registered for sim device notification, got token 12
+20:27:08.607 xcodebuild[61039:877982] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Unregistering for sim device notification with token 12
+20:27:09.294 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.294 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.295 xcodebuild[61039:877944] Nothing to delete
+20:27:09.697 xcodebuild[61039:880867] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> unable to connect to "com.apple.instruments.deviceservice.lockdown" (Error Domain=DVTiPhoneSimulatorErrorDomain Code=-1 "DTServiceHubClient failed to bless service hub for simulator River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23)" UserInfo={NSLocalizedDescription=DTServiceHubClient failed to bless service hub for simulator River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23), NSUnderlyingError=0x7809745d10 {Error Domain=DTServiceHubClient Code=1 "'localDeviceConnectionWithError:' failed but didn't provide an error." UserInfo={NSLocalizedDescription='localDeviceConnectionWithError:' failed but didn't provide an error.}}})
+20:27:09.790 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.790 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.790 xcodebuild[61039:877944] Nothing to delete
+20:27:09.792 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.792 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.792 xcodebuild[61039:877944] Nothing to delete
+20:27:09.792 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.792 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.792 xcodebuild[61039:877944] Nothing to delete
+20:27:09.792 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.792 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.793 xcodebuild[61039:877944] Nothing to delete
+20:27:09.793 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.793 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.793 xcodebuild[61039:877944] Nothing to delete
+20:27:09.801 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.802 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.802 xcodebuild[61039:877944] Nothing to delete
+20:27:09.803 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.803 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.803 xcodebuild[61039:877944] Nothing to delete
+20:27:09.824 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.824 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.824 xcodebuild[61039:877944] Nothing to delete
+20:27:09.824 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.824 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.824 xcodebuild[61039:877944] Nothing to delete
+20:27:09.824 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:09.824 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:09.824 xcodebuild[61039:877944] Nothing to delete
+20:27:10.038 xcodebuild[61039:877944] Test process runnable PID is 61288.
+20:27:10.038 xcodebuild[61039:881126] XCTHTestOperationStateMachine: Transitioning from state Initial to AcquiredPID
+20:27:10.066 xcodebuild[61039:880867] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Registered for sim device notification, got token 14
+20:27:10.067 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.067 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.067 xcodebuild[61039:877944] Nothing to delete
+20:27:10.067 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.067 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.067 xcodebuild[61039:877944] Nothing to delete
+20:27:10.069 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.069 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.070 xcodebuild[61039:881126] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Unregistering for sim device notification with token 14
+20:27:10.428 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.428 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.429 xcodebuild[61039:877944] Nothing to delete
+20:27:10.525 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.525 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.525 xcodebuild[61039:877944] Nothing to delete
+20:27:10.615 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.616 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.616 xcodebuild[61039:877944] Nothing to delete
+20:27:10.617 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.617 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.617 xcodebuild[61039:877944] Nothing to delete
+20:27:10.808 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.808 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.808 xcodebuild[61039:877944] Nothing to delete
+20:27:10.879 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.884 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.885 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.885 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.885 xcodebuild[61039:877944] Nothing to delete
+20:27:10.907 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.917 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.937 xcodebuild[61039:877944] Nothing to delete
+20:27:10.999 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:10.999 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:10.999 xcodebuild[61039:877944] Nothing to delete
+20:27:10.984 xcodebuild[61039:880867] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> unable to connect to "com.apple.instruments.deviceservice.lockdown" (Error Domain=DVTiPhoneSimulatorErrorDomain Code=-1 "DTServiceHubClient failed to bless service hub for simulator River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23)" UserInfo={NSLocalizedDescription=DTServiceHubClient failed to bless service hub for simulator River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23), NSUnderlyingError=0x7808c22df0 {Error Domain=DTServiceHubClient Code=1 "'localDeviceConnectionWithError:' failed but didn't provide an error." UserInfo={NSLocalizedDescription='localDeviceConnectionWithError:' failed but didn't provide an error.}}})
+20:27:11.154 xcodebuild[61039:880867] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Registered for sim device notification, got token 16
+20:27:11.202 xcodebuild[61039:881126] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Unregistering for sim device notification with token 16
+20:27:11.485 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:11.485 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:11.485 xcodebuild[61039:877944] Nothing to delete
+20:27:11.519 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:11.519 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:11.604 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:11.606 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:11.606 xcodebuild[61039:877944] Nothing to delete
+20:27:11.661 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:11.661 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:11.662 xcodebuild[61039:877944] Nothing to delete
+20:27:11.670 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:11.675 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:11.676 xcodebuild[61039:877944] Nothing to delete
+20:27:11.672 xcodebuild[61039:880867] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> unable to connect to "com.apple.instruments.deviceservice.lockdown" (Error Domain=DVTiPhoneSimulatorErrorDomain Code=-1 "DTServiceHubClient failed to bless service hub for simulator River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23)" UserInfo={NSLocalizedDescription=DTServiceHubClient failed to bless service hub for simulator River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23), NSUnderlyingError=0x7808c21590 {Error Domain=DTServiceHubClient Code=1 "'localDeviceConnectionWithError:' failed but didn't provide an error." UserInfo={NSLocalizedDescription='localDeviceConnectionWithError:' failed but didn't provide an error.}}})
+20:27:11.686 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:11.686 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:11.686 xcodebuild[61039:877944] Nothing to delete
+20:27:11.749 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:11.749 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:11.749 xcodebuild[61039:877944] Nothing to delete
+20:27:11.749 xcodebuild[61039:877944] Handling Crash: DTServiceHub
+20:27:11.749 xcodebuild[61039:877944] Dropping test runner session call '-[XCTTestRunnerSession processCrashedWithMetadata:]' because the test runner hasn't connected yet.
+20:27:11.749 xcodebuild[61039:877944] Nothing to delete
+20:30:29.897 xcodebuild[61039:894993] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:29.897 xcodebuild[61039:877944] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Received sim device notification: {
+    notification = "availableDevices_changed";
+}
+20:30:29.898 xcodebuild[61039:877944] F5DF30D3-B218-4E95-91DB-CB96E99E3C23: Received sim device notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.499 xcodebuild[61039:895624] <XCTTestRunnerSession: 0x78097be3a0> lost its connection.
+20:30:30.499 xcodebuild[61039:895597] Closing socket 28 to testmanagerd for Sim River System Unit QA
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.529 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.530 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.530 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.530 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.530 xcodebuild[61039:877944] /Users/fa1lingdown/Library/Developer/CoreSimulator/Devices: Received sim device set notification: {
+    device = "River System Unit QA (F5DF30D3-B218-4E95-91DB-CB96E99E3C23, iOS 27.0, Shutting Down)";
+    "new_state" = 4;
+    notification = "device_state";
+    "prev_state" = 3;
+}
+20:30:30.537 xcodebuild[61039:877944] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> got death notice for pid 61288 (exit code: (null), signal: 15), removing from SimulatorSessionMap
+20:30:30.537 xcodebuild[61039:877944] Lost connection to test process
+20:30:30.537 xcodebuild[61039:894992] XCTHTestOperationStateMachine: Transitioning from state AcquiredPID to PendingFinalization
+20:30:30.538 xcodebuild[61039:877944] Nothing to delete
+20:30:30.538 xcodebuild[61039:877944] <XCTHTestOperationCoordinator: 0x780bcd2b80> is flushing delegate queue, count: 1
+20:30:30.555 xcodebuild[61039:877944] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> claim LaunchSessionClaim_0x780bcd2880 on simulator was relinquished, 1 claims remain.
+20:30:30.555 xcodebuild[61039:877944] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> claim LaunchSessionClaim_0x780bcd2880 on simulator was relinquished, 1 claims remain.
+20:30:30.555 xcodebuild[61039:877944] 📱<DVTiPhoneSimulator (0x78093c8200), River System Unit QA, unknown class, 27.0 (24A5423a), F5DF30D3-B218-4E95-91DB-CB96E99E3C23> claim LaunchSessionClaim_0x780bcd2880 on simulator was relinquished, 1 claims remain.
+20:30:30.556 xcodebuild[61039:877944] Launch session expired.
+20:30:30.557 xcodebuild[61039:877944] Requesting crash reporter synchronization
+20:30:30.942 xcodebuild[61039:877944] <XCTHTestOperationCoordinator: 0x780bcd2b80> finished receiving data from testing launch session
+20:30:30.942 xcodebuild[61039:877944] <XCTHTestOperationCoordinator: 0x780bcd2b80>: _considerFlushingDelegateBlockQueue - nothing to flush
+20:30:30.942 xcodebuild[61039:877944] Nothing to delete

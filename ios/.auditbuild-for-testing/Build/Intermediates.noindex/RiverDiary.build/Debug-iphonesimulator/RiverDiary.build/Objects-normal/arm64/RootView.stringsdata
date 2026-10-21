@@ -1,0 +1,24 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RootView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "99+",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 154
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 154
+        }
+      }
+    ]
+  },
+  "version": 1
+}

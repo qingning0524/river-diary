@@ -1,0 +1,24 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RiverDesignSystem.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "River，个人记忆系统",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 42
+        }
+      },
+      {
+        "comment": "",
+        "key": "RIVER OS",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 29
+        }
+      }
+    ]
+  },
+  "version": 1
+}

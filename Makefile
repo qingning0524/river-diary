@@ -1,4 +1,4 @@
-.PHONY: build test check verify backup web ios mac mac-signed swift-test verify-all gate clean clean-preview user-console-test
+.PHONY: build test check verify backup web ios mac mac-signed swift-test verify-all gate clean clean-preview user-console-test privacy-scan-build dmg
 
 check: test
 	python3 -m compileall -q build.py pipeline
@@ -35,9 +35,15 @@ ios: test
 	zsh -c 'source scripts/select_xcode.sh && xcodebuild -project ios/RiverDiary/RiverDiary.xcodeproj -scheme RiverDiary \
 		-configuration Debug -destination "generic/platform=iOS Simulator" \
 	-derivedDataPath ios/.simbuild build'
+	./scripts/verify_build_privacy.sh
 
 mac:
 	./macos/RiverDiaryMac/make_app.sh
+	./scripts/verify_build_privacy.sh
+
+# 赞助演示用未公证 DMG；不做公证/签名，附安装说明与 SHA-256。
+dmg: mac
+	./scripts/make_mac_dmg.sh
 
 # 本机日常使用请用这个目标：用开发者证书做稳定签名，钥匙串授权点一次
 # “始终允许”后，重新构建也不会再反复弹密码。
@@ -60,6 +66,9 @@ gate:
 
 swift-test:
 	./scripts/test_macos_isolated.sh --disable-sandbox
+
+privacy-scan-build:
+	./scripts/verify_build_privacy.sh
 
 clean:
 	python3 scripts/clean_project.py --apply

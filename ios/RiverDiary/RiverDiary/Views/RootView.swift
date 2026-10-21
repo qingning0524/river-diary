@@ -40,7 +40,9 @@ struct RootView: View {
 
     var body: some View {
         Group {
-        if !isQALoginPreview && (account.isSignedIn || isQADesignSession) {
+        if isQALoginPreview {
+            AccountLoginView()
+        } else if node.database != nil || isQADesignSession {
         VStack(spacing: 0) {
         RiverSharedDateHeader()
         TabView(selection: $coordinator.selectedTab) {
@@ -85,7 +87,11 @@ struct RootView: View {
         .environmentObject(coordinator)
         .environmentObject(drafts)
         } else {
-            AccountLoginView()
+            LocalLibraryUnavailableView(
+                message: node.initializationError ?? "本机资料库暂时无法打开。"
+            ) {
+                node.retryOpen()
+            }
         }
         }
         .task {
@@ -107,6 +113,44 @@ struct RootView: View {
     }
 
 
+}
+
+private struct LocalLibraryUnavailableView: View {
+    @Environment(\.riverTheme) private var theme
+    let message: String
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Image(systemName: "externaldrive.badge.exclamationmark")
+                .font(.system(size: 30, weight: .medium))
+                .foregroundStyle(theme.warning)
+            Text("本机资料暂时打不开")
+                .font(theme.titleFont)
+                .foregroundStyle(theme.ink)
+            Text("你的日记仍在本机。请先重试；如果持续失败，不要新建空库覆盖，先导出/救援。")
+                .font(theme.detailFont)
+                .foregroundStyle(theme.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(message)
+                .font(.system(.footnote, design: .monospaced))
+                .foregroundStyle(theme.ink)
+                .textSelection(.enabled)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(theme.surface, in: RoundedRectangle(cornerRadius: 12))
+            Button("重试打开本机资料", action: retry)
+                .font(.body.weight(.semibold))
+                .frame(minHeight: 44)
+                .padding(.horizontal, 18)
+                .background(theme.accentSoft, in: Capsule())
+                .foregroundStyle(theme.accentText)
+        }
+        .padding(24)
+        .frame(maxWidth: 520, maxHeight: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(theme.canvas.ignoresSafeArea())
+    }
 }
 
 private struct RiverIOSBottomBar: View {

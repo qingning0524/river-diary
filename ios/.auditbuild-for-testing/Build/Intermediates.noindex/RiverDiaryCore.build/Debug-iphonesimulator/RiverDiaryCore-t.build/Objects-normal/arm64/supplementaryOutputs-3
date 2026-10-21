@@ -1,0 +1,23 @@
+{
+  "/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore/Sources/RiverDiaryCore/LANReplication.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LANReplication.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LANReplication.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LANReplication.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LANReplication.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LANReplication.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore/Sources/RiverDiaryCore/LocalBackup.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LocalBackup.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LocalBackup.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LocalBackup.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LocalBackup.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/LocalBackup.swiftdeps"
+  },
+  "/Users/fa1lingdown/Desktop/河流日记项目/Packages/RiverDiaryCore/Sources/RiverDiaryCore/MemoryMirrorExport.swift" : {
+    "const-values" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/MemoryMirrorExport.swiftconstvalues",
+    "dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/MemoryMirrorExport.d",
+    "diagnostics" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/MemoryMirrorExport.dia",
+    "object" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/MemoryMirrorExport.o",
+    "swift-dependencies" : "/Users/fa1lingdown/Desktop/河流日记项目/ios/.auditbuild-for-testing/Build/Intermediates.noindex/RiverDiaryCore.build/Debug-iphonesimulator/RiverDiaryCore-t.build/Objects-normal/arm64/MemoryMirrorExport.swiftdeps"
+  }
+}

@@ -1,0 +1,320 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RiverUnderstandingView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "地点、事实与习惯确认，%lld 条待确认内容",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 336
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 正在整理可用资料…",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 116
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI 设置与资料范围",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 177
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 今日智能伴随",
+        "location": {
+          "startingColumn": 69,
+          "startingLine": 172
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 当日智能伴随",
+        "location": {
+          "startingColumn": 98,
+          "startingLine": 172
+        }
+      },
+      {
+        "comment": "",
+        "key": "按你的授权，理解生活记忆",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 173
+        }
+      },
+      {
+        "comment": "",
+        "key": "随身搭子 · 本机记忆检索",
+        "location": {
+          "startingColumn": 83,
+          "startingLine": 173
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 段生活线索",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 183
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 条记忆",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 185
+        }
+      },
+      {
+        "comment": "",
+        "key": "点击填入",
+        "location": {
+          "startingColumn": 172,
+          "startingLine": 188
+        }
+      },
+      {
+        "comment": "",
+        "key": "你可以试着这样问我",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 188
+        }
+      },
+      {
+        "comment": "",
+        "key": "填入后可编辑并发送",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 202
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 设置与资料范围",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 244
+        }
+      },
+      {
+        "comment": "",
+        "key": "River",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 231
+        }
+      },
+      {
+        "comment": "",
+        "key": "让经历成为理解",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 233
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看记录",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 262
+        }
+      },
+      {
+        "comment": "",
+        "key": "按授权范围回答",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 273
+        }
+      },
+      {
+        "comment": "",
+        "key": "本机资料检索",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 273
+        }
+      },
+      {
+        "comment": "",
+        "key": "设置 AI",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 277
+        }
+      },
+      {
+        "comment": "",
+        "key": "设置 AI 连接与资料范围",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 280
+        }
+      },
+      {
+        "comment": "",
+        "key": "从这里开始",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 310
+        }
+      },
+      {
+        "comment": "",
+        "key": "填入问题后，你可以编辑并发送",
+        "location": {
+          "startingColumn": 77,
+          "startingLine": 374
+        }
+      },
+      {
+        "comment": "",
+        "key": "确认与纠正",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 324
+        }
+      },
+      {
+        "comment": "",
+        "key": "有 %lld 条理解需要你核对",
+        "location": {
+          "startingColumn": 60,
+          "startingLine": 324
+        }
+      },
+      {
+        "comment": "",
+        "key": "已有的理解",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 342
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看这一天的依据",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 345
+        }
+      },
+      {
+        "comment": "",
+        "key": "你",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 387
+        }
+      },
+      {
+        "comment": "",
+        "key": "River",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 387
+        }
+      },
+      {
+        "comment": "",
+        "key": "相关时间线记录",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 412
+        }
+      },
+      {
+        "comment": "",
+        "key": "相关长期记忆",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 437
+        }
+      },
+      {
+        "comment": "",
+        "key": "重新编辑这个问题",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 459
+        }
+      },
+      {
+        "comment": "",
+        "key": "这次没有成功生成回答",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 481
+        }
+      },
+      {
+        "comment": "",
+        "key": "所选一天 · AI 回答",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 506
+        }
+      },
+      {
+        "comment": "",
+        "key": "所选一天 · 本机检索",
+        "location": {
+          "startingColumn": 64,
+          "startingLine": 506
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 510
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 80,
+          "startingLine": 511
+        }
+      },
+      {
+        "comment": "",
+        "key": "问问这一天，或找一段记忆…",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 516
+        }
+      },
+      {
+        "comment": "",
+        "key": "问 River",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 527
+        }
+      },
+      {
+        "comment": "",
+        "key": "发送问题",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 542
+        }
+      }
+    ]
+  },
+  "version": 1
+}

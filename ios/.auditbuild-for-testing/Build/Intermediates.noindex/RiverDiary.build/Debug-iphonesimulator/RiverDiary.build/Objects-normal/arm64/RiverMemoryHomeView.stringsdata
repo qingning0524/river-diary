@@ -1,0 +1,704 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RiverMemoryHomeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "找到 %lld 项 · %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 121
+        }
+      },
+      {
+        "comment": "",
+        "key": "回看这一天的依据",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 146
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 152
+        }
+      },
+      {
+        "comment": "",
+        "key": "编辑资料",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 159
+        }
+      },
+      {
+        "comment": "",
+        "key": "怎么称呼你？",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 158
+        }
+      },
+      {
+        "comment": "",
+        "key": "昵称",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 158
+        }
+      },
+      {
+        "comment": "",
+        "key": "取消",
+        "location": {
+          "startingColumn": 78,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "保存",
+        "location": {
+          "startingColumn": 78,
+          "startingLine": 162
+        }
+      },
+      {
+        "comment": "",
+        "key": "位置来源留下的地点会自动归档在这里。",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 171
+        }
+      },
+      {
+        "comment": "",
+        "key": "习惯线索会由 AI 提出，经过你确认后记住。",
+        "location": {
+          "startingColumn": 90,
+          "startingLine": 178
+        }
+      },
+      {
+        "comment": "",
+        "key": "记录积累后，River 会把相关的生活记忆整理在这里。每条记忆都可以查看依据与更正。",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 183
+        }
+      },
+      {
+        "comment": "",
+        "key": "管理确认历史与更正",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 181
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 次",
+        "location": {
+          "startingColumn": 138,
+          "startingLine": 174
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@，%@，查看依据与更正选项",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 560
+        }
+      },
+      {
+        "comment": "",
+        "key": "确认与回答",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 540
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 85,
+          "startingLine": 188
+        }
+      },
+      {
+        "comment": "",
+        "key": "设置、同步与隐私",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 216
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 已留下 %lld 条生活记忆",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 211
+        }
+      },
+      {
+        "comment": "",
+        "key": "编辑资料 ›",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 212
+        }
+      },
+      {
+        "comment": "",
+        "key": "条生活记忆档案",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 226
+        }
+      },
+      {
+        "comment": "",
+        "key": "记忆保存在本机",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 238
+        }
+      },
+      {
+        "comment": "",
+        "key": "已连接同步",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 240
+        }
+      },
+      {
+        "comment": "",
+        "key": "本机归档",
+        "location": {
+          "startingColumn": 64,
+          "startingLine": 240
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 知道的关于你",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 276
+        }
+      },
+      {
+        "comment": "",
+        "key": "管理规则 ›",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 278
+        }
+      },
+      {
+        "comment": "",
+        "key": "个人规则",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 529
+        }
+      },
+      {
+        "comment": "",
+        "key": "自动记录积累后，River 会发现重复的生活节奏。你确认后，再记为长期习惯。",
+        "location": {
+          "startingColumn": 180,
+          "startingLine": 281
+        }
+      },
+      {
+        "comment": "",
+        "key": "习惯会从生活中慢慢浮现",
+        "location": {
+          "startingColumn": 81,
+          "startingLine": 281
+        }
+      },
+      {
+        "comment": "",
+        "key": "我的生活编年史",
+        "location": {
+          "startingColumn": 71,
+          "startingLine": 298
+        }
+      },
+      {
+        "comment": "",
+        "key": "生成我的专属生活编年史",
+        "location": {
+          "startingColumn": 64,
+          "startingLine": 296
+        }
+      },
+      {
+        "comment": "",
+        "key": "将当前归档与搜索结果汇成可保存的文字",
+        "location": {
+          "startingColumn": 144,
+          "startingLine": 296
+        }
+      },
+      {
+        "comment": "",
+        "key": "导出",
+        "location": {
+          "startingColumn": 105,
+          "startingLine": 298
+        }
+      },
+      {
+        "comment": "",
+        "key": "设置、同步与隐私",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 318
+        }
+      },
+      {
+        "comment": "",
+        "key": "记忆",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 307
+        }
+      },
+      {
+        "comment": "",
+        "key": "写下的日子，记得的自己。",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 309
+        }
+      },
+      {
+        "comment": "",
+        "key": "搜索日记、记忆或地点",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 324
+        }
+      },
+      {
+        "comment": "",
+        "key": "搜索日记正文、记忆和地点",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 326
+        }
+      },
+      {
+        "comment": "",
+        "key": "清除查找",
+        "location": {
+          "startingColumn": 97,
+          "startingLine": 329
+        }
+      },
+      {
+        "comment": "",
+        "key": "依据有更新",
+        "location": {
+          "startingColumn": 138,
+          "startingLine": 367
+        }
+      },
+      {
+        "comment": "",
+        "key": "待合并核对",
+        "location": {
+          "startingColumn": 188,
+          "startingLine": 367
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI 已整理",
+        "location": {
+          "startingColumn": 208,
+          "startingLine": 367
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看全部 %lld 篇日记",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 383
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld 次到访 · 最近 %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 407
+        }
+      },
+      {
+        "comment": "",
+        "key": "取消收藏",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 469
+        }
+      },
+      {
+        "comment": "",
+        "key": "收藏日记",
+        "location": {
+          "startingColumn": 83,
+          "startingLine": 469
+        }
+      },
+      {
+        "comment": "",
+        "key": "档案管理",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 496
+        }
+      },
+      {
+        "comment": "",
+        "key": "由你确认，按你的方式理解生活。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 523
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@ · %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 555
+        }
+      },
+      {
+        "comment": "",
+        "key": "撤销回答并重新确认",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 586
+        }
+      },
+      {
+        "comment": "",
+        "key": "上次回答：%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 601
+        }
+      },
+      {
+        "comment": "",
+        "key": "重新确认这条问题",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 604
+        }
+      },
+      {
+        "comment": "",
+        "key": "记忆详情",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 877
+        }
+      },
+      {
+        "comment": "",
+        "key": "删除这条记忆？",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 885
+        }
+      },
+      {
+        "comment": "",
+        "key": "删除决定保存在共享状态中，后续同步会让其他设备也移除该记忆。",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 869
+        }
+      },
+      {
+        "comment": "",
+        "key": "这条记忆已删除",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 868
+        }
+      },
+      {
+        "comment": "",
+        "key": "River 的理解",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 744
+        }
+      },
+      {
+        "comment": "",
+        "key": "这条记忆没有附带解释文字。",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 748
+        }
+      },
+      {
+        "comment": "",
+        "key": "状态：你已明确确认或更正。",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 752
+        }
+      },
+      {
+        "comment": "",
+        "key": "状态：暂定理解，尚未由你确认。",
+        "location": {
+          "startingColumn": 90,
+          "startingLine": 752
+        }
+      },
+      {
+        "comment": "",
+        "key": "你的确认记录：%@ · %@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 757
+        }
+      },
+      {
+        "comment": "",
+        "key": "你的备注：%@",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 761
+        }
+      },
+      {
+        "comment": "",
+        "key": "来源与更新时间",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 772
+        }
+      },
+      {
+        "comment": "",
+        "key": "当前共享记录没有可在 iPhone 展开的来源片段。",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 780
+        }
+      },
+      {
+        "comment": "",
+        "key": "记忆类型",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 773
+        }
+      },
+      {
+        "comment": "",
+        "key": "建立时间",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 774
+        }
+      },
+      {
+        "comment": "",
+        "key": "最近更新",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 775
+        }
+      },
+      {
+        "comment": "",
+        "key": "模型置信度",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 777
+        }
+      },
+      {
+        "comment": "",
+        "key": "支持来源 · %lld",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 789
+        }
+      },
+      {
+        "comment": "",
+        "key": "还有 %lld 个来源无法在这台 iPhone 上展开。",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 820
+        }
+      },
+      {
+        "comment": "",
+        "key": "收起来源",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 813
+        }
+      },
+      {
+        "comment": "",
+        "key": "显示全部 %lld 条来源",
+        "location": {
+          "startingColumn": 80,
+          "startingLine": 813
+        }
+      },
+      {
+        "comment": "",
+        "key": "查看对应时间线",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 801
+        }
+      },
+      {
+        "comment": "",
+        "key": "回到当天",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 806
+        }
+      },
+      {
+        "comment": "",
+        "key": "由你决定",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 830
+        }
+      },
+      {
+        "comment": "",
+        "key": "记忆标题",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 832
+        }
+      },
+      {
+        "comment": "",
+        "key": "记忆标题",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 835
+        }
+      },
+      {
+        "comment": "",
+        "key": "记忆内容",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 841
+        }
+      },
+      {
+        "comment": "",
+        "key": "保存我的更正",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 842
+        }
+      },
+      {
+        "comment": "",
+        "key": "取消编辑",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 845
+        }
+      },
+      {
+        "comment": "",
+        "key": "更正这条记忆",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 852
+        }
+      },
+      {
+        "comment": "",
+        "key": "撤销确认",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 856
+        }
+      },
+      {
+        "comment": "",
+        "key": "确认这条记忆",
+        "location": {
+          "startingColumn": 65,
+          "startingLine": 856
+        }
+      },
+      {
+        "comment": "",
+        "key": "删除这条记忆",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 863
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 882
+        }
+      },
+      {
+        "comment": "",
+        "key": "删除并同步",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 886
+        }
+      },
+      {
+        "comment": "",
+        "key": "取消",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 887
+        }
+      },
+      {
+        "comment": "",
+        "key": "删除决定会写入共享状态；同步后，这条记忆会从其他设备的长期记忆中移除。",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 889
+        }
+      }
+    ]
+  },
+  "version": 1
+}

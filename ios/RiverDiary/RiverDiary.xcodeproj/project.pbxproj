@@ -37,13 +37,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-			7A0000022D00000000000001 /* Exclude local snapshot from RiverDiary app target */ = {
-				isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-				membershipExceptions = (
-					Resources/data.json,
-				);
-				target = 1A0000042D00000000000001 /* RiverDiary */;
-			};
 		5E0000022D00000000000001 /* Exceptions for "RiverDiary" folder in "RiverDiaryQA" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -51,14 +44,21 @@
 			);
 			target = 3C0000042D00000000000001 /* RiverDiaryQA */;
 		};
+		7A0000022D00000000000001 /* Exceptions for "RiverDiary" folder in "RiverDiary" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resources/data.json,
+			);
+			target = 1A0000042D00000000000001 /* RiverDiary */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1A0000012D00000000000001 /* RiverDiary */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-				exceptions = (
-					7A0000022D00000000000001 /* Exclude local snapshot from RiverDiary app target */,
-				);
+			exceptions = (
+				7A0000022D00000000000001 /* Exceptions for "RiverDiary" folder in "RiverDiary" target */,
+			);
 			path = RiverDiary;
 			sourceTree = "<group>";
 		};

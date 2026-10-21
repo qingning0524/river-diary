@@ -11,8 +11,10 @@
 - [River Node与加密复制](architecture/RIVER_NODE_ARCHITECTURE.md)
 - [架构背景](architecture/ARCHITECTURE.md)：历史Web/Python背景与实现参考，以当前源码及主规划界定现状
 - [数据管道](architecture/DATA_PIPELINE.md)
+- [数据源采集方案](architecture/DATA_SOURCES.md)：各来源的触发、范围、落盘、状态与已知缺口
+- [MemoryOS 跨端设备上下文](architecture/MEMORYOS_CROSS_DEVICE_CONTEXT.md)：DayContext 事实投影、双端展示与网页镜像
 - [管理员界面/权限/API](architecture/FLOWRIVER_ADMIN_CONSOLE_DESIGN.md)
-- [用户记忆控制台与本地副本契约](architecture/USER_MEMORY_CONSOLE_2026-10-20.md)
+- [用户记忆控制台、本机副本与加密云空间契约](architecture/USER_MEMORY_CONSOLE_2026-10-20.md)
 - [iOS构建基线](../ios/BUILD_BASELINE.md) · [五页实现说明](../ios/IMPLEMENTATION.md)
 
 架构文件描述实现；功能取舍和未完成任务只维护在主规划。
@@ -26,6 +28,8 @@
 - [构建验证记录](validation/DEV_BUILD_STATUS.md) · [10月17日验收](validation/RELEASE_AUDIT_2026-10-17.md)
 - [10月19日双端审查](validation/DUAL_END_AUDIT_2026-10-19.md)
 - [10月20日用户记忆控制台验收](validation/USER_MEMORY_CONSOLE_2026-10-20.md)
+- [10月20日用户加密云空间验收](validation/USER_MEMORY_CLOUD_2026-10-20.md)
+- [10月20日原生网页副本导出验收](validation/NATIVE_WEB_EXPORT_2026-10-20.md)
 
 - [图标库统一修复验收](validation/ICON_LIBRARY_UNIFICATION_2026-10-19.md)
 

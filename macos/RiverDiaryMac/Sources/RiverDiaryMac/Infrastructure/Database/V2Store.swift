@@ -589,6 +589,28 @@ final class V2Store {
         }
     }
 
+    /// 本机资料的所有者（账号 userID）。它必须随数据库/受保护文件恢复，
+    /// 不能只存在 ThisDeviceOnly 的 Keychain 绑定里，否则换机恢复后可能被另一个账号认领。
+    static let localProfileOwnerKey = "local.profile.owner.v1"
+
+    var localProfileOwner: String? {
+        syncValue(Self.localProfileOwnerKey)
+    }
+
+    @discardableResult
+    func setLocalProfileOwner(_ userID: String) -> Bool {
+        let trimmed = userID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        return saveSyncValue(trimmed, for: Self.localProfileOwnerKey)
+    }
+
+    @discardableResult
+    func clearLocalProfileOwner() -> Bool {
+        mutate("DELETE FROM sync_state WHERE key = ?") { statement in
+            bindText(statement, 1, Self.localProfileOwnerKey)
+        }
+    }
+
     private func syncValue(_ key: String) -> String? {
         guard let db else { return nil }
         var statement: OpaquePointer?

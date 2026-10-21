@@ -1,7 +1,8 @@
 /* Account transport for the console.
  *
- * The account service only knows identity, devices, sessions, entitlements,
- * feedback and security activity.  Memory content never passes through it.
+ * The account service knows identity, devices, sessions, entitlements,
+ * feedback and security activity. It also carries the optional cloud mirror
+ * envelope; memory plaintext and the passphrase never pass through it.
  * This module keeps the same-origin cookie/session rules that the previous
  * console verified, but exposes them as small injectable pieces so they can be
  * tested without a browser.

@@ -60,22 +60,13 @@ enum RiverAppActivityRecorder {
         guard !name.isEmpty, !identifier.isEmpty else {
             throw RiverLocalDatabaseError.sql("请在快捷指令中填写应用名称和 Bundle Identifier。")
         }
-        return try database.append(
+        let event = try database.append(
             source: "shortcuts",
             kind: "app.\(transition.rawValue)",
             payload: RiverEventPayload(appName: name, bundleID: identifier),
             observedAt: observedAt
         )
-    }
-}
-
-struct RiverDiaryAppShortcuts: AppShortcutsProvider {
-    static var appShortcuts: [AppShortcut] {
-        AppShortcut(
-            intent: LogAppActivityIntent(),
-            phrases: ["记录应用活动到 \(.applicationName)"],
-            shortTitle: "记录应用活动",
-            systemImageName: "app.badge"
-        )
+        IPhoneDayContextBuilder.publish(database: database)
+        return event
     }
 }

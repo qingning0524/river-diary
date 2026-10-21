@@ -1995,6 +1995,29 @@ final class RiverLocalDatabase: ObservableObject {
         guard sqlite3_step(statement) == SQLITE_DONE else { throw databaseError() }
     }
 
+    /// 本机资料的所有者（账号 userID）。随数据库/受保护文件恢复，
+    /// 不能只存在 ThisDeviceOnly 的 Keychain 绑定里。
+    static let localProfileOwnerKey = "local.profile.owner.v1"
+
+    func localProfileOwner() throws -> String? {
+        try stateValue(Self.localProfileOwnerKey)
+    }
+
+    func setLocalProfileOwner(_ userID: String) throws {
+        let trimmed = userID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw RiverLocalDatabaseError.sql("本机资料 owner 不能为空") }
+        try setStateValue(trimmed, for: Self.localProfileOwnerKey)
+    }
+
+    func clearLocalProfileOwner() throws {
+        let sql = "DELETE FROM sync_state WHERE key = ?"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK, let statement else { throw databaseError() }
+        defer { sqlite3_finalize(statement) }
+        bind(Self.localProfileOwnerKey, to: statement, at: 1)
+        guard sqlite3_step(statement) == SQLITE_DONE else { throw databaseError() }
+    }
+
     private func stateValue(_ key: String) throws -> String? {
         let sql = "SELECT value FROM sync_state WHERE key = ?"
         var statement: OpaquePointer?

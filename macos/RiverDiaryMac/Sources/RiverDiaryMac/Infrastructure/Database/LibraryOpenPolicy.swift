@@ -1,20 +1,22 @@
 import Foundation
 
-/// 资料生命周期：首次未绑定账号时不创建正式库。
+/// 资料生命周期：v5.0 本地优先，首次启动就开本机资料，账号只是后续增强。
 ///
-/// 打开本机事实库只在三种情形成立：
-/// - 已经存在正式库（受控离线使用与撤权后仍可读自己的资料）；
-/// - 存在旧版本的本机日记状态（旧安装的救援路径，不能因为还没认领就封死）；
-/// - 当前账号已登录（新建库并开始记录）。
+/// 以前“首次未绑定不开库”的门禁会迫使所有用户先登录；现在：
+/// - 新安装直接创建本机库并允许写日记；
+/// - 已有库/旧安装仍按救援路径打开；
+/// - 登录只用于绑定账号、官方额度、云副本与设备管理。
 ///
-/// 三者都不满足时只保留路径，等用户登录或显式认领后再建库。
+/// 参数保留是为了让调用方与旧测试继续表达“库/旧资料/登录”的事实，
+/// 但不再参与是否开库的判断。
 enum LibraryOpenPolicy {
     static func shouldOpenLocalLibrary(
         hasDatabaseFile: Bool,
         hasLegacyLocalState: Bool,
         isSignedIn: Bool
     ) -> Bool {
-        hasDatabaseFile || hasLegacyLocalState || isSignedIn
+        _ = (hasDatabaseFile, hasLegacyLocalState, isSignedIn)
+        return true
     }
 }
 

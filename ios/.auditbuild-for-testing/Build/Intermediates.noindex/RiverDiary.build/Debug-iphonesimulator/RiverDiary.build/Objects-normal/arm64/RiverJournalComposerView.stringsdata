@@ -1,0 +1,120 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Views/RiverJournalComposerView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "写日记",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 64
+        }
+      },
+      {
+        "comment": "",
+        "key": "草稿保存在这台 iPhone，保存后才参与已启用的同步。",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 56
+        }
+      },
+      {
+        "comment": "",
+        "key": "从一句话开始…",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 108
+        }
+      },
+      {
+        "comment": "",
+        "key": "日记内容",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "稍后再写",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 68
+        }
+      },
+      {
+        "comment": "",
+        "key": "保存",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 78
+        }
+      },
+      {
+        "comment": "",
+        "key": "这一页，留给你自己。",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 98
+        }
+      },
+      {
+        "comment": "",
+        "key": "本机记录暂时无法打开。草稿仍可保留，恢复后再保存。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 101
+        }
+      },
+      {
+        "comment": "",
+        "key": "用自己的尺度回看，可以随时留空。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 133
+        }
+      },
+      {
+        "comment": "",
+        "key": "给这一天一个评分（可选）",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 123
+        }
+      },
+      {
+        "comment": "",
+        "key": "这一天的评分",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 132
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 127
+        }
+      },
+      {
+        "comment": "",
+        "key": "/ 100",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 128
+        }
+      }
+    ]
+  },
+  "version": 1
+}

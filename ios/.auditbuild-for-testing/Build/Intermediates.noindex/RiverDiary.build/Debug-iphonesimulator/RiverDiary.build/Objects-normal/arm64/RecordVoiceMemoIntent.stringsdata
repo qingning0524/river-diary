@@ -1,0 +1,40 @@
+{
+  "source": "/Users/fa1lingdown/Desktop/河流日记项目/ios/RiverDiary/RiverDiary/Infrastructure/Ingestion/RecordVoiceMemoIntent.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "记录语音速记",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 8
+        }
+      },
+      {
+        "comment": "",
+        "key": "把快捷指令听写出的文字保存到 River Diary 本机事件库。",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 9
+        }
+      },
+      {
+        "comment": "",
+        "key": "转写文本",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 12
+        }
+      },
+      {
+        "comment": "",
+        "key": "快捷指令“听写文本”的输出",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 12
+        }
+      }
+    ]
+  },
+  "version": 1
+}
