@@ -557,6 +557,19 @@ sudo systemctl list-timers flowriver-backup.timer --all
 
 备份上传成功还需要恢复验收：下载一份备份，用异机私钥解密，在隔离数据库恢复；验证表、账号、会话、安全日志读取及删除/撤销事件重放。**当前仓库尚缺日志读取/重放工具，这项完成前不要宣称恢复能力已经就绪，也不要把旧备份直接覆盖线上数据库后启动 API。** RPO 1 小时、RTO 2 小时只是待演练的目标。
 
+### 10.4 配置自检
+
+**服务器操作：** 在启用定时器后运行只读自检；它检查命令、age 公钥、远端路径、rclone 配置权限、数据库连接、最近备份状态和 timer 是否真的在跑。
+
+```sh
+set -a
+. /etc/flowriver/backup.env
+set +a
+sudo -E /opt/flowriver/bin/backup-doctor.sh
+```
+
+任何 `FAIL` 都先修配置，不要用“同机发布快照”代替异机备份。`WARN` 至少要在恢复演练记录里说明原因。
+
 ## 第 11 步：用测试账号完成上线验收
 
 按 [账号服务验收清单](../validation/BACKEND_ACCOUNT_ACCEPTANCE.md) 完成以下验证；测试使用你控制的专用邮箱和设备：

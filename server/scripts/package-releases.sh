@@ -19,6 +19,7 @@ for arch in amd64 arm64; do
   install -m 0755 "$root_dir/deploy/install-caddyfile.sh" "$stage_dir/deploy/install-caddyfile.sh"
   install -m 0644 "$root_dir/deploy/Caddyfile.admin-only" "$stage_dir/deploy/Caddyfile.admin-only"
   install -m 0755 "$root_dir/deploy/backup.sh" "$stage_dir/deploy/backup.sh"
+  install -m 0755 "$root_dir/deploy/backup-doctor.sh" "$stage_dir/deploy/backup-doctor.sh"
   install -m 0644 "$root_dir/deploy/backup.env.example" "$stage_dir/deploy/backup.env.example"
   install -m 0644 "$root_dir/deploy/flowriver-api.service" "$stage_dir/deploy/flowriver-api.service"
   install -m 0644 "$root_dir/deploy/flowriver-admin-only.service" "$stage_dir/deploy/flowriver-admin-only.service"
