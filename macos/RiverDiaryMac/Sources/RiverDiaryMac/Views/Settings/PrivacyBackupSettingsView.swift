@@ -721,7 +721,8 @@ struct PrivacyBackupSettingsView: View {
             panel.canCreateDirectories = true
             guard panel.runModal() == .OK, let url = panel.url else { return }
             try data.write(to: url, options: .atomic)
-            report("可移植备份已导出：\(url.lastPathComponent)。换 Mac 时用同一恢复码恢复。", kind: .success)
+            showsSyncKey = true
+            report("可移植备份已导出：\(url.lastPathComponent)。恢复码已在上方显示，请保存到本机之外；换 Mac 时用同一恢复码恢复。", kind: .success)
         } catch {
             report("可移植备份导出失败：\(UserFacingError.message(for: error))", kind: .error)
         }
