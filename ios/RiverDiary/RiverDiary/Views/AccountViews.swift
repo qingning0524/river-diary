@@ -295,7 +295,7 @@ struct AccountLoginView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     policySection("账号服务", "账号服务保存你验证过的邮箱、设备标识、登录会话和同意记录，用于账号登录、安全管理与跨设备账号识别。首次使用邮箱验证后会创建账号。")
                     policySection("你的生活记录", "日记正文、位置记录和健康数据不会通过账号接口上传。跨设备复制与网络 AI 的资料使用由应用中的独立设置管理。")
-                    policySection("权益与退出", "高级权益兑换状态保存在服务器账号中。你可以在设置中退出账号。账号删除及身份解绑当前尚未开放。")
+                    policySection("权益与退出", "高级权益兑换状态保存在服务器账号中。你可以在设置中退出账号，或在登录状态下删除账号。删除会撤销服务器会话和云副本；本机日记不会删除。")
                 }.padding(24)
             }.background(theme.canvas).navigationTitle("账号服务与隐私说明").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { showsTerms = false } } }
@@ -346,6 +346,7 @@ struct AccountSettingsCard: View {
     @State private var showsPasswordSetup = false
     @State private var showsLogin = false
     @State private var showsBindConfirmation = false
+    @State private var showsDeletion = false
     @State private var configuredPassword: Bool?
     @State private var activationCode = ""
     @State private var redeemRequestID = UUID().uuidString
@@ -427,9 +428,17 @@ struct AccountSettingsCard: View {
             }
             .font(.subheadline).frame(minHeight: 44)
 
-            Button("退出账号", role: .destructive) {
-                Task { await account.signOut() }
-            }.frame(minHeight: 44)
+            HStack {
+                Button("退出账号", role: .destructive) {
+                    Task { await account.signOut() }
+                }
+                .frame(minHeight: 44)
+                Spacer()
+                Button("删除账号…") { showsDeletion = true }
+                    .foregroundStyle(theme.danger)
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("account.delete")
+            }
             }
         }
         .task {
@@ -437,6 +446,12 @@ struct AccountSettingsCard: View {
             try? await account.refreshEntitlements()
         }
         .sheet(isPresented: $showsPasswordSetup) { RiverPasswordRecoveryView(initialEmail: account.accountEmail ?? "", isSetup: true) }
+        .sheet(isPresented: $showsDeletion) {
+            AccountDeletionView()
+                .environmentObject(account)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
         .sheet(isPresented: $showsLogin) {
             AccountLoginView(allowsDismiss: true)
                 .environmentObject(account)
@@ -468,5 +483,98 @@ struct AccountSettingsCard: View {
 
     private static func displayDate(_ value: String) -> String {
         String(value.prefix(16)).replacingOccurrences(of: "T", with: " ")
+    }
+}
+
+private struct AccountDeletionView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.riverTheme) private var theme
+    @EnvironmentObject private var account: RiverAccountSessionStore
+    @State private var challengeID: String?
+    @State private var code = ""
+    @State private var notice: String?
+    @State private var errorMessage: String?
+    @State private var isWorking = false
+    @State private var deletedJobID: String?
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("删除服务器账号")
+                        .font(theme.sectionFont)
+                        .foregroundStyle(theme.ink)
+                    Text("这会删除服务器上的账号、会话和云副本，无法撤销。本机日记不会被删除；删除后本机资料仍属于该已删除账号，不能直接换绑另一个账号，请先导出。")
+                        .font(.footnote)
+                        .foregroundStyle(theme.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if let deletedJobID {
+                        Text("账号删除请求已提交（作业 \(deletedJobID)）。本机日记仍在；请保留恢复码。")
+                            .font(.footnote)
+                            .foregroundStyle(theme.success)
+                        Button("关闭") { dismiss() }
+                            .riverPrimary()
+                    } else if challengeID == nil {
+                        Button(isWorking ? "正在发送…" : "发送邮箱验证码") {
+                            Task {
+                                isWorking = true
+                                errorMessage = nil
+                                do {
+                                    challengeID = try await account.startDeletionReauth()
+                                    notice = "验证码已发送到账号邮箱（8 位数字）。"
+                                } catch {
+                                    errorMessage = error.localizedDescription
+                                }
+                                isWorking = false
+                            }
+                        }
+                        .riverPrimary()
+                        .disabled(isWorking)
+                    } else {
+                        if let notice {
+                            Text(notice).font(.footnote).foregroundStyle(theme.secondaryInk)
+                        }
+                        TextField("8 位邮箱验证码", text: $code)
+                            .keyboardType(.numberPad)
+                            .textContentType(.oneTimeCode)
+                            .textFieldStyle(.roundedBorder)
+                            .accessibilityIdentifier("account.delete.code")
+                        Button(isWorking ? "正在删除…" : "确认删除账号") {
+                            Task {
+                                isWorking = true
+                                errorMessage = nil
+                                do {
+                                    let token = try await account.verifyDeletionReauth(
+                                        challengeID: challengeID ?? "",
+                                        code: code
+                                    )
+                                    let receipt = try await account.deleteAccount(reauthToken: token)
+                                    deletedJobID = receipt.job_id
+                                } catch {
+                                    errorMessage = error.localizedDescription
+                                }
+                                isWorking = false
+                            }
+                        }
+                        .riverPrimary()
+                        .tint(theme.danger)
+                        .disabled(isWorking || code.count != 8)
+                    }
+                    if let errorMessage {
+                        Text(errorMessage).font(.footnote).foregroundStyle(theme.danger)
+                    }
+                }
+                .padding(20)
+            }
+            .background(theme.canvas.ignoresSafeArea())
+            .navigationTitle("删除账号")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭") { dismiss() }
+                }
+            }
+        }
     }
 }

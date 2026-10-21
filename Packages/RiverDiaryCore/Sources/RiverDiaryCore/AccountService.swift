@@ -45,6 +45,12 @@ public struct RiverRedemptionReceipt: Decodable, Equatable {
     public let permanent: Bool
 }
 
+public struct RiverDeletionReceipt: Decodable, Equatable {
+    public let job_id: String
+    public let status: String
+    public let status_expires_at: String?
+}
+
 public struct RiverAccountAPIError: LocalizedError, Equatable {
     public let status: Int
     public let code: String
@@ -322,6 +328,52 @@ public final class RiverAccountSessionStore: ObservableObject {
         let normalized = code.trimmingCharacters(in: .whitespacesAndNewlines)
         let receipt: RiverRedemptionReceipt = try await authenticated(path: "/me/activation-codes/redeem", method: "POST", body: ["code": normalized], idempotencyKey: idempotencyKey)
         try? await refreshEntitlements()
+        return receipt
+    }
+
+    /// 删除账号第一步：向当前账号的邮箱发送 8 位验证码。
+    /// 只支持仍有邮箱身份的账号；纯 Apple 账号需先在账号设置中绑定邮箱。
+    public func startDeletionReauth() async throws -> String {
+        struct Response: Decodable { let challenge_id: String }
+        let response: Response = try await authenticated(
+            path: "/me/reauth/email/start",
+            method: "POST",
+            body: [:]
+        )
+        return response.challenge_id
+    }
+
+    /// 删除账号第二步：校验邮箱验证码，换取一次性的 reauth_token。
+    public func verifyDeletionReauth(challengeID: String, code: String) async throws -> String {
+        struct Response: Decodable { let reauth_token: String }
+        let response: Response = try await authenticated(
+            path: "/me/reauth/email/verify",
+            method: "POST",
+            body: [
+                "challenge_id": challengeID,
+                "code": code,
+                "purpose": "account_delete"
+            ],
+            idempotencyKey: UUID().uuidString
+        )
+        return response.reauth_token
+    }
+
+    /// 删除账号第三步：提交 reauth_token。服务端会撤销会话并进入删除作业；
+    /// 本机日记不删除，但本机 owner 仍属于这个已删除账号，不能静默换绑。
+    @discardableResult
+    public func deleteAccount(reauthToken: String) async throws -> RiverDeletionReceipt {
+        let receipt: RiverDeletionReceipt = try await authenticated(
+            path: "/me/deletion",
+            method: "POST",
+            body: ["reauth_token": reauthToken],
+            idempotencyKey: UUID().uuidString
+        )
+        _ = beginAuthentication()
+        session = nil
+        entitlements = []
+        try? vault.remove(sessionStoreKey)
+        lastError = nil
         return receipt
     }
 

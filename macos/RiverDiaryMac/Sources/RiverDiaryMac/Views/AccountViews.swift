@@ -84,7 +84,7 @@ struct MacAccountLoginView: View {
                             VStack(alignment: .leading, spacing: 7) {
                                 Text("账号服务保存你验证过的邮箱、设备标识、登录会话和同意记录，用于账号登录、安全管理与跨设备账号识别。")
                                 Text("日记正文、位置记录和健康数据不会通过此账号接口上传。验证码用于邮箱验证；高级权益兑换状态保存在服务器账号中。")
-                                Text("你可以在设置中退出账号。账号删除及身份解绑当前尚未开放。")
+                                Text("你可以在设置中退出账号，或在登录状态下删除账号。删除会撤销服务器会话和云副本；本机日记不会删除。")
                             }
                             .font(.footnote)
                             .foregroundStyle(Color.secondaryInk)
@@ -172,6 +172,7 @@ struct MacAccountSettingsView: View {
     @State private var showsSignOutConfirmation = false
     @State private var showsLogin = false
     @State private var showsBindConfirmation = false
+    @State private var showsDeletion = false
     @State private var errorMessage: String?
 
     var body: some View {
@@ -228,8 +229,13 @@ struct MacAccountSettingsView: View {
                         if let message { Text(message).font(.footnote).foregroundStyle(AppTheme.accent) }
                         if let errorMessage { Text(errorMessage).font(.footnote).foregroundStyle(.red) }
 
-                        Button("退出账号", role: .destructive) {
-                            showsSignOutConfirmation = true
+                        HStack {
+                            Button("退出账号", role: .destructive) {
+                                showsSignOutConfirmation = true
+                            }
+                            Button("删除账号…") { showsDeletion = true }
+                                .foregroundStyle(.red)
+                                .accessibilityIdentifier("account.delete")
                         }
                         .confirmationDialog("要退出这个账号吗？", isPresented: $showsSignOutConfirmation, titleVisibility: .visible) {
                             Button("退出账号", role: .destructive) {
@@ -237,7 +243,7 @@ struct MacAccountSettingsView: View {
                             }
                             Button("取消", role: .cancel) {}
                         } message: {
-                            Text("退出后本机的自动采集与同步会暂停，重新登录后恢复。")
+                            Text("退出后账号能力停止，本机日记与自动记录继续；重新登录后恢复账号功能。")
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -252,6 +258,11 @@ struct MacAccountSettingsView: View {
             MacAccountLoginView(showsLocalDataNotice: true, allowsDismiss: true)
                 .environmentObject(account)
                 .frame(minWidth: 620, minHeight: 620)
+        }
+        .sheet(isPresented: $showsDeletion) {
+            MacAccountDeletionView()
+                .environmentObject(account)
+                .frame(width: 520)
         }
         .confirmationDialog("绑定后，本机已有的日记会归当前账号", isPresented: $showsBindConfirmation, titleVisibility: .visible) {
             Button("继续绑定") { showsLogin = true }
@@ -280,5 +291,82 @@ struct MacAccountSettingsView: View {
 
     private static func displayDate(_ value: String) -> String {
         String(value.prefix(16)).replacingOccurrences(of: "T", with: " ")
+    }
+}
+
+private struct MacAccountDeletionView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var account: RiverAccountSessionStore
+    @State private var challengeID: String?
+    @State private var code = ""
+    @State private var notice: String?
+    @State private var errorMessage: String?
+    @State private var isWorking = false
+    @State private var deletedJobID: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("删除账号").font(AppTypography.sheetTitle())
+                Spacer()
+                Button { dismiss() } label: { Image(systemName: "xmark") }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("关闭删除账号")
+            }
+            Text("这会删除服务器上的账号、会话和云副本，无法撤销。本机日记不会被删除；删除后本机资料仍属于该已删除账号，不能直接换绑另一个账号，请先导出。")
+                .font(AppTypography.secondary())
+                .foregroundStyle(Color.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let deletedJobID {
+                Text("账号删除请求已提交（作业 \(deletedJobID)）。本机日记仍在；请保留恢复码，稍后可查看删除状态。")
+                    .font(AppTypography.secondary())
+                    .foregroundStyle(Color.green)
+                Button("关闭") { dismiss() }
+                    .buttonStyle(.borderedProminent)
+            } else if challengeID == nil {
+                Button(isWorking ? "正在发送…" : "发送邮箱验证码") {
+                    Task {
+                        isWorking = true
+                        errorMessage = nil
+                        do {
+                            challengeID = try await account.startDeletionReauth()
+                            notice = "验证码已发送到账号邮箱（8 位数字）。"
+                        } catch {
+                            errorMessage = UserFacingError.message(for: error)
+                        }
+                        isWorking = false
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isWorking)
+                .accessibilityIdentifier("account.delete.sendCode")
+            } else {
+                if let notice { Text(notice).font(AppTypography.micro()).foregroundStyle(Color.secondaryInk) }
+                TextField("8 位邮箱验证码", text: $code)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityIdentifier("account.delete.code")
+                Button(isWorking ? "正在删除…" : "确认删除账号") {
+                    Task {
+                        isWorking = true
+                        errorMessage = nil
+                        do {
+                            let token = try await account.verifyDeletionReauth(challengeID: challengeID ?? "", code: code)
+                            let receipt = try await account.deleteAccount(reauthToken: token)
+                            deletedJobID = receipt.job_id
+                        } catch {
+                            errorMessage = UserFacingError.message(for: error)
+                        }
+                        isWorking = false
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+                .disabled(isWorking || code.count != 8)
+                .accessibilityIdentifier("account.delete.confirm")
+            }
+            if let errorMessage { Text(errorMessage).font(AppTypography.micro()).foregroundStyle(.red) }
+        }
+        .padding(24)
     }
 }

@@ -357,6 +357,44 @@ final class AccountSessionTests: XCTestCase {
         XCTAssertEqual(boundBox.value, "user-a")
     }
 
+    func testAccountDeletionRequiresReauthAndClearsLocalSession() async throws {
+        let server = AccountTestServer()
+        let vault = AccountTestVault()
+        let store = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated deletion", vault: vault,
+            transport: { try await server.send($0) }
+        )
+        try await store.loginWithPassword(
+            email: "test@example.invalid",
+            password: "test-only-password",
+            idempotencyKey: UUID().uuidString
+        )
+        XCTAssertTrue(store.isSignedIn)
+
+        let challenge = try await store.startDeletionReauth()
+        XCTAssertEqual(challenge, "reauth-challenge")
+        let token = try await store.verifyDeletionReauth(challengeID: challenge, code: "12345678")
+        XCTAssertEqual(token, "reauth-token")
+        let receipt = try await store.deleteAccount(reauthToken: token)
+        XCTAssertEqual(receipt.job_id, "job-delete")
+        XCTAssertFalse(store.isSignedIn)
+        XCTAssertNil(vault.values["account-session-v1"])
+        XCTAssertNil(store.lastError)
+    }
+
+    func testAccountDeletionIsRejectedWhenSignedOut() async throws {
+        let store = RiverAccountSessionStore(
+            platform: .macos, deviceName: "Isolated deletion", vault: AccountTestVault(),
+            transport: { _ in throw URLError(.unsupportedURL) }
+        )
+        do {
+            _ = try await store.startDeletionReauth()
+            XCTFail("signed-out deletion must not start")
+        } catch {
+            XCTAssertEqual(error as? RiverAccountAPIError, RiverAccountAPIError(status: 401, code: "auth_required"))
+        }
+    }
+
     func testOldUnauthorizedRefreshCannotClearANewerLogin() async throws {
         let server = AccountTestServer()
         let store = try makeStore(server: server)
@@ -439,6 +477,12 @@ private actor AccountTestServer {
         case "/v1/me/password": return result("{\"password_enabled\":true}")
         case "/v1/auth/password/login":
             return result("{\"access_token\":\"login-access\",\"refresh_token\":\"login-refresh\",\"revoke_token\":\"login-revoke\",\"expires_in\":3600,\"user\":{\"id\":\"user-a\"}}")
+        case "/v1/me/reauth/email/start":
+            return result("{\"challenge_id\":\"reauth-challenge\"}")
+        case "/v1/me/reauth/email/verify":
+            return result("{\"reauth_token\":\"reauth-token\",\"expires_in\":300}")
+        case "/v1/me/deletion":
+            return result("{\"job_id\":\"job-delete\",\"status\":\"pending\",\"status_expires_at\":\"2026-10-22T00:00:00Z\"}")
         case "/v1/auth/logout":
             logoutCount += 1
             if request.value(forHTTPHeaderField: "Authorization") != nil { authenticatedLogouts += 1 }
